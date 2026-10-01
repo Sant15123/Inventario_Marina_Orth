@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { useMaterials } from '../hooks/useMaterials'
 import {
@@ -86,14 +87,14 @@ export default function Inventory() {
           </span>
         </td>
         <td className="actions">
-          <button
+          <Link
+            to={`/inventory/${m.id}`}
             className="btn btn-outline"
-            onClick={() => setViewing(m)}
             aria-label="Consultar"
             title="Consultar"
           >
             👁 Ver
-          </button>
+          </Link>
           <button
             className="btn btn-outline"
             onClick={() => openEdit(m)}

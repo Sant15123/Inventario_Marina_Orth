@@ -7,6 +7,7 @@ import Inventory from './pages/Inventory'
 import Quotes from './pages/Quotes'
 import Categories from './pages/Categories'
 import Suppliers from './pages/Suppliers'
+import MaterialDetail from './pages/MaterialDetail'
 
 function App() {
   const [dark, setDark] = useState(
@@ -32,6 +33,7 @@ function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
+        <Route path="/inventory/:id" element={<MaterialDetail />} />
         <Route path="/quotes" element={<Quotes />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/suppliers" element={<Suppliers />} />
