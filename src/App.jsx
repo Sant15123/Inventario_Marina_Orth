@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './styles/index.css';
 
@@ -14,6 +14,26 @@ import DetalleActivoPublico from './views/DetalleActivoPublico';
 import { INITIAL_DATA, today, fmtDate, available, isOverdue } from './data/initialData';
 
 function App() {
+  // Estado de tema oscuro/claro con persistencia en localStorage
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('marina_orth_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('marina_orth_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   // Estado simple de navegación para las 4 vistas requeridas
   const [currentView, setCurrentView] = useState('resumen');
 
@@ -291,11 +311,13 @@ function App() {
             <Sidebar currentView={currentView} onViewChange={setCurrentView} />
 
             <div className="main-wrapper">
-              {/* 3. Header con búsqueda y descarga Excel */}
+              {/* 3. Header con búsqueda, cambio de tema y descarga Excel */}
               <Header
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
                 onExportExcel={handleExportExcel}
+                theme={theme}
+                onToggleTheme={toggleTheme}
               />
 
               {/* 4. Contenedor de las 4 vistas principales */}
