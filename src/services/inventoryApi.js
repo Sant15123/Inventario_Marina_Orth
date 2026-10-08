@@ -1,47 +1,83 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api/inventory'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
-  })
-  const json = await res.json().catch(() => ({}))
+  });
+
+  const json = await res.json().catch(() => null);
+
   if (!res.ok) {
-    const message = json.message || `Error ${res.status}`
-    const error = new Error(message)
-    error.status = res.status
-    throw error
+    const message = json?.message || json?.error || `Error HTTP ${res.status} al consultar ${path}`;
+    const error = new Error(message);
+    error.status = res.status;
+    error.response = json;
+    throw error;
   }
-  return json
+
+  return json;
 }
 
 export const inventoryApi = {
-  getAll: async () => {
-    const json = await request('/')
-    return Array.isArray(json.data) ? json.data : []
+  // 1. Activos
+  getActivos: async () => {
+    const json = await request('/activos');
+    if (!json || !Array.isArray(json.data)) {
+      throw new Error('Respuesta inválida de la API de activos: se esperaba un arreglo');
+    }
+    return json.data;
   },
-  get: async (id) => {
-    const json = await request(`/${id}`)
-    return json.data
+
+  getActivoByPlaca: async (placa) => {
+    const json = await request(`/activos/${encodeURIComponent(placa)}`);
+    if (!json || !json.data) {
+      throw new Error(`No se encontró el activo con placa ${placa}`);
+    }
+    return json.data;
   },
-  create: async (data) => {
-    const json = await request('/', {
+
+  createActivo: async (data) => {
+    const json = await request('/activos', {
       method: 'POST',
       body: JSON.stringify(data),
-    })
-    return json.data
+    });
+    return json.data;
   },
-  update: async (id, data) => {
-    const json = await request(`/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-    return json.data
-  },
-  remove: async (id) => {
-    await request(`/${id}`, { method: 'DELETE' })
-    return true
-  },
-}
 
-export default inventoryApi
+  // 2. Consumibles
+  getConsumibles: async () => {
+    const json = await request('/consumibles');
+    if (!json || !Array.isArray(json.data)) {
+      throw new Error('Respuesta inválida de la API de consumibles: se esperaba un arreglo');
+    }
+    return json.data;
+  },
+
+  // 3. Préstamos
+  getPrestamos: async () => {
+    const json = await request('/prestamos');
+    if (!json || !Array.isArray(json.data)) {
+      throw new Error('Respuesta inválida de la API de préstamos: se esperaba un arreglo');
+    }
+    return json.data;
+  },
+
+  createPrestamo: async (data) => {
+    const json = await request('/prestamos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return json.data;
+  },
+
+  devolverPrestamo: async (id) => {
+    const json = await request(`/prestamos/${id}/devolver`, {
+      method: 'PUT',
+    });
+    return json.data;
+  },
+};
+
+export default inventoryApi;

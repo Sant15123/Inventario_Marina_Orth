@@ -11,7 +11,8 @@ import PrestamosView from './views/PrestamosView';
 import HistorialView from './views/HistorialView';
 import DetalleActivoPublico from './views/DetalleActivoPublico';
 
-import { INITIAL_DATA, today, fmtDate, available, isOverdue } from './data/initialData';
+import { today, fmtDate, available, isOverdue } from './data/initialData';
+import inventoryApi from './services/inventoryApi';
 
 function App() {
   // Estado de tema oscuro/claro con persistencia en localStorage
@@ -37,9 +38,133 @@ function App() {
   // Estado simple de navegación para las 4 vistas requeridas
   const [currentView, setCurrentView] = useState('resumen');
 
-  // Estado del inventario y movimientos
-  const [items, setItems] = useState(INITIAL_DATA.items);
-  const [movements, setMovements] = useState(INITIAL_DATA.movements);
+  // Estado de carga y error de la API de Supabase / Backend
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(null);
+
+  // Estado del inventario y movimientos (inicializados estrictamente con arreglos vacíos)
+  const [items, setItems] = useState([]);
+  const [movements, setMovements] = useState([]);
+
+  // Cargar datos reales desde Supabase / PostgreSQL al iniciar la aplicación
+  const refreshFromApi = async () => {
+    try {
+      setLoading(true);
+      setApiError(null);
+
+      const [activosData, consumiblesData, prestamosData] = await Promise.all([
+        inventoryApi.getActivos(),
+        inventoryApi.getConsumibles(),
+        inventoryApi.getPrestamos(),
+      ]);
+
+      const newItems = [];
+
+      // Mapear consumibles directamente desde la base de datos
+      if (Array.isArray(consumiblesData)) {
+        consumiblesData.forEach((c) => {
+          newItems.push({
+            id: c.id,
+            name: c.material,
+            category: c.categoria || 'Insumos',
+            itemType: 'consumible',
+            quantity: Number(c.disponible) || 0,
+            minStock: Number(c.minimo) || 0,
+            location: c.ubicacion || 'Bodega Medellín',
+            dateAdded: c.created_at ? c.created_at.split('T')[0] : today(),
+          });
+        });
+      }
+
+      // Mapear activos directamente desde la base de datos
+      if (Array.isArray(activosData)) {
+        activosData.forEach((a) => {
+          const unitObj = {
+            code: a.placa,
+            placa: a.placa,
+            model: a.modelo || a.marca || 'Estándar',
+            serial: a.serial || '—',
+            sede: a.sede || 'Medellín',
+            status: a.estado === 'En campo' ? 'prestado' : (a.estado || 'disponible').toLowerCase(),
+            responsable: a.custodio || (a.estado === 'En campo' ? 'Custodio Temporal' : 'Bodega Central'),
+          };
+
+          const existingEq = newItems.find(
+            (it) => it.itemType === 'equipo' && it.name.toLowerCase() === a.nombre.toLowerCase()
+          );
+
+          if (existingEq) {
+            existingEq.units.push(unitObj);
+          } else {
+            newItems.push({
+              id: `eq-${a.id || a.placa}`,
+              name: a.nombre,
+              category: a.marca || 'Equipos de Cómputo',
+              itemType: 'equipo',
+              location: a.sede ? `Sede ${a.sede}` : 'Bodega Medellín',
+              sede: a.sede || 'Medellín',
+              minStock: 1,
+              units: [unitObj],
+              quantity: 0,
+              dateAdded: a.created_at ? a.created_at.split('T')[0] : today(),
+            });
+          }
+        });
+      }
+
+      setItems(newItems);
+
+      // Mapear préstamos directamente desde la base de datos
+      const newMovs = [];
+      if (Array.isArray(prestamosData)) {
+        prestamosData.forEach((p) => {
+          newMovs.push({
+            id: `mov-db-${p.id}`,
+            dbId: p.id,
+            type: 'prestamo',
+            itemId: p.placa_activo,
+            itemName: p.nombre_activo || `Activo (${p.placa_activo})`,
+            qty: 1,
+            unitCodes: [p.placa_activo],
+            person: p.solicitante,
+            sede: p.sede,
+            motive: p.motivo || 'Préstamo operativo',
+            date: p.fecha_salida ? p.fecha_salida.split('T')[0] : today(),
+            expectedReturn: p.fecha_devolucion_esperada ? p.fecha_devolucion_esperada.split('T')[0] : null,
+            returnedDate: p.fecha_devolucion_real ? p.fecha_devolucion_real.split('T')[0] : null,
+            status: p.estado === 'Devuelto' ? 'cerrado' : 'activo',
+          });
+        });
+      }
+
+      setMovements(newMovs);
+    } catch (err) {
+      console.error('Error al consultar datos de Supabase / backend:', err);
+      setApiError(err.message || 'No se pudo conectar con el servidor backend');
+      setItems([]);
+      setMovements([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshFromApi();
+  }, []);
+
+  // Guardar en localStorage cuando cambian items o movimientos
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('marina_orth_items', JSON.stringify(items));
+    }
+  }, [items]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('marina_orth_movements', JSON.stringify(movements));
+    }
+  }, [movements]);
+
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filtro de búsqueda rápida
@@ -67,8 +192,8 @@ function App() {
     );
   }, [movements, searchTerm]);
 
-  // Manejadores de acciones
-  const handleAddItem = (data) => {
+  // Manejadores de acciones con sincronización a la API de PostgreSQL
+  const handleAddItem = async (data) => {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const itemType = data.itemType === 'equipo' ? 'equipo' : 'consumible';
     const newItem = {
@@ -90,13 +215,37 @@ function App() {
         .filter(Boolean)
         .map((line) => {
           const parts = line.split(',').map((p) => p.trim());
-          return { code: parts[0] || '', model: parts[1] || '', serial: parts[2] || '', status: 'disponible' };
+          return {
+            code: parts[0] || '',
+            placa: parts[0] || '',
+            model: parts[1] || '',
+            serial: parts[2] || '',
+            status: 'disponible',
+            sede: data.sede || 'Medellín',
+          };
         })
         .filter((u) => u.code);
 
       newItem.units = parsedUnits;
       newItem.quantity = 0;
       setItems((prev) => [newItem, ...prev]);
+
+      // Enviar activos a la API de PostgreSQL en segundo plano
+      parsedUnits.forEach(async (u) => {
+        try {
+          await inventoryApi.createActivo({
+            placa: u.code,
+            nombre: data.name,
+            marca: data.category || 'Tecnología',
+            modelo: u.model || '',
+            serial: u.serial || null,
+            sede: data.sede || 'Medellín',
+            estado: 'Disponible',
+          });
+        } catch (e) {
+          console.warn('No se pudo guardar activo en la DB:', e.message);
+        }
+      });
 
       if (parsedUnits.length > 0) {
         setMovements((prev) => [
@@ -183,15 +332,35 @@ function App() {
     ]);
   };
 
-  const handleRegisterLoan = (data) => {
+  // Registrar préstamo con transacción en PostgreSQL
+  const handleRegisterLoan = async (data) => {
     const item = items.find((i) => i.id === data.itemId);
-    if (!item) return;
+    const itemName = item ? item.name : 'Equipo';
 
+    // 1. Persistir préstamo en PostgreSQL por cada placa seleccionada
+    const createdDbLoans = [];
+    for (const placa of data.unitCodes) {
+      try {
+        const dbRes = await inventoryApi.createPrestamo({
+          placa_activo: placa,
+          solicitante: data.person,
+          sede: data.sede || 'Medellín',
+          motivo: data.motive || 'Préstamo para formación',
+          fecha_salida: today(),
+          fecha_devolucion_esperada: data.expectedReturn || today(),
+        });
+        createdDbLoans.push(dbRes);
+      } catch (e) {
+        console.warn(`Aviso de persistencia para placa ${placa}:`, e.message);
+      }
+    }
+
+    // 2. Actualizar estado local en React
     setItems((prev) =>
       prev.map((it) => {
         if (it.id !== data.itemId) return it;
         const updatedUnits = (it.units || []).map((u) =>
-          data.unitCodes.includes(u.code)
+          data.unitCodes.includes(u.code) || data.unitCodes.includes(u.placa)
             ? { ...u, status: 'prestado', sede: data.sede || u.sede, responsable: data.person }
             : u
         );
@@ -202,9 +371,10 @@ function App() {
     setMovements((prev) => [
       {
         id: 'mov-' + Date.now().toString(36),
+        dbId: createdDbLoans[0]?.id || null,
         type: 'prestamo',
         itemId: data.itemId,
-        itemName: item.name,
+        itemName: itemName,
         qty: data.unitCodes.length,
         unitCodes: data.unitCodes,
         person: data.person,
@@ -244,15 +414,27 @@ function App() {
     ]);
   };
 
-  const handleReturnLoan = (movId) => {
+  // Devolver préstamo y restaurar activo en PostgreSQL
+  const handleReturnLoan = async (movId) => {
     const mov = movements.find((m) => m.id === movId);
     if (!mov) return;
+
+    // Si tiene ID en la base de datos de PostgreSQL, llamar a PUT /api/prestamos/:id/devolver
+    if (mov.dbId) {
+      try {
+        await inventoryApi.devolverPrestamo(mov.dbId);
+      } catch (e) {
+        console.warn('Error al marcar devuelto en PostgreSQL:', e.message);
+      }
+    }
 
     setItems((prev) =>
       prev.map((it) => {
         if (it.id !== mov.itemId) return it;
         const updatedUnits = (it.units || []).map((u) =>
-          (mov.unitCodes || []).includes(u.code) ? { ...u, status: 'disponible' } : u
+          (mov.unitCodes || []).includes(u.code) || (mov.unitCodes || []).includes(u.placa)
+            ? { ...u, status: 'disponible', responsable: 'Bodega Central' }
+            : u
         );
         return { ...it, units: updatedUnits };
       })
@@ -265,7 +447,7 @@ function App() {
 
   // Exportar Excel en CSV amigable con UTF-8
   const handleExportExcel = () => {
-    let csv = '\uFEFF'; // BOM para soportar tildes en Excel
+    let csv = '\uFEFF';
     csv += 'REPORTE CONSOLIDADO DE INVENTARIO - FUNDACIÓN MARINA ORTH\n\n';
 
     csv += 'INVENTARIO\n';
@@ -307,11 +489,9 @@ function App() {
         path="/*"
         element={
           <div className="layout">
-            {/* 2. Sidebar con encabezado y botones para las 4 vistas */}
             <Sidebar currentView={currentView} onViewChange={setCurrentView} />
 
             <div className="main-wrapper">
-              {/* 3. Header con búsqueda, cambio de tema y descarga Excel */}
               <Header
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -320,18 +500,27 @@ function App() {
                 onToggleTheme={toggleTheme}
               />
 
-              {/* 4. Contenedor de las 4 vistas principales */}
               <main className="main-content">
                 {currentView === 'resumen' && (
-                  <ResumenView items={filteredItems} movements={filteredMovements} />
+                  <ResumenView
+                    items={filteredItems}
+                    movements={filteredMovements}
+                    loading={loading}
+                    error={apiError}
+                    onRetry={refreshFromApi}
+                  />
                 )}
 
                 {currentView === 'inventario' && (
                   <InventarioView
                     items={filteredItems}
+                    loading={loading}
+                    error={apiError}
+                    onRetry={refreshFromApi}
                     onAddItem={handleAddItem}
                     onEditItem={handleEditItem}
                     onRetireItem={handleRetireItem}
+                    onRegisterLoan={handleRegisterLoan}
                   />
                 )}
 
@@ -339,6 +528,9 @@ function App() {
                   <PrestamosView
                     items={filteredItems}
                     movements={filteredMovements}
+                    loading={loading}
+                    error={apiError}
+                    onRetry={refreshFromApi}
                     onRegisterLoan={handleRegisterLoan}
                     onRegisterDelivery={handleRegisterDelivery}
                     onReturnLoan={handleReturnLoan}

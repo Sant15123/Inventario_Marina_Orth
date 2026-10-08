@@ -1,12 +1,60 @@
 import { fmtDate, available, isOverdue, getDaysDiff } from '../services/mockData';
 
-export default function ResumenView({ items = [], movements = [] }) {
+export default function ResumenView({
+  items = [],
+  movements = [],
+  loading = false,
+  error = null,
+  onRetry,
+}) {
   // 1. Filtrado para alertas de stock (disponible <= minStock)
   const lowStockItems = items.filter((it) => available(it) <= (it.minStock || 0));
 
   // 2. Préstamos activos y vencidos
   const activeLoans = movements.filter((m) => m.type === 'prestamo' && m.status === 'activo');
   const overdueLoans = activeLoans.filter(isOverdue);
+
+  if (loading) {
+    return (
+      <div className="resumen-container">
+        <div className="panel empty" style={{ padding: '60px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⏳</div>
+          <strong style={{ fontSize: '1.15rem', color: 'var(--text)' }}>
+            Cargando datos de Supabase...
+          </strong>
+          <p style={{ color: 'var(--text-dim)', marginTop: '8px', fontSize: '0.95rem' }}>
+            Obteniendo indicadores de inventario y préstamos en tiempo real
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="resumen-container">
+        <div className="panel empty" style={{ padding: '48px 20px', textAlign: 'center', borderColor: 'var(--red)' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⚠️</div>
+          <strong style={{ color: 'var(--red)', fontSize: '1.2rem' }}>
+            Error al conectar con el backend / Supabase
+          </strong>
+          <p style={{ color: 'var(--text-dim)', margin: '10px auto', maxWidth: '520px' }}>
+            {error}
+          </p>
+          {onRetry && (
+            <button
+              type="button"
+              className="btn small btn-primary"
+              style={{ marginTop: '14px' }}
+              onClick={onRetry}
+            >
+              🔄 Reintentar conexión
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="resumen-container">
@@ -158,7 +206,7 @@ export default function ResumenView({ items = [], movements = [] }) {
         <div className="panel table-responsive">
           {activeLoans.length === 0 ? (
             <div className="empty">
-              <span>📋</span> No hay préstamos activos pendientes en este momento.
+              <span>📋</span> {movements.length === 0 ? 'No hay registros en Supabase.' : 'No hay préstamos activos pendientes en este momento.'}
             </div>
           ) : (
             <table>

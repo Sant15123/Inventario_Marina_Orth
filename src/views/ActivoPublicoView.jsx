@@ -52,7 +52,11 @@ export default function ActivoPublicoView({ items = [], movements = [] }) {
       <div className="public-asset-container">
         <div className="public-asset-card not-found">
           <div className="public-brand">
-            <div className="brand-logo-circle">MO</div>
+            <img
+              src="/logo-marina-orth.png"
+              alt="Logo Fundación Marina Orth"
+              className="brand-logo-img"
+            />
             <div>
               <h2>Fundación Marina Orth</h2>
               <span>Sistema de Control de Activos</span>
@@ -83,7 +87,11 @@ export default function ActivoPublicoView({ items = [], movements = [] }) {
         {/* Cabecera institucional */}
         <header className="public-header">
           <div className="public-brand">
-            <div className="brand-logo-circle">MO</div>
+            <img
+              src="/logo-marina-orth.png"
+              alt="Logo Fundación Marina Orth"
+              className="brand-logo-img"
+            />
             <div>
               <h1>Fundación Marina Orth</h1>
               <span>Ficha Técnica y Trazabilidad del Activo</span>

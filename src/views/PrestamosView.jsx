@@ -4,6 +4,9 @@ import { fmtDate, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, today } fro
 export default function PrestamosView({
   items = [],
   movements = [],
+  loading = false,
+  error = null,
+  onRetry,
   onRegisterLoan,
   onRegisterDelivery,
   onReturnLoan,
@@ -170,7 +173,7 @@ export default function PrestamosView({
             className="btn small btn-primary"
             onClick={() => setShowLoanModal(true)}
           >
-            + Prestar Equipo
+            + Nuevo préstamo
           </button>
           <button
             type="button"
@@ -197,12 +200,42 @@ export default function PrestamosView({
             </span>
           </div>
 
-          <div className="panel table-responsive">
-            {activeLoans.length === 0 ? (
-              <div className="empty">
-                <span>✅</span> No hay préstamos de equipos activos en este momento. Todos los equipos están en bodega.
-              </div>
-            ) : (
+          {loading ? (
+            <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
+              <strong style={{ fontSize: '1.05rem', color: 'var(--text)' }}>
+                Cargando datos de Supabase...
+              </strong>
+              <p style={{ color: 'var(--text-dim)', marginTop: '6px', fontSize: '0.9rem' }}>
+                Consultando préstamos activos en tiempo real
+              </p>
+            </div>
+          ) : error ? (
+            <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
+              <strong style={{ color: 'var(--red)', fontSize: '1.05rem' }}>
+                Error al conectar con el backend / Supabase
+              </strong>
+              <p style={{ color: 'var(--text-dim)', margin: '8px auto', maxWidth: '500px' }}>
+                {error}
+              </p>
+              {onRetry && (
+                <button
+                  type="button"
+                  className="btn small btn-primary"
+                  style={{ marginTop: '12px' }}
+                  onClick={onRetry}
+                >
+                  🔄 Reintentar conexión
+                </button>
+              )}
+            </div>
+          ) : activeLoans.length === 0 ? (
+            <div className="panel empty">
+              <span>📦</span> {movements.length === 0 ? 'No hay registros en Supabase.' : 'No hay préstamos de equipos activos en este momento. Todos los equipos están en bodega.'}
+            </div>
+          ) : (
+            <div className="panel table-responsive">
               <table>
                 <thead>
                   <tr>
@@ -280,8 +313,8 @@ export default function PrestamosView({
                   })}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -302,7 +335,9 @@ export default function PrestamosView({
 
           <div className="panel table-responsive">
             {recentDeliveries.length === 0 ? (
-              <div className="empty">Aún no se han registrado salidas de consumibles.</div>
+              <div className="empty">
+                <span>📦</span> {movements.length === 0 ? 'No hay registros en Supabase.' : 'Aún no se han registrado salidas de consumibles.'}
+              </div>
             ) : (
               <table>
                 <thead>
@@ -376,12 +411,14 @@ export default function PrestamosView({
                       setSelectedUnits([]);
                     }}
                   >
-                    <option value="">-- Elige un equipo del catálogo --</option>
-                    {equipos.map((it) => (
-                      <option key={it.id} value={it.id}>
-                        {it.name} (Disponibles: {available(it)})
-                      </option>
-                    ))}
+                    <option value="">-- Elige un equipo con unidades disponibles --</option>
+                    {equipos
+                      .filter((it) => available(it) > 0)
+                      .map((it) => (
+                        <option key={it.id} value={it.id}>
+                          {it.name} (Disponibles: {available(it)})
+                        </option>
+                      ))}
                   </select>
                 </div>
 
@@ -421,17 +458,19 @@ export default function PrestamosView({
                 )}
 
                 <div className="form-group">
-                  <label>Formador o Custodio Responsable *</label>
-                  <select
+                  <label>Solicitante / Formador Responsable *</label>
+                  <input
                     required
+                    list="formadores-list"
                     value={loanPerson}
+                    placeholder="Selecciona o escribe el nombre..."
                     onChange={(e) => setLoanPerson(e.target.value)}
-                  >
-                    <option value="">-- Selecciona formador --</option>
+                  />
+                  <datalist id="formadores-list">
                     {EMPLOYEES.map((p) => (
-                      <option key={p} value={p}>{p}</option>
+                      <option key={p} value={p} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
 
                 <div className="form-group">

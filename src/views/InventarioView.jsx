@@ -1,8 +1,17 @@
 import { useState, useMemo } from 'react';
 import ModalQR from '../components/modals/ModalQR';
-import { available, SEDES } from '../services/mockData';
+import { available, SEDES, EMPLOYEES, PROYECTOS, today } from '../services/mockData';
 
-export default function InventarioView({ items = [], onAddItem, onEditItem, onRetireItem }) {
+export default function InventarioView({
+  items = [],
+  loading = false,
+  error = null,
+  onRetry,
+  onAddItem,
+  onEditItem,
+  onRetireItem,
+  onRegisterLoan,
+}) {
   // Pestaña activa: 'equipos' | 'consumibles'
   const [activeTab, setActiveTab] = useState('equipos');
 
@@ -12,6 +21,11 @@ export default function InventarioView({ items = [], onAddItem, onEditItem, onRe
   const [editingItem, setEditingItem] = useState(null);
   const [managingUnitsItem, setManagingUnitsItem] = useState(null);
   const [qrModalItem, setQrModalItem] = useState(null);
+  const [quickLoanUnit, setQuickLoanUnit] = useState(null); // Unidad para préstamo rápido
+  const [loanPerson, setLoanPerson] = useState('');
+  const [loanSede, setLoanSede] = useState('Medellín');
+  const [loanExpectedDate, setLoanExpectedDate] = useState('');
+  const [loanMotive, setLoanMotive] = useState('');
 
   // Filtro de estado para la vista de equipos
   const [filterSede, setFilterSede] = useState('todas');
@@ -209,12 +223,42 @@ export default function InventarioView({ items = [], onAddItem, onEditItem, onRe
             </div>
           </div>
 
-          <div className="panel table-responsive">
-            {allEquiposUnits.length === 0 ? (
-              <div className="empty">
-                <span>🔍</span> No se encontraron equipos con los filtros seleccionados.
-              </div>
-            ) : (
+          {loading ? (
+            <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
+              <strong style={{ fontSize: '1.05rem', color: 'var(--text)' }}>
+                Cargando datos de Supabase...
+              </strong>
+              <p style={{ color: 'var(--text-dim)', marginTop: '6px', fontSize: '0.9rem' }}>
+                Consultando inventario de activos tecnológicos en tiempo real
+              </p>
+            </div>
+          ) : error ? (
+            <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
+              <strong style={{ color: 'var(--red)', fontSize: '1.05rem' }}>
+                Error al conectar con el backend / Supabase
+              </strong>
+              <p style={{ color: 'var(--text-dim)', margin: '8px auto', maxWidth: '500px' }}>
+                {error}
+              </p>
+              {onRetry && (
+                <button
+                  type="button"
+                  className="btn small btn-primary"
+                  style={{ marginTop: '12px' }}
+                  onClick={onRetry}
+                >
+                  🔄 Reintentar conexión
+                </button>
+              )}
+            </div>
+          ) : allEquiposUnits.length === 0 ? (
+            <div className="panel empty">
+              <span>📦</span> {equipos.length === 0 ? 'No hay registros en Supabase.' : 'No se encontraron equipos con los filtros seleccionados.'}
+            </div>
+          ) : (
+            <div className="panel table-responsive">
               <table>
                 <thead>
                   <tr>
@@ -276,6 +320,23 @@ export default function InventarioView({ items = [], onAddItem, onEditItem, onRe
                         </td>
                         <td>
                           <div className="action-buttons-cell">
+                            {u.status === 'disponible' && onRegisterLoan && (
+                              <button
+                                type="button"
+                                className="btn small btn-primary"
+                                style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
+                                title="Prestar este equipo a un custodio"
+                                onClick={() => {
+                                  setQuickLoanUnit(u);
+                                  setLoanPerson('');
+                                  setLoanSede(u.sede || 'Medellín');
+                                  setLoanExpectedDate('');
+                                  setLoanMotive('');
+                                }}
+                              >
+                                🔄 Prestar
+                              </button>
+                            )}
                             <button
                               type="button"
                               className="btn-action-qr"
@@ -311,8 +372,8 @@ export default function InventarioView({ items = [], onAddItem, onEditItem, onRe
                   })}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -331,10 +392,42 @@ export default function InventarioView({ items = [], onAddItem, onEditItem, onRe
             </span>
           </div>
 
-          <div className="panel table-responsive">
-            {consumibles.length === 0 ? (
-              <div className="empty">No hay consumibles ni materiales registrados aún.</div>
-            ) : (
+          {loading ? (
+            <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
+              <strong style={{ fontSize: '1.05rem', color: 'var(--text)' }}>
+                Cargando datos de Supabase...
+              </strong>
+              <p style={{ color: 'var(--text-dim)', marginTop: '6px', fontSize: '0.9rem' }}>
+                Consultando inventario de materiales e insumos en tiempo real
+              </p>
+            </div>
+          ) : error ? (
+            <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
+              <strong style={{ color: 'var(--red)', fontSize: '1.05rem' }}>
+                Error al conectar con el backend / Supabase
+              </strong>
+              <p style={{ color: 'var(--text-dim)', margin: '8px auto', maxWidth: '500px' }}>
+                {error}
+              </p>
+              {onRetry && (
+                <button
+                  type="button"
+                  className="btn small btn-primary"
+                  style={{ marginTop: '12px' }}
+                  onClick={onRetry}
+                >
+                  🔄 Reintentar conexión
+                </button>
+              )}
+            </div>
+          ) : consumibles.length === 0 ? (
+            <div className="panel empty">
+              <span>📦</span> No hay registros en Supabase.
+            </div>
+          ) : (
+            <div className="panel table-responsive">
               <table>
                 <thead>
                   <tr>
@@ -425,8 +518,8 @@ export default function InventarioView({ items = [], onAddItem, onEditItem, onRe
                   })}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -569,6 +662,144 @@ export default function InventarioView({ items = [], onAddItem, onEditItem, onRe
           activo={qrModalItem}
           onClose={() => setQrModalItem(null)}
         />
+      )}
+
+      {/* =========================================================================
+          MODAL: PRÉSTAMO RÁPIDO DE UNIDAD DISPONIBLE
+          ========================================================================= */}
+      {quickLoanUnit && (
+        <div className="modal-backdrop" onClick={() => setQuickLoanUnit(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <span>🔄 Nuevo Préstamo de Equipo</span>
+              </h3>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setQuickLoanUnit(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!loanPerson) {
+                  alert('Debes indicar el Solicitante / Formador custodio.');
+                  return;
+                }
+                if (!loanExpectedDate) {
+                  alert('Debes seleccionar la fecha de devolución.');
+                  return;
+                }
+                if (loanExpectedDate < today()) {
+                  alert('La fecha de devolución no puede ser anterior a la fecha de hoy.');
+                  return;
+                }
+
+                onRegisterLoan({
+                  itemId: quickLoanUnit.parentItemId,
+                  person: loanPerson,
+                  sede: loanSede,
+                  expectedReturn: loanExpectedDate,
+                  motive: loanMotive || 'Préstamo asignado desde vista de inventario',
+                  unitCodes: [quickLoanUnit.code],
+                });
+
+                setQuickLoanUnit(null);
+              }}
+            >
+              <div className="modal-body form-grid">
+                <div className="form-group full">
+                  <label>Equipo y Placa Seleccionada</label>
+                  <div className="pill prestado" style={{ display: 'inline-flex', padding: '0.5rem 0.8rem', fontSize: '0.9rem' }}>
+                    💻 {quickLoanUnit.parentName} · <strong>Placa: {quickLoanUnit.placa || quickLoanUnit.code}</strong> (SN: {quickLoanUnit.serial || '—'})
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Solicitante / Formador Responsable *</label>
+                  <input
+                    required
+                    list="inventario-formadores-list"
+                    value={loanPerson}
+                    placeholder="Selecciona o escribe el nombre..."
+                    onChange={(e) => setLoanPerson(e.target.value)}
+                  />
+                  <datalist id="inventario-formadores-list">
+                    {EMPLOYEES.map((p) => (
+                      <option key={p} value={p} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div className="form-group">
+                  <label>Sede / Municipio Destino *</label>
+                  <select
+                    required
+                    value={loanSede}
+                    onChange={(e) => setLoanSede(e.target.value)}
+                  >
+                    {SEDES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Fecha de Devolución Pactada *</label>
+                  <input
+                    required
+                    type="date"
+                    min={today()}
+                    value={loanExpectedDate}
+                    onChange={(e) => setLoanExpectedDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Proyecto Vinculado</label>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setLoanMotive(`${e.target.value} - `);
+                      }
+                    }}
+                  >
+                    <option value="">-- Selecciona proyecto (opcional) --</option>
+                    {PROYECTOS.map((proj) => (
+                      <option key={proj} value={proj}>{proj}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group full">
+                  <label>Motivo y Observaciones del Préstamo</label>
+                  <input
+                    value={loanMotive}
+                    placeholder="Ej. Clubes de Robótica - Taller de programación"
+                    onChange={(e) => setLoanMotive(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setQuickLoanUnit(null)}
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Confirmar Préstamo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

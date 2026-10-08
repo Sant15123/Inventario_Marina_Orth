@@ -40,7 +40,11 @@ export default function ModalQR({ activo, onClose }) {
             {/* Encabezado Institucional */}
             <div className="qr-badge-header">
               <div className="badge-brand-row">
-                <span className="badge-mo-icon">MO</span>
+                <img
+                  src="/logo-marina-orth.png"
+                  alt="Marina Orth"
+                  className="badge-mo-img"
+                />
                 <div className="badge-titles">
                   <strong>FUNDACIÓN MARINA ORTH</strong>
                   <span>SISTEMA DE CONTROL DE ACTIVOS FIJOS</span>

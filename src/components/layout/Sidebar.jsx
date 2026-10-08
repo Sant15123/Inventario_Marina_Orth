@@ -58,9 +58,11 @@ export default function Sidebar({ currentView, onViewChange }) {
       <div>
         <div className="sidebar-header">
           <div className="brand-badge">
-            <div className="brand-icon-wrap" aria-hidden="true">
-              MO
-            </div>
+            <img
+              src="/logo-marina-orth.png"
+              alt="Logo Fundación Marina Orth"
+              className="brand-logo-img"
+            />
             <div className="brand-text-wrap">
               <span className="brand-title">Marina Orth Foundation</span>
               <span className="brand-subtitle">Robótica & Innovación</span>
