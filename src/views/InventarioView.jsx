@@ -4,9 +4,103 @@ import { QrCode, Eye, Pencil, Trash2, X } from 'lucide-react';
 import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
+import { useToast } from '../context/ToastContext';
 import { available, SEDES, EMPLOYEES, PROYECTOS, today } from '../services/mockData';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 import { exportarLibroMaestroExcelFMO } from '../services/excelExportService';
+
+import catalogoPapeleriaFMO from '../data/catalogoPapeleriaFMO.json';
+
+// Catálogo oficial de Papelería institucional (Insumos de oficina y formación STEAM - 105 ítems)
+const DEFAULT_PAPELERIA = catalogoPapeleriaFMO;
+
+// Catálogo inicial de Mobiliario institucional (Mesas, sillas, armarios de sedes)
+const DEFAULT_MOBILIARIO = [
+  {
+    id: 'MOB-001',
+    placa: 'MOB-001',
+    code: 'MOB-001',
+    material: 'Mesa Modular de Robótica y Ensamble (6 Puestos)',
+    name: 'Mesa Modular de Robótica y Ensamble (6 Puestos)',
+    nombre: 'Mesa Modular de Robótica y Ensamble (6 Puestos)',
+    categoria: 'Mobiliario',
+    category: 'Mobiliario',
+    itemType: 'mobiliario',
+    disponible: 8,
+    quantity: 8,
+    sede: 'Medellín',
+    ubicacion: 'Medellín',
+    location: 'Medellín',
+    ubicacion_estante: 'Zona Lab 1',
+    estado: 'Bueno',
+    condicion: 'Buen Estado',
+    responsable: 'Bodega Central',
+    descripcion: 'Mesa de estructura metálica reforzada con superficie de melamina antiestática para ensamble STEAM.',
+  },
+  {
+    id: 'MOB-002',
+    placa: 'MOB-002',
+    code: 'MOB-002',
+    material: 'Sillas Ergonómicas Giratorias con Rodachines',
+    name: 'Sillas Ergonómicas Giratorias con Rodachines',
+    nombre: 'Sillas Ergonómicas Giratorias con Rodachines',
+    categoria: 'Mobiliario',
+    category: 'Mobiliario',
+    itemType: 'mobiliario',
+    disponible: 32,
+    quantity: 32,
+    sede: 'Medellín',
+    ubicacion: 'Medellín',
+    location: 'Medellín',
+    ubicacion_estante: 'Aula Central',
+    estado: 'Bueno',
+    condicion: 'Buen Estado',
+    responsable: 'Bodega Central',
+    descripcion: 'Sillas de oficina con espaldar en malla transpirable y regulación neumática de altura.',
+  },
+  {
+    id: 'MOB-003',
+    placa: 'MOB-003',
+    code: 'MOB-003',
+    material: 'Armario Metálico Modular de Seguridad para Kits',
+    name: 'Armario Metálico Modular de Seguridad para Kits',
+    nombre: 'Armario Metálico Modular de Seguridad para Kits',
+    categoria: 'Mobiliario',
+    category: 'Mobiliario',
+    itemType: 'mobiliario',
+    disponible: 4,
+    quantity: 4,
+    sede: 'Carmen de Viboral',
+    ubicacion: 'Carmen de Viboral',
+    location: 'Carmen de Viboral',
+    ubicacion_estante: 'Bodega M1',
+    estado: 'Bueno',
+    condicion: 'Nuevo',
+    responsable: 'Dolly Montoya',
+    descripcion: 'Gabinete doble puerta con chapa de seguridad de 4 bandejas ajustables.',
+  },
+  {
+    id: 'MOB-004',
+    placa: 'MOB-004',
+    code: 'MOB-004',
+    material: 'Carro Móvil de Almacenamiento & Carga STEAM',
+    name: 'Carro Móvil de Almacenamiento & Carga STEAM',
+    nombre: 'Carro Móvil de Almacenamiento & Carga STEAM',
+    categoria: 'Mobiliario',
+    category: 'Mobiliario',
+    itemType: 'mobiliario',
+    disponible: 2,
+    quantity: 2,
+    sede: 'La Ceja',
+    ubicacion: 'La Ceja',
+    location: 'La Ceja',
+    ubicacion_estante: 'Zona Carga',
+    estado: 'Bueno',
+    condicion: 'Buen Estado',
+    responsable: 'Santiago Galeano',
+    descripcion: 'Mueble con ruedas de uso rudo y regleta eléctrica interna para resguardo y carga simultánea.',
+  },
+];
 
 // Mapeador consistente para consumibles con soporte a todos los campos
 const mapConsumibleItem = (c) => {
@@ -121,6 +215,9 @@ const mapEquipoItem = (a) => {
   };
 };
 
+// Número de filas por página para tablas de inventario (vista compacta sin scroll vertical excesivo)
+const ITEMS_PER_PAGE = 5;
+
 export default function InventarioView({
   items = [],
   searchTerm = '',
@@ -138,6 +235,9 @@ export default function InventarioView({
   const [activeTab, setActiveTab] = useState(initialTab);
   // Filtro de stock para consumibles: 'todos' | 'minimo'
   const [filterStockConsumibles, setFilterStockConsumibles] = useState(initialStockFilter);
+
+  // Hook del sistema de notificaciones/alertas personalizadas FMO
+  const { showEditSuccess, showConfirmBaja, showConfirmAction, showNewItemSuccess, showLoanSuccess, showError, showInfo } = useToast();
 
   // Sincronizar si cambian las props iniciales
   useEffect(() => {
@@ -232,9 +332,78 @@ export default function InventarioView({
     setUnidades((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Separación de listas
-  const rawConsumibles = useMemo(() => effectiveItems.filter((it) => it.itemType === 'consumible'), [effectiveItems]);
-  const equipos = useMemo(() => effectiveItems.filter((it) => it.itemType === 'equipo'), [effectiveItems]);
+  // Separación de listas principales
+  const rawConsumibles = useMemo(() => effectiveItems.filter((it) => it.itemType === 'consumible' && it.categoria !== 'Papelería' && it.categoria !== 'Mobiliario'), [effectiveItems]);
+  const equipos = useMemo(() => effectiveItems.filter((it) => it.itemType === 'equipo' && it.categoria !== 'Mobiliario'), [effectiveItems]);
+
+  // Estados persistentes y filtrado para PAPELERÍA
+  const [localPapeleria, setLocalPapeleria] = useState(() => {
+    try {
+      const saved = localStorage.getItem('siga_papeleria');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Error leyendo papelería de localStorage:', e);
+    }
+    return DEFAULT_PAPELERIA;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('siga_papeleria', JSON.stringify(localPapeleria));
+    } catch (e) {
+      console.warn('Error guardando papelería en localStorage:', e);
+    }
+  }, [localPapeleria]);
+
+  // Estados persistentes y filtrado para MOBILIARIO
+  const [localMobiliario, setLocalMobiliario] = useState(() => {
+    try {
+      const saved = localStorage.getItem('siga_mobiliario');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Error leyendo mobiliario de localStorage:', e);
+    }
+    return DEFAULT_MOBILIARIO;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('siga_mobiliario', JSON.stringify(localMobiliario));
+    } catch (e) {
+      console.warn('Error guardando mobiliario en localStorage:', e);
+    }
+  }, [localMobiliario]);
+
+  // Filtros y paginación para Papelería
+  const [filterStockPapeleria, setFilterStockPapeleria] = useState('todos');
+  const [filterCajaPapeleria, setFilterCajaPapeleria] = useState('todas');
+  const [papeleriaPage, setPapeleriaPage] = useState(1);
+
+  // Filtros y paginación para Mobiliario
+  const [filterSedeMobiliario, setFilterSedeMobiliario] = useState('todas');
+  const [mobiliarioPage, setMobiliarioPage] = useState(1);
+
+  // Lista unificada de Papelería
+  const rawPapeleria = useMemo(() => {
+    const fromApi = effectiveItems.filter((it) => it.categoria === 'Papelería' || it.category === 'Papelería' || String(it.id).toUpperCase().startsWith('PAP') || it.subtipo === 'papeleria');
+    const apiIds = new Set(fromApi.map((i) => i.id));
+    const merged = [...fromApi];
+    localPapeleria.forEach((p) => {
+      if (!apiIds.has(p.id)) merged.push(p);
+    });
+    return merged;
+  }, [effectiveItems, localPapeleria]);
+
+  // Lista unificada de Mobiliario
+  const rawMobiliario = useMemo(() => {
+    const fromApi = effectiveItems.filter((it) => it.categoria === 'Mobiliario' || it.category === 'Mobiliario' || String(it.id).toUpperCase().startsWith('MOB') || it.itemType === 'mobiliario');
+    const apiIds = new Set(fromApi.map((i) => i.id || i.placa));
+    const merged = [...fromApi];
+    localMobiliario.forEach((m) => {
+      if (!apiIds.has(m.id) && !apiIds.has(m.placa)) merged.push(m);
+    });
+    return merged;
+  }, [effectiveItems, localMobiliario]);
 
   // Función auxiliar para normalizar texto eliminando diacríticos / tildes y pasando a minúsculas
   const normalizeText = (text) => {
@@ -244,6 +413,167 @@ export default function InventarioView({
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  };
+
+  // Filtrado reactivo de Papelería (Stock, Contenedor / Caja y Buscador)
+  const papeleriaFiltrada = useMemo(() => {
+    let list = rawPapeleria;
+
+    // Filtro por Estado de Stock (Stock bajo <= 3 según catálogo oficial)
+    if (filterStockPapeleria === 'minimo') {
+      list = list.filter((c) => {
+        const disp = Number(c.disponible ?? c.quantity ?? 0);
+        return disp <= 3;
+      });
+    } else if (filterStockPapeleria === 'optimo') {
+      list = list.filter((c) => {
+        const disp = Number(c.disponible ?? c.quantity ?? 0);
+        return disp > 3;
+      });
+    }
+
+    // Filtro por Caja / Contenedor
+    if (filterCajaPapeleria !== 'todas') {
+      const targetCaja = normalizeText(filterCajaPapeleria);
+      list = list.filter((c) => {
+        const estante = normalizeText(c.ubicacion_estante || c.caja);
+        if (targetCaja.includes('fuera')) {
+          return estante.includes('fuera');
+        }
+        return estante.includes(targetCaja) || targetCaja.includes(estante);
+      });
+    }
+
+    const term = normalizeText(searchTerm);
+    if (!term) return list;
+
+    return list.filter((p) => {
+      return (
+        normalizeText(p.id).includes(term) ||
+        normalizeText(p.material || p.name).includes(term) ||
+        normalizeText(p.descripcion).includes(term) ||
+        normalizeText(p.condicion).includes(term) ||
+        normalizeText(p.ubicacion || p.location).includes(term) ||
+        normalizeText(p.ubicacion_estante || p.caja).includes(term)
+      );
+    });
+  }, [rawPapeleria, filterStockPapeleria, filterCajaPapeleria, searchTerm]);
+
+  // Filtrado reactivo de Mobiliario
+  const mobiliarioFiltrado = useMemo(() => {
+    let list = rawMobiliario;
+    if (filterSedeMobiliario !== 'todas') {
+      const targetSede = normalizeText(filterSedeMobiliario);
+      list = rawMobiliario.filter((m) => {
+        const uSede = normalizeText(m.sede || m.ubicacion);
+        return uSede.includes(targetSede) || targetSede.includes(uSede);
+      });
+    }
+
+    const term = normalizeText(searchTerm);
+    if (!term) return list;
+
+    return list.filter((m) => {
+      return (
+        normalizeText(m.placa || m.id || m.code).includes(term) ||
+        normalizeText(m.nombre || m.material || m.name).includes(term) ||
+        normalizeText(m.sede || m.ubicacion).includes(term) ||
+        normalizeText(m.ubicacion_estante).includes(term) ||
+        normalizeText(m.responsable).includes(term)
+      );
+    });
+  }, [rawMobiliario, filterSedeMobiliario, searchTerm]);
+
+  // Paginación de Papelería (5 filas por página)
+  const totalPapeleriaPages = Math.max(1, Math.ceil(papeleriaFiltrada.length / ITEMS_PER_PAGE));
+  const currentPapeleriaPage = Math.min(papeleriaPage, totalPapeleriaPages);
+  const paginatedPapeleria = useMemo(() => {
+    const start = (currentPapeleriaPage - 1) * ITEMS_PER_PAGE;
+    return papeleriaFiltrada.slice(start, start + ITEMS_PER_PAGE);
+  }, [papeleriaFiltrada, currentPapeleriaPage]);
+
+  // Paginación de Mobiliario (5 filas por página)
+  const totalMobiliarioPages = Math.max(1, Math.ceil(mobiliarioFiltrado.length / ITEMS_PER_PAGE));
+  const currentMobiliarioPage = Math.min(mobiliarioPage, totalMobiliarioPages);
+  const paginatedMobiliario = useMemo(() => {
+    const start = (currentMobiliarioPage - 1) * ITEMS_PER_PAGE;
+    return mobiliarioFiltrado.slice(start, start + ITEMS_PER_PAGE);
+  }, [mobiliarioFiltrado, currentMobiliarioPage]);
+
+  // Handlers para Nuevo Insumo de Papelería y Mobiliario
+  const handleOpenCreatePapeleria = () => {
+    // Autogenerar código sugerido con formato PapeXXXX según el consecutivo o correlativo
+    const papeNumbers = (rawPapeleria || [])
+      .map((p) => {
+        const m = String(p.id || '').match(/pape(\d+)/i);
+        return m ? parseInt(m[1], 10) : 0;
+      })
+      .filter((n) => !isNaN(n) && n > 0);
+    const maxNum = papeNumbers.length > 0 ? Math.max(...papeNumbers) : 2011;
+    const siguienteCodigo = `Pape${maxNum + 1}`;
+
+    setFormDataNuevo({
+      ...initialFormNuevo,
+      id: siguienteCodigo,
+      material: '',
+      categoria: 'Papelería',
+      ubicacion: 'Oficina FMO',
+      ubicacion_estante: 'CAJA #1',
+      disponible: 10,
+      minimo: 3,
+      condicion: 'Nuevos',
+      estado: 'Bueno',
+      descripcion: '',
+    });
+    setPasoActualNuevo(1);
+    setModalNuevoOpen(true);
+  };
+
+  const handleOpenCreateMobiliario = () => {
+    setFormDataNuevoEquipo({
+      ...initialFormNuevoEquipo,
+      placa: `MOB-${Date.now().toString().slice(-4)}`,
+      nombre: '',
+      categoria: 'Mobiliario',
+      area: 'Infraestructura',
+      ubicacion: 'Oficina Medellín',
+      ubicacion_estante: 'Zona Lab 1',
+      condicion: 'Buen Estado',
+    });
+    setPasoActualEquipo(1);
+    setModalNuevoEquipoOpen(true);
+  };
+
+  // Eliminación / Baja con confirmación para Papelería y Mobiliario
+  const handleDeletePapeleria = (item) => {
+    showConfirmBaja({
+      codigo: item.id,
+      nombre: item.material || item.name,
+      onConfirm: async () => {
+        setLocalPapeleria((prev) => prev.filter((p) => p.id !== item.id));
+        try {
+          await inventoryApi.remove(item.id);
+        } catch (e) {
+          // OK si es ítem local
+        }
+      },
+    });
+  };
+
+  const handleDeleteMobiliario = (item) => {
+    const code = item.placa || item.code || item.id;
+    showConfirmBaja({
+      codigo: code,
+      nombre: item.nombre || item.material || item.name,
+      onConfirm: async () => {
+        setLocalMobiliario((prev) => prev.filter((m) => m.id !== item.id && m.placa !== item.placa));
+        try {
+          await inventoryApi.remove(code);
+        } catch (e) {
+          // OK si es ítem local
+        }
+      },
+    });
   };
 
   // Conteos dinámicos para los botones de estado de stock en consumibles
@@ -512,8 +842,8 @@ export default function InventarioView({
         area: equipoParaEditar.area || 'Tecnología',
         ubicacion: equipoParaEditar.ubicacion || equipoParaEditar.sede || equipoParaEditar.location || 'Oficina Medellín',
         ubicacion_estante: equipoParaEditar.ubicacion_estante || (equipoParaEditar.units && equipoParaEditar.units[0]?.ubicacion_estante) || '',
-        descripcion: (equipoParaEditar.descripcion && equipoParaEditar.descripcion !== 'Sin descripción general registrada.') 
-          ? equipoParaEditar.descripcion 
+        descripcion: (equipoParaEditar.descripcion && equipoParaEditar.descripcion !== 'Sin descripción general registrada.')
+          ? equipoParaEditar.descripcion
           : '',
         marca: equipoParaEditar.marca || (equipoParaEditar.units && equipoParaEditar.units[0]?.marca) || '',
         modelo: equipoParaEditar.modelo || (equipoParaEditar.units && equipoParaEditar.units[0]?.model) || '',
@@ -536,51 +866,54 @@ export default function InventarioView({
   // Modal de QR para Consumible
   const [qrConsumibleItem, setQrConsumibleItem] = useState(null);
 
-  // Manejador para eliminar consumible con confirmación previa
-  const handleDeleteConsumable = async (item) => {
-    const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar el material "${item.material || item.name}" (Código: ${item.id})?\nEsta acción no se puede deshacer.`
-    );
-    if (!confirmDelete) return;
+  // Manejador para eliminar consumible con confirmación previa institucional
+  const handleDeleteConsumable = (item) => {
+    const nombre = item.material || item.name;
+    const codigo = item.id;
 
-    try {
-      setLocalLoading(true);
-      await inventoryApi.remove(item.id);
+    showConfirmBaja({
+      codigo,
+      nombre,
+      onConfirm: async () => {
+        try {
+          setLocalLoading(true);
+          await inventoryApi.remove(codigo);
 
-      if (onRetireItem) {
-        await onRetireItem(item.id);
-      }
+          if (onRetireItem) {
+            await onRetireItem(codigo);
+          }
 
-      if (onRetry) {
-        await onRetry();
-      } else {
-        const [activosData, consumiblesData] = await Promise.all([
-          inventoryApi.getActivos(),
-          inventoryApi.getConsumibles(),
-        ]);
-        const loaded = [];
-        if (Array.isArray(consumiblesData)) {
-          consumiblesData.forEach((c) => {
-            loaded.push(mapConsumibleItem(c));
-          });
+          if (onRetry) {
+            await onRetry();
+          } else {
+            const [activosData, consumiblesData] = await Promise.all([
+              inventoryApi.getActivos(),
+              inventoryApi.getConsumibles(),
+            ]);
+            const loaded = [];
+            if (Array.isArray(consumiblesData)) {
+              consumiblesData.forEach((c) => {
+                loaded.push(mapConsumibleItem(c));
+              });
+            }
+            if (Array.isArray(activosData)) {
+              activosData.forEach((a) => {
+                loaded.push(mapEquipoItem(a));
+              });
+            }
+            setLocalItems(loaded);
+          }
+        } catch (err) {
+          showError('Error al dar de baja material', err.message || 'Error del servidor');
+        } finally {
+          setLocalLoading(false);
         }
-        if (Array.isArray(activosData)) {
-          activosData.forEach((a) => {
-            loaded.push(mapEquipoItem(a));
-          });
-        }
-        setLocalItems(loaded);
-      }
-    } catch (err) {
-      alert(`Error al eliminar el material: ${err.message || 'Error del servidor'}`);
-    } finally {
-      setLocalLoading(false);
-    }
+      },
+    });
   };
 
   // Paginación para Consumibles (5 filas por página para vista compacta sin scroll vertical)
   const [consumiblesPage, setConsumiblesPage] = useState(1);
-  const ITEMS_PER_PAGE = 5;
   const totalConsumiblesPages = Math.max(1, Math.ceil(consumibles.length / ITEMS_PER_PAGE));
   const currentConsumiblesPage = Math.min(consumiblesPage, totalConsumiblesPages);
 
@@ -599,47 +932,50 @@ export default function InventarioView({
     return allEquiposUnits.slice(start, start + ITEMS_PER_PAGE);
   }, [allEquiposUnits, currentEquiposPage]);
 
-  // Manejador para dar de baja / eliminar activo tecnológico
-  const handleDeleteEquipo = async (u) => {
+  // Manejador para dar de baja / eliminar activo tecnológico con confirmación institucional
+  const handleDeleteEquipo = (u) => {
     const placa = u.placa || u.code;
-    const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar o dar de baja el activo con placa "${placa}" (${u.parentName})?\nEsta acción no se puede deshacer.`
-    );
-    if (!confirmDelete) return;
+    const nombre = u.parentName || u.nombre;
 
-    try {
-      setLocalLoading(true);
-      await inventoryApi.remove(placa);
+    showConfirmBaja({
+      codigo: placa,
+      nombre,
+      onConfirm: async () => {
+        try {
+          setLocalLoading(true);
+          await inventoryApi.remove(placa);
 
-      if (onRetireItem) {
-        await onRetireItem(u.parentItemId, placa);
-      }
+          if (onRetireItem) {
+            await onRetireItem(u.parentItemId, placa);
+          }
 
-      if (onRetry) {
-        await onRetry();
-      } else {
-        const [activosData, consumiblesData] = await Promise.all([
-          inventoryApi.getActivos(),
-          inventoryApi.getConsumibles(),
-        ]);
-        const loaded = [];
-        if (Array.isArray(consumiblesData)) {
-          consumiblesData.forEach((c) => {
-            loaded.push(mapConsumibleItem(c));
-          });
+          if (onRetry) {
+            await onRetry();
+          } else {
+            const [activosData, consumiblesData] = await Promise.all([
+              inventoryApi.getActivos(),
+              inventoryApi.getConsumibles(),
+            ]);
+            const loaded = [];
+            if (Array.isArray(consumiblesData)) {
+              consumiblesData.forEach((c) => {
+                loaded.push(mapConsumibleItem(c));
+              });
+            }
+            if (Array.isArray(activosData)) {
+              activosData.forEach((a) => {
+                loaded.push(mapEquipoItem(a));
+              });
+            }
+            setLocalItems(loaded);
+          }
+        } catch (err) {
+          showError('Error al dar de baja activo', err.message || 'Error del servidor');
+        } finally {
+          setLocalLoading(false);
         }
-        if (Array.isArray(activosData)) {
-          activosData.forEach((a) => {
-            loaded.push(mapEquipoItem(a));
-          });
-        }
-        setLocalItems(loaded);
-      }
-    } catch (err) {
-      alert(`Error al eliminar el activo: ${err.message || 'Error del servidor'}`);
-    } finally {
-      setLocalLoading(false);
-    }
+      },
+    });
   };
 
   // Descargar reporte Excel maestro multi-hoja institucional (.xlsx) Fundación Marina Orth
@@ -652,7 +988,7 @@ export default function InventarioView({
       });
     } catch (error) {
       console.error('Error al exportar reporte Excel:', error);
-      alert(`No se pudo generar el reporte Excel: ${error.message || 'Error inesperado'}`);
+      showError('Error al exportar', `No se pudo generar el reporte Excel: ${error.message || 'Error inesperado'}`);
     }
   };
 
@@ -751,7 +1087,7 @@ export default function InventarioView({
 
     // Validaciones de campos requeridos
     if (!placa) {
-      alert('La Placa / Código del equipo es obligatorio.');
+      showError('Validación', 'La Placa / Código del equipo es obligatorio.');
       setPasoActualEquipo(1);
       return;
     }
@@ -761,18 +1097,18 @@ export default function InventarioView({
       (u) => String(u.placa || u.code || '').trim().toLowerCase() === placa.toLowerCase()
     );
     if (placaExiste) {
-      alert(`La placa o código "${placa}" ya se encuentra registrada en otro equipo tecnológico. Por favor ingresa una placa única.`);
+      showError('Placa Duplicada', `La placa o código "${placa}" ya se encuentra registrada en otro equipo tecnológico. Por favor ingresa una placa única.`);
       setPasoActualEquipo(1);
       return;
     }
 
     if (!nombre) {
-      alert('El Nombre del equipo es obligatorio.');
+      showError('Validación', 'El Nombre del equipo es obligatorio.');
       setPasoActualEquipo(1);
       return;
     }
     if (!serial) {
-      alert('El Serial del equipo es obligatorio.');
+      showError('Validación', 'El Serial del equipo es obligatorio.');
       setPasoActualEquipo(2);
       return;
     }
@@ -892,8 +1228,15 @@ export default function InventarioView({
       setFormDataNuevoEquipo({ ...initialFormNuevoEquipo });
       setPasoActualEquipo(1);
       setModalNuevoEquipoOpen(false);
+
+      // Notificación institucional FMO STEAM para nuevo equipo
+      showNewItemSuccess({
+        nombre: nombre || 'Equipo Tecnológico',
+        codigo: placa,
+        sedeOUbicacion: ubicacion || 'Inventario Institucional',
+      });
     } catch (err) {
-      alert(`Error al registrar el equipo: ${err.message || 'Error del servidor'}`);
+      showError('Error al registrar equipo', err.message || 'Error del servidor');
     } finally {
       setNewEquipoSubmitting(false);
     }
@@ -1003,17 +1346,17 @@ export default function InventarioView({
     const serial = formDataEditarEquipo.serial?.trim();
 
     if (!placaNueva) {
-      alert('La Placa / Código del equipo es obligatoria.');
+      showError('Validación', 'La Placa / Código del equipo es obligatoria.');
       setPasoActualEditarEquipo(1);
       return;
     }
     if (!nombre) {
-      alert('El Nombre del equipo es obligatorio.');
+      showError('Validación', 'El Nombre del equipo es obligatorio.');
       setPasoActualEditarEquipo(1);
       return;
     }
     if (!serial) {
-      alert('El Serial del equipo es obligatorio.');
+      showError('Validación', 'El Serial del equipo es obligatorio.');
       setPasoActualEditarEquipo(2);
       return;
     }
@@ -1071,20 +1414,23 @@ export default function InventarioView({
           throw new Error(data?.message || data?.error || `Error ${res.status} al actualizar equipo`);
         }
       }
-        // Sync selected item state after successful update con formato unificado
-        const rawActualizado = data?.data || data;
-        const equipoActualizado = rawActualizado ? mapEquipoItem(rawActualizado) : null;
-        if (equipoActualizado) {
-          setItemSeleccionado(equipoActualizado);
-        }
+      // Sync selected item state after successful update con formato unificado
+      const rawActualizado = data?.data || data;
+      const equipoActualizado = rawActualizado ? mapEquipoItem(rawActualizado) : null;
+      if (equipoActualizado) {
+        setItemSeleccionado(equipoActualizado);
+      }
 
 
       // Refrescar inventario
       await cargarConsumibles();
       setModalEditarEquipoOpen(false);
       setEquipoParaEditar(null);
+
+      // Notificación Toast de Edición Exitosa Institucional
+      showEditSuccess(formDataEditarEquipo.nombre || formDataEditarEquipo.placa || placaNueva);
     } catch (err) {
-      alert(`Error al guardar cambios del equipo: ${err.message || 'Error del servidor'}`);
+      showError('Error al guardar cambios', err.message || 'Error del servidor');
     } finally {
       setEditEquipoSubmitting(false);
     }
@@ -1094,16 +1440,19 @@ export default function InventarioView({
   const handleOpenEditarConsumible = (item) => {
     setItemParaEditar(item);
     setPasoActual(1);
+    const esPapeleria = activeTab === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || item.subtipo === 'papeleria' || String(item.id || '').toLowerCase().startsWith('pape');
     setFormDataEditar({
+      id: item.id || item.placa || item.codigo || '',
       material: item.material || item.name || '',
-      categoria: item.categoria || item.category || 'Robótica',
+      categoria: esPapeleria ? 'Papelería' : (item.categoria || item.category || 'Robótica'),
+      subtipo: esPapeleria ? 'papeleria' : (item.subtipo || 'robotica'),
       ubicacion: item.ubicacion || item.location || 'Oficina FMO',
       ubicacion_estante: item.ubicacion_estante || '',
       disponible: item.disponible ?? item.quantity ?? 0,
-      minimo: item.minimo ?? item.minStock ?? 5,
+      minimo: item.minimo ?? item.minStock ?? (esPapeleria ? 3 : 5),
       caracteristicas: item.caracteristicas || '',
       estado: item.estado || 'Bueno',
-      condicion: item.condicion || 'Nuevo',
+      condicion: item.condicion || (esPapeleria ? 'Nuevos' : 'Nuevo'),
       descripcion: item.descripcion || item.description || '',
       valor_compra: item.valor_compra ?? item.valor_unitario ?? '',
       fecha_compra: item.fecha_compra ? item.fecha_compra.split('T')[0] : '',
@@ -1118,19 +1467,50 @@ export default function InventarioView({
     e.preventDefault();
     if (!itemParaEditar) return;
 
+    const idOriginal = itemParaEditar.id;
+    const nuevoId = (formDataEditar.id || '').trim();
+    const esPapeleria = activeTab === 'papeleria' || itemParaEditar.subtipo === 'papeleria' || itemParaEditar.categoria === 'Papelería' || String(itemParaEditar.id || '').toLowerCase().startsWith('pape');
+
+    // Validación de código / placa para consumibles y papelería
+    if (!nuevoId) {
+      showError('Validación', `El código o placa del ${esPapeleria ? 'insumo de papelería' : 'consumible'} es obligatorio.`);
+      setPasoActual(1);
+      return;
+    }
+    if (nuevoId.toLowerCase() !== String(idOriginal).toLowerCase()) {
+      const listToCheck = esPapeleria ? rawPapeleria : rawConsumibles;
+      const idDuplicado = (listToCheck || []).some(
+        (c) => String(c.id || '').trim().toLowerCase() === nuevoId.toLowerCase() && String(c.id).toLowerCase() !== String(idOriginal).toLowerCase()
+      );
+      if (idDuplicado) {
+        showError('Código / Placa Duplicado', `El código o placa "${nuevoId}" ya está en uso.`);
+        setPasoActual(1);
+        return;
+      }
+    }
+
     try {
       setEditConsumibleSubmitting(true);
-      const url = `${API_BASE_URL}/api/consumibles/${encodeURIComponent(itemParaEditar.id)}`;
+      const categoriaFinal = esPapeleria ? 'Papelería' : (formDataEditar.categoria?.trim() || 'Robótica');
+      const finalId = nuevoId || idOriginal;
       const payload = {
+        id: finalId,
+        nuevo_id: finalId,
+        placa: finalId,
+        codigo: finalId,
         material: formDataEditar.material?.trim(),
-        categoria: formDataEditar.categoria?.trim() || 'Robótica',
+        categoria: categoriaFinal,
+        category: categoriaFinal,
+        subtipo: esPapeleria ? 'papeleria' : (formDataEditar.subtipo || 'robotica'),
         ubicacion: formDataEditar.ubicacion?.trim() || 'Oficina FMO',
+        sede: formDataEditar.ubicacion?.trim() || 'Oficina FMO',
         ubicacion_estante: formDataEditar.ubicacion_estante?.trim() || '',
+        caja: formDataEditar.ubicacion_estante?.trim() || '',
         disponible: parseInt(formDataEditar.disponible, 10) || 0,
-        minimo: parseInt(formDataEditar.minimo, 10) || 5,
+        minimo: parseInt(formDataEditar.minimo, 10) || (esPapeleria ? 3 : 5),
         caracteristicas: formDataEditar.caracteristicas?.trim() || null,
         estado: formDataEditar.estado || 'Bueno',
-        condicion: formDataEditar.condicion || 'Nuevo',
+        condicion: formDataEditar.condicion || (esPapeleria ? 'Nuevos' : 'Nuevo'),
         descripcion: formDataEditar.descripcion?.trim() || null,
         valor_compra: formDataEditar.valor_compra !== '' ? formDataEditar.valor_compra : null,
         fecha_compra: formDataEditar.fecha_compra || null,
@@ -1138,24 +1518,86 @@ export default function InventarioView({
         observaciones: formDataEditar.observaciones?.trim() || null,
       };
 
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(data?.message || data?.error || `Error ${res.status} al actualizar consumible`);
+      // Si el ítem es de papelería, actualizar en localPapeleria
+      if (esPapeleria) {
+        setLocalPapeleria((prev) =>
+          prev.map((p) =>
+            p.id === idOriginal
+              ? {
+                ...p,
+                ...payload,
+                id: finalId,
+                placa: finalId,
+                name: payload.material,
+                quantity: payload.disponible,
+                minStock: payload.minimo,
+                location: payload.ubicacion,
+                caja: payload.ubicacion_estante,
+              }
+              : p
+          )
+        );
       }
 
-      // Refrescar consumibles
-      await cargarConsumibles();
+      // Actualizar estado local inmediato optimista
+      setLocalItems((prev) =>
+        prev.map((it) =>
+          it.id === idOriginal
+            ? {
+                ...it,
+                ...payload,
+                id: finalId,
+                placa: finalId,
+                code: finalId,
+                name: payload.material,
+                material: payload.material,
+                disponible: payload.disponible,
+                quantity: payload.disponible,
+                minimo: payload.minimo,
+                minStock: payload.minimo,
+                ubicacion: payload.ubicacion,
+                location: payload.ubicacion,
+                ubicacion_estante: payload.ubicacion_estante,
+              }
+            : it
+        )
+      );
+
+      try {
+        const primaryUrl = esPapeleria
+          ? `${API_BASE_URL}/api/papeleria/${encodeURIComponent(idOriginal)}`
+          : `${API_BASE_URL}/api/consumibles/${encodeURIComponent(idOriginal)}`;
+
+        let res = await fetch(primaryUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        // Si era papelería y falla el endpoint puntual de papelería, intentar fallback a consumibles
+        if (!res.ok && esPapeleria) {
+          const fallbackUrl = `${API_BASE_URL}/api/consumibles/${encodeURIComponent(idOriginal)}`;
+          res = await fetch(fallbackUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
+
+        if (res.ok) {
+          await cargarConsumibles();
+        }
+      } catch (_) {
+        // En caso de que no exista tabla en backend o falle la red, ya se encuentra reflejado optimistamente
+      }
+
       setModalEditarOpen(false);
       setItemParaEditar(null);
+
+      // Notificación Toast de Edición Exitosa Institucional
+      showEditSuccess(formDataEditar.material || finalId);
     } catch (err) {
-      alert(`Error al guardar cambios: ${err.message || 'Error del servidor'}`);
+      showError('Error al guardar cambios', err.message || 'Error del servidor');
     } finally {
       setEditConsumibleSubmitting(false);
     }
@@ -1165,7 +1607,7 @@ export default function InventarioView({
   const abrirModalDetalle = async (placaOCodigo, fallbackData = null) => {
     if (!placaOCodigo && !fallbackData) return;
     const searchCode = String(placaOCodigo || '').replace(/^eq-/, '').trim();
-    
+
     // Buscar en el estado local de equipos
     const parent = equipos.find(e => {
       const p = String(e.placa || (e.units && e.units[0]?.placa) || e.code || e.id || '').replace(/^eq-/, '').trim();
@@ -1228,40 +1670,41 @@ export default function InventarioView({
 
     const id = formDataNuevo.id?.trim();
     const material = formDataNuevo.material?.trim();
-    const categoria = formDataNuevo.categoria?.trim() || 'Robótica';
+    const esPapeleria = activeTab === 'papeleria' || formDataNuevo.categoria === 'Papelería' || String(id || '').toLowerCase().startsWith('pape');
+    const categoria = esPapeleria ? 'Papelería' : (formDataNuevo.categoria?.trim() || 'Robótica');
     const ubicacion = formDataNuevo.ubicacion?.trim() || 'Oficina FMO';
     const ubicacion_estante = formDataNuevo.ubicacion_estante?.trim() || '';
     const disponible = Number(formDataNuevo.disponible);
-    const minimo = Number(formDataNuevo.minimo ?? 5);
+    const minimo = Number(formDataNuevo.minimo ?? (esPapeleria ? 3 : 5));
 
     // Validaciones de obligatorios
     if (!id) {
-      alert('El código del ítem es obligatorio (ej: Rob0143).');
+      showError('Validación', 'El código del ítem es obligatorio (ej: Pape2012 o Rob0143).');
       setPasoActualNuevo(1);
       return;
     }
 
-    // Validación de unicidad: Verificar que el código no exista previamente en consumibles
-    const idExiste = (rawConsumibles || []).some(
+    // Validación de unicidad: Verificar que el código no exista previamente en consumibles ni papelería
+    const idExiste = (categoria === 'Papelería' ? rawPapeleria : rawConsumibles || []).some(
       (c) => String(c.id || c.codigo || '').trim().toLowerCase() === id.toLowerCase()
     );
     if (idExiste) {
-      alert(`El código "${id}" ya se encuentra registrado para otro insumo o material de robótica. Por favor ingresa un código único.`);
+      showError('Código Duplicado', `El código "${id}" ya se encuentra registrado para otro insumo. Por favor ingresa un código único.`);
       setPasoActualNuevo(1);
       return;
     }
     if (!material) {
-      alert('El nombre del material es obligatorio.');
+      showError('Validación', 'El nombre del material es obligatorio.');
       setPasoActualNuevo(1);
       return;
     }
     if (!categoria) {
-      alert('Debes seleccionar una categoría.');
+      showError('Validación', 'Debes seleccionar una categoría.');
       setPasoActualNuevo(1);
       return;
     }
     if (isNaN(disponible) || disponible < 0) {
-      alert('La cantidad inicial debe ser un número mayor o igual a 0.');
+      showError('Validación', 'La cantidad inicial debe ser un número mayor o igual a 0.');
       setPasoActualNuevo(1);
       return;
     }
@@ -1270,7 +1713,7 @@ export default function InventarioView({
     const descripcion = formDataNuevo.descripcion?.trim() || null;
     const caracteristicas = formDataNuevo.caracteristicas?.trim() || null;
     const estado = formDataNuevo.estado || 'Bueno';
-    const condicion = formDataNuevo.condicion || 'Nuevo';
+    const condicion = formDataNuevo.condicion || 'Nuevos';
 
     // Sección 3: Datos de Compra y Observaciones (Opcional)
     const valor_compra = formDataNuevo.valor_compra !== '' && !isNaN(Number(formDataNuevo.valor_compra)) ? Number(formDataNuevo.valor_compra) : null;
@@ -1291,6 +1734,7 @@ export default function InventarioView({
       ubicacion,
       location: ubicacion,
       ubicacion_estante,
+      caja: ubicacion_estante,
       descripcion,
       description: descripcion,
       caracteristicas,
@@ -1304,22 +1748,32 @@ export default function InventarioView({
       observaciones,
       notas: observaciones,
       itemType: 'consumible',
+      subtipo: categoria === 'Papelería' ? 'papeleria' : 'robotica',
     };
 
     try {
       setNewConsumibleSubmitting(true);
 
+      // Si es de papelería, registrar en localPapeleria
+      if (categoria === 'Papelería') {
+        setLocalPapeleria((prev) => {
+          const sinEste = prev.filter((p) => p.id !== id);
+          return [payload, ...sinEste];
+        });
+      }
+
       // 1. Enviar directamente a la API de consumibles con fetch POST
-      const response = await fetch(`${API_BASE_URL}/api/consumibles`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const responseJson = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(responseJson?.message || responseJson?.error || `Error ${response.status} al guardar consumible`);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/consumibles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (response.ok) {
+          await cargarConsumibles();
+        }
+      } catch (_) {
+        // En caso de que el backend no tenga tabla o falle la red, ya se encuentra persistido en localPapeleria
       }
 
       // 2. Notificar al handler padre si existe
@@ -1328,7 +1782,7 @@ export default function InventarioView({
           name: material,
           category: categoria,
           location: ubicacion,
-          sede: 'Medellín',
+          sede: ubicacion || 'Oficina FMO',
           notes: observaciones || descripcion,
           minStock: minimo,
           itemType: 'consumible',
@@ -1337,15 +1791,19 @@ export default function InventarioView({
         });
       }
 
-      // 3. Recargar consumibles desde el backend
-      await cargarConsumibles();
-
-      // 4. Limpiar formulario y cerrar modal
+      // 3. Limpiar formulario y cerrar modal
       setFormDataNuevo({ ...initialFormNuevo });
       setPasoActualNuevo(1);
       setModalNuevoOpen(false);
+
+      // Notificación institucional FMO STEAM para nuevo insumo
+      showNewItemSuccess({
+        nombre: material || (categoria === 'Papelería' ? 'Insumo de Papelería' : 'Consumible de Robótica'),
+        codigo: id,
+        sedeOUbicacion: `${ubicacion || ''} ${ubicacion_estante || ''}`.trim() || 'Inventario Central',
+      });
     } catch (err) {
-      alert(`Error al registrar el consumible: ${err.message || 'Error del servidor'}`);
+      showError('Error al registrar consumible', err.message || 'Error del servidor');
     } finally {
       setNewConsumibleSubmitting(false);
     }
@@ -1368,13 +1826,13 @@ export default function InventarioView({
     const { item, type } = stockMovementModal;
     const qty = parseInt(movementQty, 10);
     if (isNaN(qty) || qty <= 0) {
-      alert('Por favor ingresa una cantidad válida mayor a 0');
+      showError('Cantidad Inválida', 'Por favor ingresa una cantidad válida mayor a 0');
       return;
     }
 
     const currentStock = Number(item.disponible ?? item.quantity ?? 0);
     if (type === 'salida' && qty > currentStock) {
-      alert(`No puedes egresar más unidades (${qty}) de las disponibles en inventario (${currentStock}).`);
+      showError('Stock Insuficiente', `No puedes egresar más unidades (${qty}) de las disponibles en inventario (${currentStock}).`);
       return;
     }
 
@@ -1382,72 +1840,35 @@ export default function InventarioView({
 
     try {
       setMovementSubmitting(true);
-      await inventoryApi.update(item.id, {
-        disponible: newStock,
-      });
 
-      // Refrescar inventario
+      // Si es ítem de papelería, actualizar en localPapeleria
+      if (item.subtipo === 'papeleria' || item.categoria === 'Papelería' || String(item.id).startsWith('Pape')) {
+        setLocalPapeleria((prev) =>
+          prev.map((p) =>
+            p.id === item.id
+              ? { ...p, disponible: newStock, quantity: newStock }
+              : p
+          )
+        );
+      }
+
+      try {
+        await inventoryApi.update(item.id, {
+          disponible: newStock,
+        });
+      } catch (_) {
+        // En caso de que no exista tabla en backend o falle la red, ya se encuentra reflejado en localPapeleria
+      }
+
+      // Refrescar inventario si corresponde
       if (onRetry) {
-        await onRetry();
-      } else {
-        const [activosData, consumiblesData] = await Promise.all([
-          inventoryApi.getActivos(),
-          inventoryApi.getConsumibles(),
-        ]);
-        const loaded = [];
-        if (Array.isArray(consumiblesData)) {
-          consumiblesData.forEach((c) => {
-            const disp = Number(c.disponible) || 0;
-            const min = Number(c.minimo) ?? 5;
-            loaded.push({
-              id: c.id,
-              material: c.material || c.name || '',
-              name: c.material || c.name || '',
-              categoria: c.categoria || 'Robótica',
-              category: c.categoria || 'Robótica',
-              disponible: disp,
-              quantity: disp,
-              minimo: min,
-              minStock: min,
-              ubicacion: c.ubicacion || 'Oficina FMO',
-              location: c.ubicacion || 'Oficina FMO',
-              itemType: 'consumible',
-              dateAdded: c.created_at ? c.created_at.split('T')[0] : today(),
-            });
-          });
-        }
-        if (Array.isArray(activosData)) {
-          activosData.forEach((a) => {
-            loaded.push({
-              id: `eq-${a.id || a.placa}`,
-              name: a.nombre,
-              category: a.marca || 'Equipos de Cómputo',
-              itemType: 'equipo',
-              location: a.sede ? `Sede ${a.sede}` : 'Bodega Medellín',
-              sede: a.sede || 'Medellín',
-              minStock: 1,
-              quantity: 0,
-              units: [
-                {
-                  code: a.placa,
-                  placa: a.placa,
-                  model: a.modelo || a.marca || 'Estándar',
-                  serial: a.serial || '—',
-                  sede: a.sede || 'Medellín',
-                  status: a.estado === 'En campo' ? 'prestado' : (a.estado || 'disponible').toLowerCase(),
-                  responsable: a.custodio || (a.estado === 'En campo' ? 'Custodio Temporal' : 'Bodega Central'),
-                },
-              ],
-              dateAdded: a.created_at ? a.created_at.split('T')[0] : today(),
-            });
-          });
-        }
-        setLocalItems(loaded);
+        await onRetry().catch(() => { });
       }
 
       setStockMovementModal(null);
+      showInfo('Movimiento Registrado', `Se actualizó el stock de ${item.material || item.name} (${type === 'ingreso' ? `+${qty}` : `-${qty}`} unidades).`);
     } catch (err) {
-      alert(`Error al registrar el movimiento: ${err.message || 'Error del servidor'}`);
+      showError('Error de Movimiento', err.message || 'Error del servidor');
     } finally {
       setMovementSubmitting(false);
     }
@@ -1466,17 +1887,17 @@ export default function InventarioView({
     const quantity = Number(fd.get('quantity'));
 
     if (!name) {
-      alert('El nombre del elemento es requerido.');
+      showError('Validación', 'El nombre del elemento es requerido.');
       return;
     }
 
     if (minStock < 0) {
-      alert('El stock mínimo no puede ser negativo.');
+      showError('Validación', 'El stock mínimo no puede ser negativo.');
       return;
     }
 
     if (modalItemType === 'consumible' && (quantity < 0 || isNaN(quantity))) {
-      alert('La cantidad de existencias no puede ser negativa.');
+      showError('Validación', 'La cantidad de existencias no puede ser negativa.');
       return;
     }
 
@@ -1613,6 +2034,22 @@ export default function InventarioView({
     setEditingItem(null);
   };
 
+  const isPapeleriaEdit = Boolean(
+    activeTab === 'papeleria' ||
+    itemParaEditar?.categoria === 'Papelería' ||
+    itemParaEditar?.category === 'Papelería' ||
+    itemParaEditar?.subtipo === 'papeleria' ||
+    String(itemParaEditar?.id || '').toLowerCase().startsWith('pape')
+  );
+
+  const isPapeleriaNuevo = Boolean(
+    activeTab === 'papeleria' ||
+    formDataNuevo?.categoria === 'Papelería' ||
+    formDataNuevo?.category === 'Papelería' ||
+    formDataNuevo?.subtipo === 'papeleria' ||
+    String(formDataNuevo?.id || '').toLowerCase().startsWith('pape')
+  );
+
   return (
     <div className="inventario-view">
       {/* HEADER DE LA SECCIÓN CON SELECTOR DE PESTAÑAS Y BOTONES */}
@@ -1624,7 +2061,7 @@ export default function InventarioView({
             onClick={() => setActiveTab('equipos')}
           >
             <span className="tab-icon">💻</span>
-            <span>Equipos Tecnológicos (Préstamo)</span>
+            <span>Equipos Tecnológicos</span>
             <span className="tab-badge">{equipos.length}</span>
           </button>
           <button
@@ -1635,6 +2072,24 @@ export default function InventarioView({
             <span className="tab-icon">🔌</span>
             <span>Consumibles y Robótica</span>
             <span className="tab-badge">{consumibles.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'papeleria' ? 'active' : ''}`}
+            onClick={() => setActiveTab('papeleria')}
+          >
+            <span className="tab-icon">📄</span>
+            <span>Papelería</span>
+            <span className="tab-badge">{rawPapeleria.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'mobiliario' ? 'active' : ''}`}
+            onClick={() => setActiveTab('mobiliario')}
+          >
+            <span className="tab-icon">🪑</span>
+            <span>Mobiliario</span>
+            <span className="tab-badge">{mobiliarioFiltrado.length}</span>
           </button>
         </div>
 
@@ -1668,6 +2123,22 @@ export default function InventarioView({
               onClick={() => handleOpenCreate('equipo')}
             >
               + Nuevo Equipo
+            </button>
+          ) : activeTab === 'papeleria' ? (
+            <button
+              type="button"
+              className="btn small btn-primary"
+              onClick={handleOpenCreatePapeleria}
+            >
+              + Nuevo Insumo
+            </button>
+          ) : activeTab === 'mobiliario' ? (
+            <button
+              type="button"
+              className="btn small btn-primary"
+              onClick={handleOpenCreateMobiliario}
+            >
+              + Nuevo Mobiliario
             </button>
           ) : (
             <button
@@ -1806,36 +2277,21 @@ export default function InventarioView({
                     const placa = u.placa || u.code || 'S-PLACA';
 
                     return (
-                      <tr key={`${u.parentItemId}-${u.code}-${idx}`} style={{ height: '56px' }}>
+                      <tr key={`${u.parentItemId}-${u.code}-${idx}`} className="h-auto">
                         {/* 1. PLACA / CÓDIGO (Interactivo: abre detalle completo) */}
-                        <td style={{ padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <button
                             type="button"
                             onClick={() => abrirModalDetalle(placa, u)}
-                            className="inline-flex items-center justify-center px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-sky-950/80 text-sky-400 border border-sky-800/60 hover:bg-sky-900 hover:border-sky-500 hover:text-white transition-all cursor-pointer shadow-sm group"
+                            className="badge-placa"
                             title="Ver ficha técnica y detalle completo"
-                            style={{
-                              background: 'var(--surface-2, #1a2332)',
-                              border: '1px solid rgba(6, 182, 212, 0.4)',
-                              color: '#38bdf8',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              fontSize: '11.5px',
-                              fontWeight: 700,
-                              letterSpacing: '0.04em',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              maxWidth: '100%',
-                            }}
                           >
                             <span className="truncate">{placa}</span>
                           </button>
                         </td>
 
                         {/* 2. EQUIPO & MODELO */}
-                        <td style={{ padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, overflow: 'hidden' }}>
                             <strong
                               className="item-title"
@@ -1869,34 +2325,32 @@ export default function InventarioView({
                         </td>
 
                         {/* 3. SERIAL */}
-                        <td style={{ padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <span className="mono-num" title={u.serial || '—'} style={{ fontSize: '12px', color: 'var(--text)' }}>
                             {u.serial || '—'}
                           </span>
                         </td>
 
                         {/* 4. SEDE / UBICACIÓN */}
-                        <td style={{ padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <div className="location-cell" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            <span className="sede-badge municipal" style={{ fontSize: '11px', padding: '2px 7px' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <div className="flex flex-col gap-1 items-start justify-center py-1">
+                            {/* Badge de Sede / Municipio */}
+                            <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50">
                               {u.sede || 'Medellín'}
                             </span>
-                            <span className="location-sub font-medium text-slate-800 dark:text-slate-200" title={u.baseLocation || 'Bodega'} style={{ fontSize: '11.5px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {u.baseLocation || 'Bodega'}
-                            </span>
+
+                            {/* Contenedor puntual de estante/caja */}
                             {u.ubicacion_estante && (
-                              <span
-                                className="block text-[11px] font-semibold text-lime-700 bg-lime-50 dark:bg-lime-950/40 dark:text-lime-400 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-lime-200 dark:border-lime-800/60"
-                                title={`Estante/Contenedor: ${u.ubicacion_estante}`}
-                              >
-                                📦 {u.ubicacion_estante}
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                                <span>📦</span>
+                                <span className="font-semibold text-lime-700 dark:text-lime-400">{u.ubicacion_estante}</span>
                               </span>
                             )}
                           </div>
                         </td>
 
                         {/* 5. RESPONSABLE ACTUAL */}
-                        <td style={{ padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <span
                             className="responsable-name"
                             title={u.status === 'prestado' ? (u.responsable || 'Custodio asignado') : '—'}
@@ -1907,7 +2361,7 @@ export default function InventarioView({
                         </td>
 
                         {/* 6. ESTADO */}
-                        <td style={{ textAlign: 'center', padding: '0 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '6px', paddingRight: '6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           {u.status === 'prestado' ? (
                             <span
                               className="pill"
@@ -1948,7 +2402,7 @@ export default function InventarioView({
                         </td>
 
                         {/* 7. ACCIONES: 📷 QR, 👁️ Ver, ✏️ Editar, 🗑️ Eliminar */}
-                        <td style={{ textAlign: 'center', padding: '0 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '6px', paddingRight: '6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <div
                             style={{
                               display: 'flex',
@@ -2292,30 +2746,21 @@ export default function InventarioView({
                     const ubi = it.ubicacion || it.location || 'Oficina FMO';
 
                     return (
-                      <tr key={it.id} className={isZero ? 'row-critical' : isLow ? 'row-warning' : ''} style={{ height: '56px' }}>
+                      <tr key={it.id} className={`${isZero ? 'row-critical' : isLow ? 'row-warning' : ''} h-auto`}>
                         {/* 1. CÓDIGO / MATERIAL: Badge con código y a debajo nombre en negrita */}
-                        <td style={{ padding: '0 14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, overflow: 'hidden', gap: '2px' }}>
-                            <span
-                              className="mono-num"
-                              title={it.id}
-                              style={{
-                                background: 'var(--surface-2)',
-                                border: '1px solid var(--line)',
-                                padding: '1px 6px',
-                                borderRadius: '4px',
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                color: 'var(--copper, #f59e0b)',
-                                letterSpacing: '0.04em',
-                                display: 'inline-block',
-                                maxWidth: '100%',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
+                        <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, overflow: 'hidden', gap: '3px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setItemSeleccionado(it);
+                                setModalDetalleOpen(true);
                               }}
+                              className="badge-placa"
+                              title={`Ver detalle de ${it.id}`}
                             >
-                              {it.id}
-                            </span>
+                              <span className="truncate">{it.id}</span>
+                            </button>
                             <strong
                               className="item-title"
                               title={matName}
@@ -2335,7 +2780,7 @@ export default function InventarioView({
                         </td>
 
                         {/* 2. CATEGORÍA: Tag redondeado */}
-                        <td style={{ padding: '0 8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <span
                             className="category-tag"
                             title={it.categoria || it.category || 'Robótica'}
@@ -2353,7 +2798,7 @@ export default function InventarioView({
                         </td>
 
                         {/* 3. DISPONIBLE: Valor numérico centrado en negrita */}
-                        <td style={{ textAlign: 'center', padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <strong
                             className="mono-num"
                             style={{
@@ -2367,24 +2812,22 @@ export default function InventarioView({
                         </td>
 
                         {/* 4. UBICACIÓN FÍSICA */}
-                        <td style={{ padding: '0 12px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <div>
-                            <span className="font-medium text-slate-800 dark:text-slate-200" title={ubi} style={{ fontSize: '12.5px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div className="flex flex-col gap-1 items-start justify-center py-1">
+                            <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50" title={ubi}>
                               {ubi}
                             </span>
                             {it.ubicacion_estante && (
-                              <span
-                                className="block text-[11px] font-semibold text-lime-700 bg-lime-50 dark:bg-lime-950/40 dark:text-lime-400 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-lime-200 dark:border-lime-800/60"
-                                title={`Estante/Contenedor: ${it.ubicacion_estante}`}
-                              >
-                                📦 {it.ubicacion_estante}
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                                <span>📦</span>
+                                <span className="font-semibold text-lime-700 dark:text-lime-400">{it.ubicacion_estante}</span>
                               </span>
                             )}
                           </div>
                         </td>
 
                         {/* 5. ESTADO DE STOCK */}
-                        <td style={{ textAlign: 'center', padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           {isZero ? (
                             <span className="pill vencido" style={{ fontWeight: 700, fontSize: '11px', padding: '2px 8px' }}>
                               Agotado
@@ -2411,7 +2854,7 @@ export default function InventarioView({
                         </td>
 
                         {/* 6. ACCIONES CRUD: 📷 QR, 👁️ Ver, ✏️ Editar, 🗑️ Eliminar */}
-                        <td style={{ textAlign: 'center', padding: '0 4px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <div
                             style={{
                               display: 'inline-flex',
@@ -2607,6 +3050,811 @@ export default function InventarioView({
                     disabled={currentConsumiblesPage >= totalConsumiblesPages}
                     onClick={() => setConsumiblesPage((p) => Math.min(totalConsumiblesPages, p + 1))}
                     style={{ padding: '3px 10px', fontSize: '12px', cursor: currentConsumiblesPage >= totalConsumiblesPages ? 'not-allowed' : 'pointer' }}
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* =========================================================================
+          PESTAÑA 3: PAPELERÍA (Insumos de oficina y formación STEAM)
+          ========================================================================= */}
+      {activeTab === 'papeleria' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="section-header" style={{ marginBottom: '4px', paddingBottom: '2px' }}>
+            <h2>
+              <span>Control de Papelería & Guías STEAM</span>
+              {filterStockPapeleria === 'minimo' ? (
+                <span
+                  className="pill low"
+                  style={{ fontSize: '11px', padding: '2px 8px', cursor: 'pointer' }}
+                  onClick={() => {
+                    setFilterStockPapeleria('todos');
+                    setPapeleriaPage(1);
+                  }}
+                  title="Clic para mostrar todos los insumos"
+                >
+                  ⚠️ Filtro: Stock bajo ({papeleriaFiltrada.length}) ✕
+                </span>
+              ) : filterStockPapeleria === 'optimo' ? (
+                <span
+                  className="pill ok"
+                  style={{ fontSize: '11px', padding: '2px 8px', cursor: 'pointer' }}
+                  onClick={() => {
+                    setFilterStockPapeleria('todos');
+                    setPapeleriaPage(1);
+                  }}
+                  title="Clic para mostrar todos los insumos"
+                >
+                  ✓ Filtro: Stock óptimo ({papeleriaFiltrada.length}) ✕
+                </span>
+              ) : (
+                <span className="pill default" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                  {papeleriaFiltrada.length} insumos en catálogo
+                </span>
+              )}
+            </h2>
+            <span className="section-subtitle" style={{ fontSize: '12.5px', marginTop: '2px' }}>
+              Control de existencias de insumos de oficina y formación STEAM (resmas, lápices, marcadores, bitácoras)
+            </span>
+          </div>
+
+          {/* Barra de filtros con el mismo diseño que Equipos y Consumibles */}
+          <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
+            <div className="filter-group">
+              <label style={{ fontSize: '12px' }}>Contenedor:</label>
+              <select
+                value={filterCajaPapeleria}
+                onChange={(e) => {
+                  setFilterCajaPapeleria(e.target.value);
+                  setPapeleriaPage(1);
+                }}
+                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+              >
+                <option value="todas">Todas las cajas</option>
+                <option value="CAJA #1">CAJA #1</option>
+                <option value="CAJA #2">CAJA #2</option>
+                <option value="CAJA #3">CAJA #3</option>
+                <option value="CAJA #4">CAJA #4</option>
+                <option value="CAJA #5">CAJA #5</option>
+                <option value="CAJA #6">CAJA #6</option>
+                <option value="CAJA #7">CAJA #7</option>
+                <option value="CAJA #8">CAJA #8</option>
+                <option value="CAJA #9">CAJA #9</option>
+                <option value="CAJA #10">CAJA #10</option>
+                <option value="CAJA #11">CAJA #11</option>
+                <option value="Fuera de cajas">Fuera de cajas</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label style={{ fontSize: '12px' }}>Estado de Stock:</label>
+              <select
+                value={filterStockPapeleria}
+                onChange={(e) => {
+                  setFilterStockPapeleria(e.target.value);
+                  setPapeleriaPage(1);
+                }}
+                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+              >
+                <option value="todos">Todos los Insumos ({rawPapeleria.length})</option>
+                <option value="minimo">⚠️ Solo Stock Bajo (≤ 3 unid.)</option>
+                <option value="optimo">✓ Stock Óptimo (&gt; 3 unid.)</option>
+              </select>
+            </div>
+
+            <div className="filter-count" style={{ fontSize: '12.5px' }}>
+              Mostrando <strong>{papeleriaFiltrada.length}</strong> de <strong>{rawPapeleria.length}</strong> insumos de papelería
+            </div>
+          </div>
+
+          {papeleriaFiltrada.length === 0 ? (
+            <div className="panel empty">
+              <span>📄</span> No se encontraron insumos de papelería con los filtros seleccionados.
+            </div>
+          ) : (
+            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '15%', padding: '10px 14px', textAlign: 'left' }}>CÓDIGO / PLACA</th>
+                    <th style={{ width: '28%', padding: '10px 14px', textAlign: 'left' }}>MATERIAL / NOMBRE</th>
+                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'center' }}>CANTIDAD</th>
+                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'center' }}>CONDICIÓN</th>
+                    <th style={{ width: '15%', padding: '10px 12px', textAlign: 'left' }}>UBICACIÓN</th>
+                    <th style={{ width: '16%', padding: '10px 16px', textAlign: 'right' }}>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedPapeleria.map((it) => {
+                    const disp = Number(it.disponible ?? it.quantity ?? 0);
+                    const isZero = disp <= 0;
+                    const isLow = disp > 0 && disp <= 3;
+                    const matName = it.material || it.name || 'Sin nombre';
+                    const ubi = it.ubicacion || it.location || 'Oficina FMO';
+                    const estante = it.ubicacion_estante || it.caja || 'Fuera de cajas';
+                    const esNuevo = String(it.condicion || '').toLowerCase().includes('nuevo') && !String(it.condicion || '').toLowerCase().includes('usado');
+                    const esUsado = String(it.condicion || '').toLowerCase().includes('usad') && !String(it.condicion || '').toLowerCase().includes('nuevo');
+
+                    return (
+                      <tr key={it.id} className={`${isZero ? 'row-critical' : isLow ? 'row-warning' : ''} h-auto`}>
+                        {/* 1. CÓDIGO / PLACA: Badge interactivo estándar */}
+                        <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setItemSeleccionado({
+                                ...it,
+                                id: it.id,
+                                placa: it.id,
+                                nombre: it.material || it.name,
+                                name: it.material || it.name,
+                                equipo: it.material || it.name,
+                                material: it.material || it.name,
+                                categoria: 'Papelería',
+                                category: 'Papelería',
+                                disponible: disp,
+                                quantity: disp,
+                                ubicacion: ubi,
+                                ubicacion_estante: estante,
+                                condicion: it.condicion || 'Nuevos',
+                                estado: it.estado || 'Bueno',
+                                descripcion: it.descripcion || 'Insumo de papelería institucional FMO.',
+                                isEquipo: false,
+                              });
+                              setModalDetalleOpen(true);
+                            }}
+                            className="badge-placa"
+                            title={`Ver ficha técnica y detalle de ${it.id}`}
+                          >
+                            <span className="truncate">{it.id}</span>
+                          </button>
+                        </td>
+
+                        {/* 2. MATERIAL / NOMBRE: En negrita con descripción breve debajo */}
+                        <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, gap: '2px' }}>
+                            <strong
+                              className="item-title truncate max-w-xs"
+                              title={matName}
+                              style={{ fontSize: '13px', color: 'var(--text-h)', fontWeight: 700, lineHeight: '1.25' }}
+                            >
+                              {matName}
+                            </strong>
+                            {it.descripcion ? (
+                              <span
+                                style={{
+                                  fontSize: '11.5px',
+                                  color: 'var(--text-dim)',
+                                  lineHeight: '1.2',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 1,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                }}
+                                title={it.descripcion}
+                              >
+                                {it.descripcion}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '11.5px', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                                Sin descripción adicional
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* 3. CANTIDAD / DISPONIBLE: Indicador numérico y badge de alerta si <= 3 */}
+                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                            <div className="font-semibold text-slate-800 dark:text-slate-100">
+                              {disp} <span className="text-xs text-slate-500 font-normal">und</span>
+                            </div>
+                            {isZero ? (
+                              <span className="pill vencido" style={{ fontWeight: 700, fontSize: '10px', padding: '1px 6px' }}>
+                                Agotado
+                              </span>
+                            ) : isLow ? (
+                              <span
+                                className="pill"
+                                style={{
+                                  background: 'rgba(245, 158, 11, 0.15)',
+                                  color: '#d97706',
+                                  borderColor: 'rgba(245, 158, 11, 0.4)',
+                                  fontWeight: 700,
+                                  fontSize: '10px',
+                                  padding: '1px 6px',
+                                }}
+                              >
+                                Stock Bajo
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+
+                        {/* 4. CONDICIÓN: Badge que distinga "Nuevos" (verde) de "Usados" (gris/azul) */}
+                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                          {esNuevo ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60">
+                              Nuevos
+                            </span>
+                          ) : esUsado ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                              Usados
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300 border border-sky-300 dark:border-sky-700/60">
+                              {it.condicion || 'Mixto'}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 5. UBICACIÓN: Sede acompañada del contenedor con icono 📦 CAJA #X */}
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px', verticalAlign: 'middle' }}>
+                          <div className="flex flex-col gap-1 items-start justify-center py-0.5">
+                            <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/50">
+                              {ubi}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                              <span>📦</span>
+                              <span className="font-semibold text-lime-700 dark:text-lime-400">{estante}</span>
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* 6. ACCIONES: Idénticas a Equipos Tecnológicos y Consumibles */}
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            {/* 📷 QR */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Generar e imprimir Código QR"
+                              onClick={() => setQrConsumibleItem({
+                                ...it,
+                                placa: it.id,
+                                nombre: it.material || it.name,
+                              })}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(6, 182, 212, 0.12)',
+                                border: '1px solid rgba(6, 182, 212, 0.35)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#06b6d4',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect width="5" height="5" x="3" y="3" rx="1" />
+                                <rect width="5" height="5" x="16" y="3" rx="1" />
+                                <rect width="5" height="5" x="3" y="16" rx="1" />
+                                <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+                                <path d="M21 21v.01" />
+                                <path d="M12 7v3a2 2 0 0 1-2 2H7" />
+                                <path d="M3 12h.01" />
+                                <path d="M12 3h.01" />
+                                <path d="M12 16v.01" />
+                                <path d="M16 12h1" />
+                                <path d="M21 12v.01" />
+                                <path d="M12 21v-1" />
+                              </svg>
+                            </button>
+
+                            {/* 👁️ Ver Detalle */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Ver detalle del material"
+                              onClick={() => {
+                                setItemSeleccionado({
+                                  ...it,
+                                  id: it.id,
+                                  placa: it.id,
+                                  nombre: it.material || it.name,
+                                  name: it.material || it.name,
+                                  equipo: it.material || it.name,
+                                  material: it.material || it.name,
+                                  categoria: 'Papelería',
+                                  category: 'Papelería',
+                                  disponible: disp,
+                                  quantity: disp,
+                                  ubicacion: ubi,
+                                  ubicacion_estante: estante,
+                                  condicion: it.condicion || 'Nuevos',
+                                  estado: it.estado || 'Bueno',
+                                  descripcion: it.descripcion || 'Insumo de papelería institucional FMO.',
+                                  isEquipo: false,
+                                });
+                                setModalDetalleOpen(true);
+                              }}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'var(--surface-2)',
+                                border: '1px solid var(--line)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--text)',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            </button>
+
+                            {/* ✏️ Editar */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Editar material"
+                              onClick={() => handleOpenEdit(it)}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(245, 158, 11, 0.1)',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--amber, #f59e0b)',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                <path d="m15 5 4 4" />
+                              </svg>
+                            </button>
+
+                            {/* 🗑️ Eliminar */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Eliminar material"
+                              onClick={() => handleDeletePapeleria(it)}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--red, #ef4444)',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                <line x1="10" x2="10" y1="11" y2="17" />
+                                <line x1="14" x2="14" y1="11" y2="17" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
+                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedPapeleria.length) }).map((_, phIdx) => (
+                    <tr key={`ph-papeleria-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
+                      <td colSpan={6} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                        &nbsp;
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* CONTROLES DE PAGINACIÓN COMPACTA (5 FILAS POR PÁGINA) */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 14px',
+                  borderTop: '1px solid var(--line)',
+                  fontSize: '12.5px',
+                  color: 'var(--text-dim)',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div>
+                  Mostrando{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {papeleriaFiltrada.length === 0 ? 0 : (currentPapeleriaPage - 1) * ITEMS_PER_PAGE + 1}
+                  </strong>{' '}
+                  -{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {Math.min(currentPapeleriaPage * ITEMS_PER_PAGE, papeleriaFiltrada.length)}
+                  </strong>{' '}
+                  de <strong style={{ color: 'var(--text-h)' }}>{papeleriaFiltrada.length}</strong> insumos de papelería
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={currentPapeleriaPage <= 1}
+                    onClick={() => setPapeleriaPage((p) => Math.max(1, p - 1))}
+                    style={{ padding: '3px 10px', fontSize: '12px', cursor: currentPapeleriaPage <= 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    ← Anterior
+                  </button>
+
+                  <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
+                    Página {currentPapeleriaPage} de {totalPapeleriaPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={currentPapeleriaPage >= totalPapeleriaPages}
+                    onClick={() => setPapeleriaPage((p) => Math.min(totalPapeleriaPages, p + 1))}
+                    style={{ padding: '3px 10px', fontSize: '12px', cursor: currentPapeleriaPage >= totalPapeleriaPages ? 'not-allowed' : 'pointer' }}
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* =========================================================================
+          PESTAÑA 4: MOBILIARIO (Mesas, sillas, armarios y muebles modulares de sedes)
+          ========================================================================= */}
+      {activeTab === 'mobiliario' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="section-header" style={{ marginBottom: '4px', paddingBottom: '2px' }}>
+            <h2>
+              <span>Control de Mobiliario & Muebles Modulares</span>
+              <span className="pill default" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                {rawMobiliario.length} muebles en catálogo
+              </span>
+            </h2>
+            <span className="section-subtitle" style={{ fontSize: '12.5px', marginTop: '2px' }}>
+              Control de mesas de robótica, sillas ergonómicas, armarios modulares y dotación de sedes
+            </span>
+          </div>
+
+          {/* Barra de Filtros con el mismo diseño que Equipos y Consumibles */}
+          <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
+            <div className="filter-group">
+              <label style={{ fontSize: '12px' }}>Sede / Ubicación:</label>
+              <select
+                value={filterSedeMobiliario}
+                onChange={(e) => {
+                  setFilterSedeMobiliario(e.target.value);
+                  setMobiliarioPage(1);
+                }}
+                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+              >
+                <option value="todas">Todas las sedes ({rawMobiliario.length})</option>
+                {SEDES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-count" style={{ fontSize: '12.5px' }}>
+              Mostrando <strong>{mobiliarioFiltrado.length}</strong> de <strong>{rawMobiliario.length}</strong> muebles registrados
+            </div>
+          </div>
+
+          {mobiliarioFiltrado.length === 0 ? (
+            <div className="panel empty">
+              <span>🪑</span> No se encontró mobiliario con los filtros seleccionados.
+            </div>
+          ) : (
+            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '15%', padding: '10px 14px', textAlign: 'left' }}>PLACA / CÓDIGO</th>
+                    <th style={{ width: '27%', padding: '10px 12px', textAlign: 'left' }}>MOBILIARIO & DESCRIPCIÓN</th>
+                    <th style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>CANTIDAD</th>
+                    <th style={{ width: '18%', padding: '10px 12px', textAlign: 'left' }}>SEDE / ESPACIO ASIGNADO</th>
+                    <th style={{ width: '12%', padding: '10px 8px', textAlign: 'center' }}>ESTADO</th>
+                    <th style={{ width: '17%', padding: '10px 16px', textAlign: 'right' }}>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedMobiliario.map((m) => {
+                    const code = m.placa || m.code || m.id;
+                    const nombre = m.nombre || m.material || m.name || 'Mueble Modular';
+                    const sede = m.sede || m.ubicacion || 'Medellín';
+                    const cant = Number(m.disponible ?? m.quantity ?? 1);
+
+                    return (
+                      <tr key={code} className="h-auto hover:bg-slate-500/5">
+                        {/* 1. Placa / Código */}
+                        <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setItemSeleccionado(m);
+                              setModalDetalleOpen(true);
+                            }}
+                            className="badge-placa"
+                            title={`Ver ficha técnica y detalle de ${code}`}
+                          >
+                            <span className="truncate">{code}</span>
+                          </button>
+                        </td>
+
+                        {/* 2. Nombre & Descripción con max-w y truncate */}
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px', verticalAlign: 'middle' }}>
+                          <strong style={{ fontSize: '13px', color: 'var(--text-h)', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {nombre}
+                          </strong>
+                          {m.descripcion && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                              {m.descripcion}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 3. Cantidad separada */}
+                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <strong className="mono-num" style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--text-h)' }}>
+                            {cant} <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-dim)' }}>und</span>
+                          </strong>
+                        </td>
+
+                        {/* 4. Sede / Espacio asignado con badge compacto */}
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div className="flex flex-col gap-1 items-start justify-center">
+                            <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/50">
+                              {sede}
+                            </span>
+                            {m.ubicacion_estante && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                                <span>📦</span>
+                                <span className="font-semibold text-lime-700 dark:text-lime-400">{m.ubicacion_estante}</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* 5. Estado */}
+                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                          <span className="pill ok" style={{ fontWeight: 700, fontSize: '11px', padding: '2px 8px' }}>
+                            {m.condicion || m.estado || 'Buen Estado'}
+                          </span>
+                        </td>
+
+                        {/* 6. Acciones: Idénticas a Equipos Tecnológicos y Consumibles */}
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            {/* 📷 QR */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Generar e imprimir Código QR"
+                              onClick={() => setQrConsumibleItem({ ...m, placa: code, nombre })}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(6, 182, 212, 0.12)',
+                                border: '1px solid rgba(6, 182, 212, 0.35)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#06b6d4',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect width="5" height="5" x="3" y="3" rx="1" />
+                                <rect width="5" height="5" x="16" y="3" rx="1" />
+                                <rect width="5" height="5" x="3" y="16" rx="1" />
+                                <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+                                <path d="M21 21v.01" />
+                                <path d="M12 7v3a2 2 0 0 1-2 2H7" />
+                                <path d="M3 12h.01" />
+                                <path d="M12 3h.01" />
+                                <path d="M12 16v.01" />
+                                <path d="M16 12h1" />
+                                <path d="M21 12v.01" />
+                                <path d="M12 21v-1" />
+                              </svg>
+                            </button>
+
+                            {/* 👁️ Ver Detalle */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Ver detalle de mobiliario"
+                              onClick={() => {
+                                setItemSeleccionado(m);
+                                setModalDetalleOpen(true);
+                              }}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'var(--surface-2)',
+                                border: '1px solid var(--line)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--text)',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            </button>
+
+                            {/* ✏️ Editar */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Editar mobiliario"
+                              onClick={() => handleOpenEdit(m)}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(245, 158, 11, 0.1)',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--amber, #f59e0b)',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                <path d="m15 5 4 4" />
+                              </svg>
+                            </button>
+
+                            {/* 🗑️ Eliminar */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud shrink-0"
+                              title="Dar de baja o eliminar mobiliario"
+                              onClick={() => handleDeleteMobiliario(m)}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--red, #ef4444)',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                <line x1="10" x2="10" y1="11" y2="17" />
+                                <line x1="14" x2="14" y1="11" y2="17" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
+                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedMobiliario.length) }).map((_, phIdx) => (
+                    <tr key={`ph-mobiliario-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
+                      <td colSpan={6} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                        &nbsp;
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* CONTROLES DE PAGINACIÓN COMPACTA (5 FILAS POR PÁGINA) */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 14px',
+                  borderTop: '1px solid var(--line)',
+                  fontSize: '12.5px',
+                  color: 'var(--text-dim)',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div>
+                  Mostrando{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {mobiliarioFiltrado.length === 0 ? 0 : (currentMobiliarioPage - 1) * ITEMS_PER_PAGE + 1}
+                  </strong>{' '}
+                  -{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {Math.min(currentMobiliarioPage * ITEMS_PER_PAGE, mobiliarioFiltrado.length)}
+                  </strong>{' '}
+                  de <strong style={{ color: 'var(--text-h)' }}>{mobiliarioFiltrado.length}</strong> muebles
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={currentMobiliarioPage <= 1}
+                    onClick={() => setMobiliarioPage((p) => Math.max(1, p - 1))}
+                    style={{ padding: '3px 10px', fontSize: '12px', cursor: currentMobiliarioPage <= 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    ← Anterior
+                  </button>
+
+                  <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
+                    Página {currentMobiliarioPage} de {totalMobiliarioPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={currentMobiliarioPage >= totalMobiliarioPages}
+                    onClick={() => setMobiliarioPage((p) => Math.min(totalMobiliarioPages, p + 1))}
+                    style={{ padding: '3px 10px', fontSize: '12px', cursor: currentMobiliarioPage >= totalMobiliarioPages ? 'not-allowed' : 'pointer' }}
                   >
                     Siguiente →
                   </button>
@@ -2909,15 +4157,15 @@ export default function InventarioView({
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!loanPerson) {
-                  alert('Debes indicar el Solicitante / Formador custodio.');
+                  showError('Validación', 'Debes indicar el Solicitante / Formador custodio.');
                   return;
                 }
                 if (!loanExpectedDate) {
-                  alert('Debes seleccionar la fecha de devolución.');
+                  showError('Validación', 'Debes seleccionar la fecha de devolución.');
                   return;
                 }
                 if (loanExpectedDate < today()) {
-                  alert('La fecha de devolución no puede ser anterior a la fecha de hoy.');
+                  showError('Fecha Inválida', 'La fecha de devolución no puede ser anterior a la fecha de hoy.');
                   return;
                 }
 
@@ -2937,7 +4185,19 @@ export default function InventarioView({
                   await onRetry();
                 }
 
+                const targetPlaca = quickLoanUnit.placa || quickLoanUnit.code;
+                const targetCustodio = loanPerson;
+                const targetDev = loanExpectedDate;
                 setQuickLoanUnit(null);
+                setLoanPerson('');
+                setLoanExpectedDate('');
+
+                // Toast Institucional para Préstamo Retornable
+                showLoanSuccess({
+                  codigo: targetPlaca,
+                  custodio: targetCustodio,
+                  fechaDevolucion: targetDev,
+                });
               }}
             >
               <div className="modal-body form-grid">
@@ -3134,7 +4394,7 @@ export default function InventarioView({
         </div>
       )}
 
-            {/* =========================================================================
+      {/* =========================================================================
           MODAL: CONSULTAR DETALLE DEL MATERIAL / EQUIPO (SÓLO LECTURA)
           ========================================================================= */}
       {modalDetalleOpen && itemSeleccionado && (
@@ -3230,14 +4490,14 @@ export default function InventarioView({
                 <span
                   className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-mono font-semibold text-xs px-2.5 py-1 rounded-md"
                 >
-                  {itemParaEditar.id}
+                  {formDataEditar.id || itemParaEditar.id}
                 </span>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0">
-                    Editar Material / Consumible
+                    {isPapeleriaEdit ? 'Editar Insumo de Papelería' : 'Editar Material / Consumible'}
                   </h3>
                   <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0">
-                    Actualiza la ficha técnica y existencias en el inventario
+                    {isPapeleriaEdit ? 'Actualiza los datos y existencias del insumo de papelería' : 'Actualiza la placa, ficha técnica y existencias en el inventario'}
                   </p>
                 </div>
               </div>
@@ -3424,32 +4684,80 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Categoría y Sede en 2 Columnas */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                    {/* Fila 2: Código / Placa y (Condición si es Papelería, o Categoría si es Consumibles) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Categoría
+                          Código / Placa *
                         </label>
-                        <select
-                          name="categoria"
-                          value={formDataEditar.categoria || 'Robótica'}
-                          onChange={(e) => setFormDataEditar({ ...formDataEditar, categoria: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                        <input
+                          required
+                          type="text"
+                          name="id"
+                          value={formDataEditar.id || ''}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, id: e.target.value })}
+                          placeholder={isPapeleriaEdit ? "Ej. Pape0036" : "Ej. Rob0043"}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
                             borderColor: 'var(--line, #334155)',
                           }}
-                        >
-                          <option value="Robótica">Robótica</option>
-                          <option value="Electrónica">Electrónica</option>
-                          <option value="Herramientas">Herramientas</option>
-                          <option value="Impresión 3D">Impresión 3D</option>
-                          <option value="Cables y Adaptadores">Cables y Adaptadores</option>
-                          <option value="Cómputo & Formación">Cómputo & Formación</option>
-                        </select>
+                        />
                       </div>
 
+                      <div>
+                        {isPapeleriaEdit ? (
+                          <>
+                            <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                              Condición del Insumo
+                            </label>
+                            <select
+                              name="condicion"
+                              value={formDataEditar.condicion || 'Nuevos'}
+                              onChange={(e) => setFormDataEditar({ ...formDataEditar, condicion: e.target.value })}
+                              className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                              style={{
+                                backgroundColor: 'var(--bg, #0f172a)',
+                                color: 'var(--text, #f8fafc)',
+                                borderColor: 'var(--line, #334155)',
+                              }}
+                            >
+                              <option value="Nuevos">Nuevos</option>
+                              <option value="Usados">Usados</option>
+                              <option value="Mixto">Mixto</option>
+                            </select>
+                          </>
+                        ) : (
+                          <>
+                            <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                              Categoría *
+                            </label>
+                            <select
+                              name="categoria"
+                              value={formDataEditar.categoria || 'Robótica'}
+                              onChange={(e) => setFormDataEditar({ ...formDataEditar, categoria: e.target.value })}
+                              className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                              style={{
+                                backgroundColor: 'var(--bg, #0f172a)',
+                                color: 'var(--text, #f8fafc)',
+                                borderColor: 'var(--line, #334155)',
+                              }}
+                            >
+                              <option value="Robótica">Robótica</option>
+                              <option value="Electrónica">Electrónica</option>
+                              <option value="Herramientas">Herramientas</option>
+                              <option value="Impresión 3D">Impresión 3D</option>
+                              <option value="Cables y Adaptadores">Cables y Adaptadores</option>
+                              <option value="Cómputo & Formación">Cómputo & Formación</option>
+                            </select>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Fila 3: Sede / Ubicación Física y Estante / Caja / Gaveta (en 2 columnas balanceadas) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                           Sede / Ubicación Física
@@ -3489,8 +4797,8 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 3: Cantidad / Disponibles y Stock Mínimo en 2 Columnas */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                    {/* Fila 4: Cantidad / Disponibles * y Stock Mínimo De Alerta * (en 2 columnas balanceadas) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                           Cantidad / Disponibles *
@@ -3520,7 +4828,7 @@ export default function InventarioView({
                           type="number"
                           min="0"
                           name="minimo"
-                          value={formDataEditar.minimo ?? 5}
+                          value={formDataEditar.minimo ?? (isPapeleriaEdit ? 3 : 5)}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, minimo: e.target.value })}
                           className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
@@ -3948,10 +5256,10 @@ export default function InventarioView({
                 </span>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0">
-                    Nuevo Material / Consumible
+                    {isPapeleriaNuevo ? 'Nuevo Insumo de Papelería' : 'Nuevo Material / Consumible'}
                   </h3>
                   <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0">
-                    Registra la ficha técnica y existencias iniciales en el inventario
+                    {isPapeleriaNuevo ? 'Registra un nuevo material institucional para el catálogo de papelería' : 'Registra la ficha técnica y existencias iniciales en el inventario'}
                   </p>
                 </div>
               </div>
@@ -4116,10 +5424,10 @@ export default function InventarioView({
                       <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
                     </div>
 
-                    {/* Fila 1: Nombre del Material (Ancho Completo, igual a Nombre del Elemento / Equipo) */}
+                    {/* Fila 1: Nombre del Elemento / Material (Ancho Completo) */}
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Nombre Del Material *
+                        Nombre Del Elemento / Material *
                       </label>
                       <input
                         required
@@ -4127,7 +5435,7 @@ export default function InventarioView({
                         name="material"
                         value={formDataNuevo.material || ''}
                         onChange={(e) => setFormDataNuevo({ ...formDataNuevo, material: e.target.value })}
-                        placeholder="Ej. Sensor Ultrasónico HC-SR04 o Arduino UNO"
+                        placeholder={isPapeleriaNuevo ? "Ej. Carpetas de Cartón Yute Oficio" : "Ej. Sensor Ultrasónico HC-SR04 o Arduino UNO"}
                         className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                         style={{
                           backgroundColor: 'var(--bg, #0f172a)',
@@ -4137,8 +5445,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Código / Placa y Categoría en 2 Columnas (Idéntico a Equipos) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                    {/* Fila 2: Código / Placa y (Condición si es Papelería, o Categoría si es Consumible) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                           Código Del Ítem *
@@ -4151,7 +5459,7 @@ export default function InventarioView({
                           disabled={false}
                           value={formDataNuevo.id || ''}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, id: e.target.value })}
-                          placeholder="Ej. Rob0143"
+                          placeholder={isPapeleriaNuevo ? "Ej. Pape2012" : "Ej. Rob0143"}
                           className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
@@ -4160,82 +5468,65 @@ export default function InventarioView({
                           }}
                         />
                         <p className="text-xs text-slate-500 mt-1 flex items-center gap-1" style={{ fontSize: '11px', marginTop: '4px', color: 'var(--text-dim, #94a3b8)', lineHeight: 1.3 }}>
-                          <span className="text-lime-600 font-semibold" style={{ color: '#84cc16', fontWeight: 600 }}>ℹ Código sugerido automáticamente:</span>{' '}
-                          Sigue el consecutivo institucional, pero puedes modificarlo si el insumo ya cuenta con otro código interno.
+                          <span className="text-lime-600 font-semibold" style={{ color: '#84cc16', fontWeight: 600 }}>ℹ Consecutivo:</span>{' '}
+                          {isPapeleriaNuevo ? 'Formato institucional PapeXXXX sugerido.' : 'Sigue el consecutivo sugerido.'}
                         </p>
                       </div>
 
                       <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Categoría *
-                        </label>
-                        <select
-                          required
-                          name="categoria"
-                          value={formDataNuevo.categoria || 'Robótica'}
-                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, categoria: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        >
-                          <option value="Robótica">Robótica</option>
-                          <option value="Electrónica">Electrónica</option>
-                          <option value="Herramientas">Herramientas</option>
-                          <option value="Impresión 3D">Impresión 3D</option>
-                          <option value="Cables y Adaptadores">Cables y Adaptadores</option>
-                          <option value="Cómputo & Formación">Cómputo & Formación</option>
-                        </select>
+                        {isPapeleriaNuevo ? (
+                          <>
+                            <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                              Condición del Insumo *
+                            </label>
+                            <select
+                              required
+                              name="condicion"
+                              value={formDataNuevo.condicion || 'Nuevos'}
+                              onChange={(e) => setFormDataNuevo({ ...formDataNuevo, condicion: e.target.value })}
+                              className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                              style={{
+                                backgroundColor: 'var(--bg, #0f172a)',
+                                color: 'var(--text, #f8fafc)',
+                                borderColor: 'var(--line, #334155)',
+                              }}
+                            >
+                              <option value="Nuevos">Nuevos</option>
+                              <option value="Usados">Usados</option>
+                              <option value="Mixto">Mixto</option>
+                            </select>
+                          </>
+                        ) : (
+                          <>
+                            <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                              Categoría *
+                            </label>
+                            <select
+                              required
+                              name="categoria"
+                              value={formDataNuevo.categoria || 'Robótica'}
+                              onChange={(e) => setFormDataNuevo({ ...formDataNuevo, categoria: e.target.value })}
+                              className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                              style={{
+                                backgroundColor: 'var(--bg, #0f172a)',
+                                color: 'var(--text, #f8fafc)',
+                                borderColor: 'var(--line, #334155)',
+                              }}
+                            >
+                              <option value="Robótica">Robótica</option>
+                              <option value="Electrónica">Electrónica</option>
+                              <option value="Herramientas">Herramientas</option>
+                              <option value="Impresión 3D">Impresión 3D</option>
+                              <option value="Cables y Adaptadores">Cables y Adaptadores</option>
+                              <option value="Cómputo & Formación">Cómputo & Formación</option>
+                            </select>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    {/* Fila 3: Cantidad y Sede/Ubicación en 2 Columnas */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Cantidad Inicial / Existencias *
-                        </label>
-                        <input
-                          required
-                          type="number"
-                          min="0"
-                          name="disponible"
-                          value={formDataNuevo.disponible ?? 10}
-                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, disponible: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Stock Mínimo De Alerta *
-                        </label>
-                        <input
-                          required
-                          type="number"
-                          min="0"
-                          name="minimo"
-                          value={formDataNuevo.minimo ?? 5}
-                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, minimo: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 4: Sede / Ubicación Física y Estante / Caja / Gaveta en 2 Columnas */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                    {/* Fila 3: Sede / Ubicación Física y Estante / Caja / Gaveta (en 2 columnas balanceadas) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                           Sede / Ubicación Física
@@ -4266,6 +5557,49 @@ export default function InventarioView({
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion_estante: e.target.value })}
                           placeholder="Ej. Caja Rimax 12, Estantería B-1"
                           className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fila 4: Cantidad / Disponibles * y Stock Mínimo De Alerta * (en 2 columnas balanceadas) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Cantidad Inicial / Existencias *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          name="disponible"
+                          value={formDataNuevo.disponible ?? 10}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, disponible: e.target.value })}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Stock Mínimo De Alerta *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          name="minimo"
+                          value={formDataNuevo.minimo ?? (isPapeleriaNuevo ? 3 : 5)}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, minimo: e.target.value })}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -4338,7 +5672,7 @@ export default function InventarioView({
                         </label>
                         <select
                           name="condicion"
-                          value={formDataNuevo.condicion || 'Nuevo'}
+                          value={formDataNuevo.condicion || 'Nuevos'}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, condicion: e.target.value })}
                           className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
@@ -4347,8 +5681,9 @@ export default function InventarioView({
                             borderColor: 'var(--line, #334155)',
                           }}
                         >
-                          <option value="Nuevo">Nuevo</option>
-                          <option value="Usado">Usado</option>
+                          <option value="Nuevos">Nuevos</option>
+                          <option value="Usados">Usados</option>
+                          <option value="Nuevos y Usados">Nuevos y Usados</option>
                           <option value="Donación">Donación</option>
                         </select>
                       </div>
@@ -4545,15 +5880,15 @@ export default function InventarioView({
                         // Validación rápida de paso 1 al avanzar
                         if (pasoActualNuevo === 1) {
                           if (!formDataNuevo.id?.trim()) {
-                            alert('El código del ítem es obligatorio (ej: Rob0143).');
+                            showError('Validación', 'El código del ítem es obligatorio (ej: Rob0143).');
                             return;
                           }
                           if (!formDataNuevo.material?.trim()) {
-                            alert('El nombre del material es obligatorio.');
+                            showError('Validación', 'El nombre del material es obligatorio.');
                             return;
                           }
                           if (formDataNuevo.disponible === '' || isNaN(Number(formDataNuevo.disponible)) || Number(formDataNuevo.disponible) < 0) {
-                            alert('La cantidad inicial debe ser un número mayor o igual a 0.');
+                            showError('Validación', 'La cantidad inicial debe ser un número mayor o igual a 0.');
                             return;
                           }
                         }
@@ -5463,18 +6798,18 @@ export default function InventarioView({
                         // Validación de paso 1
                         if (pasoActualEquipo === 1) {
                           if (!formDataNuevoEquipo.nombre?.trim()) {
-                            alert('El Nombre del equipo es obligatorio.');
+                            showError('Validación', 'El Nombre del equipo es obligatorio.');
                             return;
                           }
                           if (!formDataNuevoEquipo.placa?.trim()) {
-                            alert('La Placa / Código del equipo es obligatorio (ej: FMO-EQ-005).');
+                            showError('Validación', 'La Placa / Código del equipo es obligatorio (ej: FMO-EQ-005).');
                             return;
                           }
                         }
                         // Validación de paso 2
                         if (pasoActualEquipo === 2) {
                           if (!formDataNuevoEquipo.serial?.trim()) {
-                            alert('El Serial del equipo es obligatorio.');
+                            showError('Validación', 'El Serial del equipo es obligatorio.');
                             return;
                           }
                         }

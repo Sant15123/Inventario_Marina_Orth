@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 
 /**
  * ModalEditarActivo: Componente modal unificado para editar equipos tecnológicos.
@@ -29,6 +30,7 @@ export default function ModalEditarActivo({
   onSubmit: externalOnSubmit,
   submitting: externalSubmitting,
 }) {
+  const { showEditSuccess, showError } = useToast();
   const itemActivo = activo || equipo;
 
   // Estado interno para uso autónomo
@@ -122,18 +124,18 @@ export default function ModalEditarActivo({
 
     // Validación paso 1
     if (!formData.nombre?.trim()) {
-      alert('El Nombre del equipo es obligatorio.');
+      showError('Validación', 'El Nombre del equipo es obligatorio.');
       setPasoActual(1);
       return;
     }
     if (!formData.placa?.trim()) {
-      alert('La Placa / Código del equipo es obligatorio.');
+      showError('Validación', 'La Placa / Código del equipo es obligatorio.');
       setPasoActual(1);
       return;
     }
     // Validación paso 2
     if (!formData.serial?.trim()) {
-      alert('El Serial del equipo es obligatorio.');
+      showError('Validación', 'El Serial del equipo es obligatorio.');
       setPasoActual(2);
       return;
     }
@@ -146,9 +148,10 @@ export default function ModalEditarActivo({
         await onSaveSuccess(formData);
       }
       onClose();
+      showEditSuccess(formData.nombre || formData.placa);
     } catch (err) {
       console.error('Error al guardar equipo:', err);
-      alert('Error al guardar los cambios: ' + (err.message || 'Error desconocido'));
+      showError('Error al guardar cambios', err.message || 'Error desconocido');
     } finally {
       setInternalSubmitting(false);
     }
@@ -992,18 +995,18 @@ export default function ModalEditarActivo({
                     // Validación paso 1
                     if (pasoActual === 1) {
                       if (!formData.nombre?.trim()) {
-                        alert('El Nombre del equipo es obligatorio.');
+                        showError('Validación', 'El Nombre del equipo es obligatorio.');
                         return;
                       }
                       if (!formData.placa?.trim()) {
-                        alert('La Placa / Código del equipo es obligatorio.');
+                        showError('Validación', 'La Placa / Código del equipo es obligatorio.');
                         return;
                       }
                     }
                     // Validación paso 2
                     if (pasoActual === 2) {
                       if (!formData.serial?.trim()) {
-                        alert('El Serial del equipo es obligatorio.');
+                        showError('Validación', 'El Serial del equipo es obligatorio.');
                         return;
                       }
                     }

@@ -10,7 +10,10 @@ import InventarioView from './views/InventarioView';
 import PrestamosView from './views/PrestamosView';
 import HistorialView from './views/HistorialView';
 import DetalleActivoPublico from './views/DetalleActivoPublico';
+import UsuariosView from './views/UsuariosView';
+import MiPanelUsuarioView from './views/MiPanelUsuarioView';
 
+import { useAuth } from './context/AuthContext';
 import { today, fmtDate, available, isOverdue } from './data/initialData';
 import inventoryApi from './services/inventoryApi';
 import { exportarLibroMaestroExcelFMO } from './services/excelExportService';
@@ -41,8 +44,19 @@ function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Estado simple de navegación para las 4 vistas requeridas
+  const { currentUser, isAdmin, isUsuario } = useAuth();
+
+  // Estado simple de navegación para las vistas
   const [currentView, setCurrentView] = useState('resumen');
+
+  // Redirigir a 'mi-panel' si el rol activo es 'usuario'
+  useEffect(() => {
+    if (isUsuario && currentView !== 'mi-panel' && currentView !== 'historial') {
+      setCurrentView('mi-panel');
+    } else if (!isUsuario && currentView === 'mi-panel') {
+      setCurrentView('resumen');
+    }
+  }, [isUsuario, currentView]);
 
   // Parámetros de navegación inicial para transferir filtros desde Resumen
   const [inventarioParams, setInventarioParams] = useState({ tab: 'equipos', stockFilter: 'todos' });
@@ -667,7 +681,16 @@ function App() {
               />
 
               <main className="main-content">
-                {currentView === 'resumen' && (
+                {/* VISTA SIMPLIFICADA PARA ROL USUARIO: MIS SOLICITUDES Y ASIGNACIONES */}
+                {currentView === 'mi-panel' && (
+                  <MiPanelUsuarioView
+                    items={items}
+                    movements={movements}
+                  />
+                )}
+
+                {/* VISTA RESUMEN (ADMINISTRATIVO / SUPERVISOR / OPERADOR) */}
+                {!isUsuario && currentView === 'resumen' && (
                   <ResumenView
                     items={filteredItems}
                     movements={filteredMovements}
@@ -678,7 +701,8 @@ function App() {
                   />
                 )}
 
-                {currentView === 'inventario' && (
+                {/* VISTA INVENTARIO */}
+                {!isUsuario && currentView === 'inventario' && (
                   <InventarioView
                     items={filteredItems}
                     searchTerm={searchTerm}
@@ -694,7 +718,8 @@ function App() {
                   />
                 )}
 
-                {currentView === 'prestamos' && (
+                {/* VISTA PRÉSTAMOS Y ENTREGAS */}
+                {!isUsuario && currentView === 'prestamos' && (
                   <PrestamosView
                     items={filteredItems}
                     movements={filteredMovements}
@@ -709,8 +734,14 @@ function App() {
                   />
                 )}
 
+                {/* VISTA HISTORIAL */}
                 {currentView === 'historial' && (
                   <HistorialView movements={filteredMovements} />
+                )}
+
+                {/* VISTA MÓDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES) */}
+                {!isUsuario && isAdmin && currentView === 'usuarios' && (
+                  <UsuariosView />
                 )}
               </main>
 

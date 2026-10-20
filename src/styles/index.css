@@ -59,6 +59,11 @@
   --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
 
+  /* Aliases para componentes de interfaz */
+  --border: var(--line);
+  --bg-card: var(--surface-2);
+  --surface-modal: var(--surface);
+
   --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -98,6 +103,11 @@
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.07), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+
+  /* Aliases para componentes de interfaz en modo claro */
+  --border: var(--line);
+  --bg-card: var(--surface-2);
+  --surface-modal: var(--surface);
 }
 
 [data-theme="light"] body,
@@ -649,6 +659,239 @@ h4 {
 }
 
 /* --------------------------------------------------------------------------
+   CÁPSULA DE PERFIL DE USUARIO Y SELECTOR DE ROL (Theme-Adaptive)
+   -------------------------------------------------------------------------- */
+.user-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  outline: none;
+  user-select: none;
+}
+
+.user-profile-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--copper);
+  transform: translateY(-1px);
+}
+
+.user-avatar-circle {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #84CC16;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(132, 204, 22, 0.35);
+}
+
+.user-profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.user-profile-name {
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--text);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-profile-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--text-dim);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* Menú dropdown del usuario */
+.user-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 270px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  z-index: 1000;
+  color: var(--text);
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-dropdown-header {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  color: var(--text);
+  font-size: 12px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.user-dropdown-item:hover {
+  background: var(--surface-hover);
+}
+
+.user-dropdown-item.active {
+  background: rgba(132, 204, 22, 0.15);
+  color: var(--copper);
+  font-weight: 600;
+}
+
+.user-dropdown-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.user-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.user-role-btn {
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10.5px;
+  text-transform: capitalize;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.user-role-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.user-role-btn.active {
+  background: var(--copper);
+  color: #0f172a;
+  border-color: var(--copper);
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   BADGES DE ROLES (Theme-Adaptive)
+   -------------------------------------------------------------------------- */
+.badge-role {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  line-height: 1.2;
+}
+
+/* Rol: Administrador */
+.badge-role.administrador {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+}
+[data-theme="light"] .badge-role.administrador {
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+/* Rol: Supervisor */
+.badge-role.supervisor {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fcd34d;
+}
+[data-theme="light"] .badge-role.supervisor {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+/* Rol: Operador */
+.badge-role.operador {
+  background: rgba(132, 204, 22, 0.18);
+  border-color: rgba(132, 204, 22, 0.4);
+  color: #bef264;
+}
+[data-theme="light"] .badge-role.operador {
+  background: #ecfccb;
+  border-color: #d9f99d;
+  color: #4d7c0f;
+}
+
+/* Rol: Usuario */
+.badge-role.usuario {
+  background: rgba(14, 165, 233, 0.18);
+  border-color: rgba(14, 165, 233, 0.4);
+  color: #7dd3fc;
+}
+[data-theme="light"] .badge-role.usuario {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+/* --------------------------------------------------------------------------
    CONTENIDO PRINCIPAL
    -------------------------------------------------------------------------- */
 .main-wrapper {
@@ -848,6 +1091,54 @@ td.wrap {
   background: var(--surface-2);
   color: var(--text-dim);
   border-color: var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   BADGE ESTANDARIZADO DE PLACA / CÓDIGO DE ACTIVO
+   -------------------------------------------------------------------------- */
+.badge-placa {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5px 8.5px;
+  border-radius: 5px;
+  background: var(--surface-2, #1a2332);
+  border: 1px solid rgba(6, 182, 212, 0.45);
+  color: #38bdf8;
+  font-family: var(--font-mono, 'JetBrains Mono', ui-monospace, Consolas, monospace);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1.25;
+  outline: none;
+  box-shadow: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.badge-placa:hover {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}
+
+[data-theme="light"] .badge-placa {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.4);
+  color: #0284c7;
+}
+
+[data-theme="light"] .badge-placa:hover {
+  background: rgba(2, 132, 199, 0.18);
+  border-color: #0284c7;
+  color: #0369a1;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.25);
 }
 
 /* Botones */

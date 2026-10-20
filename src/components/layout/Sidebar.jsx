@@ -1,57 +1,68 @@
-
+import React from 'react';
+import {
+  LayoutDashboard,
+  Box,
+  HandCoins,
+  History,
+  Users,
+  Laptop,
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * Sidebar Component
  * Proporciona el branding institucional "Marina Orth Foundation - Robótica"
- * y la navegación entre las 4 vistas principales (Resumen, Inventario, Préstamos y entregas, Historial).
+ * y la navegación según el rol del usuario autenticado (incluyendo el módulo de Usuarios para Administradores).
  */
 export default function Sidebar({ currentView, onViewChange }) {
-  const navItems = [
-    {
-      id: 'resumen',
-      label: 'Resumen',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
-        </svg>
-      )
-    },
-    {
-      id: 'inventario',
-      label: 'Inventario',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-          <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg>
-      )
-    },
-    {
-      id: 'prestamos',
-      label: 'Préstamos y entregas',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <polyline points="16 11 18 13 22 9"></polyline>
-        </svg>
-      )
-    },
-    {
-      id: 'historial',
-      label: 'Historial',
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-      )
-    }
-  ];
+  const { currentUser, isAdmin, isUsuario } = useAuth();
+
+  // Elementos de navegación según el rol
+  const navItems = isUsuario
+    ? [
+        {
+          id: 'mi-panel',
+          label: 'Mis Asignaciones',
+          icon: <Laptop className="w-4 h-4" />,
+        },
+        {
+          id: 'historial',
+          label: 'Historial Personal',
+          icon: <History className="w-4 h-4" />,
+        },
+      ]
+    : [
+        {
+          id: 'resumen',
+          label: 'Resumen',
+          icon: <LayoutDashboard className="w-4 h-4" />,
+        },
+        {
+          id: 'inventario',
+          label: 'Inventario',
+          icon: <Box className="w-4 h-4" />,
+        },
+        {
+          id: 'prestamos',
+          label: 'Préstamos y entregas',
+          icon: <HandCoins className="w-4 h-4" />,
+        },
+        {
+          id: 'historial',
+          label: 'Historial',
+          icon: <History className="w-4 h-4" />,
+        },
+        // Módulo de Usuarios (Visible exclusivamente para Administradores)
+        ...(isAdmin
+          ? [
+              {
+                id: 'usuarios',
+                label: 'Usuarios',
+                icon: <Users className="w-4 h-4" />,
+              },
+            ]
+          : []),
+      ];
 
   return (
     <aside className="sidebar">
@@ -94,11 +105,12 @@ export default function Sidebar({ currentView, onViewChange }) {
       </div>
 
       <div className="sidebar-footer">
+        <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-dim)' }}>
+          Rol activo: <strong style={{ color: '#84CC16', textTransform: 'capitalize' }}>{currentUser?.rol}</strong>
+        </div>
         <p>Sistema Interno de Inventario</p>
         <p style={{ marginTop: '2px', opacity: 0.7 }}>v2.0 • React + Vite</p>
       </div>
     </aside>
   );
 }
-
-

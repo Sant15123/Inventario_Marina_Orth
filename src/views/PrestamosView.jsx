@@ -3,6 +3,7 @@ import { fmtDate, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, today } fro
 import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
+import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 
 export default function PrestamosView({
@@ -20,6 +21,9 @@ export default function PrestamosView({
   // Pestaña o bloque visible si se desea filtrar rápidamente
   const [activeSection, setActiveSection] = useState(initialSection); // 'all' | 'prestamos' | 'entregas'
   const [filterEstadoPrestamo, setFilterEstadoPrestamo] = useState(initialStatusFilter); // 'todos' | 'Activo' | 'Vencido'
+
+  // Notificaciones y Modales Institucionales FMO
+  const { showLoanSuccess, showDeliverySuccess, showConfirmAction, showEditSuccess, showError, showInfo } = useToast();
 
   useEffect(() => {
     if (initialSection) setActiveSection(initialSection);
@@ -89,25 +93,25 @@ export default function PrestamosView({
     e.preventDefault();
 
     if (!selectedEquipoId) {
-      alert('Por favor selecciona un equipo tecnológico.');
+      showError('Validación', 'Por favor selecciona un equipo tecnológico.');
       return;
     }
     if (selectedUnits.length === 0) {
-      alert('Debes seleccionar al menos una unidad o placa para realizar el préstamo.');
+      showError('Validación', 'Debes seleccionar al menos una unidad o placa para realizar el préstamo.');
       return;
     }
 
     if (!loanPerson) {
-      alert('Debes especificar el responsable o formador custodio.');
+      showError('Validación', 'Debes especificar el responsable o formador custodio.');
       return;
     }
     if (!loanExpectedDate) {
-      alert('Indica la fecha de devolución pactada.');
+      showError('Validación', 'Indica la fecha de devolución pactada.');
       return;
     }
     // Validación de fecha no pasada
     if (loanExpectedDate < today()) {
-      alert('La fecha de devolución no puede ser anterior a la fecha de hoy.');
+      showError('Fecha Inválida', 'La fecha de devolución no puede ser anterior a la fecha de hoy.');
       return;
     }
 
@@ -128,6 +132,11 @@ export default function PrestamosView({
         await onRetry();
       }
 
+      // Copiar valores para la notificación
+      const targetPlacas = [...selectedUnits];
+      const targetCustodio = loanPerson;
+      const targetFecha = loanExpectedDate;
+
       // Reset
       setShowLoanModal(false);
       setSelectedEquipoId('');
@@ -135,8 +144,16 @@ export default function PrestamosView({
       setLoanPerson('');
       setLoanExpectedDate('');
       setLoanMotive('');
+
+      // Notificación institucional FMO STEAM para Préstamo Retornable
+      showLoanSuccess({
+        codigo: targetPlacas.join(', '),
+        custodio: targetCustodio,
+        fechaDevolucion: targetFecha,
+      });
     } catch (err) {
       console.error('Error al registrar préstamo:', err);
+      showError('Error al registrar préstamo', err.message || 'Error del servidor');
     }
   };
 
@@ -156,16 +173,16 @@ export default function PrestamosView({
   // Agregar insumo a la canasta
   const handleAgregarItemEntrega = () => {
     if (!consumibleSeleccionado) {
-      alert('Por favor selecciona un material o insumo consumible.');
+      showError('Validación', 'Por favor selecciona un material o insumo consumible.');
       return;
     }
     const cant = Number(cantidadInput);
     if (isNaN(cant) || cant <= 0) {
-      alert('La cantidad a entregar debe ser mayor a 0.');
+      showError('Cantidad Inválida', 'La cantidad a entregar debe ser mayor a 0.');
       return;
     }
     if (cant > maxAgregable) {
-      alert(`Solo hay ${maxAgregable} unidades disponibles adicionales para agregar a la lista (Stock total: ${maxAvailableConsumible}).`);
+      showError('Stock Insuficiente', `Solo hay ${maxAgregable} unidades disponibles adicionales para agregar a la lista (Stock total: ${maxAvailableConsumible}).`);
       return;
     }
 
@@ -206,15 +223,15 @@ export default function PrestamosView({
     e.preventDefault();
 
     if (!deliveryPerson) {
-      alert('Selecciona a la persona responsable que recibe el material.');
+      showError('Validación', 'Selecciona a la persona responsable que recibe el material.');
       return;
     }
     if (!deliverySede) {
-      alert('Selecciona la sede o municipio de destino.');
+      showError('Validación', 'Selecciona la sede o municipio de destino.');
       return;
     }
     if (itemsEntrega.length === 0) {
-      alert('Debes agregar al menos 1 material o insumo a la lista de entrega.');
+      showError('Validación', 'Debes agregar al menos 1 material o insumo a la lista de entrega.');
       return;
     }
 
@@ -245,6 +262,9 @@ export default function PrestamosView({
         await onRetry();
       }
 
+      const totalItemsDespachados = itemsEntrega.length;
+      const actaId = `ACTA-${Date.now().toString().slice(-4)}`;
+
       // Reset
       setShowDeliveryModal(false);
       setItemsEntrega([]);
@@ -253,9 +273,15 @@ export default function PrestamosView({
       setDeliveryPerson('');
       setDeliveryProyecto('');
       setDeliveryMotive('');
+
+      // Notificación institucional FMO STEAM para Despacho de Consumibles
+      showDeliverySuccess({
+        totalConsumibles: totalItemsDespachados,
+        codigoRemision: actaId,
+      });
     } catch (err) {
       console.error('Error al registrar entrega de consumibles:', err);
-      alert(`Error al registrar la entrega: ${err.message || 'Error inesperado'}`);
+      showError('Error al registrar entrega', err.message || 'Error inesperado');
     } finally {
       setDeliverySubmitting(false);
     }
@@ -452,9 +478,9 @@ export default function PrestamosView({
       if (onRetry) await onRetry();
       setModalEditarEquipoOpen(false);
       setEquipoParaEditar(null);
-      alert('Equipo actualizado correctamente.');
+      showEditSuccess(formDataEditarEquipo.nombre || formDataEditarEquipo.placa);
     } catch (err) {
-      alert(`Error al actualizar el equipo: ${err.message || 'Error del servidor'}`);
+      showError('Error al actualizar', err.message || 'Error del servidor');
     } finally {
       setEditEquipoSubmitting(false);
     }
@@ -630,9 +656,9 @@ export default function PrestamosView({
                     const fechaDevolucion = m.expectedReturn || m.fecha_devolucion_esperada || m.fecha_devolucion;
 
                     return (
-                      <tr key={m.id} className={overdue ? 'row-overdue' : 'row-active'} style={{ height: '56px' }}>
+                      <tr key={m.id} className={`${overdue ? 'row-overdue' : 'row-active'} h-auto`}>
                         {/* 1. ELEMENTO */}
-                        <td style={{ padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, overflow: 'hidden' }}>
                             <strong
                               className="item-title"
@@ -669,7 +695,7 @@ export default function PrestamosView({
                         </td>
 
                         {/* 2. PLACAS / UNIDADES (CENTRADAS E INTERACTIVAS) */}
-                        <td style={{ padding: '0 8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <div className="units-tags" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', overflow: 'hidden', maxWidth: '100%', flexWrap: 'wrap' }}>
                             {m.unitCodes && m.unitCodes.length > 0 ? (
                               m.unitCodes.map((code) => (
@@ -677,23 +703,8 @@ export default function PrestamosView({
                                   key={code}
                                   type="button"
                                   onClick={() => abrirModalDetalle(code, m)}
-                                  className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-sky-950/80 text-sky-400 border border-sky-800/60 hover:bg-sky-900 hover:border-sky-500 hover:text-white transition-all cursor-pointer shadow-sm group"
+                                  className="badge-placa"
                                   title={`Ver ficha técnica y detalle completo del equipo (${code})`}
-                                  style={{
-                                    background: 'var(--surface-2, #1a2332)',
-                                    border: '1px solid rgba(6, 182, 212, 0.4)',
-                                    color: '#38bdf8',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    letterSpacing: '0.04em',
-                                    cursor: 'pointer',
-                                    display: 'inline-block',
-                                    maxWidth: '100%',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                  }}
                                 >
                                   {code}
                                 </button>
@@ -702,18 +713,8 @@ export default function PrestamosView({
                               <button
                                 type="button"
                                 onClick={() => abrirModalDetalle(m.placa || m.itemId, m)}
-                                className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-sky-950/80 text-sky-400 border border-sky-800/60 hover:bg-sky-900 hover:border-sky-500 hover:text-white transition-all cursor-pointer shadow-sm group"
+                                className="badge-placa"
                                 title="Ver ficha técnica del equipo"
-                                style={{
-                                  background: 'var(--surface-2, #1a2332)',
-                                  border: '1px solid rgba(6, 182, 212, 0.4)',
-                                  color: '#38bdf8',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                }}
                               >
                                 {m.placa || `${m.qty || 1} und`}
                               </button>
@@ -722,7 +723,7 @@ export default function PrestamosView({
                         </td>
 
                         {/* 3. CUSTODIO RESPONSABLE */}
-                        <td style={{ padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <span
                             className="person-name"
                             title={m.person}
@@ -732,22 +733,22 @@ export default function PrestamosView({
                           </span>
                         </td>
 
-                        {/* 4. SEDE / MUNICIPIO (CENTRADO) */}
-                        <td style={{ padding: '0 8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span className="sede-badge municipal" title={m.sede || 'Medellín'} style={{ fontSize: '11px', padding: '2px 8px', display: 'inline-block' }}>
+                        {/* 4. SEDE / MUNICIPIO (CENTRADO Y COMPACTO) */}
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50" title={m.sede || 'Medellín'}>
                             {m.sede || 'Medellín'}
                           </span>
                         </td>
 
                         {/* 5. FECHA PRÉSTAMO (DD/MM/YYYY CENTRADO) */}
-                        <td style={{ textAlign: 'center', padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span className="mono-num" style={{ fontFamily: 'monospace', fontSize: '12px', color: '#cbd5e1' }}>
                             {formatFecha(fechaSalida)}
                           </span>
                         </td>
 
                         {/* 6. DEVOLUCIÓN PACTADA (DD/MM/YYYY CENTRADO) */}
-                        <td style={{ textAlign: 'center', padding: '0 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span
                             className="mono-num"
                             title={overdue ? 'Préstamo vencido' : 'En plazo'}
@@ -763,7 +764,7 @@ export default function PrestamosView({
                         </td>
 
                         {/* 7. ACCIONES: 📷 QR, 👁️ Ver, ✏️ Editar, ✅ Devolución */}
-                        <td style={{ textAlign: 'center', padding: '0 4px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <div
                             className="flex items-center justify-center gap-1.5"
                             style={{
@@ -882,15 +883,23 @@ export default function PrestamosView({
                               type="button"
                               className="btn-icon-crud w-7 h-7 flex items-center justify-center rounded shrink-0"
                               title="Registrar devolución y retorno a bodega"
-                              onClick={async () => {
-                                if (window.confirm(`¿Confirmar recepción y retorno a bodega de ${m.itemName} (${(m.unitCodes || []).join(', ')})?`)) {
-                                  if (onReturnLoan) {
-                                    await onReturnLoan(m.id);
-                                  }
-                                  if (onRetry) {
-                                    await onRetry();
-                                  }
-                                }
+                              onClick={() => {
+                                showConfirmAction({
+                                  title: '¿Confirmar Retorno a Bodega?',
+                                  message: `¿Deseas confirmar la recepción y retorno a bodega de ${m.itemName} (${(m.unitCodes || []).join(', ')})? Esta acción actualizará el estado del activo a Disponible en el inventario institucional.`,
+                                  confirmText: 'Registrar Retorno',
+                                  cancelText: 'Cancelar',
+                                  isDanger: false,
+                                  onConfirm: async () => {
+                                    if (onReturnLoan) {
+                                      await onReturnLoan(m.id);
+                                    }
+                                    if (onRetry) {
+                                      await onRetry();
+                                    }
+                                    showInfo('Retorno Confirmado', `Equipo ${m.itemName} (${(m.unitCodes || []).join(', ')}) reintegrado a bodega.`);
+                                  },
+                                });
                               }}
                               style={{
                                 width: '28px',
@@ -1031,8 +1040,8 @@ export default function PrestamosView({
                     const codigoRemision = m.codigo_acta || m.remision_id || `REM-${m.id.replace(/^mov-ent-/, '')}`;
 
                     return (
-                      <tr key={m.id}>
-                        <td>
+                      <tr key={m.id} className="h-auto">
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <div className="mono-num" style={{ fontWeight: 600 }}>{fmtDate(m.date)}</div>
                           <span
                             style={{
@@ -1050,7 +1059,7 @@ export default function PrestamosView({
                             {codigoRemision}
                           </span>
                         </td>
-                        <td>
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           {/* Lista compacta de chips/ítems */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' }}>
                             {rawItems.map((it, idx) => (
@@ -1106,19 +1115,21 @@ export default function PrestamosView({
                             📦 {totalItems} {totalItems === 1 ? 'material' : 'materiales'} ({totalUnidades} und en total)
                           </span>
                         </td>
-                        <td>
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <span className="person-name" style={{ fontWeight: 600 }}>{m.person || m.responsable_recibe}</span>
                         </td>
-                        <td>
-                          <span className="sede-badge municipal">{m.sede || 'Medellín'}</span>
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
+                          <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50">
+                            {m.sede || 'Medellín'}
+                          </span>
                         </td>
-                        <td>
+                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <span className="item-motive" title={m.motive || m.motivo || m.proyecto}>
                             {m.proyecto && <strong style={{ color: '#ABDE16', display: 'block', fontSize: '11px' }}>{m.proyecto}</strong>}
                             {m.motive || m.motivo || 'Salida de bodega'}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
+                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '12px', paddingRight: '12px' }}>
                           <button
                             type="button"
                             onClick={() => {
