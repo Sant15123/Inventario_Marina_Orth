@@ -1,6 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 
-export default function ModalQR({ activo, onClose }) {
+export default function ModalQR({ activo, onClose, onBack }) {
   if (!activo) return null;
 
   const placa = activo.placa || activo.code || 'S-PLACA';
@@ -23,7 +23,20 @@ export default function ModalQR({ activo, onClose }) {
     <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div className="modal-dialog qr-dialog no-print-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header no-print">
-          <h3>Etiqueta de Activo Fijo / Código QR</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="btn small ghost"
+                style={{ padding: '4px 8px', fontSize: '12px' }}
+                title="Volver a la ficha técnica"
+              >
+                ← Volver
+              </button>
+            )}
+            <h3>Etiqueta de Activo Fijo / Código QR</h3>
+          </div>
           <button
             type="button"
             className="close-btn"

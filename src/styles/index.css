@@ -2070,62 +2070,126 @@ tbody tr:hover {
 
 /* ==========================================================================
    REGLA DE IMPRESIÓN LIMPIA (@media print)
-   Oculta toda la interfaz de la aplicación, el sidebar y fondos oscuros.
-   Imprime exclusivamente la tarjeta física blanca en el centro de la hoja.
+   Oculta controles de navegación, botones y barras laterales.
+   Permite imprimir con alta fidelidad:
+   1. Guías de Salida / Actas de Remisión (.acta-remision-sheet)
+   2. Etiquetas físicas con Código QR (.printable-label / .qr-printable-area)
+   3. Fichas técnicas públicas (.public-asset-card)
    ========================================================================== */
 @media print {
-  /* Ocultar elementos generales del sistema administrativo */
-  body, html {
+  /* Fondo limpio y márgenes de impresión */
+  html, body {
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #0f172a !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .layout,
+  /* Ocultar elementos exclusivos de navegación o UI en pantalla */
   .sidebar,
   .header-bar,
-  .main-content,
   footer,
   .filter-bar,
   .tab-buttons,
   .topbar-actions,
   .no-print,
-  .no-print-dialog .modal-header,
-  .no-print-dialog .modal-footer,
+  .close-btn,
   .public-actions,
   .public-footer,
   .back-link {
     display: none !important;
   }
 
-  /* Desactivar fondo oscuro de modales */
+  /* Contenedores principales: no deben ocultarse ni recortar altura */
+  .layout,
+  .main-wrapper,
+  .main-content {
+    display: block !important;
+    position: static !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Si hay un modal abierto (Remisión o Etiqueta QR), OCULTAR todo el contenido de fondo */
+  body:has(.modal-backdrop) .prestamos-view > *:not(.modal-backdrop),
+  body:has(.modal-backdrop) .inventario-view > *:not(.modal-backdrop),
+  body:has(.modal-backdrop) .resumen-view,
+  body:has(.modal-backdrop) .historial-view,
+  .modal-backdrop ~ * {
+    display: none !important;
+  }
+
+  /* Modales en modo impresión: neutralizar backdrop oscuro y ocupar la hoja completa */
   .modal-backdrop {
     position: static !important;
     background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     padding: 0 !important;
     margin: 0 !important;
     display: block !important;
     inset: auto !important;
-    width: auto !important;
+    width: 100% !important;
     height: auto !important;
+    overflow: visible !important;
   }
 
   .modal-dialog {
+    position: static !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    max-width: none !important;
+    max-width: 100% !important;
     max-height: none !important;
     padding: 0 !important;
-    margin: 0 auto !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
   }
 
+  /* Ocultar modales que NO sean de impresión si hubiera alguno */
+  .modal-dialog:not(.print-modal):not(.qr-dialog) {
+    /* si es un modal regular de edición o creación */
+  }
+
+  /* CASO 1: GUÍA DE REMISIÓN / ACTA OFICIAL (.acta-remision-sheet) */
+  .acta-remision-sheet {
+    display: block !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    font-size: 11pt !important;
+  }
+
+  .acta-remision-sheet table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .acta-remision-sheet th,
+  .acta-remision-sheet td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* CASO 2: ETIQUETAS FÍSICAS QR */
   .qr-printable-area {
     display: flex !important;
     justify-content: center !important;
@@ -2134,10 +2198,10 @@ tbody tr:hover {
     width: 100% !important;
   }
 
-  /* Etiqueta blanca de alta fidelidad */
   .printable-label {
-    width: 320px !important;
-    max-width: 320px !important;
+    display: block !important;
+    width: 340px !important;
+    max-width: 340px !important;
     background: #ffffff !important;
     color: #000000 !important;
     border: 2px solid #000000 !important;
@@ -2145,7 +2209,7 @@ tbody tr:hover {
     padding: 16px !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
-    margin: auto !important;
+    margin: 30px auto !important;
   }
 
   .badge-mo-icon {
@@ -2172,8 +2236,23 @@ tbody tr:hover {
     color: #000000 !important;
   }
 
-  .qr-visual svg {
+  .qr-visual svg,
+  #consumible-qr-svg-container svg {
     width: 160px !important;
     height: 160px !important;
+  }
+
+  /* CASO 3: FICHA TÉCNICA PÚBLICA (Móvil / Detalle) */
+  .public-asset-container {
+    background: #ffffff !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  .public-asset-card {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
   }
 }

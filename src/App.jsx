@@ -13,21 +13,27 @@ import DetalleActivoPublico from './views/DetalleActivoPublico';
 
 import { today, fmtDate, available, isOverdue } from './data/initialData';
 import inventoryApi from './services/inventoryApi';
+import { exportarLibroMaestroExcelFMO } from './services/excelExportService';
 
 function App() {
-  // Estado de tema oscuro/claro con persistencia en localStorage
+  // Estado de tema oscuro/claro con persistencia en localStorage (Tema Claro por defecto)
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('marina_orth_theme');
+      const saved = localStorage.getItem('siga_theme') || localStorage.getItem('marina_orth_theme');
       if (saved === 'light' || saved === 'dark') return saved;
-      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     }
-    return 'dark';
+    return 'light';
   });
 
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('siga_theme', theme);
     localStorage.setItem('marina_orth_theme', theme);
   }, [theme]);
 
@@ -37,6 +43,25 @@ function App() {
 
   // Estado simple de navegación para las 4 vistas requeridas
   const [currentView, setCurrentView] = useState('resumen');
+
+  // Parámetros de navegación inicial para transferir filtros desde Resumen
+  const [inventarioParams, setInventarioParams] = useState({ tab: 'equipos', stockFilter: 'todos' });
+  const [prestamosParams, setPrestamosParams] = useState({ section: 'all', estado: 'todos' });
+
+  const handleNavigateFromSummary = (view, params = {}) => {
+    if (view === 'inventario') {
+      setInventarioParams({
+        tab: params.tab || 'equipos',
+        stockFilter: params.stockFilter || 'todos',
+      });
+    } else if (view === 'prestamos') {
+      setPrestamosParams({
+        section: params.section || 'all',
+        estado: params.estado || 'todos',
+      });
+    }
+    setCurrentView(view);
+  };
 
   // Estado de carga y error de la API de Supabase / Backend
   const [loading, setLoading] = useState(true);
@@ -52,10 +77,18 @@ function App() {
       setLoading(true);
       setApiError(null);
 
-      const [activosData, consumiblesData, prestamosData] = await Promise.all([
+      const [activosData, consumiblesData, prestamosData, entregasData, remisionesData] = await Promise.all([
         inventoryApi.getActivos(),
         inventoryApi.getConsumibles(),
         inventoryApi.getPrestamos(),
+        inventoryApi.getEntregas().catch((err) => {
+          console.warn('Aviso: no se pudieron cargar entregas de consumibles:', err.message);
+          return [];
+        }),
+        inventoryApi.getRemisiones().catch((err) => {
+          console.warn('Aviso: no se pudieron cargar remisiones:', err.message);
+          return [];
+        }),
       ]);
 
       const newItems = [];
@@ -63,14 +96,22 @@ function App() {
       // Mapear consumibles directamente desde la base de datos
       if (Array.isArray(consumiblesData)) {
         consumiblesData.forEach((c) => {
+          const disp = Number(c.disponible) || 0;
+          const min = Number(c.minimo) ?? 5;
           newItems.push({
             id: c.id,
-            name: c.material,
-            category: c.categoria || 'Insumos',
+            material: c.material || c.name || '',
+            name: c.material || c.name || '',
+            categoria: c.categoria || 'Robótica',
+            category: c.categoria || 'Robótica',
+            disponible: disp,
+            quantity: disp,
+            minimo: min,
+            minStock: min,
+            ubicacion: c.ubicacion || 'Oficina FMO',
+            location: c.ubicacion || 'Oficina FMO',
+            ubicacion_estante: c.ubicacion_estante || '',
             itemType: 'consumible',
-            quantity: Number(c.disponible) || 0,
-            minStock: Number(c.minimo) || 0,
-            location: c.ubicacion || 'Bodega Medellín',
             dateAdded: c.created_at ? c.created_at.split('T')[0] : today(),
           });
         });
@@ -85,6 +126,7 @@ function App() {
             model: a.modelo || a.marca || 'Estándar',
             serial: a.serial || '—',
             sede: a.sede || 'Medellín',
+            ubicacion_estante: a.ubicacion_estante || '',
             status: a.estado === 'En campo' ? 'prestado' : (a.estado || 'disponible').toLowerCase(),
             responsable: a.custodio || (a.estado === 'En campo' ? 'Custodio Temporal' : 'Bodega Central'),
           };
@@ -103,6 +145,7 @@ function App() {
               itemType: 'equipo',
               location: a.sede ? `Sede ${a.sede}` : 'Bodega Medellín',
               sede: a.sede || 'Medellín',
+              ubicacion_estante: a.ubicacion_estante || '',
               minStock: 1,
               units: [unitObj],
               quantity: 0,
@@ -118,16 +161,20 @@ function App() {
       const newMovs = [];
       if (Array.isArray(prestamosData)) {
         prestamosData.forEach((p) => {
+          const isConsumible = p.tipo_item === 'consumible' || (p.placa_activo && (p.placa_activo.toUpperCase().startsWith('ROB') || p.placa_activo.toUpperCase().startsWith('MAT')));
+          const cant = p.cantidad ? Number(p.cantidad) : 1;
           newMovs.push({
             id: `mov-db-${p.id}`,
             dbId: p.id,
             type: 'prestamo',
+            tipo_item: p.tipo_item || (isConsumible ? 'consumible' : 'activo'),
             itemId: p.placa_activo,
-            itemName: p.nombre_activo || `Activo (${p.placa_activo})`,
-            qty: 1,
+            itemName: p.nombre_activo || (isConsumible ? `Insumo (${p.placa_activo})` : `Activo (${p.placa_activo})`),
+            qty: cant,
             unitCodes: [p.placa_activo],
             person: p.solicitante,
             sede: p.sede,
+            motivo: p.motivo,
             motive: p.motivo || 'Préstamo operativo',
             date: p.fecha_salida ? p.fecha_salida.split('T')[0] : today(),
             expectedReturn: p.fecha_devolucion_esperada ? p.fecha_devolucion_esperada.split('T')[0] : null,
@@ -136,6 +183,84 @@ function App() {
           });
         });
       }
+
+      // Mapear remisiones agrupadas de consumibles directamente desde la base de datos
+      const remisionIdsConocidos = new Set();
+      if (Array.isArray(remisionesData)) {
+        remisionesData.forEach((rem) => {
+          remisionIdsConocidos.add(rem.remision_id);
+          const rawItems = Array.isArray(rem.items) ? rem.items : [];
+          newMovs.push({
+            id: `rem-${rem.remision_id || rem.id}`,
+            dbId: rem.id,
+            remision_id: rem.remision_id,
+            codigo_acta: rem.codigo_acta || rem.remision_id,
+            type: 'entrega',
+            isRemision: true,
+            itemId: rem.remision_id,
+            itemName: rawItems.length > 0 ? rawItems.map((it) => it.nombre || it.material).join(', ') : 'Remisión de Materiales',
+            items: rawItems,
+            total_items: rem.total_items || rawItems.length,
+            total_unidades: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
+            qty: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
+            person: rem.responsable_recibe,
+            responsable_recibe: rem.responsable_recibe,
+            sede: rem.sede || 'Medellín',
+            proyecto: rem.proyecto || '',
+            motivo: rem.motivo || rem.proyecto || 'Salida de material para taller',
+            motive: rem.motivo || rem.proyecto || 'Salida de material para taller',
+            date: rem.fecha_entrega ? rem.fecha_entrega.split('T')[0] : (rem.created_at ? rem.created_at.split('T')[0] : today()),
+            fecha_entrega: rem.fecha_entrega || rem.created_at || new Date().toISOString(),
+            status: 'cerrado',
+          });
+        });
+      }
+
+      // Mapear entregas de consumibles huérfanas (sin remisión asociada) para retrocompatibilidad
+      if (Array.isArray(entregasData)) {
+        entregasData.forEach((ent) => {
+          if (ent.remision_id && remisionIdsConocidos.has(ent.remision_id)) {
+            // Ya está contenida en su remisión agrupada
+            return;
+          }
+          newMovs.push({
+            id: `mov-ent-${ent.id}`,
+            dbId: ent.id,
+            remision_id: ent.remision_id || `REM-LEGACY-${ent.id}`,
+            type: 'entrega',
+            isRemision: false,
+            itemId: ent.material_id,
+            itemName: ent.material_nombre || `Consumible (${ent.material_id})`,
+            items: [
+              {
+                material_id: ent.material_id,
+                nombre: ent.material_nombre || `Consumible (${ent.material_id})`,
+                cantidad: Number(ent.cantidad) || 1,
+              }
+            ],
+            total_items: 1,
+            total_unidades: Number(ent.cantidad) || 1,
+            qty: Number(ent.cantidad) || 1,
+            person: ent.responsable,
+            responsable_recibe: ent.responsable,
+            sede: ent.sede || 'Medellín',
+            proyecto: '',
+            motivo: ent.proyecto_motivo || '',
+            motive: ent.proyecto_motivo || 'Salida de material para taller',
+            date: ent.created_at ? ent.created_at.split('T')[0] : today(),
+            fecha_entrega: ent.created_at || new Date().toISOString(),
+            status: 'cerrado',
+          });
+        });
+      }
+
+      // Ordenar movimientos cronológicamente: los más recientes arriba
+      newMovs.sort((a, b) => {
+        const dateA = new Date(a.date).getTime() || 0;
+        const dateB = new Date(b.date).getTime() || 0;
+        if (dateB !== dateA) return dateB - dateA;
+        return (Number(b.dbId) || 0) - (Number(a.dbId) || 0);
+      });
 
       setMovements(newMovs);
     } catch (err) {
@@ -148,36 +273,70 @@ function App() {
     }
   };
 
+  // Función para purgar cualquier caché local obsoleta y asegurar sincronización pura con Supabase
+  const purgeLocalCache = () => {
+    if (typeof window !== 'undefined') {
+      const keysToRemove = [
+        'marina_orth_items',
+        'marina_orth_movements',
+        'marina_orth:items',
+        'marina_orth:materials',
+        'marina_orth:movements',
+        'marina-orth:materials',
+        'marina-orth:quotes',
+      ];
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    }
+  };
+
   useEffect(() => {
+    purgeLocalCache();
     refreshFromApi();
   }, []);
 
-  // Guardar en localStorage cuando cambian items o movimientos
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('marina_orth_items', JSON.stringify(items));
-    }
-  }, [items]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('marina_orth_movements', JSON.stringify(movements));
-    }
-  }, [movements]);
+  const handleSyncAndPurge = async () => {
+    purgeLocalCache();
+    await refreshFromApi();
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Limpiar la barra de búsqueda automáticamente al cambiar de pestaña o módulo en el dashboard
+  useEffect(() => {
+    setSearchTerm('');
+  }, [currentView]);
 
   // Filtro de búsqueda rápida
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
-    const term = searchTerm.toLowerCase();
-    return items.filter(
-      (it) =>
-        it.name.toLowerCase().includes(term) ||
+    const term = searchTerm.toLowerCase().trim();
+    return items.filter((it) => {
+      const matchBasic =
+        (it.name && it.name.toLowerCase().includes(term)) ||
         (it.category && it.category.toLowerCase().includes(term)) ||
         (it.location && it.location.toLowerCase().includes(term)) ||
-        (it.units && it.units.some((u) => u.code.toLowerCase().includes(term) || (u.serial && u.serial.toLowerCase().includes(term))))
-    );
+        (it.sede && it.sede.toLowerCase().includes(term)) ||
+        (it.placa && it.placa.toLowerCase().includes(term)) ||
+        (it.id && String(it.id).toLowerCase().includes(term)) ||
+        (it.modelo && it.modelo.toLowerCase().includes(term)) ||
+        (it.serial && it.serial.toLowerCase().includes(term)) ||
+        (it.responsable && it.responsable.toLowerCase().includes(term)) ||
+        (it.custodio && it.custodio.toLowerCase().includes(term));
+
+      const matchUnits =
+        it.units &&
+        it.units.some(
+          (u) =>
+            (u.code && u.code.toLowerCase().includes(term)) ||
+            (u.placa && u.placa.toLowerCase().includes(term)) ||
+            (u.model && u.model.toLowerCase().includes(term)) ||
+            (u.serial && u.serial.toLowerCase().includes(term)) ||
+            (u.responsable && u.responsable.toLowerCase().includes(term)) ||
+            (u.custodio && u.custodio.toLowerCase().includes(term))
+        );
+
+      return matchBasic || matchUnits;
+    });
   }, [items, searchTerm]);
 
   const filteredMovements = useMemo(() => {
@@ -284,22 +443,35 @@ function App() {
     }
   };
 
-  const handleEditItem = (edited) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === edited.id
-          ? {
-              ...i,
-              name: edited.name,
-              category: edited.category,
-              unit: edited.unit,
-              minStock: Number(edited.minStock) || 0,
-              location: edited.location,
-              notes: edited.notes,
-            }
-          : i
-      )
-    );
+  const handleEditItem = async (edited) => {
+    try {
+      // Si es un equipo tecnológico, actualizar en PostgreSQL via updateActivo
+      if (edited.itemType === 'equipo') {
+        const placaToUpdate = edited.placa || (edited.units && edited.units[0]?.placa) || (edited.units && edited.units[0]?.code);
+        if (placaToUpdate) {
+          await inventoryApi.updateActivo(placaToUpdate, {
+            nombre: edited.name,
+            marca: edited.category,
+            sede: edited.sede,
+            modelo: edited.modelo || undefined,
+            serial: edited.serial || undefined,
+          });
+        }
+      } else {
+        // Consumible
+        await inventoryApi.update(edited.id, {
+          material: edited.name,
+          categoria: edited.category,
+          ubicacion: edited.location,
+          disponible: edited.quantity,
+          minimo: edited.minStock,
+        });
+      }
+    } catch (err) {
+      console.warn('Error al actualizar en base de datos:', err.message);
+    } finally {
+      await refreshFromApi();
+    }
   };
 
   const handleRetireItem = (itemId) => {
@@ -332,86 +504,102 @@ function App() {
     ]);
   };
 
-  // Registrar préstamo con transacción en PostgreSQL
+  // Registrar préstamo con transacción en PostgreSQL (soporta tanto activos como consumibles)
   const handleRegisterLoan = async (data) => {
-    const item = items.find((i) => i.id === data.itemId);
-    const itemName = item ? item.name : 'Equipo';
+    const isConsumible =
+      data.tipo_item === 'consumible' ||
+      (data.itemId && (data.itemId.toUpperCase().startsWith('ROB') || data.itemId.toUpperCase().startsWith('MAT')));
 
-    // 1. Persistir préstamo en PostgreSQL por cada placa seleccionada
-    const createdDbLoans = [];
-    for (const placa of data.unitCodes) {
+    if (isConsumible) {
+      // 1. Préstamo de consumible con cantidad
+      const finalCantidad = Math.max(1, parseInt(data.cantidad, 10) || 1);
+      const itemId = data.itemId || (data.unitCodes && data.unitCodes[0]) || '';
       try {
-        const dbRes = await inventoryApi.createPrestamo({
-          placa_activo: placa,
+        await inventoryApi.createPrestamo({
+          item_id: itemId,
+          placa_activo: itemId,
+          tipo_item: 'consumible',
+          cantidad: finalCantidad,
           solicitante: data.person,
           sede: data.sede || 'Medellín',
-          motivo: data.motive || 'Préstamo para formación',
+          motivo: data.motive || 'Préstamo de insumos para actividades formativas',
           fecha_salida: today(),
           fecha_devolucion_esperada: data.expectedReturn || today(),
         });
-        createdDbLoans.push(dbRes);
-      } catch (e) {
-        console.warn(`Aviso de persistencia para placa ${placa}:`, e.message);
+      } catch (err) {
+        console.error('Error al registrar préstamo de consumible:', err);
+        alert(`Error al registrar préstamo de consumible: ${err.message}`);
+        throw err;
+      }
+    } else {
+      // 2. Préstamo de equipo tecnológico por placas seleccionadas
+      const unitCodes = Array.isArray(data.unitCodes) && data.unitCodes.length > 0 ? data.unitCodes : [data.itemId];
+      for (const placa of unitCodes) {
+        try {
+          await inventoryApi.createPrestamo({
+            item_id: placa,
+            placa_activo: placa,
+            tipo_item: 'activo',
+            cantidad: 1,
+            solicitante: data.person,
+            sede: data.sede || 'Medellín',
+            motivo: data.motive || 'Préstamo para formación',
+            fecha_salida: today(),
+            fecha_devolucion_esperada: data.expectedReturn || today(),
+          });
+        } catch (e) {
+          console.error(`Error de persistencia para placa ${placa}:`, e.message);
+          alert(`Error al registrar préstamo para ${placa}: ${e.message}`);
+          throw e;
+        }
       }
     }
 
-    // 2. Actualizar estado local en React
-    setItems((prev) =>
-      prev.map((it) => {
-        if (it.id !== data.itemId) return it;
-        const updatedUnits = (it.units || []).map((u) =>
-          data.unitCodes.includes(u.code) || data.unitCodes.includes(u.placa)
-            ? { ...u, status: 'prestado', sede: data.sede || u.sede, responsable: data.person }
-            : u
-        );
-        return { ...it, units: updatedUnits };
-      })
-    );
-
-    setMovements((prev) => [
-      {
-        id: 'mov-' + Date.now().toString(36),
-        dbId: createdDbLoans[0]?.id || null,
-        type: 'prestamo',
-        itemId: data.itemId,
-        itemName: itemName,
-        qty: data.unitCodes.length,
-        unitCodes: data.unitCodes,
-        person: data.person,
-        sede: data.sede || 'Medellín',
-        motive: data.motive || '',
-        date: today(),
-        expectedReturn: data.expectedReturn || null,
-        returnedDate: null,
-        status: 'activo',
-      },
-      ...prev,
-    ]);
+    // Refrescar datos frescos desde la base de datos
+    await refreshFromApi();
   };
 
-  const handleRegisterDelivery = (data) => {
-    const item = items.find((i) => i.id === data.itemId);
-    if (!item) return;
+  const handleRegisterDelivery = async (data) => {
+    try {
+      // Si viene una remisión agrupada con canasta de múltiples ítems
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        await inventoryApi.createRemision({
+          responsable_recibe: data.person || data.responsable_recibe,
+          sede: data.sede || 'Medellín',
+          proyecto: data.proyecto || '',
+          motivo: data.motive || data.motivo || 'Salida de material para taller / semillero',
+          items: data.items.map((it) => {
+            const itemRef = items.find((i) => i.id === (it.material_id || it.id));
+            return {
+              material_id: it.material_id || it.id,
+              nombre: it.material || it.nombre || it.material_nombre || itemRef?.name || itemRef?.material || `Consumible (${it.id})`,
+              cantidad: Number(it.cantidad || it.cantidadEntrega) || 1,
+            };
+          }),
+        });
+      } else {
+        // Fallback para entrega individual
+        const item = items.find((i) => i.id === data.itemId);
+        const itemName = item ? (item.name || item.material) : `Consumible (${data.itemId})`;
 
-    setItems((prev) =>
-      prev.map((it) => (it.id === data.itemId ? { ...it, quantity: Math.max(0, it.quantity - data.qty) } : it))
-    );
+        await inventoryApi.createEntrega({
+          material_id: data.itemId,
+          material_nombre: itemName,
+          cantidad: Number(data.qty) || 1,
+          responsable: data.person,
+          sede: data.sede || 'Medellín',
+          proyecto_motivo: data.motive || 'Salida de material para taller / semillero',
+          tipo: 'Consumido',
+        });
+      }
+    } catch (err) {
+      console.error('Error al persistir entrega/remisión en base de datos:', err);
+      alert(`Error al guardar entrega en base de datos: ${err.message}`);
+      throw err;
+    }
 
-    setMovements((prev) => [
-      {
-        id: 'mov-' + Date.now().toString(36),
-        type: 'entrega',
-        itemId: data.itemId,
-        itemName: item.name,
-        qty: data.qty,
-        person: data.person,
-        sede: data.sede || 'Medellín',
-        motive: data.motive || '',
-        date: today(),
-        status: 'cerrado',
-      },
-      ...prev,
-    ]);
+    // Refrescar datos frescos desde la base de datos
+    await refreshFromApi();
   };
 
   // Devolver préstamo y restaurar activo en PostgreSQL
@@ -426,54 +614,31 @@ function App() {
       } catch (e) {
         console.warn('Error al marcar devuelto en PostgreSQL:', e.message);
       }
+    } else if (mov.unitCodes && mov.unitCodes[0]) {
+      // Si fue registrado por placa
+      try {
+        await inventoryApi.updateActivo(mov.unitCodes[0], {
+          estado: 'Disponible',
+          custodio: null,
+          fecha_devolucion: null,
+        });
+      } catch (e) {
+        console.warn('Error al marcar activo disponible en PostgreSQL:', e.message);
+      }
     }
 
-    setItems((prev) =>
-      prev.map((it) => {
-        if (it.id !== mov.itemId) return it;
-        const updatedUnits = (it.units || []).map((u) =>
-          (mov.unitCodes || []).includes(u.code) || (mov.unitCodes || []).includes(u.placa)
-            ? { ...u, status: 'disponible', responsable: 'Bodega Central' }
-            : u
-        );
-        return { ...it, units: updatedUnits };
-      })
-    );
-
-    setMovements((prev) =>
-      prev.map((m) => (m.id === movId ? { ...m, status: 'cerrado', returnedDate: today() } : m))
-    );
+    // Refrescar datos reales desde la base de datos
+    await refreshFromApi();
   };
 
-  // Exportar Excel en CSV amigable con UTF-8
-  const handleExportExcel = () => {
-    let csv = '\uFEFF';
-    csv += 'REPORTE CONSOLIDADO DE INVENTARIO - FUNDACIÓN MARINA ORTH\n\n';
-
-    csv += 'INVENTARIO\n';
-    csv += 'Nombre,Tipo,Categoría,Disponible,Total,Mínimo,Ubicación\n';
-    items.forEach((it) => {
-      const tot = it.itemType === 'equipo' ? (it.units || []).filter((u) => u.status !== 'baja').length : it.quantity;
-      csv += `"${it.name}","${it.itemType}","${it.category || ''}",${available(it)},${tot},${it.minStock},"${it.location || ''}"\n`;
-    });
-
-    csv += '\nPRÉSTAMOS ACTIVOS\n';
-    csv += 'Elemento,Unidades,Solicitante,Salida,Devolución Esperada,Estado\n';
-    movements
-      .filter((m) => m.type === 'prestamo' && m.status === 'activo')
-      .forEach((m) => {
-        const est = isOverdue(m) ? 'Vencido' : 'Prestado';
-        csv += `"${m.itemName}","${(m.unitCodes || []).join(', ')}","${m.person}","${m.date}","${m.expectedReturn || ''}","${est}"\n`;
-      });
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `inventario_marina_orth_${today()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Exportar Libro Maestro Excel corporativo institucional (.xlsx) con exceljs y file-saver
+  const handleExportExcel = async () => {
+    try {
+      await exportarLibroMaestroExcelFMO();
+    } catch (err) {
+      console.error('Error al exportar reporte Excel:', err);
+      alert(`No se pudo generar el reporte Excel: ${err.message || 'Error inesperado'}`);
+    }
   };
 
   return (
@@ -496,6 +661,7 @@ function App() {
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
                 onExportExcel={handleExportExcel}
+                onSync={handleSyncAndPurge}
                 theme={theme}
                 onToggleTheme={toggleTheme}
               />
@@ -508,12 +674,14 @@ function App() {
                     loading={loading}
                     error={apiError}
                     onRetry={refreshFromApi}
+                    onNavigate={handleNavigateFromSummary}
                   />
                 )}
 
                 {currentView === 'inventario' && (
                   <InventarioView
                     items={filteredItems}
+                    searchTerm={searchTerm}
                     loading={loading}
                     error={apiError}
                     onRetry={refreshFromApi}
@@ -521,6 +689,8 @@ function App() {
                     onEditItem={handleEditItem}
                     onRetireItem={handleRetireItem}
                     onRegisterLoan={handleRegisterLoan}
+                    initialTab={inventarioParams.tab}
+                    initialStockFilter={inventarioParams.stockFilter}
                   />
                 )}
 
@@ -534,6 +704,8 @@ function App() {
                     onRegisterLoan={handleRegisterLoan}
                     onRegisterDelivery={handleRegisterDelivery}
                     onReturnLoan={handleReturnLoan}
+                    initialSection={prestamosParams.section}
+                    initialStatusFilter={prestamosParams.estado}
                   />
                 )}
 

@@ -8,6 +8,7 @@ export default function Header({
   searchTerm,
   onSearchChange,
   onExportExcel,
+  onSync,
   theme = 'dark',
   onToggleTheme,
 }) {
@@ -32,6 +33,25 @@ export default function Header({
       </div>
 
       <div className="header-actions">
+        {onSync && (
+          <button
+            type="button"
+            onClick={onSync}
+            className="btn small ghost"
+            style={{
+              borderColor: 'var(--border)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.82rem',
+              fontWeight: '500',
+            }}
+            title="Sincronizar en tiempo real con Supabase y purgar datos locales obsoletos"
+          >
+            <span>🔄</span>
+            <span>Sincronizar Supabase</span>
+          </button>
+        )}
         {onToggleTheme && (
           <button
             type="button"

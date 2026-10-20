@@ -46,23 +46,7 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  html:not(.dark):not(.light) {
-    color-scheme: dark;
-    --text: #b6bdc7;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --card-bg: #1f2028;
-    --accent: var(--lime);
-    --accent-bg: rgba(199, 244, 100, 0.12);
-    --accent-border: rgba(199, 244, 100, 0.45);
-    --section-bg: #1b1c23;
-    --section-heading: var(--lime);
-    --hover-surface: rgba(199, 244, 100, 0.1);
-    --header-bg: #1b1c23;
-  }
-}
+/* Preferencias de tema administradas explícitamente vía clase .dark o data-theme */
 
 html.dark {
   color-scheme: dark;

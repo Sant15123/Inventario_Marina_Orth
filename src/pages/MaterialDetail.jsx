@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { inventoryApi } from '../services/inventoryApi'
-import { STORAGE_KEY, isLowStock } from '../features/inventory/materials'
+import { isLowStock } from '../features/inventory/materials'
 
 export default function MaterialDetail() {
   const { id } = useParams()
@@ -24,22 +24,8 @@ export default function MaterialDetail() {
           setMaterial(data)
         }
       } catch (err) {
-        // 2. Si falla la red o el backend, intentamos fallback a localStorage
-        try {
-          const stored = localStorage.getItem(STORAGE_KEY)
-          const items = stored ? JSON.parse(stored) : []
-          const found = items.find((m) => String(m.id) === String(id))
-
-          if (found && isMounted) {
-            setMaterial(found)
-            return
-          }
-        } catch {
-          /* ignore */
-        }
-
         if (isMounted) {
-          setError(err.message || 'No fue posible cargar el material')
+          setError(err.message || 'No fue posible cargar el material desde el servidor');
         }
       } finally {
         if (isMounted) setLoading(false)

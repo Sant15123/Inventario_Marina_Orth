@@ -98,6 +98,40 @@ export const initDb = async () => {
       );
     `);
 
+    // 4. Tabla remisiones / entregas agrupadas
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS remisiones_consumibles (
+        id SERIAL PRIMARY KEY,
+        remision_id VARCHAR(100) UNIQUE NOT NULL,
+        codigo_acta VARCHAR(100),
+        fecha_entrega TIMESTAMP DEFAULT NOW(),
+        responsable_recibe VARCHAR(255) NOT NULL,
+        sede VARCHAR(100) NOT NULL,
+        proyecto VARCHAR(255),
+        motivo VARCHAR(255),
+        items JSONB NOT NULL DEFAULT '[]'::jsonb,
+        total_items INT DEFAULT 0,
+        total_unidades INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // 5. Tabla entregas individuales (compatibilidad)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS entregas_consumibles (
+        id SERIAL PRIMARY KEY,
+        remision_id VARCHAR(100),
+        material_id VARCHAR(100),
+        material_nombre VARCHAR(255),
+        cantidad INT NOT NULL,
+        responsable VARCHAR(255) NOT NULL,
+        sede VARCHAR(100) NOT NULL,
+        proyecto_motivo VARCHAR(255),
+        tipo VARCHAR(50) DEFAULT 'Consumido',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     // Datos iniciales de demostración si las tablas están vacías
     const countActivos = await client.query('SELECT COUNT(*) FROM activos');
     if (parseInt(countActivos.rows[0].count, 10) === 0) {

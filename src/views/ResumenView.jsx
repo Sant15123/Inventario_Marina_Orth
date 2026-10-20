@@ -1,4 +1,6 @@
-import { fmtDate, available, isOverdue, getDaysDiff } from '../services/mockData';
+import { useState, useEffect } from 'react';
+import { fmtDate, available, isOverdue, getDaysDiff, today } from '../services/mockData';
+import inventoryApi from '../services/inventoryApi';
 
 export default function ResumenView({
   items = [],
@@ -6,15 +8,138 @@ export default function ResumenView({
   loading = false,
   error = null,
   onRetry,
+  onNavigate,
 }) {
+  // Estados locales para consulta directa en caso de montaje autónomo
+  const [localItems, setLocalItems] = useState(null);
+  const [localMovements, setLocalMovements] = useState(null);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState(null);
+
+  // Consulta automática en tiempo real al montar la vista de Resumen
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDirect = async () => {
+      try {
+        setLocalLoading(true);
+        setLocalError(null);
+        if (onRetry) {
+          await onRetry();
+        } else {
+          const [activosData, consumiblesData, prestamosData] = await Promise.all([
+            inventoryApi.getActivos(),
+            inventoryApi.getConsumibles(),
+            inventoryApi.getPrestamos(),
+          ]);
+
+          if (!isMounted) return;
+
+          const loadedItems = [];
+          if (Array.isArray(consumiblesData)) {
+            consumiblesData.forEach((c) => {
+              const disp = Number(c.disponible) || 0;
+              const min = Number(c.minimo) ?? 5;
+              loadedItems.push({
+                id: c.id,
+                material: c.material || c.name || '',
+                name: c.material || c.name || '',
+                categoria: c.categoria || 'Robótica',
+                category: c.categoria || 'Robótica',
+                disponible: disp,
+                quantity: disp,
+                minimo: min,
+                minStock: min,
+                ubicacion: c.ubicacion || 'Oficina FMO',
+                location: c.ubicacion || 'Oficina FMO',
+                itemType: 'consumible',
+                dateAdded: c.created_at ? c.created_at.split('T')[0] : today(),
+              });
+            });
+          }
+
+          if (Array.isArray(activosData)) {
+            activosData.forEach((a) => {
+              loadedItems.push({
+                id: `eq-${a.id || a.placa}`,
+                name: a.nombre,
+                category: a.marca || 'Equipos de Cómputo',
+                itemType: 'equipo',
+                location: a.sede ? `Sede ${a.sede}` : 'Bodega Medellín',
+                sede: a.sede || 'Medellín',
+                minStock: 1,
+                quantity: 0,
+                units: [
+                  {
+                    code: a.placa,
+                    placa: a.placa,
+                    model: a.modelo || a.marca || 'Estándar',
+                    serial: a.serial || '—',
+                    sede: a.sede || 'Medellín',
+                    status: a.estado === 'En campo' ? 'prestado' : (a.estado || 'disponible').toLowerCase(),
+                    responsable: a.custodio || (a.estado === 'En campo' ? 'Custodio Temporal' : 'Bodega Central'),
+                  },
+                ],
+                dateAdded: a.created_at ? a.created_at.split('T')[0] : today(),
+              });
+            });
+          }
+
+          const loadedMovs = [];
+          if (Array.isArray(prestamosData)) {
+            prestamosData.forEach((p) => {
+              loadedMovs.push({
+                id: `mov-db-${p.id}`,
+                dbId: p.id,
+                type: 'prestamo',
+                itemId: p.placa_activo,
+                itemName: p.nombre_activo || `Activo (${p.placa_activo})`,
+                qty: 1,
+                unitCodes: [p.placa_activo],
+                person: p.solicitante,
+                sede: p.sede,
+                motive: p.motivo || 'Préstamo operativo',
+                date: p.fecha_salida ? p.fecha_salida.split('T')[0] : today(),
+                expectedReturn: p.fecha_devolucion_esperada ? p.fecha_devolucion_esperada.split('T')[0] : null,
+                returnedDate: p.fecha_devolucion_real ? p.fecha_devolucion_real.split('T')[0] : null,
+                status: p.estado === 'Devuelto' ? 'cerrado' : 'activo',
+              });
+            });
+          }
+
+          setLocalItems(loadedItems);
+          setLocalMovements(loadedMovs);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setLocalError(err.message || 'Error al consultar Supabase');
+        }
+      } finally {
+        if (isMounted) {
+          setLocalLoading(false);
+        }
+      }
+    };
+
+    fetchDirect();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const effectiveItems = localItems !== null ? localItems : items;
+  const effectiveMovements = localMovements !== null ? localMovements : movements;
+  const effectiveLoading = localLoading || loading;
+  const effectiveError = localError || error;
+
   // 1. Filtrado para alertas de stock (disponible <= minStock)
-  const lowStockItems = items.filter((it) => available(it) <= (it.minStock || 0));
+  const lowStockItems = effectiveItems.filter((it) => available(it) <= (it.minStock || 0));
 
   // 2. Préstamos activos y vencidos
-  const activeLoans = movements.filter((m) => m.type === 'prestamo' && m.status === 'activo');
+  const activeLoans = effectiveMovements.filter((m) => m.type === 'prestamo' && m.status === 'activo');
   const overdueLoans = activeLoans.filter(isOverdue);
 
-  if (loading) {
+  if (effectiveLoading) {
     return (
       <div className="resumen-container">
         <div className="panel empty" style={{ padding: '60px 20px', textAlign: 'center' }}>
@@ -30,7 +155,7 @@ export default function ResumenView({
     );
   }
 
-  if (error) {
+  if (effectiveError) {
     return (
       <div className="resumen-container">
         <div className="panel empty" style={{ padding: '48px 20px', textAlign: 'center', borderColor: 'var(--red)' }}>
@@ -39,7 +164,7 @@ export default function ResumenView({
             Error al conectar con el backend / Supabase
           </strong>
           <p style={{ color: 'var(--text-dim)', margin: '10px auto', maxWidth: '520px' }}>
-            {error}
+            {effectiveError}
           </p>
           {onRetry && (
             <button
@@ -61,7 +186,22 @@ export default function ResumenView({
       {/* 4 TARJETAS KPI SUPERIORES */}
       <div className="stats">
         {/* KPI 1: Materiales y Equipos */}
-        <div className="stat">
+        <div
+          className="stat cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md"
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('inventario', { tab: 'equipos', stockFilter: 'todos' });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (onNavigate) onNavigate('inventario', { tab: 'equipos', stockFilter: 'todos' });
+            }
+          }}
+          title="Ver todos los materiales y equipos en Inventario"
+        >
           <div className="stat-header">
             <span className="stat-icon" aria-hidden="true">📦</span>
             <span className="pill default">Total</span>
@@ -71,7 +211,22 @@ export default function ResumenView({
         </div>
 
         {/* KPI 2: En stock mínimo */}
-        <div className={`stat ${lowStockItems.length > 0 ? 'alert' : ''}`}>
+        <div
+          className={`stat ${lowStockItems.length > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('inventario', { tab: 'consumibles', stockFilter: 'minimo' });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (onNavigate) onNavigate('inventario', { tab: 'consumibles', stockFilter: 'minimo' });
+            }
+          }}
+          title="Ver consumibles en stock mínimo en Inventario"
+        >
           <div className="stat-header">
             <span className="stat-icon" aria-hidden="true">⚠️</span>
             {lowStockItems.length > 0 ? (
@@ -85,7 +240,22 @@ export default function ResumenView({
         </div>
 
         {/* KPI 3: Préstamos activos */}
-        <div className="stat highlight">
+        <div
+          className="stat highlight cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md"
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('prestamos', { section: 'prestamos', estado: 'Activo' });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (onNavigate) onNavigate('prestamos', { section: 'prestamos', estado: 'Activo' });
+            }
+          }}
+          title="Ver préstamos activos en Préstamos y entregas"
+        >
           <div className="stat-header">
             <span className="stat-icon" aria-hidden="true">🔄</span>
             <span className="pill prestado">En campo</span>
@@ -95,7 +265,22 @@ export default function ResumenView({
         </div>
 
         {/* KPI 4: Préstamos vencidos */}
-        <div className={`stat ${overdueLoans.length > 0 ? 'alert' : ''}`}>
+        <div
+          className={`stat ${overdueLoans.length > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('prestamos', { section: 'prestamos', estado: 'Vencido' });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (onNavigate) onNavigate('prestamos', { section: 'prestamos', estado: 'Vencido' });
+            }
+          }}
+          title="Ver préstamos vencidos en Préstamos y entregas"
+        >
           <div className="stat-header">
             <span className="stat-icon" aria-hidden="true">⏰</span>
             {overdueLoans.length > 0 ? (
