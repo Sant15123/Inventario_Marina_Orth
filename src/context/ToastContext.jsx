@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import {
   CheckCircle2,
   AlertTriangle,
+  ArrowDownToLine,
   Info,
   XCircle,
   X,
@@ -74,19 +75,23 @@ export function ToastProvider({ children }) {
   const showConfirmAction = useCallback(
     ({
       title = '¿Confirmar acción?',
+      subtitle,
       message = '',
       confirmText = 'Confirmar',
       cancelText = 'Cancelar',
       isDanger = true,
+      icon,
       onConfirm,
     }) => {
       setConfirmModal({
         isOpen: true,
         title,
+        subtitle,
         message,
         confirmText,
         cancelText,
         isDanger,
+        icon,
         onConfirm: async () => {
           setConfirmModal((prev) => ({ ...prev, isOpen: false }));
           if (onConfirm) await onConfirm();
@@ -97,6 +102,35 @@ export function ToastProvider({ children }) {
       });
     },
     []
+  );
+
+  // Helper específico para Devolución / Retorno a Bodega Institucional
+  const showConfirmRetorno = useCallback(
+    ({ nombreEquipo, placa, onConfirm }) => {
+      showConfirmAction({
+        title: '¿Confirmar Retorno a Bodega?',
+        subtitle: 'Confirmación Operativa',
+        message: (
+          <>
+            ¿Deseas confirmar la recepción y retorno a bodega de{' '}
+            <strong className="text-slate-900 dark:text-white font-semibold">
+              {nombreEquipo || 'Equipo'} {placa ? `(${placa})` : ''}
+            </strong>
+            ? Esta acción actualizará el estado del activo a{' '}
+            <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-lime-100 text-lime-800 dark:bg-lime-900/60 dark:text-lime-300 ml-1">
+              Disponible
+            </span>{' '}
+            en el inventario institucional.
+          </>
+        ),
+        confirmText: 'Confirmar Retorno',
+        cancelText: 'Cancelar',
+        isDanger: false,
+        icon: 'return',
+        onConfirm,
+      });
+    },
+    [showConfirmAction]
   );
 
   // 2. Modal de Confirmación Previa para Dar de Baja (Acción Crítica / Destructiva)
@@ -197,6 +231,7 @@ export function ToastProvider({ children }) {
         showEditSuccess,
         showConfirmBaja,
         showConfirmAction,
+        showConfirmRetorno,
         showNewItemSuccess,
         showLoanSuccess,
         showDeliverySuccess,
@@ -297,11 +332,11 @@ export function ToastProvider({ children }) {
       </div>
 
       {/* ============================================================== */}
-      {/* MODAL DE CONFIRMACIÓN PREVIA PARA DAR DE BAJA / ACCIÓN CRÍTICA */}
+      {/* MODAL DE CONFIRMACIÓN INSTITUCIONAL                            */}
       {/* ============================================================== */}
       {confirmModal.isOpen && (
         <div
-          className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
           style={{
             position: 'fixed',
             inset: 0,
@@ -309,70 +344,70 @@ export function ToastProvider({ children }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(11, 19, 43, 0.8)',
+            backgroundColor: 'rgba(2, 6, 23, 0.6)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
           }}
           onClick={confirmModal.onCancel}
         >
           <div
-            className="relative w-full max-w-md bg-[#0B132B] border border-slate-700/80 rounded-2xl shadow-2xl p-6 overflow-hidden text-slate-100"
+            className="bg-white dark:bg-[#0B132B] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             style={{
-              backgroundColor: 'var(--surface-modal, #0B132B)',
-              border: '1px solid var(--line, #334155)',
               borderRadius: '16px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+              maxWidth: '28rem',
+              width: '100%',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Cabecera con Ícono Institucional */}
-            <div className="flex items-center gap-3.5 mb-4">
+            {/* Cabecera y Cuerpo (Header & Content) */}
+            <div className="pt-6 px-6">
+              {/* Icono superior destacado */}
               <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
                   confirmModal.isDanger !== false
-                    ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
-                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+                    : 'bg-lime-100 dark:bg-lime-950/40 text-lime-600 dark:text-lime-400'
                 }`}
               >
                 {confirmModal.isDanger !== false ? (
-                  <AlertTriangle className="w-6 h-6 text-rose-500" />
+                  <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+                ) : confirmModal.icon === 'return' ? (
+                  <ArrowDownToLine className="w-6 h-6 text-lime-600 dark:text-lime-400" />
                 ) : (
-                  <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                  <CheckCircle2 className="w-6 h-6 text-lime-600 dark:text-lime-400" />
                 )}
               </div>
-              <div>
-                <span
-                  className={`text-[11px] font-mono font-bold tracking-wider uppercase block ${
-                    confirmModal.isDanger !== false ? 'text-rose-400' : 'text-emerald-400'
-                  }`}
-                >
-                  {confirmModal.isDanger !== false ? 'Acción Crítica Institucional' : 'Confirmación Operativa'}
-                </span>
-                <h3 className="text-base font-bold text-white m-0 leading-snug">
-                  {confirmModal.title}
-                </h3>
+
+              {/* Subtítulo o categoría */}
+              <span
+                className={`text-xs uppercase font-bold tracking-wider block text-center ${
+                  confirmModal.isDanger !== false
+                    ? 'text-rose-600 dark:text-rose-400'
+                    : 'text-lime-600 dark:text-lime-400'
+                }`}
+              >
+                {confirmModal.subtitle || (confirmModal.isDanger !== false ? 'Acción Crítica Institucional' : 'Confirmación Operativa')}
+              </span>
+
+              {/* Título principal */}
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mt-1">
+                {confirmModal.title}
+              </h3>
+
+              {/* Texto explicativo */}
+              <div className="text-sm text-slate-600 dark:text-slate-300 text-center mt-2 px-4 leading-relaxed">
+                {confirmModal.message}
               </div>
             </div>
 
-            {/* Mensaje descriptivo */}
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
-              {confirmModal.message}
-            </p>
-
-            {/* Botones de Acción */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+            {/* Pie y Botones de Acción (Footer) */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-3 mt-5">
               <button
                 type="button"
                 onClick={confirmModal.onCancel}
-                className="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white border border-slate-700 hover:bg-slate-800/80 transition-all cursor-pointer"
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--line, #334155)',
-                  color: 'var(--text-dim, #94a3b8)',
-                  cursor: 'pointer',
-                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer"
               >
                 {confirmModal.cancelText}
               </button>
@@ -380,21 +415,18 @@ export function ToastProvider({ children }) {
               <button
                 type="button"
                 onClick={confirmModal.onConfirm}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-white transition-all cursor-pointer shadow-md flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center gap-2 cursor-pointer ${
                   confirmModal.isDanger !== false
-                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
-                    : 'bg-[#84CC16] hover:bg-[#65A30D] !text-slate-950 font-bold shadow-lime-500/20'
+                    ? 'text-white bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
+                    : 'text-slate-950 bg-[#84CC16] hover:bg-[#65A30D]'
                 }`}
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: '8px',
-                  backgroundColor: confirmModal.isDanger !== false ? '#e11d48' : '#84CC16',
-                  color: confirmModal.isDanger !== false ? '#ffffff' : '#020617',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
               >
-                {confirmModal.isDanger !== false ? <span>✕</span> : <span>✓</span>} {confirmModal.confirmText}
+                {confirmModal.isDanger !== false ? (
+                  <span>✕</span>
+                ) : (
+                  <Check className="w-4 h-4 text-slate-950 stroke-[3]" />
+                )}
+                <span>{confirmModal.confirmText}</span>
               </button>
             </div>
           </div>

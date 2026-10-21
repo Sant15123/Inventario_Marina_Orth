@@ -23,7 +23,7 @@ export default function PrestamosView({
   const [filterEstadoPrestamo, setFilterEstadoPrestamo] = useState(initialStatusFilter); // 'todos' | 'Activo' | 'Vencido'
 
   // Notificaciones y Modales Institucionales FMO
-  const { showLoanSuccess, showDeliverySuccess, showConfirmAction, showEditSuccess, showError, showInfo } = useToast();
+  const { showLoanSuccess, showDeliverySuccess, showConfirmAction, showConfirmRetorno, showEditSuccess, showError, showInfo } = useToast();
 
   useEffect(() => {
     if (initialSection) setActiveSection(initialSection);
@@ -884,12 +884,10 @@ export default function PrestamosView({
                               className="btn-icon-crud w-7 h-7 flex items-center justify-center rounded shrink-0"
                               title="Registrar devolución y retorno a bodega"
                               onClick={() => {
-                                showConfirmAction({
-                                  title: '¿Confirmar Retorno a Bodega?',
-                                  message: `¿Deseas confirmar la recepción y retorno a bodega de ${m.itemName} (${(m.unitCodes || []).join(', ')})? Esta acción actualizará el estado del activo a Disponible en el inventario institucional.`,
-                                  confirmText: 'Registrar Retorno',
-                                  cancelText: 'Cancelar',
-                                  isDanger: false,
+                                const unitCodesStr = (m.unitCodes || []).filter(Boolean).join(', ');
+                                showConfirmRetorno({
+                                  nombreEquipo: m.itemName,
+                                  placa: unitCodesStr,
                                   onConfirm: async () => {
                                     if (onReturnLoan) {
                                       await onReturnLoan(m.id);
@@ -897,7 +895,7 @@ export default function PrestamosView({
                                     if (onRetry) {
                                       await onRetry();
                                     }
-                                    showInfo('Retorno Confirmado', `Equipo ${m.itemName} (${(m.unitCodes || []).join(', ')}) reintegrado a bodega.`);
+                                    showInfo('Retorno Confirmado', `Equipo ${m.itemName} (${unitCodesStr}) reintegrado a bodega.`);
                                   },
                                 });
                               }}
