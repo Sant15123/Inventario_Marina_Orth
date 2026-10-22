@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { generateToken, verifyAndDecodeToken } from '../services/jwtService';
-import { inventoryApi } from '../services/inventoryApi';
+import { inventoryApi, API_BASE } from '../services/inventoryApi';
 
 const AuthContext = createContext(null);
 
@@ -390,8 +390,7 @@ export function AuthProvider({ children }) {
   // Recargar usuarios desde la API PostgreSQL / Supabase
   const refetchUsuarios = useCallback(async () => {
     try {
-      const host = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
-      const res = await fetch(`http://${host}:3000/api/usuarios`);
+      const res = await fetch(`${API_BASE}/usuarios`);
       if (res.ok) {
         const json = await res.json();
         if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
@@ -513,8 +512,7 @@ export function AuthProvider({ children }) {
         // 3. Si aún no se encuentra, consultar la API / Supabase en backend
         if (!user) {
           try {
-            const host = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
-            const apiRes = await fetch('http://' + host + ':3000/api/usuarios/' + encodeURIComponent(cleanId));
+            const apiRes = await fetch(`${API_BASE}/usuarios/${encodeURIComponent(cleanId)}`);
             if (apiRes.ok) {
               const apiJson = await apiRes.json();
               if (apiJson?.success && apiJson?.data) {

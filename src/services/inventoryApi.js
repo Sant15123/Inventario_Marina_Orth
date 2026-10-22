@@ -1,7 +1,24 @@
-const BACKEND_PORT = 3000;
-const hostname = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
-export const API_BASE_URL = `http://${hostname}:${BACKEND_PORT}`;
-const API_BASE = import.meta.env.VITE_API_URL || `${API_BASE_URL}/api`;
+// Configuración dinámica y tolerante a fallos para la URL base de la API
+export const getBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    let url = import.meta.env.VITE_API_URL.trim().replace(/\/+$/, '');
+    return url.endsWith('/api') ? url : `${url}/api`;
+  }
+  // Si estamos en producción (Vercel o HTTPS) usar el backend en Render
+  if (typeof window !== 'undefined' && window.location) {
+    const isVercel = window.location.hostname.includes('vercel.app');
+    const isHttps = window.location.protocol === 'https:';
+    if (isVercel || isHttps) {
+      return 'https://inventario-marina-back.onrender.com/api';
+    }
+    const hostname = window.location.hostname || 'localhost';
+    return `http://${hostname}:3000/api`;
+  }
+  return 'http://localhost:3000/api';
+};
+
+export const API_BASE = getBaseUrl();
+export const API_BASE_URL = API_BASE.replace(/\/api\/?$/, '');
 
 export function getAuthToken() {
   try {
