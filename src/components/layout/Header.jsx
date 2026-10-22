@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { User, Shield, ChevronDown, Check, UserCheck, LogOut, KeyRound, ChevronRight } from 'lucide-react';
+import { User, ChevronDown, LogOut, KeyRound, ChevronRight } from 'lucide-react';
 import ModalCambiarPassword from '../modals/ModalCambiarPassword';
 
 /**
@@ -21,7 +21,7 @@ export default function Header({
   const isDark = theme === 'dark';
   const navigate = useNavigate();
   const { showInfo } = useToast();
-  const { currentUser, usuarios, seleccionarUsuarioActivo, cambiarRolActivo, logout, isUsuario } = useAuth();
+  const { currentUser, logout, isUsuario } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const dropdownRef = useRef(null);
@@ -155,88 +155,33 @@ export default function Header({
                 <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-lime-600 group-hover:translate-x-0.5 transition-all" />
               </button>
 
-              <div className="user-dropdown-header">
-                Cambiar Usuario Activo (Pruebas de Rol)
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '160px', overflowY: 'auto' }}>
-                {usuarios.map((usr) => {
-                  const isSelected = usr.id === currentUser?.id;
-                  return (
-                    <button
-                      key={usr.id}
-                      type="button"
-                      onClick={() => {
-                        seleccionarUsuarioActivo(usr);
-                        setUserDropdownOpen(false);
-                      }}
-                      className={`user-dropdown-item ${isSelected ? 'active' : ''}`}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{usr.nombre}</div>
-                        <div style={{ fontSize: '10.5px', color: 'var(--text-dim)' }}>
-                          {usr.cargo || usr.sede}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className={`badge-role ${usr.rol || 'usuario'}`}>
-                          {usr.rol}
-                        </span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-[#84CC16]" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="user-dropdown-footer">
-                <span style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block', padding: '0 4px 4px 4px', fontWeight: 600 }}>
-                  Alternar rol directamente:
-                </span>
-                <div className="user-role-grid">
-                  {['administrador', 'supervisor', 'operador', 'usuario'].map((rolName) => (
-                    <button
-                      key={rolName}
-                      type="button"
-                      onClick={() => {
-                        cambiarRolActivo(rolName);
-                        setUserDropdownOpen(false);
-                      }}
-                      className={`user-role-btn ${currentUser?.rol === rolName ? 'active' : ''}`}
-                    >
-                      {rolName}
-                    </button>
-                  ))}
-                </div>
-
-                {/* BOTÓN CERRAR SESIÓN */}
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--line)' }}>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="user-logout-btn"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      width: '100%',
-                      padding: '8px 10px',
-                      color: '#f43f5e',
-                      background: 'rgba(244, 63, 94, 0.08)',
-                      border: '1px solid rgba(244, 63, 94, 0.25)',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                    title="Cerrar sesión y limpiar token JWT de este dispositivo"
-                  >
-                    <LogOut className="w-3.5 h-3.5 text-rose-500" />
-                    <span>Cerrar Sesión</span>
-                  </button>
-                </div>
+              {/* BOTÓN CERRAR SESIÓN */}
+              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--line)' }}>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="user-logout-btn"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '8px 10px',
+                    color: '#f43f5e',
+                    background: 'rgba(244, 63, 94, 0.08)',
+                    border: '1px solid rgba(244, 63, 94, 0.25)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title="Cerrar sesión y limpiar token JWT de este dispositivo"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Cerrar Sesión</span>
+                </button>
               </div>
             </div>
           )}

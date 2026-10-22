@@ -10,20 +10,14 @@ import {
   Moon,
   AlertCircle,
   HelpCircle,
-  Sparkles,
-  ShieldCheck,
-  PackageCheck,
-  GraduationCap,
   X,
 } from 'lucide-react';
-import { useAuth, DEMO_ACCOUNTS, USUARIOS_DEMO } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginView({ theme = 'light', onToggleTheme }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loginSimulado, isAuthenticated, currentUser, authLoading } = useAuth();
-  const { showInfo } = useToast();
+  const { login, isAuthenticated, currentUser, authLoading } = useAuth();
 
   // El tema se rige directamente por la propiedad activa
   const isDark = theme === 'dark';
@@ -116,74 +110,6 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
       setErrorMsg(err.message || 'Error al validar credenciales. Por favor intenta de nuevo.');
     } finally {
       setCargando(false);
-    }
-  };
-
-  // Autocompletar credenciales e inicio de sesión demo (1 CLIC instantáneo)
-  const handleSelectDemo = (demoAccount) => {
-    setIdentificador(demoAccount.email);
-    setPassword(demoAccount.password);
-    setErrorMsg('');
-
-    const cleanEmail = String(demoAccount.email || '').trim().toLowerCase();
-    const demoProfile =
-      (USUARIOS_DEMO && USUARIOS_DEMO[cleanEmail]) ||
-      (USUARIOS_DEMO && USUARIOS_DEMO[String(demoAccount.alternateEmail || '').trim().toLowerCase()]) ||
-      (USUARIOS_DEMO && USUARIOS_DEMO[String(demoAccount.documento || '').trim()]) || {
-        id: demoAccount.id || ('demo-' + (demoAccount.role || 'usr') + '-id'),
-        nombre: demoAccount.name,
-        email: demoAccount.email,
-        documento: demoAccount.documento,
-        rol: demoAccount.role,
-        sede: demoAccount.sede || 'Oficina Medellín',
-        cargo: demoAccount.cargo || 'Funcionario FMO',
-      };
-
-    // 1-CLIC: Iniciar sesión inmediatamente guardando el token/perfil en el AuthContext sin bloquearse
-    if (typeof loginSimulado === 'function') {
-      loginSimulado(demoProfile);
-    }
-    showInfo(
-      'Acceso Rápido Demo (1 CLIC)',
-      `Has ingresado como ${demoAccount.title} (${demoProfile.nombre}).`
-    );
-    const target = demoProfile.rol === 'usuario' ? '/mi-panel' : '/';
-    const from = location.state?.from?.pathname || target;
-    navigate(from, { replace: true });
-  };
-
-  // Configuración de estilo e icono para cada rol demo adaptado al tema activo
-  const getRoleTheme = (role) => {
-    switch (role) {
-      case 'administrador':
-        return {
-          icon: <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: isDark ? '#A3E635' : '#65A30D' }} />,
-          badgeStyle: isDark
-            ? { backgroundColor: 'rgba(132, 204, 22, 0.16)', color: '#A3E635', border: '1px solid rgba(132, 204, 22, 0.35)' }
-            : { backgroundColor: '#ECFCCB', color: '#3F6212', border: '1px solid #BEF264' },
-        };
-      case 'supervisor':
-        return {
-          icon: <Eye className="w-3.5 h-3.5 shrink-0" style={{ color: isDark ? '#FBBF24' : '#D97706' }} />,
-          badgeStyle: isDark
-            ? { backgroundColor: 'rgba(245, 158, 11, 0.16)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.35)' }
-            : { backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' },
-        };
-      case 'operador':
-        return {
-          icon: <PackageCheck className="w-3.5 h-3.5 shrink-0" style={{ color: isDark ? '#34D399' : '#059669' }} />,
-          badgeStyle: isDark
-            ? { backgroundColor: 'rgba(16, 185, 129, 0.16)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.35)' }
-            : { backgroundColor: '#D1FAE5', color: '#065F46', border: '1px solid #A7F3D0' },
-        };
-      case 'usuario':
-      default:
-        return {
-          icon: <GraduationCap className="w-3.5 h-3.5 shrink-0" style={{ color: isDark ? '#38BDF8' : '#0284C7' }} />,
-          badgeStyle: isDark
-            ? { backgroundColor: 'rgba(56, 189, 248, 0.16)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.35)' }
-            : { backgroundColor: '#E0F2FE', color: '#075985', border: '1px solid #BAE6FD' },
-        };
     }
   };
 
@@ -607,169 +533,6 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
             )}
           </button>
         </form>
-
-        {/* 6. Sección de Accesos Rápidos (Modo Demo) Estilizada y Adaptada al Tema */}
-        <div
-          style={{
-            marginTop: '1.5rem',
-            paddingTop: '1.25rem',
-            borderTop: isDark ? '1px solid #1E293B' : '1px solid #E2E8F0',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '0.75rem',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: isDark ? '#CBD5E1' : '#334155',
-              }}
-            >
-              <Sparkles
-                className="w-3.5 h-3.5"
-                style={{ width: '14px', height: '14px', color: isDark ? '#A3E635' : '#65A30D' }}
-              />
-              CREDENCIALES DEMO (1 CLIC)
-            </span>
-            <span
-              style={{ fontSize: '10px', color: isDark ? '#64748B' : '#94A3B8' }}
-            >
-              4 Roles
-            </span>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gap: '8px',
-            }}
-          >
-            {DEMO_ACCOUNTS.map((account) => {
-              const roleMeta = getRoleTheme(account.role);
-
-              return (
-                <button
-                  key={account.role}
-                  type="button"
-                  onClick={() => handleSelectDemo(account)}
-                  className="demo-role-card group"
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '12px',
-                    border: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
-                    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
-                    color: isDark ? '#FFFFFF' : '#0F172A',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '84px',
-                    width: '100%',
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.18s ease',
-                  }}
-                  title={`Ingresar automáticamente como ${account.title} (${account.email})`}
-                >
-                  {/* Fila 1: Icono a la izquierda y Badge a la derecha */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      width: '100%',
-                      minWidth: 0,
-                      marginBottom: '6px',
-                      gap: '6px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {roleMeta.icon}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: '9px',
-                        fontWeight: 700,
-                        padding: '2px 6px',
-                        borderRadius: '5px',
-                        whiteSpace: 'nowrap',
-                        lineHeight: 1.2,
-                        maxWidth: '92px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        flexShrink: 0,
-                        ...roleMeta.badgeStyle,
-                      }}
-                    >
-                      {account.badge}
-                    </span>
-                  </div>
-
-                  {/* Fila 2: Título del Rol en ancho completo */}
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: isDark ? '#FFFFFF' : '#0F172A',
-                      lineHeight: 1.25,
-                      marginBottom: '3px',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      width: '100%',
-                      minWidth: 0,
-                    }}
-                    title={account.title}
-                  >
-                    {account.title}
-                  </div>
-
-                  {/* Fila 3: Correo electrónico */}
-                  <div
-                    style={{
-                      fontSize: '10.5px',
-                      color: isDark ? '#94A3B8' : '#64748B',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      width: '100%',
-                      minWidth: 0,
-                      display: 'block',
-                    }}
-                    title={account.email}
-                  >
-                    {account.email}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* Modal Informativo de Recuperación de Contraseña */}
