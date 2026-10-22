@@ -15,7 +15,7 @@ import { useAuth } from '../../context/AuthContext';
  * y la navegación según el rol del usuario autenticado (incluyendo el módulo de Usuarios para Administradores).
  */
 export default function Sidebar({ currentView, onViewChange }) {
-  const { currentUser, isAdmin, isUsuario } = useAuth();
+  const { currentUser, isAdmin, isSupervisor, isUsuario } = useAuth();
 
   // Elementos de navegación según el rol
   const navItems = isUsuario
@@ -52,8 +52,8 @@ export default function Sidebar({ currentView, onViewChange }) {
           label: 'Historial',
           icon: <History className="w-4 h-4" />,
         },
-        // Módulo de Usuarios (Visible exclusivamente para Administradores)
-        ...(isAdmin
+        // Módulo de Usuarios (Visible para Administradores y Supervisores en modo consulta)
+        ...((isAdmin || isSupervisor)
           ? [
               {
                 id: 'usuarios',

@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { User, Shield, ChevronDown, Check, UserCheck } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import { User, Shield, ChevronDown, Check, UserCheck, LogOut, KeyRound, ChevronRight } from 'lucide-react';
+import ModalCambiarPassword from '../modals/ModalCambiarPassword';
 
 /**
  * Header Component
  * Incluye barra de búsqueda rápida, selector de tema (oscuro/claro),
- * perfil interactivo de usuario con selector de rol y descarga en Excel.
+ * perfil interactivo de usuario con selector de rol, opción de cerrar sesión y descarga en Excel.
  */
 export default function Header({
   searchTerm,
@@ -16,9 +19,19 @@ export default function Header({
   onToggleTheme,
 }) {
   const isDark = theme === 'dark';
-  const { currentUser, usuarios, seleccionarUsuarioActivo, cambiarRolActivo, isUsuario } = useAuth();
+  const navigate = useNavigate();
+  const { showInfo } = useToast();
+  const { currentUser, usuarios, seleccionarUsuarioActivo, cambiarRolActivo, logout, isUsuario } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const dropdownRef = useRef(null);
+
+  const handleLogout = () => {
+    setUserDropdownOpen(false);
+    logout();
+    navigate('/login', { replace: true });
+    showInfo('Sesión Cerrada', 'Has cerrado tu sesión institucional de manera segura.');
+  };
 
   // Cerrar dropdown al hacer clic afuera
   useEffect(() => {
@@ -89,12 +102,64 @@ export default function Header({
 
           {/* MENÚ DESPLEGABLE DE ROLES Y USUARIOS */}
           {userDropdownOpen && (
-            <div className="user-profile-dropdown">
+            <div className="user-profile-dropdown" style={{ width: '280px' }}>
+              {/* Tarjeta de usuario en sesión */}
+              <div
+                style={{
+                  padding: '10px 10px 8px 10px',
+                  borderBottom: '1px solid var(--line)',
+                  marginBottom: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <div
+                    className="user-avatar-circle"
+                    style={{ width: '28px', height: '28px', fontSize: '12px' }}
+                  >
+                    {currentUser?.nombre?.charAt(0) || 'U'}
+                  </div>
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 700, fontSize: '12.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                      {currentUser?.nombre}
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text-dim)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                      {currentUser?.email}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                  <span className={`badge-role ${currentUser?.rol || 'usuario'}`}>
+                    {currentUser?.rol}
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
+                    {currentUser?.sede || 'Medellín'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setUserDropdownOpen(false);
+                  setModalPasswordAbierto(true);
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 my-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-lime-50 hover:border-lime-300 dark:hover:bg-slate-800 dark:hover:border-lime-500/40 hover:text-lime-800 dark:hover:text-lime-300 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-lime-100 dark:bg-lime-950/60 flex items-center justify-center text-lime-700 dark:text-lime-400 group-hover:scale-105 transition-transform">
+                    <KeyRound className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Cambiar mi Contraseña</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-lime-600 group-hover:translate-x-0.5 transition-all" />
+              </button>
+
               <div className="user-dropdown-header">
                 Cambiar Usuario Activo (Pruebas de Rol)
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '160px', overflowY: 'auto' }}>
                 {usuarios.map((usr) => {
                   const isSelected = usr.id === currentUser?.id;
                   return (
@@ -142,6 +207,35 @@ export default function Header({
                       {rolName}
                     </button>
                   ))}
+                </div>
+
+                {/* BOTÓN CERRAR SESIÓN */}
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--line)' }}>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="user-logout-btn"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      width: '100%',
+                      padding: '8px 10px',
+                      color: '#f43f5e',
+                      background: 'rgba(244, 63, 94, 0.08)',
+                      border: '1px solid rgba(244, 63, 94, 0.25)',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    title="Cerrar sesión y limpiar token JWT de este dispositivo"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Cerrar Sesión</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -218,6 +312,11 @@ export default function Header({
           </button>
         )}
       </div>
+
+      <ModalCambiarPassword
+        isOpen={modalPasswordAbierto}
+        onClose={() => setModalPasswordAbierto(false)}
+      />
     </header>
   );
 }

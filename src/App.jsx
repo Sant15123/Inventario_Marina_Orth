@@ -12,6 +12,8 @@ import HistorialView from './views/HistorialView';
 import DetalleActivoPublico from './views/DetalleActivoPublico';
 import UsuariosView from './views/UsuariosView';
 import MiPanelUsuarioView from './views/MiPanelUsuarioView';
+import LoginView from './views/LoginView';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import { useAuth } from './context/AuthContext';
 import { today, fmtDate, available, isOverdue } from './data/initialData';
@@ -44,7 +46,7 @@ function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const { currentUser, isAdmin, isUsuario } = useAuth();
+  const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario } = useAuth();
 
   // Estado simple de navegación para las vistas
   const [currentView, setCurrentView] = useState('resumen');
@@ -57,6 +59,13 @@ function App() {
       setCurrentView('resumen');
     }
   }, [isUsuario, currentView]);
+
+  // Proteger vista de usuarios: solo accesible para Administradores y Supervisores (Operador y Usuario redirigidos)
+  useEffect(() => {
+    if (!isAdmin && !isSupervisor && currentView === 'usuarios') {
+      setCurrentView(isUsuario ? 'mi-panel' : 'resumen');
+    }
+  }, [isAdmin, isSupervisor, isUsuario, currentView]);
 
   // Parámetros de navegación inicial para transferir filtros desde Resumen
   const [inventarioParams, setInventarioParams] = useState({ tab: 'equipos', stockFilter: 'todos' });
@@ -91,7 +100,7 @@ function App() {
       setLoading(true);
       setApiError(null);
 
-      const [activosData, consumiblesData, prestamosData, entregasData, remisionesData] = await Promise.all([
+      const [activosData, consumiblesData, prestamosData, entregasData, remisionesData, historialData] = await Promise.all([
         inventoryApi.getActivos(),
         inventoryApi.getConsumibles(),
         inventoryApi.getPrestamos(),
@@ -101,6 +110,10 @@ function App() {
         }),
         inventoryApi.getRemisiones().catch((err) => {
           console.warn('Aviso: no se pudieron cargar remisiones:', err.message);
+          return [];
+        }),
+        inventoryApi.getHistorial().catch((err) => {
+          console.warn('Aviso: no se pudo cargar historial de movimientos:', err.message);
           return [];
         }),
       ]);
@@ -171,107 +184,188 @@ function App() {
 
       setItems(newItems);
 
-      // Mapear préstamos directamente desde la base de datos
       const newMovs = [];
-      if (Array.isArray(prestamosData)) {
-        prestamosData.forEach((p) => {
-          const isConsumible = p.tipo_item === 'consumible' || (p.placa_activo && (p.placa_activo.toUpperCase().startsWith('ROB') || p.placa_activo.toUpperCase().startsWith('MAT')));
-          const cant = p.cantidad ? Number(p.cantidad) : 1;
+      const historialKeys = new Set();
+
+      // 1. Mapear registros de auditoría directa desde historial_movimientos
+      if (Array.isArray(historialData) && historialData.length > 0) {
+        historialData.forEach((h) => {
+          const rawTipo = String(h.tipo || '').toLowerCase();
+          let mappedType = rawTipo;
+          if (rawTipo.includes('devolu')) mappedType = 'devolucion';
+          else if (rawTipo.includes('presta')) mappedType = 'prestamo';
+          else if (rawTipo.includes('entreg') || rawTipo.includes('salida')) mappedType = 'entrega';
+          else if (rawTipo.includes('baja')) mappedType = 'baja';
+          else if (rawTipo.includes('actualiz')) mappedType = 'actualizacion';
+
+          const dateStr = h.fecha ? h.fecha.split('T')[0] : (h.created_at ? h.created_at.split('T')[0] : today());
+          const dedupeKey = `${mappedType}-${String(h.placa_o_id || '').toLowerCase()}-${dateStr}`;
+          historialKeys.add(dedupeKey);
+
           newMovs.push({
-            id: `mov-db-${p.id}`,
-            dbId: p.id,
-            type: 'prestamo',
-            tipo_item: p.tipo_item || (isConsumible ? 'consumible' : 'activo'),
-            itemId: p.placa_activo,
-            itemName: p.nombre_activo || (isConsumible ? `Insumo (${p.placa_activo})` : `Activo (${p.placa_activo})`),
-            qty: cant,
-            unitCodes: [p.placa_activo],
-            person: p.solicitante,
-            sede: p.sede,
-            motivo: p.motivo,
-            motive: p.motivo || 'Préstamo operativo',
-            date: p.fecha_salida ? p.fecha_salida.split('T')[0] : today(),
-            expectedReturn: p.fecha_devolucion_esperada ? p.fecha_devolucion_esperada.split('T')[0] : null,
-            returnedDate: p.fecha_devolucion_real ? p.fecha_devolucion_real.split('T')[0] : null,
-            status: p.estado === 'Devuelto' ? 'cerrado' : 'activo',
+            id: `mov-hist-${h.id}`,
+            dbId: 500000 + Number(h.id || 0),
+            type: mappedType,
+            tipo: h.tipo,
+            itemId: h.placa_o_id,
+            itemName: h.elemento_nombre || (h.placa_o_id ? `Activo (${h.placa_o_id})` : 'Material / Equipo'),
+            qty: Number(h.cantidad) || 1,
+            unitCodes: h.placa_o_id ? [h.placa_o_id] : [],
+            person: h.responsable || '—',
+            sede: h.sede || 'Medellín',
+            motivo: h.detalles || 'Movimiento registrado',
+            motive: h.detalles || 'Movimiento registrado',
+            date: dateStr,
+            fullDate: h.fecha || h.created_at || new Date().toISOString(),
+            status: 'cerrado',
           });
         });
       }
 
-      // Mapear remisiones agrupadas de consumibles directamente desde la base de datos
+      // 2. Mapear préstamos directamente desde la base de datos (vital para los préstamos activos)
+      if (Array.isArray(prestamosData)) {
+        prestamosData.forEach((p) => {
+          const isConsumible = p.tipo_item === 'consumible' || (p.placa_activo && (p.placa_activo.toUpperCase().startsWith('ROB') || p.placa_activo.toUpperCase().startsWith('MAT')));
+          const cant = p.cantidad ? Number(p.cantidad) : 1;
+          const fechaSalida = p.fecha_salida ? p.fecha_salida.split('T')[0] : today();
+          const fechaDev = p.fecha_devolucion_real ? p.fecha_devolucion_real.split('T')[0] : null;
+          const isActivo = p.estado === 'Activo';
+          const loanKey = `prestamo-${String(p.placa_activo || '').toLowerCase()}-${fechaSalida}`;
+
+          if (isActivo || !historialKeys.has(loanKey)) {
+            newMovs.push({
+              id: `mov-db-${p.id}`,
+              dbId: p.id,
+              type: 'prestamo',
+              tipo_item: p.tipo_item || (isConsumible ? 'consumible' : 'activo'),
+              itemId: p.placa_activo,
+              itemName: p.nombre_activo || (isConsumible ? `Insumo (${p.placa_activo})` : `Activo (${p.placa_activo})`),
+              qty: cant,
+              unitCodes: [p.placa_activo],
+              person: p.solicitante,
+              sede: p.sede,
+              motivo: p.motivo,
+              motive: p.motivo || 'Préstamo operativo',
+              date: fechaSalida,
+              fullDate: p.fecha_salida || new Date().toISOString(),
+              expectedReturn: p.fecha_devolucion_esperada ? p.fecha_devolucion_esperada.split('T')[0] : null,
+              returnedDate: fechaDev,
+              status: isActivo ? 'activo' : 'cerrado',
+            });
+          }
+
+          // Si fue devuelto y no está aún registrado en historial_movimientos, mapear devolución
+          if (p.estado === 'Devuelto' && fechaDev) {
+            const devKey = `devolucion-${String(p.placa_activo || '').toLowerCase()}-${fechaDev}`;
+            if (!historialKeys.has(devKey)) {
+              newMovs.push({
+                id: `mov-dev-${p.id}`,
+                dbId: 400000 + Number(p.id || 0),
+                type: 'devolucion',
+                tipo: 'Devolución',
+                itemId: p.placa_activo,
+                itemName: p.nombre_activo || (isConsumible ? `Insumo (${p.placa_activo})` : `Activo (${p.placa_activo})`),
+                qty: cant,
+                unitCodes: [p.placa_activo],
+                person: p.solicitante,
+                sede: p.sede || 'Medellín',
+                motivo: 'Retorno a bodega confirmado. Activo disponible.',
+                motive: 'Retorno a bodega confirmado. Activo disponible.',
+                date: fechaDev,
+                fullDate: p.fecha_devolucion_real,
+                returnedDate: fechaDev,
+                status: 'cerrado',
+              });
+            }
+          }
+        });
+      }
+
+      // 3. Mapear remisiones agrupadas de consumibles directamente desde la base de datos
       const remisionIdsConocidos = new Set();
       if (Array.isArray(remisionesData)) {
         remisionesData.forEach((rem) => {
           remisionIdsConocidos.add(rem.remision_id);
           const rawItems = Array.isArray(rem.items) ? rem.items : [];
-          newMovs.push({
-            id: `rem-${rem.remision_id || rem.id}`,
-            dbId: rem.id,
-            remision_id: rem.remision_id,
-            codigo_acta: rem.codigo_acta || rem.remision_id,
-            type: 'entrega',
-            isRemision: true,
-            itemId: rem.remision_id,
-            itemName: rawItems.length > 0 ? rawItems.map((it) => it.nombre || it.material).join(', ') : 'Remisión de Materiales',
-            items: rawItems,
-            total_items: rem.total_items || rawItems.length,
-            total_unidades: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
-            qty: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
-            person: rem.responsable_recibe,
-            responsable_recibe: rem.responsable_recibe,
-            sede: rem.sede || 'Medellín',
-            proyecto: rem.proyecto || '',
-            motivo: rem.motivo || rem.proyecto || 'Salida de material para taller',
-            motive: rem.motivo || rem.proyecto || 'Salida de material para taller',
-            date: rem.fecha_entrega ? rem.fecha_entrega.split('T')[0] : (rem.created_at ? rem.created_at.split('T')[0] : today()),
-            fecha_entrega: rem.fecha_entrega || rem.created_at || new Date().toISOString(),
-            status: 'cerrado',
-          });
+          const remDate = rem.fecha_entrega ? rem.fecha_entrega.split('T')[0] : (rem.created_at ? rem.created_at.split('T')[0] : today());
+          const remKey = `entrega-${String(rem.remision_id || '').toLowerCase()}-${remDate}`;
+
+          if (!historialKeys.has(remKey)) {
+            newMovs.push({
+              id: `rem-${rem.remision_id || rem.id}`,
+              dbId: rem.id,
+              remision_id: rem.remision_id,
+              codigo_acta: rem.codigo_acta || rem.remision_id,
+              type: 'entrega',
+              isRemision: true,
+              itemId: rem.remision_id,
+              itemName: rawItems.length > 0 ? rawItems.map((it) => it.nombre || it.material).join(', ') : 'Remisión de Materiales',
+              items: rawItems,
+              total_items: rem.total_items || rawItems.length,
+              total_unidades: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
+              qty: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
+              person: rem.responsable_recibe,
+              responsable_recibe: rem.responsable_recibe,
+              sede: rem.sede || 'Medellín',
+              proyecto: rem.proyecto || '',
+              motivo: rem.motivo || rem.proyecto || 'Salida de material para taller',
+              motive: rem.motivo || rem.proyecto || 'Salida de material para taller',
+              date: remDate,
+              fullDate: rem.fecha_entrega || rem.created_at || new Date().toISOString(),
+              fecha_entrega: rem.fecha_entrega || rem.created_at || new Date().toISOString(),
+              status: 'cerrado',
+            });
+          }
         });
       }
 
-      // Mapear entregas de consumibles huérfanas (sin remisión asociada) para retrocompatibilidad
+      // 4. Mapear entregas de consumibles huérfanas (sin remisión asociada) para retrocompatibilidad
       if (Array.isArray(entregasData)) {
         entregasData.forEach((ent) => {
           if (ent.remision_id && remisionIdsConocidos.has(ent.remision_id)) {
-            // Ya está contenida en su remisión agrupada
             return;
           }
-          newMovs.push({
-            id: `mov-ent-${ent.id}`,
-            dbId: ent.id,
-            remision_id: ent.remision_id || `REM-LEGACY-${ent.id}`,
-            type: 'entrega',
-            isRemision: false,
-            itemId: ent.material_id,
-            itemName: ent.material_nombre || `Consumible (${ent.material_id})`,
-            items: [
-              {
-                material_id: ent.material_id,
-                nombre: ent.material_nombre || `Consumible (${ent.material_id})`,
-                cantidad: Number(ent.cantidad) || 1,
-              }
-            ],
-            total_items: 1,
-            total_unidades: Number(ent.cantidad) || 1,
-            qty: Number(ent.cantidad) || 1,
-            person: ent.responsable,
-            responsable_recibe: ent.responsable,
-            sede: ent.sede || 'Medellín',
-            proyecto: '',
-            motivo: ent.proyecto_motivo || '',
-            motive: ent.proyecto_motivo || 'Salida de material para taller',
-            date: ent.created_at ? ent.created_at.split('T')[0] : today(),
-            fecha_entrega: ent.created_at || new Date().toISOString(),
-            status: 'cerrado',
-          });
+          const entDate = ent.created_at ? ent.created_at.split('T')[0] : today();
+          const entKey = `entrega-${String(ent.material_id || '').toLowerCase()}-${entDate}`;
+
+          if (!historialKeys.has(entKey)) {
+            newMovs.push({
+              id: `mov-ent-${ent.id}`,
+              dbId: ent.id,
+              remision_id: ent.remision_id || `REM-LEGACY-${ent.id}`,
+              type: 'entrega',
+              isRemision: false,
+              itemId: ent.material_id,
+              itemName: ent.material_nombre || `Consumible (${ent.material_id})`,
+              items: [
+                {
+                  material_id: ent.material_id,
+                  nombre: ent.material_nombre || `Consumible (${ent.material_id})`,
+                  cantidad: Number(ent.cantidad) || 1,
+                }
+              ],
+              total_items: 1,
+              total_unidades: Number(ent.cantidad) || 1,
+              qty: Number(ent.cantidad) || 1,
+              person: ent.responsable,
+              responsable_recibe: ent.responsable,
+              sede: ent.sede || 'Medellín',
+              proyecto: '',
+              motivo: ent.proyecto_motivo || '',
+              motive: ent.proyecto_motivo || 'Salida de material para taller',
+              date: entDate,
+              fullDate: ent.created_at || new Date().toISOString(),
+              fecha_entrega: ent.created_at || new Date().toISOString(),
+              status: 'cerrado',
+            });
+          }
         });
       }
 
       // Ordenar movimientos cronológicamente: los más recientes arriba
       newMovs.sort((a, b) => {
-        const dateA = new Date(a.date).getTime() || 0;
-        const dateB = new Date(b.date).getTime() || 0;
+        const dateA = new Date(a.fullDate || a.date).getTime() || 0;
+        const dateB = new Date(b.fullDate || b.date).getTime() || 0;
         if (dateB !== dateA) return dateB - dateA;
         return (Number(b.dbId) || 0) - (Number(a.dbId) || 0);
       });
@@ -657,99 +751,107 @@ function App() {
 
   return (
     <Routes>
+      {/* RUTA DE INICIO DE SESIÓN INSTITUCIONAL */}
+      <Route
+        path="/login"
+        element={<LoginView theme={theme} onToggleTheme={toggleTheme} />}
+      />
+
       {/* RUTA PÚBLICA / MÓVIL: FICHA DE ACTIVO POR CÓDIGO QR */}
       <Route
         path="/activo/:placa"
         element={<DetalleActivoPublico items={items} movements={movements} />}
       />
 
-      {/* RUTA PRINCIPAL: PANEL ADMINISTRATIVO */}
+      {/* RUTA PRINCIPAL PROTEGIDA CON JWT: PANEL ADMINISTRATIVO */}
       <Route
         path="/*"
         element={
-          <div className="layout">
-            <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+          <ProtectedRoute>
+            <div className="layout">
+              <Sidebar currentView={currentView} onViewChange={setCurrentView} />
 
-            <div className="main-wrapper">
-              <Header
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                onExportExcel={handleExportExcel}
-                onSync={handleSyncAndPurge}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-              />
+              <div className="main-wrapper">
+                <Header
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  onExportExcel={handleExportExcel}
+                  onSync={handleSyncAndPurge}
+                  theme={theme}
+                  onToggleTheme={toggleTheme}
+                />
 
-              <main className="main-content">
-                {/* VISTA SIMPLIFICADA PARA ROL USUARIO: MIS SOLICITUDES Y ASIGNACIONES */}
-                {currentView === 'mi-panel' && (
-                  <MiPanelUsuarioView
-                    items={items}
-                    movements={movements}
-                  />
-                )}
+                <main className="main-content">
+                  {/* VISTA SIMPLIFICADA PARA ROL USUARIO: MIS SOLICITUDES Y ASIGNACIONES */}
+                  {currentView === 'mi-panel' && (
+                    <MiPanelUsuarioView
+                      items={items}
+                      movements={movements}
+                    />
+                  )}
 
-                {/* VISTA RESUMEN (ADMINISTRATIVO / SUPERVISOR / OPERADOR) */}
-                {!isUsuario && currentView === 'resumen' && (
-                  <ResumenView
-                    items={filteredItems}
-                    movements={filteredMovements}
-                    loading={loading}
-                    error={apiError}
-                    onRetry={refreshFromApi}
-                    onNavigate={handleNavigateFromSummary}
-                  />
-                )}
+                  {/* VISTA RESUMEN (ADMINISTRATIVO / SUPERVISOR / OPERADOR) */}
+                  {!isUsuario && currentView === 'resumen' && (
+                    <ResumenView
+                      items={filteredItems}
+                      movements={filteredMovements}
+                      loading={loading}
+                      error={apiError}
+                      onRetry={refreshFromApi}
+                      onNavigate={handleNavigateFromSummary}
+                    />
+                  )}
 
-                {/* VISTA INVENTARIO */}
-                {!isUsuario && currentView === 'inventario' && (
-                  <InventarioView
-                    items={filteredItems}
-                    searchTerm={searchTerm}
-                    loading={loading}
-                    error={apiError}
-                    onRetry={refreshFromApi}
-                    onAddItem={handleAddItem}
-                    onEditItem={handleEditItem}
-                    onRetireItem={handleRetireItem}
-                    onRegisterLoan={handleRegisterLoan}
-                    initialTab={inventarioParams.tab}
-                    initialStockFilter={inventarioParams.stockFilter}
-                  />
-                )}
+                  {/* VISTA INVENTARIO */}
+                  {!isUsuario && currentView === 'inventario' && (
+                    <InventarioView
+                      items={filteredItems}
+                      searchTerm={searchTerm}
+                      loading={loading}
+                      error={apiError}
+                      onRetry={refreshFromApi}
+                      onAddItem={handleAddItem}
+                      onEditItem={handleEditItem}
+                      onRetireItem={handleRetireItem}
+                      onRegisterLoan={handleRegisterLoan}
+                      initialTab={inventarioParams.tab}
+                      initialStockFilter={inventarioParams.stockFilter}
+                    />
+                  )}
 
-                {/* VISTA PRÉSTAMOS Y ENTREGAS */}
-                {!isUsuario && currentView === 'prestamos' && (
-                  <PrestamosView
-                    items={filteredItems}
-                    movements={filteredMovements}
-                    loading={loading}
-                    error={apiError}
-                    onRetry={refreshFromApi}
-                    onRegisterLoan={handleRegisterLoan}
-                    onRegisterDelivery={handleRegisterDelivery}
-                    onReturnLoan={handleReturnLoan}
-                    initialSection={prestamosParams.section}
-                    initialStatusFilter={prestamosParams.estado}
-                  />
-                )}
+                  {/* VISTA PRÉSTAMOS Y ENTREGAS */}
+                  {!isUsuario && currentView === 'prestamos' && (
+                    <PrestamosView
+                      items={filteredItems}
+                      movements={filteredMovements}
+                      loading={loading}
+                      error={apiError}
+                      onRetry={refreshFromApi}
+                      onRegisterLoan={handleRegisterLoan}
+                      onRegisterDelivery={handleRegisterDelivery}
+                      onReturnLoan={handleReturnLoan}
+                      initialSection={prestamosParams.section}
+                      initialStatusFilter={prestamosParams.estado}
+                    />
+                  )}
 
-                {/* VISTA HISTORIAL */}
-                {currentView === 'historial' && (
-                  <HistorialView movements={filteredMovements} />
-                )}
+                  {/* VISTA HISTORIAL */}
+                  {currentView === 'historial' && (
+                    <HistorialView movements={filteredMovements} />
+                  )}
 
-                {/* VISTA MÓDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES) */}
-                {!isUsuario && isAdmin && currentView === 'usuarios' && (
-                  <UsuariosView />
-                )}
-              </main>
+                  {/* VISTA MÓDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}
+                  {!isUsuario && (isAdmin || isSupervisor) && currentView === 'usuarios' && (
+                    <UsuariosView />
+                  )}
+                </main>
 
-              <footer>
-                Registro interno · Fundación Marina Orth · Robótica & Nuevas Tecnologías · {fmtDate(today())}
-              </footer>
+                <footer>
+                  Registro interno · Fundación Marina Orth · Robótica & Nuevas Tecnologías · {fmtDate(today())}
+                </footer>
+              </div>
             </div>
-          </div>
+          </ProtectedRoute>
         }
       />
     </Routes>

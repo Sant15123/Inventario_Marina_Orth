@@ -3,11 +3,26 @@ const hostname = typeof window !== 'undefined' && window.location ? window.locat
 export const API_BASE_URL = `http://${hostname}:${BACKEND_PORT}`;
 const API_BASE = import.meta.env.VITE_API_URL || `${API_BASE_URL}/api`;
 
+export function getAuthToken() {
+  try {
+    return typeof window !== 'undefined' ? localStorage.getItem('siga_token') : null;
+  } catch {
+    return null;
+  }
+}
+
 async function request(path, options = {}) {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   });
 
   const json = await res.json().catch(() => null);
@@ -169,6 +184,59 @@ export const inventoryApi = {
       body: JSON.stringify(data),
     });
     return json.data;
+  },
+
+  // 4. Historial Universal y Auditoría
+  getHistorial: async (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    const endpoint = qs ? `/historial?${qs}` : '/historial';
+    const json = await request(endpoint);
+    if (!json || !Array.isArray(json.data)) {
+      return [];
+    }
+    return json.data;
+  },
+
+  // 5. Proyectos STEAM
+  getProyectos: async () => {
+    const json = await request('/proyectos');
+    if (!json || !Array.isArray(json.data)) {
+      return [];
+    }
+    return json.data;
+  },
+
+  createProyecto: async (data) => {
+    const json = await request('/proyectos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return json.data;
+  },
+
+  // 6. Usuarios y Perfiles
+  getUsuarios: async () => {
+    const json = await request('/usuarios');
+    if (!json || !Array.isArray(json.data)) {
+      return [];
+    }
+    return json.data;
+  },
+
+  createUsuario: async (data) => {
+    const json = await request('/usuarios', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return json;
+  },
+
+  updateUsuario: async (id, data) => {
+    const json = await request(`/usuarios/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return json;
   },
 
   // Compatibilidad genérica directa con endpoints de la API

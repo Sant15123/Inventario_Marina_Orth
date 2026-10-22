@@ -1,13 +1,14 @@
 import { QRCodeSVG } from 'qrcode.react';
 
-export default function ModalQR({ activo, onClose, onBack }) {
-  if (!activo) return null;
+export default function ModalQR({ activo, item, onClose, onBack }) {
+  const targetActivo = activo || item;
+  if (!targetActivo) return null;
 
-  const placa = activo.placa || activo.code || 'S-PLACA';
-  const nombre = activo.nombre || activo.name || 'Equipo Tecnológico';
-  const serial = activo.serial || '—';
-  const sede = activo.sede || 'Medellín';
-  const estado = activo.estado || activo.status || 'Disponible';
+  const placa = targetActivo.placa || targetActivo.code || targetActivo.id || 'S-PLACA';
+  const nombre = targetActivo.nombre || targetActivo.name || targetActivo.equipo || targetActivo.material || 'Equipo Tecnológico';
+  const serial = targetActivo.serial || '—';
+  const sede = targetActivo.sede || 'Medellín';
+  const estado = targetActivo.estado || targetActivo.status || 'Disponible';
 
   // URL dinámica que codifica el QR para abrir la ficha pública al escanearlo con el celular
   const qrUrl =

@@ -1,5 +1,5 @@
 import React from 'react';
-import { QrCode, Pencil } from 'lucide-react';
+import { QrCode, Pencil, X } from 'lucide-react';
 
 /**
  * ModalDetalleActivo: Componente modal unificado para consultar la ficha técnica
@@ -196,27 +196,10 @@ export default function ModalDetalleActivo({
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer shadow-sm"
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                border: '1px solid var(--line, #334155)',
-                backgroundColor: 'var(--surface-2, #1e293b)',
-                color: 'var(--text-dim, #94a3b8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '15px',
-                lineHeight: 1,
-                padding: 0,
-                flexShrink: 0,
-                transition: 'all 0.15s ease',
-              }}
-              title="Cerrar modal"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+              title="Cerrar ventana"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>

@@ -19,6 +19,28 @@ import { fmtDate, today } from '../services/mockData';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalQR from '../components/modals/ModalQR';
 
+// Normalizadores visuales institucionales
+const formatSede = (sede) => {
+  if (!sede) return 'Medellín';
+  const s = sede.toLowerCase();
+  if (s.includes('medell')) return 'Medellín';
+  if (s.includes('carmen')) return 'Carmen de Viboral';
+  if (s.includes('santa fe') || s.includes('santaf')) return 'Santa Fe';
+  return sede;
+};
+
+const formatFechaCompacta = (d) => {
+  if (!d || d === '—') return '—';
+  try {
+    const clean = String(d).split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+  } catch (e) {}
+  return d;
+};
+
 export default function MiPanelUsuarioView({ items = [], movements = [] }) {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('equipos'); // 'equipos' | 'consumibles'
@@ -180,117 +202,88 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
       placa: eq.placa,
       nombre: eq.nombre,
       modelo: eq.modelo,
-      serial: eq.serial,
+      serial: eq.serial || '—',
       sede: eq.sede,
       ubicacion: eq.sede,
-      ubicacion_estante: eq.ubicacion_estante,
+      ubicacion_estante: eq.ubicacion_estante || 'En Campo',
       estado: eq.status === 'prestado' ? 'En campo' : 'Disponible',
       custodio: currentUser?.nombre,
       categoria: 'Equipos de Cómputo',
+      fechaEntrega: eq.fechaEntrega,
+      fechaDevolucion: eq.fechaDevolucion,
+      condicion: 'Bueno',
+      isEquipo: true,
     });
     setModalDetalleOpen(true);
   };
 
   const handleVerQR = (eq) => {
+    const itemActual = eq || activoSeleccionado;
+    if (!itemActual) return;
     setItemParaQR({
-      placa: eq.placa,
-      nombre: eq.nombre,
-      modelo: eq.modelo,
-      serial: eq.serial,
-      sede: eq.sede,
-      custodio: currentUser?.nombre,
+      ...itemActual,
+      code: itemActual.placa || itemActual.code || itemActual.id,
+      placa: itemActual.placa || itemActual.code || itemActual.id,
+      nombre: itemActual.nombre || itemActual.name || 'Equipo Tecnológico',
+      name: itemActual.nombre || itemActual.name || 'Equipo Tecnológico',
+      modelo: itemActual.modelo || itemActual.model || 'Estándar',
+      model: itemActual.modelo || itemActual.model || 'Estándar',
+      serial: itemActual.serial || '—',
+      sede: itemActual.sede || 'Medellín',
+      estado: itemActual.status || itemActual.estado || 'En Custodia',
+      status: itemActual.status || itemActual.estado || 'En Custodia',
+      custodio: currentUser?.nombre || 'Docente Asignado',
     });
     setModalQROpen(true);
   };
 
+  const usuario = currentUser;
+  const pestanaActiva = activeTab;
+  const setPestanaActiva = setActiveTab;
+  const equiposAsignados = misEquiposAsignados;
+  const remisiones = misConsumiblesRecibidos;
+
   return (
-    <div className="view-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* TARJETA DE BIENVENIDA INSTITUCIONAL PARA EL ROL USUARIO */}
-      <div
-        className="panel"
-        style={{
-          background: 'linear-gradient(135deg, rgba(11, 19, 43, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%)',
-          border: '1px solid rgba(132, 204, 22, 0.3)',
-          borderRadius: '16px',
-          padding: '24px',
-          color: '#ffffff',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', backgroundColor: 'rgba(132, 204, 22, 0.15)', border: '1px solid rgba(132, 204, 22, 0.3)', color: '#84CC16', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '8px' }}>
-              <User className="w-3.5 h-3.5" />
-              <span>Panel Personal del Formador STEAM</span>
-            </div>
-            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
-              Mis Solicitudes y Asignaciones
-            </h1>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', color: '#94a3b8' }}>
-              Bienvenido(a), <strong>{currentUser?.nombre}</strong> (Doc. {currentUser?.documento}) · {currentUser?.cargo || 'Formador(a) Institucional'} en {currentUser?.sede || 'Medellín'}
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ padding: '10px 18px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center' }}>
-              <span style={{ display: 'block', fontSize: '1.5rem', fontWeight: 800, color: '#84CC16' }}>
-                {misEquiposAsignados.length}
-              </span>
-              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 600 }}>Equipos en Custodia</span>
-            </div>
-
-            <div style={{ padding: '10px 18px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center' }}>
-              <span style={{ display: 'block', fontSize: '1.5rem', fontWeight: 800, color: '#38BDF8' }}>
-                {misConsumiblesRecibidos.length}
-              </span>
-              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 600 }}>Remisiones de Material</span>
-            </div>
-          </div>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Cabecera */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            Mis Solicitudes y Asignaciones
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Bienvenido(a), <strong className="text-slate-800 dark:text-slate-200 font-semibold">{usuario?.nombre || 'Docente'}</strong> 
+            <span className="text-xs text-slate-400 ml-1.5">(Doc. {usuario?.documento || '—'})</span> · {usuario?.cargo || 'Formador STEAM'}
+          </p>
         </div>
       </div>
 
-      {/* SELECTOR DE PESTAÑAS (SOLO CONSULTA / ASIGNACIONES PERSONALES) */}
-      <div className="tab-buttons" style={{ display: 'flex', gap: '10px' }}>
+      {/* Pestañas de Navegación */}
+      <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => setActiveTab('equipos')}
-          className={`tab-btn ${activeTab === 'equipos' ? 'active' : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            borderRadius: '10px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
+          onClick={() => setPestanaActiva('equipos')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            pestanaActiva === 'equipos'
+              ? 'bg-[#84CC16] text-slate-950 shadow-sm'
+              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+          }`}
         >
-          <Laptop className="w-4 h-4 text-[#84CC16]" />
-          <span>Mis Equipos Asignados</span>
-          <span className="tab-badge">{misEquiposAsignados.length}</span>
+          <span>💻 Mis Equipos Asignados</span>
+          <span className="px-2 py-0.5 rounded-full text-xs bg-black/10 dark:bg-white/10">{equiposAsignados?.length || 0}</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab('consumibles')}
-          className={`tab-btn ${activeTab === 'consumibles' ? 'active' : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            borderRadius: '10px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
+          onClick={() => setPestanaActiva('consumibles')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            pestanaActiva === 'consumibles'
+              ? 'bg-[#84CC16] text-slate-950 shadow-sm'
+              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+          }`}
         >
-          <Package className="w-4 h-4 text-[#38BDF8]" />
-          <span>Mis Consumibles Recibidos</span>
-          <span className="tab-badge">{misConsumiblesRecibidos.length}</span>
+          <span>📦 Mis Consumibles Recibidos</span>
+          <span className="px-2 py-0.5 rounded-full text-xs bg-black/10 dark:bg-white/10">{remisiones?.length || 0}</span>
         </button>
       </div>
 
@@ -311,25 +304,24 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
             </span>
           </div>
 
-          <div className="panel" style={{ overflow: 'hidden', padding: 0 }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="panel" style={{ paddingBottom: '0', overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-header, rgba(0,0,0,0.02))' }}>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)' }}>PLACA</th>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)' }}>EQUIPO & MODELO</th>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)' }}>SERIAL</th>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)' }}>SEDE / ESPACIO</th>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)' }}>FECHA ENTREGA</th>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)' }}>DEVOLUCIÓN PACTADA</th>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)', textAlign: 'center' }}>ESTADO</th>
-                    <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-dim)', textAlign: 'center' }}>FICHA TÉCNICA</th>
+                  <tr>
+                    <th style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>PLACA</th>
+                    <th style={{ width: '27%', padding: '10px 10px', textAlign: 'left' }}>EQUIPO & MODELO</th>
+                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'center' }}>SEDE</th>
+                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'center' }}>F. ENTREGA</th>
+                    <th style={{ width: '14%', padding: '10px 8px', textAlign: 'center' }}>F. DEVOLUCIÓN</th>
+                    <th style={{ width: '11%', padding: '10px 6px', textAlign: 'center' }}>ESTADO</th>
+                    <th style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
                   {misEquiposAsignados.length === 0 ? (
                     <tr>
-                      <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-dim)' }}>
+                      <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-dim)' }}>
                         No tienes equipos tecnológicos asignados en este momento.
                       </td>
                     </tr>
@@ -337,79 +329,100 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
                     misEquiposAsignados.map((eq, i) => (
                       <tr
                         key={i}
+                        className="h-auto hover:bg-slate-500/5"
                         style={{ borderBottom: '1px solid var(--border)' }}
-                        className="hover:bg-slate-500/5"
                       >
-                        {/* Placa */}
-                        <td style={{ padding: '12px 14px' }}>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-sky-950/80 text-sky-400 border border-sky-800/60">
-                            {eq.placa}
+                        {/* 1. PLACA */}
+                        <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleVerDetalleEquipo(eq)}
+                            className="badge-placa"
+                            title={`Consultar ficha técnica de ${eq.placa}`}
+                          >
+                            <span className="truncate">{eq.placa}</span>
+                          </button>
+                        </td>
+
+                        {/* 2. EQUIPO & MODELO */}
+                        <td style={{ padding: '9px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, overflow: 'hidden' }}>
+                            <strong
+                              className="item-title truncate"
+                              title={eq.nombre}
+                              style={{
+                                fontSize: '12.5px',
+                                color: 'var(--text-h)',
+                                fontWeight: 700,
+                                lineHeight: 1.25,
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {eq.nombre}
+                            </strong>
+                            <span
+                              title={eq.modelo}
+                              style={{
+                                fontSize: '11px',
+                                color: 'var(--text-dim)',
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {eq.modelo}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* 3. SEDE */}
+                        <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                          <span
+                            className="sede-badge municipal"
+                            title={formatSede(eq.sede)}
+                            style={{ fontSize: '11px', padding: '2px 8px', display: 'inline-block' }}
+                          >
+                            {formatSede(eq.sede)}
                           </span>
                         </td>
 
-                        {/* Nombre y Modelo */}
-                        <td style={{ padding: '12px 14px' }}>
-                          <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text)' }}>
-                            {eq.nombre}
-                          </div>
-                          <div style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
-                            {eq.modelo}
-                          </div>
+                        {/* 4. FECHA DE ENTREGA */}
+                        <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text)' }}>
+                            {formatFechaCompacta(eq.fechaEntrega)}
+                          </span>
                         </td>
 
-                        {/* Serial */}
-                        <td style={{ padding: '12px 14px', fontSize: '12.5px', fontFamily: 'monospace', color: 'var(--text)' }}>
-                          {eq.serial}
+                        {/* 5. FECHA DE DEVOLUCIÓN */}
+                        <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span
+                            style={{
+                              fontFamily: 'monospace',
+                              fontSize: '12px',
+                              color: 'var(--text)',
+                            }}
+                          >
+                            {formatFechaCompacta(eq.fechaDevolucion)}
+                          </span>
                         </td>
 
-                        {/* Sede y Ubicación */}
-                        <td style={{ padding: '12px 14px' }}>
-                          <div className="flex flex-col gap-1 items-start justify-center">
-                            <span className="px-2 py-0.5 text-[11px] font-semibold rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                              {eq.sede}
-                            </span>
-                            {eq.ubicacion_estante && (
-                              <span className="text-[11px] font-mono text-slate-500">
-                                📦 {eq.ubicacion_estante}
-                              </span>
-                            )}
-                          </div>
+                        {/* 6. ESTADO */}
+                        <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span
+                            className={`pill ${eq.status === 'prestado' ? 'prestado' : 'ok'}`}
+                            style={{ fontSize: '11px', padding: '2px 8px' }}
+                          >
+                            {eq.status === 'prestado' ? 'En Custodia' : 'Reintegrado'}
+                          </span>
                         </td>
 
-                        {/* Fecha de Entrega */}
-                        <td style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--text)' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{fmtDate(eq.fechaEntrega)}</span>
-                          </div>
-                        </td>
-
-                        {/* Fecha de Devolución */}
-                        <td style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--text)' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Clock className="w-3.5 h-3.5 text-amber-500" />
-                            <span>{fmtDate(eq.fechaDevolucion)}</span>
-                          </div>
-                        </td>
-
-                        {/* Estado */}
-                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                          {eq.status === 'prestado' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                              <Clock className="w-3 h-3" />
-                              En Custodia
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Reintegrado
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Ficha Técnica (Solo Consulta) */}
-                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {/* 7. ACCIONES */}
+                        <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                             <button
                               type="button"
                               onClick={() => handleVerDetalleEquipo(eq)}
@@ -423,9 +436,9 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
                                 borderRadius: '6px',
                                 borderColor: 'var(--border)',
                               }}
-                              title="Ver ficha técnica completa del equipo"
+                              title="Consultar ficha técnica completa del equipo"
                             >
-                              <Eye className="w-3.5 h-3.5 text-sky-400" />
+                              <Eye style={{ width: '13px', height: '13px' }} className="text-sky-400" />
                               <span>Detalle</span>
                             </button>
 
@@ -436,13 +449,17 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                padding: '4px 6px',
+                                justifyContent: 'center',
+                                width: '28px',
+                                height: '28px',
+                                padding: '4px',
                                 borderRadius: '6px',
                                 borderColor: 'var(--border)',
+                                cursor: 'pointer',
                               }}
-                              title="Ver código QR del equipo"
+                              title="Ver e Imprimir Código QR del Equipo"
                             >
-                              <QrCode className="w-3.5 h-3.5 text-[#84CC16]" />
+                              <QrCode style={{ width: '14px', height: '14px', color: '#84CC16' }} />
                             </button>
                           </div>
                         </td>
@@ -473,91 +490,77 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {misConsumiblesRecibidos.map((rem, idx) => (
               <div
                 key={idx}
-                className="panel"
-                style={{
-                  padding: '18px',
-                  borderRadius: '12px',
-                  border: '1px solid var(--border)',
-                  backgroundColor: 'var(--bg-card, #ffffff)',
-                }}
+                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4 mb-4"
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
-                  <div>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-lime-500/20 text-[#84CC16] border border-lime-400/30">
-                        {rem.codigo_acta || rem.remision_id || `ACTA-${idx + 1}`}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-                        Fecha de despacho: <strong>{fmtDate(rem.date || rem.fecha_entrega)}</strong>
-                      </span>
-                    </div>
-                    <div style={{ marginTop: '4px', fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                      Destino: {rem.sede || 'Medellín'} · Proyecto: {rem.proyecto || 'Talleres STEAM'}
-                    </div>
-                    {rem.motivo && (
-                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-dim)' }}>
-                        Motivo: {rem.motivo}
-                      </p>
-                    )}
+                {/* Barra superior de la tarjeta */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      {rem.codigo_acta || rem.remision_id || rem.id || `REM-${idx + 1}`}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Fecha: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{fmtDate(rem.date || rem.fecha_entrega)}</strong>
+                    </span>
                   </div>
 
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Despacho Confirmado
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 self-start sm:self-auto"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      width: 'fit-content',
+                      maxWidth: 'max-content',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CheckCircle2 size={14} className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                    <span>Despacho Confirmado</span>
                   </span>
                 </div>
 
-                {/* Lista de Insumos de la Remisión */}
+                {/* Información de destino y proyecto */}
                 <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Materiales Entregados ({Array.isArray(rem.items) ? rem.items.length : 1} ítems):
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
+                  <p className="text-sm text-slate-800 dark:text-slate-200 font-medium">
+                    Destino: <strong className="font-semibold">{rem.sede || 'Medellín'}</strong> · Proyecto: <strong className="font-semibold">{rem.proyecto || 'Talleres STEAM'}</strong>
+                  </p>
+                  {rem.motivo && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-0.5">
+                      Motivo: {rem.motivo}
+                    </p>
+                  )}
+                </div>
+
+                {/* Sección de Materiales Entregados */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 mb-2">
+                    MATERIALES ENTREGADOS ({Array.isArray(rem.items) ? rem.items.length : 1} ÍTEMS):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
                     {Array.isArray(rem.items) && rem.items.length > 0 ? (
                       rem.items.map((it, i) => (
-                        <div
+                        <span
                           key={i}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            background: 'var(--surface-header, rgba(0,0,0,0.02))',
-                            border: '1px solid var(--border)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200"
                         >
-                          <span style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--text)' }}>
-                            📦 {it.nombre || it.material || 'Consumible'}
-                          </span>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#84CC16', padding: '1px 6px', borderRadius: '4px', background: 'rgba(132, 204, 22, 0.15)' }}>
+                          <span>📦 {it.nombre || it.material || 'Consumible'}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-lime-100 text-lime-800 dark:bg-lime-950/60 dark:text-lime-400 font-bold text-[10px]">
                             x{it.cantidad || it.cantidadEntrega || 1}
                           </span>
-                        </div>
+                        </span>
                       ))
                     ) : (
-                      <div
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          background: 'var(--surface-header, rgba(0,0,0,0.02))',
-                          border: '1px solid var(--border)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <span style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--text)' }}>
-                          📦 {rem.itemName || 'Material de Robótica'}
-                        </span>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#84CC16', padding: '1px 6px', borderRadius: '4px', background: 'rgba(132, 204, 22, 0.15)' }}>
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200">
+                        <span>📦 {rem.itemName || 'Material de Robótica'}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-lime-100 text-lime-800 dark:bg-lime-950/60 dark:text-lime-400 font-bold text-[10px]">
                           x{rem.qty || 1}
                         </span>
-                      </div>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -572,17 +575,31 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
         <ModalDetalleActivo
           isOpen={modalDetalleOpen}
           onClose={() => setModalDetalleOpen(false)}
+          item={activoSeleccionado}
           activo={activoSeleccionado}
           readOnly={true}
+          onOpenQR={(it) => {
+            setModalDetalleOpen(false);
+            handleVerQR(it || activoSeleccionado);
+          }}
         />
       )}
 
       {/* MODAL QR */}
       {modalQROpen && itemParaQR && (
         <ModalQR
-          isOpen={modalQROpen}
-          onClose={() => setModalQROpen(false)}
+          activo={itemParaQR}
           item={itemParaQR}
+          onClose={() => {
+            setModalQROpen(false);
+            setItemParaQR(null);
+          }}
+          onBack={() => {
+            setModalQROpen(false);
+            if (activoSeleccionado) {
+              setModalDetalleOpen(true);
+            }
+          }}
         />
       )}
     </div>

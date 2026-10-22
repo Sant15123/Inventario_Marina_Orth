@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 /**
@@ -229,27 +230,10 @@ export default function ModalEditarActivo({
             type="button"
             disabled={isSubmitting}
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-colors text-base"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              border: '1px solid var(--line, #334155)',
-              backgroundColor: 'var(--surface, #1e293b)',
-              color: 'var(--text-dim, #94a3b8)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '15px',
-              lineHeight: 1,
-              padding: 0,
-              transition: 'all 0.15s ease',
-              flexShrink: 0,
-            }}
-            title="Cerrar"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+            title="Cerrar ventana"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 

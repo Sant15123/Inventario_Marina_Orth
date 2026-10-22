@@ -10,7 +10,7 @@ El sistema centraliza las operaciones de inventario, préstamos con custodia ins
 
 - **Propósito**: Control de existencias en tiempo real, trazabilidad de responsables, prevención de pérdidas de material didáctico/tecnológico y estandarización de actas de entrega y devolución.
 - **Identidad Visual Institucional**:
-  - **Verde Lima Corporativo**: `#84CC16` / `rgb(132, 204, 22)` (acciones principales, badges activos, indicadores de éxito y acentos visuales).
+  - **Verde Lima Corporativo**: `#84CC16` / `hsla(84, 81%, 44%, 1.00)` (acciones principales, badges activos, indicadores de éxito y acentos visuales).
   - **Azul Oscuro / Marino Institucional**: `#0B132B` y variantes `#0F172A` / `#1E293B` (superficies estructuradas, headers y contrastes).
   - **Tema Claro (Light Mode)**: Configurado como el tema predeterminado del sistema con persistencia opcional en almacenamiento local.
 

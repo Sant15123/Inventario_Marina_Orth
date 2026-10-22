@@ -3,6 +3,11 @@ import { fmtDate, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, today } fro
 import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
+import ModalNuevoUsuarioRapido from '../components/modals/ModalNuevoUsuarioRapido';
+import ModalNuevoProyectoSteam from '../components/modals/ModalNuevoProyectoSteam';
+import ModalConfirmarRetorno from '../components/modals/ModalConfirmarRetorno';
+import SearchableUserSelect from '../components/common/SearchableUserSelect';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 
@@ -18,6 +23,8 @@ export default function PrestamosView({
   initialSection = 'all',
   initialStatusFilter = 'todos', // 'todos' | 'Activo' | 'Vencido'
 }) {
+  const { usuarios = [], crearUsuario, isAdmin, isSupervisor, isOperador } = useAuth();
+
   // Pestaña o bloque visible si se desea filtrar rápidamente
   const [activeSection, setActiveSection] = useState(initialSection); // 'all' | 'prestamos' | 'entregas'
   const [filterEstadoPrestamo, setFilterEstadoPrestamo] = useState(initialStatusFilter); // 'todos' | 'Activo' | 'Vencido'
@@ -33,16 +40,52 @@ export default function PrestamosView({
     if (initialStatusFilter) setFilterEstadoPrestamo(initialStatusFilter);
   }, [initialStatusFilter]);
 
+  // Catálogo dinámico de Proyectos STEAM poblado desde /api/proyectos
+  const [proyectosList, setProyectosList] = useState([]);
+  const [showProyectoModal, setShowProyectoModal] = useState(false);
+
+  // Estado para ModalConfirmarRetorno
+  const [modalRetornoOpen, setModalRetornoOpen] = useState(false);
+  const [prestamoParaRetorno, setPrestamoParaRetorno] = useState(null);
+  const [cargandoRetorno, setCargandoRetorno] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProyectos = async () => {
+      try {
+        const data = await inventoryApi.getProyectos();
+        if (isMounted) {
+          if (Array.isArray(data) && data.length > 0) {
+            setProyectosList(data);
+          } else {
+            setProyectosList(PROYECTOS.map((p, idx) => ({ id: idx + 1, nombre: p, municipio: 'Medellín' })));
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setProyectosList(PROYECTOS.map((p, idx) => ({ id: idx + 1, nombre: p, municipio: 'Medellín' })));
+        }
+      }
+    };
+    fetchProyectos();
+    return () => { isMounted = false; };
+  }, []);
+
   // Modales
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [showNewUserModal, setShowNewUserModal] = useState(false);
+  const [targetModalForUser, setTargetModalForUser] = useState('loan'); // 'loan' | 'delivery'
 
   // Estados formulario de Préstamos (Solo Equipos Tecnológicos Retornables)
   const [selectedEquipoId, setSelectedEquipoId] = useState('');
   const [selectedUnits, setSelectedUnits] = useState([]);
   const [loanPerson, setLoanPerson] = useState('');
+  const [loanPersonDocumento, setLoanPersonDocumento] = useState('');
+  const [loanPersonEmail, setLoanPersonEmail] = useState('');
   const [loanSede, setLoanSede] = useState('Medellín');
   const [loanExpectedDate, setLoanExpectedDate] = useState('');
+  const [loanProyecto, setLoanProyecto] = useState('');
   const [loanMotive, setLoanMotive] = useState('');
 
   // Estados formulario de Entregas (Insumos y Consumibles No Retornables - Canasta Múltiple)
@@ -50,6 +93,8 @@ export default function PrestamosView({
   const [consumibleSeleccionadoId, setConsumibleSeleccionadoId] = useState('');
   const [cantidadInput, setCantidadInput] = useState(1);
   const [deliveryPerson, setDeliveryPerson] = useState('');
+  const [deliveryPersonDocumento, setDeliveryPersonDocumento] = useState('');
+  const [deliveryPersonEmail, setDeliveryPersonEmail] = useState('');
   const [deliverySede, setDeliverySede] = useState('Medellín');
   const [deliveryProyecto, setDeliveryProyecto] = useState('');
   const [deliveryMotive, setDeliveryMotive] = useState('');
@@ -121,7 +166,11 @@ export default function PrestamosView({
           tipo_item: 'activo',
           itemId: selectedEquipoId,
           person: loanPerson,
+          solicitante: loanPerson,
+          solicitante_documento: loanPersonDocumento,
+          email: loanPersonEmail,
           sede: loanSede,
+          proyecto: loanProyecto,
           expectedReturn: loanExpectedDate,
           motive: loanMotive || 'Préstamo para formación y actividades de sede',
           unitCodes: selectedUnits,
@@ -142,6 +191,9 @@ export default function PrestamosView({
       setSelectedEquipoId('');
       setSelectedUnits([]);
       setLoanPerson('');
+      setLoanPersonDocumento('');
+      setLoanPersonEmail('');
+      setLoanProyecto('');
       setLoanExpectedDate('');
       setLoanMotive('');
 
@@ -243,6 +295,8 @@ export default function PrestamosView({
         await onRegisterDelivery({
           person: deliveryPerson,
           responsable_recibe: deliveryPerson,
+          responsable_documento: deliveryPersonDocumento,
+          email: deliveryPersonEmail,
           sede: deliverySede,
           proyecto: deliveryProyecto,
           motivo: deliveryMotive,
@@ -271,6 +325,8 @@ export default function PrestamosView({
       setConsumibleSeleccionadoId('');
       setCantidadInput(1);
       setDeliveryPerson('');
+      setDeliveryPersonDocumento('');
+      setDeliveryPersonEmail('');
       setDeliveryProyecto('');
       setDeliveryMotive('');
 
@@ -557,20 +613,40 @@ export default function PrestamosView({
         </div>
 
         <div className="topbar-actions">
-          <button
-            type="button"
-            className="btn small btn-primary"
-            onClick={() => setShowLoanModal(true)}
-          >
-            + Nuevo préstamo
-          </button>
-          <button
-            type="button"
-            className="btn small btn-secondary"
-            onClick={() => setShowDeliveryModal(true)}
-          >
-            + Entregar Consumibles
-          </button>
+          {!isSupervisor && (
+            <>
+              <button
+                type="button"
+                className="btn small"
+                onClick={() => setShowProyectoModal(true)}
+                style={{
+                  background: 'rgba(132, 204, 22, 0.12)',
+                  border: '1px solid rgba(132, 204, 22, 0.45)',
+                  color: '#84CC16',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                + Proyecto STEAM
+              </button>
+              <button
+                type="button"
+                className="btn small btn-primary"
+                onClick={() => setShowLoanModal(true)}
+              >
+                + Nuevo préstamo
+              </button>
+              <button
+                type="button"
+                className="btn small btn-secondary"
+                onClick={() => setShowDeliveryModal(true)}
+              >
+                + Entregar Consumibles
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -733,9 +809,9 @@ export default function PrestamosView({
                           </span>
                         </td>
 
-                        {/* 4. SEDE / MUNICIPIO (CENTRADO Y COMPACTO) */}
-                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50" title={m.sede || 'Medellín'}>
+                        {/* 4. SEDE / MUNICIPIO (CENTRADO) */}
+                        <td style={{ padding: '0 8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span className="sede-badge municipal" title={m.sede || 'Medellín'} style={{ fontSize: '11px', padding: '2px 8px', display: 'inline-block' }}>
                             {m.sede || 'Medellín'}
                           </span>
                         </td>
@@ -851,73 +927,71 @@ export default function PrestamosView({
                               </svg>
                             </button>
 
-                            {/* 3. ✏️ Editar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud w-7 h-7 flex items-center justify-center rounded shrink-0"
-                              title="Editar fecha pactada o custodio"
-                              onClick={() => handleOpenEditLoan(m)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(245, 158, 11, 0.1)',
-                                border: '1px solid rgba(245, 158, 11, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--amber, #f59e0b)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                <path d="m15 5 4 4" />
-                              </svg>
-                            </button>
+                            {/* 3. ✏️ Editar (Solo Operador y Admin) */}
+                            {!isSupervisor && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud w-7 h-7 flex items-center justify-center rounded shrink-0"
+                                title="Editar fecha pactada o custodio"
+                                onClick={() => handleOpenEditLoan(m)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(245, 158, 11, 0.1)',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--amber, #f59e0b)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                  <path d="m15 5 4 4" />
+                                </svg>
+                              </button>
+                            )}
 
-                            {/* 4. ✅ Check Verde / Devolución */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud w-7 h-7 flex items-center justify-center rounded shrink-0"
-                              title="Registrar devolución y retorno a bodega"
-                              onClick={() => {
-                                const unitCodesStr = (m.unitCodes || []).filter(Boolean).join(', ');
-                                showConfirmRetorno({
-                                  nombreEquipo: m.itemName,
-                                  placa: unitCodesStr,
-                                  onConfirm: async () => {
-                                    if (onReturnLoan) {
-                                      await onReturnLoan(m.id);
-                                    }
-                                    if (onRetry) {
-                                      await onRetry();
-                                    }
-                                    showInfo('Retorno Confirmado', `Equipo ${m.itemName} (${unitCodesStr}) reintegrado a bodega.`);
-                                  },
-                                });
-                              }}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(16, 185, 129, 0.12)',
-                                border: '1px solid rgba(16, 185, 129, 0.35)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: '#10b981',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </button>
+                            {/* 4. ✅ Check Verde / Devolución (Solo Operador y Admin) */}
+                            {!isSupervisor && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud w-7 h-7 flex items-center justify-center rounded shrink-0"
+                                title="Registrar devolución y retorno a bodega"
+                                onClick={() => {
+                                  const unitCodesStr = (m.unitCodes || []).filter(Boolean).join(', ');
+                                  setPrestamoParaRetorno({
+                                    ...m,
+                                    equipo_nombre: m.itemName,
+                                    placa: unitCodesStr,
+                                    custodio: m.person,
+                                  });
+                                  setModalRetornoOpen(true);
+                                }}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(16, 185, 129, 0.12)',
+                                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: '#10b981',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1116,10 +1190,8 @@ export default function PrestamosView({
                         <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <span className="person-name" style={{ fontWeight: 600 }}>{m.person || m.responsable_recibe}</span>
                         </td>
-                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
-                          <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50">
-                            {m.sede || 'Medellín'}
-                          </span>
+                        <td style={{ padding: '0 12px', verticalAlign: 'middle' }}>
+                          <span className="sede-badge municipal">{m.sede || 'Medellín'}</span>
                         </td>
                         <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <span className="item-motive" title={m.motive || m.motivo || m.proyecto}>
@@ -1249,20 +1321,23 @@ export default function PrestamosView({
                   </div>
                 )}
 
-                <div className="form-group">
-                  <label>Solicitante / Formador Responsable *</label>
-                  <input
-                    required
-                    list="formadores-list"
+                <div className="form-group full" style={{ marginBottom: '4px' }}>
+                  <SearchableUserSelect
+                    usuarios={usuarios}
                     value={loanPerson}
-                    placeholder="Selecciona o escribe el nombre..."
-                    onChange={(e) => setLoanPerson(e.target.value)}
+                    label="Custodio / Solicitante Responsable *"
+                    placeholder="Buscar por nombre completo, cédula o rol..."
+                    onSelectUser={(u) => {
+                      setLoanPerson(u.nombre || u.nombre_completo || '');
+                      setLoanPersonDocumento(u.documento || u.cedula || '');
+                      setLoanPersonEmail(u.email || '');
+                      if (u.sede) setLoanSede(u.sede);
+                    }}
+                    onOpenNewUserModal={() => {
+                      setTargetModalForUser('loan');
+                      setShowNewUserModal(true);
+                    }}
                   />
-                  <datalist id="formadores-list">
-                    {EMPLOYEES.map((p) => (
-                      <option key={p} value={p} />
-                    ))}
-                  </datalist>
                 </div>
 
                 <div className="form-group">
@@ -1291,17 +1366,31 @@ export default function PrestamosView({
                 </div>
 
                 <div className="form-group">
-                  <label>Proyecto Vinculado</label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <label style={{ margin: 0 }}>Proyecto STEAM Vinculado</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowProyectoModal(true)}
+                      style={{ background: 'none', border: 'none', color: '#84CC16', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                    >
+                      + Nuevo proyecto
+                    </button>
+                  </div>
                   <select
+                    value={loanProyecto}
                     onChange={(e) => {
-                      if (e.target.value) {
-                        setLoanMotive(`${e.target.value} - `);
+                      const val = e.target.value;
+                      setLoanProyecto(val);
+                      if (val) {
+                        setLoanMotive(`${val} - `);
                       }
                     }}
                   >
-                    <option value="">-- Selecciona proyecto (opcional) --</option>
-                    {PROYECTOS.map((proj) => (
-                      <option key={proj} value={proj}>{proj}</option>
+                    <option value="">-- Selecciona proyecto STEAM (opcional) --</option>
+                    {proyectosList.map((proj) => (
+                      <option key={proj.id || proj.nombre} value={proj.nombre}>
+                        {proj.nombre} {proj.sede_municipio || proj.municipio ? `(${proj.sede_municipio || proj.municipio})` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1373,23 +1462,28 @@ export default function PrestamosView({
               <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* 1. DATOS GENERALES DE LA ENTREGA */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* Fila superior: Persona que Recibe y Sede o Municipio */}
-                  <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '12px', margin: 0 }}>
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label style={{ fontSize: '12px', fontWeight: 600 }}>Persona Que Recibe (Formador / Líder) *</label>
-                      <select
-                        required
-                        value={deliveryPerson}
-                        onChange={(e) => setDeliveryPerson(e.target.value)}
-                        style={{ width: '100%' }}
-                      >
-                        <option value="">-- Selecciona formador o custodio --</option>
-                        {EMPLOYEES.map((p) => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Selector con búsqueda de Custodio / Responsable */}
+                  <div>
+                    <SearchableUserSelect
+                      usuarios={usuarios}
+                      value={deliveryPerson}
+                      label="Persona Que Recibe (Custodio / Formador Líder) *"
+                      placeholder="Buscar por nombre completo, cédula o rol..."
+                      onSelectUser={(u) => {
+                        setDeliveryPerson(u.nombre || u.nombre_completo || '');
+                        setDeliveryPersonDocumento(u.documento || u.cedula || '');
+                        setDeliveryPersonEmail(u.email || '');
+                        if (u.sede) setDeliverySede(u.sede);
+                      }}
+                      onOpenNewUserModal={() => {
+                        setTargetModalForUser('delivery');
+                        setShowNewUserModal(true);
+                      }}
+                    />
+                  </div>
 
+                  {/* Fila intermedia: Sede y Proyecto STEAM */}
+                  <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '12px', margin: 0 }}>
                     <div className="form-group" style={{ margin: 0 }}>
                       <label style={{ fontSize: '12px', fontWeight: 600 }}>Sede O Municipio De Destino *</label>
                       <select
@@ -1403,33 +1497,42 @@ export default function PrestamosView({
                         ))}
                       </select>
                     </div>
-                  </div>
 
-                  {/* Fila intermedia: Proyecto STEAM y Motivo */}
-                  <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '12px', margin: 0 }}>
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label style={{ fontSize: '12px', fontWeight: 600 }}>Proyecto STEAM (opcional)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={{ margin: 0, fontSize: '12px', fontWeight: 600 }}>Proyecto STEAM (opcional)</label>
+                        <button
+                          type="button"
+                          onClick={() => setShowProyectoModal(true)}
+                          style={{ background: 'none', border: 'none', color: '#84CC16', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
+                          + Nuevo
+                        </button>
+                      </div>
                       <select
                         value={deliveryProyecto}
                         onChange={(e) => setDeliveryProyecto(e.target.value)}
                         style={{ width: '100%' }}
                       >
                         <option value="">-- Ninguno / General --</option>
-                        {PROYECTOS.map((proj) => (
-                          <option key={proj} value={proj}>{proj}</option>
+                        {proyectosList.map((proj) => (
+                          <option key={proj.id || proj.nombre} value={proj.nombre}>
+                            {proj.nombre} {proj.sede_municipio || proj.municipio ? `(${proj.sede_municipio || proj.municipio})` : ''}
+                          </option>
                         ))}
                       </select>
                     </div>
+                  </div>
 
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label style={{ fontSize: '12px', fontWeight: 600 }}>Motivo De La Entrega</label>
-                      <input
-                        placeholder="Ej. Armado de robots seguidores o semilleros"
-                        value={deliveryMotive}
-                        onChange={(e) => setDeliveryMotive(e.target.value)}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
+                  {/* Motivo de la entrega */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600 }}>Motivo De La Entrega</label>
+                    <input
+                      placeholder="Ej. Armado de robots seguidores o semilleros"
+                      value={deliveryMotive}
+                      onChange={(e) => setDeliveryMotive(e.target.value)}
+                      style={{ width: '100%' }}
+                    />
                   </div>
                 </div>
 
@@ -2163,6 +2266,82 @@ export default function PrestamosView({
           submitting={editEquipoSubmitting}
         />
       )}
+
+      {/* =========================================================================
+          MODAL: REGISTRAR NUEVO CUSTODIO / USUARIO RÁPIDO
+          ========================================================================= */}
+      {showNewUserModal && (
+        <ModalNuevoUsuarioRapido
+          isOpen={showNewUserModal}
+          onClose={() => setShowNewUserModal(false)}
+          onUserCreated={(newUser) => {
+            const userCreado = crearUsuario ? crearUsuario(newUser) : newUser;
+            if (targetModalForUser === 'loan') {
+              setLoanPerson(userCreado.nombre);
+              setLoanPersonDocumento(userCreado.documento);
+              setLoanPersonEmail(userCreado.email);
+              if (userCreado.sede) setLoanSede(userCreado.sede);
+            } else {
+              setDeliveryPerson(userCreado.nombre);
+              setDeliveryPersonDocumento(userCreado.documento);
+              setDeliveryPersonEmail(userCreado.email);
+              if (userCreado.sede) setDeliverySede(userCreado.sede);
+            }
+            showInfo('Custodio Creado', `Usuario ${userCreado.nombre} registrado y seleccionado.`);
+          }}
+        />
+      )}
+
+      {/* =========================================================================
+          MODAL: REGISTRAR NUEVO PROYECTO STEAM
+          ========================================================================= */}
+      {showProyectoModal && (
+        <ModalNuevoProyectoSteam
+          isOpen={showProyectoModal}
+          onClose={() => setShowProyectoModal(false)}
+          onProyectoCreated={(nuevoP) => {
+            setProyectosList((prev) => [nuevoP, ...prev]);
+            setLoanProyecto(nuevoP.nombre);
+            setDeliveryProyecto(nuevoP.nombre);
+            showInfo('Proyecto Creado', `Proyecto STEAM "${nuevoP.nombre}" registrado exitosamente.`);
+          }}
+        />
+      )}
+
+      {/* =========================================================================
+          MODAL: CONFIRMAR RETORNO / DEVOLUCIÓN A BODEGA
+          ========================================================================= */}
+      <ModalConfirmarRetorno
+        isOpen={modalRetornoOpen}
+        onClose={() => {
+          setModalRetornoOpen(false);
+          setPrestamoParaRetorno(null);
+        }}
+        prestamo={prestamoParaRetorno}
+        cargando={cargandoRetorno}
+        confirmarRetorno={async () => {
+          if (!prestamoParaRetorno) return;
+          setCargandoRetorno(true);
+          try {
+            if (onReturnLoan) {
+              await onReturnLoan(prestamoParaRetorno.id);
+            }
+            if (onRetry) {
+              await onRetry();
+            }
+            showInfo(
+              'Retorno Confirmado',
+              `Equipo ${prestamoParaRetorno.equipo_nombre} (${prestamoParaRetorno.placa}) reintegrado a bodega.`
+            );
+            setModalRetornoOpen(false);
+            setPrestamoParaRetorno(null);
+          } catch (err) {
+            showError('Error en Devolución', err.message || 'No fue posible confirmar el retorno.');
+          } finally {
+            setCargandoRetorno(false);
+          }
+        }}
+      />
     </div>
   );
 }

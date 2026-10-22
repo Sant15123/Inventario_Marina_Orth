@@ -5,6 +5,7 @@ import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { available, SEDES, EMPLOYEES, PROYECTOS, today } from '../services/mockData';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 import { exportarLibroMaestroExcelFMO } from '../services/excelExportService';
@@ -235,6 +236,9 @@ export default function InventarioView({
   const [activeTab, setActiveTab] = useState(initialTab);
   // Filtro de stock para consumibles: 'todos' | 'minimo'
   const [filterStockConsumibles, setFilterStockConsumibles] = useState(initialStockFilter);
+
+  // Hook de autenticación y roles de usuario
+  const { currentUser, isAdmin, isSupervisor, isOperador } = useAuth();
 
   // Hook del sistema de notificaciones/alertas personalizadas FMO
   const { showEditSuccess, showConfirmBaja, showConfirmAction, showNewItemSuccess, showLoanSuccess, showError, showInfo } = useToast();
@@ -2116,38 +2120,40 @@ export default function InventarioView({
             <span>Descargar reporte Excel</span>
           </button>
 
-          {activeTab === 'equipos' ? (
-            <button
-              type="button"
-              className="btn small btn-primary"
-              onClick={() => handleOpenCreate('equipo')}
-            >
-              + Nuevo Equipo
-            </button>
-          ) : activeTab === 'papeleria' ? (
-            <button
-              type="button"
-              className="btn small btn-primary"
-              onClick={handleOpenCreatePapeleria}
-            >
-              + Nuevo Insumo
-            </button>
-          ) : activeTab === 'mobiliario' ? (
-            <button
-              type="button"
-              className="btn small btn-primary"
-              onClick={handleOpenCreateMobiliario}
-            >
-              + Nuevo Mobiliario
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn small btn-primary"
-              onClick={() => handleOpenCreate('consumible')}
-            >
-              + Nuevo Consumible
-            </button>
+          {isAdmin && (
+            activeTab === 'equipos' ? (
+              <button
+                type="button"
+                className="btn small btn-primary"
+                onClick={() => handleOpenCreate('equipo')}
+              >
+                + Nuevo Equipo
+              </button>
+            ) : activeTab === 'papeleria' ? (
+              <button
+                type="button"
+                className="btn small btn-primary"
+                onClick={handleOpenCreatePapeleria}
+              >
+                + Nuevo Insumo
+              </button>
+            ) : activeTab === 'mobiliario' ? (
+              <button
+                type="button"
+                className="btn small btn-primary"
+                onClick={handleOpenCreateMobiliario}
+              >
+                + Nuevo Mobiliario
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn small btn-primary"
+                onClick={() => handleOpenCreate('consumible')}
+              >
+                + Nuevo Consumible
+              </button>
+            )
           )}
         </div>
       </div>
@@ -2252,9 +2258,9 @@ export default function InventarioView({
                   <tr>
                     <th style={{ width: '11%', padding: '10px 8px' }}>PLACA / CÓDIGO</th>
                     <th style={{ width: '20%', padding: '10px 8px' }}>EQUIPO & MODELO</th>
-                    <th style={{ width: '13%', padding: '10px 8px' }}>SERIAL</th>
-                    <th style={{ width: '15%', padding: '10px 8px' }}>SEDE / UBICACIÓN</th>
-                    <th style={{ width: '14%', padding: '10px 8px' }}>RESPONSABLE ACTUAL</th>
+                    <th style={{ width: '12%', padding: '10px 8px' }}>SERIAL</th>
+                    <th style={{ width: '17%', padding: '10px 8px' }}>SEDE / UBICACIÓN</th>
+                    <th style={{ width: '13%', padding: '10px 8px' }}>RESPONSABLE ACTUAL</th>
                     <th style={{ width: '12%', textAlign: 'center', padding: '10px 8px' }}>ESTADO</th>
                     <th style={{ width: '15%', textAlign: 'center', padding: '10px 6px' }}>ACCIONES</th>
                   </tr>
@@ -2332,19 +2338,35 @@ export default function InventarioView({
                         </td>
 
                         {/* 4. SEDE / UBICACIÓN */}
-                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <div className="flex flex-col gap-1 items-start justify-center py-1">
-                            {/* Badge de Sede / Municipio */}
-                            <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50">
+                        <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start', justifyContent: 'center', minWidth: 0 }}>
+                            <span
+                              className="sede-badge municipal truncate"
+                              title={`Sede: ${u.sede || 'Medellín'}`}
+                              style={{ maxWidth: '100%', fontSize: '11px', padding: '2px 7px', display: 'inline-block', lineHeight: '1.25' }}
+                            >
                               {u.sede || 'Medellín'}
                             </span>
-
-                            {/* Contenedor puntual de estante/caja */}
-                            {u.ubicacion_estante && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                            {u.ubicacion_estante ? (
+                              <span
+                                className="estante-tag truncate"
+                                title={`Estante/Contenedor: ${u.ubicacion_estante}`}
+                                style={{ maxWidth: '100%', marginTop: 0, display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', padding: '1px 6px', lineHeight: '1.2' }}
+                              >
                                 <span>📦</span>
-                                <span className="font-semibold text-lime-700 dark:text-lime-400">{u.ubicacion_estante}</span>
+                                <span>{u.ubicacion_estante}</span>
                               </span>
+                            ) : (
+                              u.baseLocation &&
+                              !u.baseLocation.toLowerCase().replace(/sede\s*|oficina\s*/gi, '').trim().includes((u.sede || '').toLowerCase().replace(/sede\s*|oficina\s*/gi, '').trim()) && (
+                                <span
+                                  className="location-sub font-medium text-slate-800 dark:text-slate-200 truncate"
+                                  title={u.baseLocation}
+                                  style={{ fontSize: '11px', maxWidth: '100%', color: 'var(--text-dim)' }}
+                                >
+                                  {u.baseLocation}
+                                </span>
+                              )
                             )}
                           </div>
                         </td>
@@ -2485,70 +2507,74 @@ export default function InventarioView({
                               </svg>
                             </button>
 
-                            {/* ✏️ Editar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Editar equipo"
-                              onClick={() => {
-                                const parent = equipos.find(e => e.id === u.parentItemId);
-                                if (parent) {
-                                  handleOpenEdit({
-                                    ...parent,
-                                    placa,
-                                  });
-                                }
-                              }}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(245, 158, 11, 0.1)',
-                                border: '1px solid rgba(245, 158, 11, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--amber, #f59e0b)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                <path d="m15 5 4 4" />
-                              </svg>
-                            </button>
+                            {/* ✏️ Editar (Oculto para Supervisor) */}
+                            {!isSupervisor && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Editar equipo"
+                                onClick={() => {
+                                  const parent = equipos.find(e => e.id === u.parentItemId);
+                                  if (parent) {
+                                    handleOpenEdit({
+                                      ...parent,
+                                      placa,
+                                    });
+                                  }
+                                }}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(245, 158, 11, 0.1)',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--amber, #f59e0b)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                  <path d="m15 5 4 4" />
+                                </svg>
+                              </button>
+                            )}
 
-                            {/* 🗑️ Eliminar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Eliminar o dar de baja el equipo"
-                              onClick={() => handleDeleteEquipo(u)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--red, #ef4444)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                <line x1="10" x2="10" y1="11" y2="17" />
-                                <line x1="14" x2="14" y1="11" y2="17" />
-                              </svg>
-                            </button>
+                            {/* 🗑️ Eliminar (Solo Administrador) */}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Eliminar o dar de baja el equipo"
+                                onClick={() => handleDeleteEquipo(u)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--red, #ef4444)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  <line x1="10" x2="10" y1="11" y2="17" />
+                                  <line x1="14" x2="14" y1="11" y2="17" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -2797,30 +2823,25 @@ export default function InventarioView({
                           </span>
                         </td>
 
-                        {/* 3. DISPONIBLE: Valor numérico centrado en negrita */}
+                        {/* 3. DISPONIBLE: Indicador numérico con unidad según diseño institucional */}
                         <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <strong
-                            className="mono-num"
-                            style={{
-                              fontSize: '14.5px',
-                              fontWeight: 800,
-                              color: isZero ? 'var(--red)' : isLow ? 'var(--amber)' : 'var(--text-h)',
-                            }}
-                          >
-                            {disp}
-                          </strong>
+                          <div className="font-semibold text-slate-800 dark:text-slate-100">
+                            {disp} <span className="text-xs text-slate-500 font-normal">{it.unit || 'und'}</span>
+                          </div>
                         </td>
 
                         {/* 4. UBICACIÓN FÍSICA */}
-                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <div className="flex flex-col gap-1 items-start justify-center py-1">
-                            <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50" title={ubi}>
+                        <td style={{ padding: '0 12px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div>
+                            <span className="font-medium text-slate-800 dark:text-slate-200" title={ubi} style={{ fontSize: '12.5px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {ubi}
                             </span>
                             {it.ubicacion_estante && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                                <span>📦</span>
-                                <span className="font-semibold text-lime-700 dark:text-lime-400">{it.ubicacion_estante}</span>
+                              <span
+                                className="estante-tag"
+                                title={`Estante/Contenedor: ${it.ubicacion_estante}`}
+                              >
+                                📦 {it.ubicacion_estante}
                               </span>
                             )}
                           </div>
@@ -2930,62 +2951,66 @@ export default function InventarioView({
                               </svg>
                             </button>
 
-                            {/* ✏️ Editar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Editar material"
-                              onClick={() => handleOpenEdit(it)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(245, 158, 11, 0.1)',
-                                border: '1px solid rgba(245, 158, 11, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--amber, #f59e0b)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                <path d="m15 5 4 4" />
-                              </svg>
-                            </button>
+                            {/* ✏️ Editar (Oculto para Supervisor) */}
+                            {!isSupervisor && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Editar material"
+                                onClick={() => handleOpenEdit(it)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(245, 158, 11, 0.1)',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--amber, #f59e0b)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                  <path d="m15 5 4 4" />
+                                </svg>
+                              </button>
+                            )}
 
-                            {/* 🗑️ Eliminar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Eliminar material"
-                              onClick={() => handleDeleteConsumable(it)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--red, #ef4444)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                <line x1="10" x2="10" y1="11" y2="17" />
-                                <line x1="14" x2="14" y1="11" y2="17" />
-                              </svg>
-                            </button>
+                            {/* 🗑️ Eliminar (Solo Administrador) */}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Eliminar material"
+                                onClick={() => handleDeleteConsumable(it)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--red, #ef4444)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  <line x1="10" x2="10" y1="11" y2="17" />
+                                  <line x1="14" x2="14" y1="11" y2="17" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -3161,12 +3186,12 @@ export default function InventarioView({
               <table style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead>
                   <tr>
-                    <th style={{ width: '15%', padding: '10px 14px', textAlign: 'left' }}>CÓDIGO / PLACA</th>
-                    <th style={{ width: '28%', padding: '10px 14px', textAlign: 'left' }}>MATERIAL / NOMBRE</th>
-                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'center' }}>CANTIDAD</th>
-                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'center' }}>CONDICIÓN</th>
-                    <th style={{ width: '15%', padding: '10px 12px', textAlign: 'left' }}>UBICACIÓN</th>
-                    <th style={{ width: '16%', padding: '10px 16px', textAlign: 'right' }}>ACCIONES</th>
+                    <th style={{ width: '11%', padding: '10px 12px', textAlign: 'left' }}>CÓDIGO / PLACA</th>
+                    <th style={{ width: '25%', padding: '10px 12px', textAlign: 'left' }}>MATERIAL / NOMBRE</th>
+                    <th style={{ width: '10%', padding: '10px 6px', textAlign: 'center' }}>CANTIDAD</th>
+                    <th style={{ width: '18%', padding: '10px 8px', textAlign: 'center' }}>CONDICIÓN</th>
+                    <th style={{ width: '19%', padding: '10px 14px', textAlign: 'left' }}>UBICACIÓN</th>
+                    <th style={{ width: '17%', padding: '10px 12px', textAlign: 'center' }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3276,27 +3301,32 @@ export default function InventarioView({
                           </div>
                         </td>
 
-                        {/* 4. CONDICIÓN: Badge que distinga "Nuevos" (verde) de "Usados" (gris/azul) */}
-                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                          {esNuevo ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60">
-                              Nuevos
-                            </span>
-                          ) : esUsado ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
-                              Usados
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300 border border-sky-300 dark:border-sky-700/60">
-                              {it.condicion || 'Mixto'}
-                            </span>
-                          )}
+                        {/* 4. CONDICIÓN: Badge estilo botón institucional acorde al diseño del sistema */}
+                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle', padding: '10px 6px', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', maxWidth: '100%' }}>
+                            {esNuevo ? (
+                              <span className="badge-condicion nuevo" title="Condición: Nuevos">
+                                <span className="badge-condicion-dot" />
+                                <span>Nuevos</span>
+                              </span>
+                            ) : esUsado ? (
+                              <span className="badge-condicion usado" title="Condición: Usados">
+                                <span className="badge-condicion-dot" />
+                                <span>Usados</span>
+                              </span>
+                            ) : (
+                              <span className="badge-condicion mixto" title={`Condición: ${it.condicion || 'Nuevos y Usados'}`}>
+                                <span className="badge-condicion-dot" />
+                                <span>{it.condicion || 'Nuevos y Usados'}</span>
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* 5. UBICACIÓN: Sede acompañada del contenedor con icono 📦 CAJA #X */}
-                        <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px', verticalAlign: 'middle' }}>
-                          <div className="flex flex-col gap-1 items-start justify-center py-0.5">
-                            <span className="inline-block px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase rounded bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/50">
+                        <td style={{ padding: '0 14px', verticalAlign: 'middle' }}>
+                          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                            <span className="font-medium text-slate-800 dark:text-slate-200" title={ubi} style={{ fontSize: '12.5px', display: 'block' }}>
                               {ubi}
                             </span>
                             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300">
@@ -3405,62 +3435,66 @@ export default function InventarioView({
                               </svg>
                             </button>
 
-                            {/* ✏️ Editar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Editar material"
-                              onClick={() => handleOpenEdit(it)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(245, 158, 11, 0.1)',
-                                border: '1px solid rgba(245, 158, 11, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--amber, #f59e0b)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                <path d="m15 5 4 4" />
-                              </svg>
-                            </button>
+                            {/* ✏️ Editar (Oculto para Supervisor) */}
+                            {!isSupervisor && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Editar material"
+                                onClick={() => handleOpenEdit(it)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(245, 158, 11, 0.1)',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--amber, #f59e0b)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                  <path d="m15 5 4 4" />
+                                </svg>
+                              </button>
+                            )}
 
-                            {/* 🗑️ Eliminar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Eliminar material"
-                              onClick={() => handleDeletePapeleria(it)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--red, #ef4444)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                <line x1="10" x2="10" y1="11" y2="17" />
-                                <line x1="14" x2="14" y1="11" y2="17" />
-                              </svg>
-                            </button>
+                            {/* 🗑️ Eliminar (Solo Administrador) */}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Eliminar material"
+                                onClick={() => handleDeletePapeleria(it)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--red, #ef4444)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  <line x1="10" x2="10" y1="11" y2="17" />
+                                  <line x1="14" x2="14" y1="11" y2="17" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -3629,11 +3663,11 @@ export default function InventarioView({
                           )}
                         </td>
 
-                        {/* 3. Cantidad separada */}
+                        {/* 3. Cantidad con unidad según diseño institucional */}
                         <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <strong className="mono-num" style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--text-h)' }}>
-                            {cant} <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-dim)' }}>und</span>
-                          </strong>
+                          <div className="font-semibold text-slate-800 dark:text-slate-100">
+                            {cant} <span className="text-xs text-slate-500 font-normal">{m.unit || 'und'}</span>
+                          </div>
                         </td>
 
                         {/* 4. Sede / Espacio asignado con badge compacto */}
@@ -3735,62 +3769,66 @@ export default function InventarioView({
                               </svg>
                             </button>
 
-                            {/* ✏️ Editar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Editar mobiliario"
-                              onClick={() => handleOpenEdit(m)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(245, 158, 11, 0.1)',
-                                border: '1px solid rgba(245, 158, 11, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--amber, #f59e0b)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                <path d="m15 5 4 4" />
-                              </svg>
-                            </button>
+                            {/* ✏️ Editar (Oculto para Supervisor) */}
+                            {!isSupervisor && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Editar mobiliario"
+                                onClick={() => handleOpenEdit(m)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(245, 158, 11, 0.1)',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--amber, #f59e0b)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                  <path d="m15 5 4 4" />
+                                </svg>
+                              </button>
+                            )}
 
-                            {/* 🗑️ Eliminar */}
-                            <button
-                              type="button"
-                              className="btn-icon-crud shrink-0"
-                              title="Dar de baja o eliminar mobiliario"
-                              onClick={() => handleDeleteMobiliario(m)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                flexShrink: 0,
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                borderRadius: '6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: 'var(--red, #ef4444)',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                <line x1="10" x2="10" y1="11" y2="17" />
-                                <line x1="14" x2="14" y1="11" y2="17" />
-                              </svg>
-                            </button>
+                            {/* 🗑️ Eliminar (Solo Administrador) */}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Dar de baja o eliminar mobiliario"
+                                onClick={() => handleDeleteMobiliario(m)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'var(--red, #ef4444)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  <line x1="10" x2="10" y1="11" y2="17" />
+                                  <line x1="14" x2="14" y1="11" y2="17" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -4505,27 +4543,10 @@ export default function InventarioView({
                 type="button"
                 disabled={editConsumibleSubmitting}
                 onClick={() => setModalEditarOpen(false)}
-                className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-colors text-base"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--line, #334155)',
-                  backgroundColor: 'var(--surface, #1e293b)',
-                  color: 'var(--text-dim, #94a3b8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  lineHeight: 1,
-                  padding: 0,
-                  transition: 'all 0.15s ease',
-                  flexShrink: 0,
-                }}
-                title="Cerrar"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+                title="Cerrar ventana"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -5267,27 +5288,10 @@ export default function InventarioView({
                 type="button"
                 disabled={newConsumibleSubmitting}
                 onClick={() => setModalNuevoOpen(false)}
-                className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-colors text-base"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--line, #334155)',
-                  backgroundColor: 'var(--surface, #0b1320)',
-                  color: 'var(--text-dim, #94a3b8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  lineHeight: 1,
-                  padding: 0,
-                  transition: 'all 0.15s ease',
-                  flexShrink: 0,
-                }}
-                title="Cerrar"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+                title="Cerrar ventana"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -6042,27 +6046,10 @@ export default function InventarioView({
                 type="button"
                 disabled={newEquipoSubmitting}
                 onClick={() => setModalNuevoEquipoOpen(false)}
-                className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-colors text-base"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--line, #334155)',
-                  backgroundColor: 'var(--surface, #1e293b)',
-                  color: 'var(--text-dim, #94a3b8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  lineHeight: 1,
-                  padding: 0,
-                  transition: 'all 0.15s ease',
-                  flexShrink: 0,
-                }}
-                title="Cerrar"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+                title="Cerrar ventana"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 

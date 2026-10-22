@@ -13,6 +13,8 @@ import {
   Check,
   Sparkles,
   Pencil,
+  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 
 const ToastContext = createContext(null);
@@ -42,9 +44,10 @@ export function ToastProvider({ children }) {
       badge,
       iconType, // 'check' | 'pencil' | 'package' | 'laptop' | 'clock' | 'wrench' | 'alert'
       duration = 4500,
+      isCenter = false,
     }) => {
       const id = Date.now() + Math.random().toString(36).substring(2, 9);
-      const newToast = { id, type, title, message, badge, iconType, duration };
+      const newToast = { id, type, title, message, badge, iconType, duration, isCenter };
 
       setToasts((prev) => [...prev, newToast]);
 
@@ -211,17 +214,57 @@ export function ToastProvider({ children }) {
     [addToast]
   );
 
+  const isSessionToast = useCallback((toast) => {
+    if (toast.isCenter) return true;
+    const title = String(toast.title || '').toLowerCase();
+    return (
+      title.includes('sesión') ||
+      title.includes('sesion') ||
+      title.includes('bienvenido') ||
+      title.includes('acceso rápido') ||
+      title.includes('acceso rapido') ||
+      title.includes('login') ||
+      title.includes('logout')
+    );
+  }, []);
+
   const showInfo = useCallback(
-    (title, message) => {
+    (title, message, options = {}) => {
+      const isSession =
+        String(title || '').toLowerCase().includes('sesión') ||
+        String(title || '').toLowerCase().includes('sesion') ||
+        String(title || '').toLowerCase().includes('bienvenido') ||
+        String(title || '').toLowerCase().includes('acceso rápido') ||
+        String(title || '').toLowerCase().includes('acceso rapido') ||
+        Boolean(options?.isCenter);
+
       return addToast({
-        type: 'info',
-        iconType: 'check',
+        type: options?.type || 'info',
+        iconType: options?.iconType || (isSession ? 'shield' : 'check'),
         title,
         message,
+        isCenter: isSession,
+        duration: options?.duration || (isSession ? 3800 : 4500),
       });
     },
     [addToast]
   );
+
+  const showAuthAlert = useCallback(
+    ({ title, message, type = 'success', duration = 3800 }) => {
+      return addToast({
+        type,
+        title,
+        message,
+        duration,
+        isCenter: true,
+      });
+    },
+    [addToast]
+  );
+
+  const centerToasts = toasts.filter(isSessionToast);
+  const cornerToasts = toasts.filter((t) => !isSessionToast(t));
 
   return (
     <ToastContext.Provider
@@ -237,82 +280,165 @@ export function ToastProvider({ children }) {
         showDeliverySuccess,
         showError,
         showInfo,
+        showAuthAlert,
       }}
     >
       {children}
 
       {/* ============================================================== */}
-      {/* CONTENEDOR FLOTANTE DE TOASTS SUPERIOR DERECHO                 */}
+      {/* ALERTA INSTITUCIONAL EN MITAD DE LA PANTALLA (LOGIN / LOGOUT)  */}
       {/* ============================================================== */}
-      <div
-        className="fixed top-4 right-4 z-[99999] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none p-2"
-        style={{ pointerEvents: 'none' }}
-      >
-        {toasts.map((toast) => {
+      {centerToasts.map((toast) => {
+        const isLogout =
+          String(toast.title || '').toLowerCase().includes('cerrada') ||
+          String(toast.title || '').toLowerCase().includes('logout');
+
+        return (
+          <div
+            key={toast.id}
+            className="toast-center-backdrop"
+            onClick={() => removeToast(toast.id)}
+            role="alert"
+            aria-live="assertive"
+          >
+            <div
+              className="toast-center-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Botón cerrar discreto */}
+              <button
+                type="button"
+                className="toast-center-close"
+                onClick={() => removeToast(toast.id)}
+                title="Cerrar notificación"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Tag / Chip Institucional */}
+              <div className="toast-center-chip">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Fundación Marina Orth · SIGA</span>
+              </div>
+
+              {/* Contenedor del Ícono con Iluminación */}
+              <div className={`toast-center-icon-wrap ${isLogout ? 'info' : 'success'}`}>
+                {isLogout ? (
+                  <LogOut className="w-7 h-7" />
+                ) : (
+                  <ShieldCheck className="w-7 h-7" />
+                )}
+              </div>
+
+              {/* Título Principal */}
+              <h3 className="toast-center-title">
+                {toast.title}
+              </h3>
+
+              {/* Mensaje descriptivo */}
+              <p className="toast-center-message">
+                {toast.message}
+              </p>
+
+              {/* Botón Continuar / Entendido */}
+              <button
+                type="button"
+                className="toast-center-btn"
+                onClick={() => removeToast(toast.id)}
+              >
+                <Check className="w-4 h-4 stroke-[2.5]" />
+                <span>Continuar</span>
+              </button>
+
+              {/* Barra de progreso de auto-cierre */}
+              {toast.duration > 0 && (
+                <div
+                  className="toast-center-progress-bar"
+                  style={{ animationDuration: `${toast.duration}ms` }}
+                />
+              )}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* ============================================================== */}
+      {/* CONTENEDOR FLOTANTE SUPERIOR DERECHO (TOASTS OPERATIVOS)       */}
+      {/* ============================================================== */}
+      <div className="toast-container-top-right">
+        {cornerToasts.map((toast) => {
           const isLime = toast.type === 'success';
           const isInfo = toast.type === 'info';
           const isWarning = toast.type === 'warning';
-          const isError = toast.type === 'error';
+          const typeClass = isLime ? 'success' : isInfo ? 'info' : isWarning ? 'warning' : 'error';
 
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-start gap-3 p-3.5 sm:p-4 rounded-xl shadow-2xl transition-all duration-300 animate-slide-in border-l-4 ${
-                isLime
-                  ? 'border-l-[#84CC16] bg-[#0B132B] text-slate-100 border border-slate-700/60'
-                  : isInfo
-                  ? 'border-l-[#38BDF8] bg-[#0B132B] text-slate-100 border border-slate-700/60'
-                  : isWarning
-                  ? 'border-l-amber-500 bg-[#0B132B] text-slate-100 border border-slate-700/60'
-                  : 'border-l-rose-500 bg-[#0B132B] text-slate-100 border border-slate-700/60'
-              }`}
-              style={{
-                backgroundColor: 'var(--surface-modal, #0B132B)',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
-              }}
+              className={`toast-item ${typeClass}`}
             >
               {/* Ícono Temático */}
               <div
-                className={`p-2 rounded-lg shrink-0 flex items-center justify-center ${
-                  isLime
-                    ? 'bg-[#84CC16]/20 text-[#84CC16]'
-                    : isInfo
-                    ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
-                    : isWarning
-                    ? 'bg-amber-500/20 text-amber-400'
-                    : 'bg-rose-500/20 text-rose-400'
-                }`}
                 style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  backgroundColor: isLime
+                    ? 'rgba(132, 204, 22, 0.16)'
+                    : isInfo
+                    ? 'rgba(56, 189, 248, 0.16)'
+                    : isWarning
+                    ? 'rgba(245, 158, 11, 0.16)'
+                    : 'rgba(244, 63, 94, 0.16)',
+                  color: isLime
+                    ? '#84CC16'
+                    : isInfo
+                    ? '#38BDF8'
+                    : isWarning
+                    ? '#FBBF24'
+                    : '#FB7185',
                 }}
               >
-                {toast.iconType === 'pencil' && <Pencil className="w-5 h-5 text-[#84CC16]" />}
-                {toast.iconType === 'package' && <Package className="w-5 h-5 text-[#84CC16]" />}
-                {toast.iconType === 'laptop' && <Laptop className="w-5 h-5 text-[#38BDF8]" />}
-                {toast.iconType === 'wrench' && <Wrench className="w-5 h-5 text-[#84CC16]" />}
-                {toast.iconType === 'clock' && <Clock className="w-5 h-5 text-[#38BDF8]" />}
-                {toast.iconType === 'alert' && <AlertTriangle className="w-5 h-5" />}
-                {(!toast.iconType || toast.iconType === 'check') && (
-                  <CheckCircle2 className={`w-5 h-5 ${isLime ? 'text-[#84CC16]' : 'text-[#38BDF8]'}`} />
+                {toast.iconType === 'pencil' && <Pencil className="w-4 h-4" />}
+                {toast.iconType === 'package' && <Package className="w-4 h-4" />}
+                {toast.iconType === 'laptop' && <Laptop className="w-4 h-4" />}
+                {toast.iconType === 'wrench' && <Wrench className="w-4 h-4" />}
+                {toast.iconType === 'clock' && <Clock className="w-4 h-4" />}
+                {toast.iconType === 'alert' && <AlertTriangle className="w-4 h-4" />}
+                {(!toast.iconType || toast.iconType === 'check' || toast.iconType === 'shield') && (
+                  <CheckCircle2 className="w-4 h-4" />
                 )}
               </div>
 
               {/* Contenido Textual */}
-              <div className="flex-1 min-w-0 pr-1">
-                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-white tracking-wide m-0">
+              <div style={{ flex: 1, minWidth: 0, paddingRight: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px', flexWrap: 'wrap' }}>
+                  <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, lineHeight: 1.2 }}>
                     {toast.title}
                   </h4>
                   {toast.badge && (
                     <span
-                      className="px-2 py-0.5 rounded text-[10.5px] font-mono font-bold uppercase tracking-wider bg-lime-500/20 text-[#84CC16] border border-lime-400/40"
+                      style={{
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        backgroundColor: 'rgba(132, 204, 22, 0.18)',
+                        color: '#84CC16',
+                        border: '1px solid rgba(132, 204, 22, 0.4)',
+                      }}
                     >
                       {toast.badge}
                     </span>
                   )}
                 </div>
-                <p className="text-[12px] text-slate-300 leading-snug m-0">
+                <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.4, opacity: 0.85 }}>
                   {toast.message}
                 </p>
               </div>
@@ -321,7 +447,19 @@ export function ToastProvider({ children }) {
               <button
                 type="button"
                 onClick={() => removeToast(toast.id)}
-                className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800/60 transition-colors shrink-0 cursor-pointer"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  opacity: 0.6,
+                  cursor: 'pointer',
+                  padding: '3px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
                 title="Cerrar notificación"
               >
                 <X className="w-4 h-4" />
