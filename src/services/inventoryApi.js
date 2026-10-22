@@ -38,22 +38,38 @@ async function request(path, options = {}) {
   return json;
 }
 
+// Normalizador universal de respuestas tipo arreglo
+export const extraerArreglo = (res) => {
+  const data = res?.data !== undefined ? res.data : res;
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.activos)) return data.activos;
+  if (data && Array.isArray(data.equipos)) return data.equipos;
+  if (data && Array.isArray(data.consumibles)) return data.consumibles;
+  if (data && Array.isArray(data.prestamos)) return data.prestamos;
+  if (data && Array.isArray(data.historial)) return data.historial;
+  if (data && Array.isArray(data.proyectos)) return data.proyectos;
+  if (data && Array.isArray(data.usuarios)) return data.usuarios;
+  if (data && Array.isArray(data.remisiones)) return data.remisiones;
+  if (data && Array.isArray(data.entregas)) return data.entregas;
+  console.warn('Estructura de respuesta inesperada (se esperaba arreglo):', data);
+  return []; // Fallback seguro para no romper la interfaz
+};
+
 export const inventoryApi = {
   // 1. Activos
   getActivos: async () => {
     const json = await request('/activos');
-    if (!json || !Array.isArray(json.data)) {
-      throw new Error('Respuesta inválida de la API de activos: se esperaba un arreglo');
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   getActivoByPlaca: async (placa) => {
     const json = await request(`/activos/${encodeURIComponent(placa)}`);
-    if (!json || !json.data) {
+    const data = json?.data !== undefined ? json.data : json;
+    if (!data) {
       throw new Error(`No se encontró el activo con placa ${placa}`);
     }
-    return json.data;
+    return data;
   },
 
   createActivo: async (data) => {
@@ -61,7 +77,7 @@ export const inventoryApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return json.data;
+    return json?.data !== undefined ? json.data : json;
   },
 
   updateActivo: async (placa, updates) => {
@@ -70,33 +86,30 @@ export const inventoryApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
-    return json.data;
+    return json?.data !== undefined ? json.data : json;
   },
 
   // 2. Consumibles
   getConsumibles: async () => {
     const json = await request('/consumibles');
-    if (!json || !Array.isArray(json.data)) {
-      throw new Error('Respuesta inválida de la API de consumibles: se esperaba un arreglo');
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   getConsumibleById: async (id) => {
     // Intentar consulta directa al endpoint específico si existe
     try {
       const json = await request(`/consumibles/${encodeURIComponent(id)}`);
-      if (json?.data) return json.data;
-      if (json && typeof json === 'object' && json.id) return json;
+      const data = json?.data !== undefined ? json.data : json;
+      if (data && typeof data === 'object' && (data.id || data.codigo)) return data;
     } catch {
       // Fallback a lista completa
     }
 
     // Buscar en la lista de consumibles
     const jsonAll = await request('/consumibles');
-    const list = Array.isArray(jsonAll?.data) ? jsonAll.data : (Array.isArray(jsonAll) ? jsonAll : []);
+    const list = extraerArreglo(jsonAll);
     const normalizedId = String(id).toLowerCase().trim();
-    const found = list.find((c) => String(c.id).toLowerCase().trim() === normalizedId);
+    const found = list.find((c) => String(c.id || c.codigo || '').toLowerCase().trim() === normalizedId);
     if (!found) {
       throw new Error(`Material o consumible con código "${id}" no encontrado`);
     }
@@ -132,10 +145,7 @@ export const inventoryApi = {
   // 3. Préstamos
   getPrestamos: async () => {
     const json = await request('/prestamos');
-    if (!json || !Array.isArray(json.data)) {
-      throw new Error('Respuesta inválida de la API de préstamos: se esperaba un arreglo');
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   createPrestamo: async (data) => {
@@ -143,23 +153,20 @@ export const inventoryApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return json.data;
+    return json?.data !== undefined ? json.data : json;
   },
 
   devolverPrestamo: async (id) => {
     const json = await request(`/prestamos/${id}/devolver`, {
       method: 'PUT',
     });
-    return json.data;
+    return json?.data !== undefined ? json.data : json;
   },
 
   // 2.1 Entregas y Remisiones de Consumibles
   getRemisiones: async () => {
     const json = await request('/consumibles/remisiones');
-    if (!json || !Array.isArray(json.data)) {
-      return [];
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   createRemision: async (data) => {
@@ -167,15 +174,12 @@ export const inventoryApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return json.data;
+    return json?.data !== undefined ? json.data : json;
   },
 
   getEntregas: async () => {
     const json = await request('/consumibles/entregas');
-    if (!json || !Array.isArray(json.data)) {
-      return [];
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   createEntrega: async (data) => {
@@ -183,7 +187,7 @@ export const inventoryApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return json.data;
+    return json?.data !== undefined ? json.data : json;
   },
 
   // 4. Historial Universal y Auditoría
@@ -191,19 +195,13 @@ export const inventoryApi = {
     const qs = new URLSearchParams(params).toString();
     const endpoint = qs ? `/historial?${qs}` : '/historial';
     const json = await request(endpoint);
-    if (!json || !Array.isArray(json.data)) {
-      return [];
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   // 5. Proyectos STEAM
   getProyectos: async () => {
     const json = await request('/proyectos');
-    if (!json || !Array.isArray(json.data)) {
-      return [];
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   createProyecto: async (data) => {
@@ -211,16 +209,13 @@ export const inventoryApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return json.data;
+    return json?.data !== undefined ? json.data : json;
   },
 
   // 6. Usuarios y Perfiles
   getUsuarios: async () => {
     const json = await request('/usuarios');
-    if (!json || !Array.isArray(json.data)) {
-      return [];
-    }
-    return json.data;
+    return extraerArreglo(json);
   },
 
   createUsuario: async (data) => {
@@ -242,19 +237,21 @@ export const inventoryApi = {
   // Compatibilidad genérica directa con endpoints de la API
   getAll: async () => {
     const json = await request('/consumibles');
-    return Array.isArray(json?.data) ? json.data : [];
+    return extraerArreglo(json);
   },
 
   get: async (id) => {
     // Si parece una placa de activo
     try {
       const activo = await request(`/activos/${encodeURIComponent(id)}`);
-      if (activo?.data) return activo.data;
+      const dataActivo = activo?.data !== undefined ? activo.data : activo;
+      if (dataActivo) return dataActivo;
     } catch {
       // continuar a consumibles
     }
     const consumibles = await request('/consumibles');
-    const found = consumibles?.data?.find((c) => String(c.id) === String(id));
+    const list = extraerArreglo(consumibles);
+    const found = list.find((c) => String(c.id || c.codigo || '') === String(id));
     if (!found) throw new Error(`Elemento con ID ${id} no encontrado`);
     return found;
   },
