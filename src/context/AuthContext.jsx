@@ -472,10 +472,10 @@ export function AuthProvider({ children }) {
    * Iniciar sesión mediante credenciales institucionales y generar JWT
    */
   const login = useCallback(
-    async ({ identifier, password, remember = false }) => {
+    async ({ identifier, email, documento, password, remember = false }) => {
       setAuthLoading(true);
       try {
-        const cleanId = String(identifier || '').trim().toLowerCase();
+        const cleanId = String(identifier || email || documento || '').trim().toLowerCase();
         const cleanPass = String(password || '').trim();
 
         if (!cleanId) {
@@ -485,7 +485,73 @@ export function AuthProvider({ children }) {
           throw new Error('Por favor ingresa tu contraseña institucional.');
         }
 
-        // 1. Buscar en el catálogo local en memoria/localStorage
+        // 1. Petición directa al endpoint institucional del backend (PostgreSQL / Bcrypt / Supabase)
+        try {
+          const res = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              identifier: cleanId,
+              email: cleanId,
+              documento: cleanId,
+              password: cleanPass,
+            }),
+          });
+
+          const json = await res.json().catch(() => null);
+
+          if (res.ok && json?.success) {
+            const rawUser = json.usuario || json.user || {};
+            const tokenPayload = {
+              id: rawUser.id,
+              documento: rawUser.documento,
+              nombre: rawUser.nombre || rawUser.nombre_completo || 'Usuario SIGA',
+              nombre_completo: rawUser.nombre_completo || rawUser.nombre || 'Usuario SIGA',
+              email: rawUser.email,
+              rol: rawUser.rol || 'usuario',
+              sede: rawUser.sede || 'Medellín',
+              cargo: rawUser.cargo || 'Funcionario FMO',
+            };
+
+            const sessionToken = json.token || generateToken(tokenPayload);
+
+            localStorage.setItem('siga_token', sessionToken);
+            localStorage.setItem('siga_current_user', JSON.stringify(tokenPayload));
+            localStorage.setItem('siga_user', JSON.stringify(tokenPayload));
+
+            if (remember) {
+              localStorage.setItem('siga_remember_user', cleanId);
+            } else {
+              localStorage.removeItem('siga_remember_user');
+            }
+
+            setToken(sessionToken);
+            setCurrentUser(tokenPayload);
+
+            return { success: true, user: tokenPayload, token: sessionToken };
+          }
+
+          if (res.status === 401 || res.status === 400 || res.status === 403 || res.status === 404) {
+            throw new Error(
+              json?.message ||
+              json?.error ||
+              'La contraseña ingresada es incorrecta o el usuario no existe.'
+            );
+          }
+        } catch (apiError) {
+          // Si es un error de credenciales explícito desde el backend, propagarlo
+          if (
+            apiError.message &&
+            !apiError.message.includes('Failed to fetch') &&
+            !apiError.message.includes('NetworkError') &&
+            !apiError.message.includes('abort')
+          ) {
+            throw apiError;
+          }
+          console.warn('API de login no respondió, evaluando contingencia local...', apiError.message);
+        }
+
+        // 2. Fallback de contingencia local si el backend estuviera inalcanzable
         let user = usuarios.find((u) => {
           const matchEmail =
             u.email?.toLowerCase() === cleanId ||
@@ -494,8 +560,7 @@ export function AuthProvider({ children }) {
           return matchEmail || matchDoc;
         });
 
-        // 2. Fallback de soporte para credenciales demo locales (admin@fmo.org, etc.)
-        if (!user && USUARIOS_DEMO[cleanId]) {
+        if (!user && USUARIOS_DEMO && USUARIOS_DEMO[cleanId]) {
           const fallback = USUARIOS_DEMO[cleanId];
           user = {
             id: fallback.id,
@@ -509,38 +574,10 @@ export function AuthProvider({ children }) {
           };
         }
 
-        // 3. Si aún no se encuentra, consultar la API / Supabase en backend
         if (!user) {
-          try {
-            const apiRes = await fetch(`${API_BASE}/usuarios/${encodeURIComponent(cleanId)}`);
-            if (apiRes.ok) {
-              const apiJson = await apiRes.json();
-              if (apiJson?.success && apiJson?.data) {
-                const dbUser = apiJson.data;
-                user = {
-                  id: dbUser.id,
-                  documento: dbUser.documento,
-                  nombre: dbUser.nombre_completo || dbUser.nombre,
-                  email: dbUser.email,
-                  rol: dbUser.rol,
-                  sede: dbUser.sede,
-                  cargo: dbUser.cargo || 'Funcionario FMO',
-                  password: 'admin123',
-                };
-              }
-            }
-          } catch (e) {
-            console.warn('Consulta a API de usuarios no disponible:', e.message);
-          }
+          throw new Error('No se encontró ningún usuario con ese correo o documento.');
         }
 
-        if (!user) {
-          throw new Error(
-            'No se encontró ningún usuario con ese correo o documento. Verifica tus datos o prueba una cuenta demo.'
-          );
-        }
-
-        // Contraseña por defecto o personalizada
         const expectedPass =
           user.password ||
           (user.rol === 'administrador'
@@ -558,7 +595,6 @@ export function AuthProvider({ children }) {
           throw new Error('La contraseña ingresada es incorrecta. Por favor intenta de nuevo.');
         }
 
-        // Generar JWT con el payload institucional requerido
         const tokenPayload = {
           id: user.id,
           documento: user.documento,
@@ -571,9 +607,9 @@ export function AuthProvider({ children }) {
 
         const newToken = generateToken(tokenPayload);
 
-        // Guardar en almacenamiento seguro
         localStorage.setItem('siga_token', newToken);
         localStorage.setItem('siga_current_user', JSON.stringify(tokenPayload));
+        localStorage.setItem('siga_user', JSON.stringify(tokenPayload));
 
         if (remember) {
           localStorage.setItem('siga_remember_user', cleanId);
