@@ -84,30 +84,16 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
       });
 
       if (result?.success) {
-        showInfo(
-          '¡Bienvenido a SIGA!',
-          `Sesión iniciada como ${result.user.nombre} (${result.user.rol.toUpperCase()}).`
-        );
-        const from = location.state?.from?.pathname || (result.user.rol === 'usuario' ? '/mi-panel' : '/');
+        const from = location.state?.from?.pathname || (result.user?.rol === 'usuario' ? '/mi-panel' : '/');
         navigate(from, { replace: true });
       }
     } catch (err) {
-      // Soporte para credenciales demo locales (Fallback offline/demo)
-      const cleanId = String(identificador || '').trim().toLowerCase();
-      if (USUARIOS_DEMO && USUARIOS_DEMO[cleanId]) {
-        const fallbackUser = USUARIOS_DEMO[cleanId];
-        if (typeof loginSimulado === 'function') {
-          loginSimulado(fallbackUser);
-        }
-        showInfo(
-          'Acceso Demo (Simulado)',
-          `Sesión iniciada como ${fallbackUser.nombre} (${fallbackUser.rol.toUpperCase()}).`
-        );
-        const from = location.state?.from?.pathname || (fallbackUser.rol === 'usuario' ? '/mi-panel' : '/');
-        navigate(from, { replace: true });
-        return;
-      }
-      setErrorMsg(err.message || 'Error al validar credenciales. Por favor intenta de nuevo.');
+      console.error('Error al iniciar sesión:', err);
+      setErrorMsg(
+        err.response?.data?.message ||
+        err.message ||
+        'Credenciales incorrectas. Verifica tu correo o documento y contraseña.'
+      );
     } finally {
       setCargando(false);
     }
