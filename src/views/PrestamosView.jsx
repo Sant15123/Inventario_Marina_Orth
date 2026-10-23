@@ -5,9 +5,11 @@ import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalNuevoUsuarioRapido from '../components/modals/ModalNuevoUsuarioRapido';
 import ModalNuevoProyectoSteam from '../components/modals/ModalNuevoProyectoSteam';
+import ModalNuevaSede from '../components/modals/ModalNuevaSede';
 import ModalConfirmarRetorno from '../components/modals/ModalConfirmarRetorno';
 import ModalActaPrestamo from '../components/modals/ModalActaPrestamo';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
+import { Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
@@ -15,6 +17,8 @@ import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 export default function PrestamosView({
   items = [],
   movements = [],
+  sedes: propSedes,
+  onSedeCreated: propOnSedeCreated,
   loading = false,
   error = null,
   onRetry,
@@ -45,6 +49,16 @@ export default function PrestamosView({
   const [proyectosList, setProyectosList] = useState([]);
   const [showProyectoModal, setShowProyectoModal] = useState(false);
 
+  // Catálogo dinámico de Sedes poblado desde /api/sedes y propSedes
+  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES));
+  const [showSedeModal, setShowSedeModal] = useState(false);
+
+  useEffect(() => {
+    if (Array.isArray(propSedes) && propSedes.length > 0) {
+      setSedesList(propSedes);
+    }
+  }, [propSedes]);
+
   // Estado para ModalConfirmarRetorno
   const [modalRetornoOpen, setModalRetornoOpen] = useState(false);
   const [prestamoParaRetorno, setPrestamoParaRetorno] = useState(null);
@@ -68,7 +82,21 @@ export default function PrestamosView({
         }
       }
     };
+
+    const fetchSedes = async () => {
+      try {
+        const data = await inventoryApi.getSedes();
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const nombres = data.map((s) => s.nombre || s).filter(Boolean);
+          setSedesList((prev) => Array.from(new Set([...prev, ...nombres])));
+        }
+      } catch (err) {
+        console.warn('Aviso: no se pudieron cargar sedes desde API:', err.message);
+      }
+    };
+
     fetchProyectos();
+    fetchSedes();
     return () => { isMounted = false; };
   }, []);
 
@@ -638,7 +666,33 @@ export default function PrestamosView({
           </button>
         </div>
 
-        <div className="topbar-actions">
+        <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Botón + Nueva Sede: visible para Administradores y Supervisores */}
+          {(isAdmin || isSupervisor) && (
+            <button
+              type="button"
+              className="btn small"
+              onClick={() => setShowSedeModal(true)}
+              style={{
+                background: 'rgba(56, 189, 248, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                color: '#38bdf8',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              title="Registrar nueva sede o municipio de operación FMO"
+            >
+              <Building2 size={14} />
+              + Nueva Sede
+            </button>
+          )}
+
           {!isSupervisor && (
             <>
               <button
@@ -1396,13 +1450,24 @@ export default function PrestamosView({
                 </div>
 
                 <div className="form-group">
-                  <label>Sede / Municipio de Destino *</label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <label style={{ margin: 0 }}>Sede / Municipio de Destino *</label>
+                    {(isAdmin || isSupervisor) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSedeModal(true)}
+                        style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                      >
+                        + Nueva sede
+                      </button>
+                    )}
+                  </div>
                   <select
                     required
                     value={loanSede}
                     onChange={(e) => setLoanSede(e.target.value)}
                   >
-                    {SEDES.map((s) => (
+                    {sedesList.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
@@ -1540,14 +1605,25 @@ export default function PrestamosView({
                   {/* Fila intermedia: Sede y Proyecto STEAM */}
                   <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '12px', margin: 0 }}>
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label style={{ fontSize: '12px', fontWeight: 600 }}>Sede O Municipio De Destino *</label>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <label style={{ margin: 0, fontSize: '12px', fontWeight: 600 }}>Sede O Municipio De Destino *</label>
+                        {(isAdmin || isSupervisor) && (
+                          <button
+                            type="button"
+                            onClick={() => setShowSedeModal(true)}
+                            style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                          >
+                            + Nueva
+                          </button>
+                        )}
+                      </div>
                       <select
                         required
                         value={deliverySede}
                         onChange={(e) => setDeliverySede(e.target.value)}
                         style={{ width: '100%' }}
                       >
-                        {SEDES.map((s) => (
+                        {sedesList.map((s) => (
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>
@@ -1988,7 +2064,7 @@ export default function PrestamosView({
                 <div className="form-group">
                   <label>Sede / Municipio *</label>
                   <select value={editSede} onChange={(e) => setEditSede(e.target.value)}>
-                    {SEDES.map((s) => (
+                    {sedesList.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
@@ -2380,6 +2456,26 @@ export default function PrestamosView({
               if (userCreado.sede) setDeliverySede(userCreado.sede);
             }
             showInfo('Custodio Creado', `Usuario ${userCreado.nombre} registrado y seleccionado.`);
+          }}
+        />
+      )}
+
+      {/* =========================================================================
+          MODAL: REGISTRAR NUEVA SEDE / MUNICIPIO
+          ========================================================================= */}
+      {showSedeModal && (
+        <ModalNuevaSede
+          isOpen={showSedeModal}
+          onClose={() => setShowSedeModal(false)}
+          onSedeCreated={(nuevaS) => {
+            const nombreS = nuevaS.nombre || nuevaS;
+            setSedesList((prev) => Array.from(new Set([...prev, nombreS])));
+            setLoanSede(nombreS);
+            setDeliverySede(nombreS);
+            if (propOnSedeCreated) {
+              propOnSedeCreated(nuevaS);
+            }
+            showInfo('Sede Registrada', `Sede "${nombreS}" registrada exitosamente.`);
           }}
         />
       )}

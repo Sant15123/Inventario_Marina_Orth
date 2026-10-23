@@ -231,7 +231,13 @@ export default function InventarioView({
   onRegisterLoan,
   initialTab = 'equipos',
   initialStockFilter = 'todos',
+  sedes: propSedes,
 }) {
+  // Sedes dinámicas
+  const sedesList = useMemo(() => {
+    return Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES;
+  }, [propSedes]);
+
   // Pestaña activa: 'equipos' | 'consumibles'
   const [activeTab, setActiveTab] = useState(initialTab);
   // Filtro de stock para consumibles: 'todos' | 'minimo'
@@ -2188,7 +2194,7 @@ export default function InventarioView({
                 style={{ padding: '4px 10px', fontSize: '12.5px' }}
               >
                 <option value="todas">Todas las sedes</option>
-                {SEDES.map((s) => (
+                {sedesList.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
@@ -3599,7 +3605,7 @@ export default function InventarioView({
                 style={{ padding: '4px 10px', fontSize: '12.5px' }}
               >
                 <option value="todas">Todas las sedes ({rawMobiliario.length})</option>
-                {SEDES.map((s) => (
+                {sedesList.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
@@ -3951,7 +3957,7 @@ export default function InventarioView({
                 <div className="form-group">
                   <label>Sede Principal</label>
                   <select name="sede" defaultValue={editingItem?.sede || 'Medellín'}>
-                    {SEDES.map((s) => (
+                    {sedesList.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
@@ -4269,7 +4275,7 @@ export default function InventarioView({
                     value={loanSede}
                     onChange={(e) => setLoanSede(e.target.value)}
                   >
-                    {SEDES.map((s) => (
+                    {sedesList.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>

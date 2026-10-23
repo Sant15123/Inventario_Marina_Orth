@@ -229,6 +229,20 @@ export const inventoryApi = {
     return json?.data !== undefined ? json.data : json;
   },
 
+  // 5.1 Sedes y Municipios
+  getSedes: async () => {
+    const json = await request('/sedes');
+    return extraerArreglo(json);
+  },
+
+  createSede: async (data) => {
+    const json = await request('/sedes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return json?.data !== undefined ? json.data : json;
+  },
+
   // 6. Usuarios y Perfiles
   getUsuarios: async () => {
     const json = await request('/usuarios');

@@ -250,6 +250,19 @@ export function ToastProvider({ children }) {
     [addToast]
   );
 
+  const showSuccess = useCallback(
+    (title, message) => {
+      return addToast({
+        type: 'success',
+        iconType: 'check',
+        title: title || 'Operación Exitosa',
+        message: message || title || 'Acción completada con éxito.',
+        duration: 4000,
+      });
+    },
+    [addToast]
+  );
+
   const showAuthAlert = useCallback(
     ({ title, message, type = 'success', duration = 3800 }) => {
       return addToast({
@@ -280,6 +293,7 @@ export function ToastProvider({ children }) {
         showDeliverySuccess,
         showError,
         showInfo,
+        showSuccess,
         showAuthAlert,
       }}
     >

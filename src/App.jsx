@@ -17,6 +17,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import { useAuth } from './context/AuthContext';
 import { today, fmtDate, available, isOverdue } from './data/initialData';
+import { SEDES } from './services/mockData';
 import inventoryApi from './services/inventoryApi';
 import { exportarLibroMaestroExcelFMO } from './services/excelExportService';
 
@@ -93,6 +94,7 @@ function App() {
   // Estado del inventario y movimientos (inicializados estrictamente con arreglos vacíos)
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
+  const [sedesList, setSedesList] = useState(SEDES);
 
   // Cargar datos reales desde Supabase / PostgreSQL al iniciar la aplicación
   const refreshFromApi = async () => {
@@ -100,7 +102,7 @@ function App() {
       setLoading(true);
       setApiError(null);
 
-      const [activosData, consumiblesData, prestamosData, entregasData, remisionesData, historialData] = await Promise.all([
+      const [activosData, consumiblesData, prestamosData, entregasData, remisionesData, historialData, sedesData] = await Promise.all([
         inventoryApi.getActivos(),
         inventoryApi.getConsumibles(),
         inventoryApi.getPrestamos(),
@@ -116,7 +118,17 @@ function App() {
           console.warn('Aviso: no se pudo cargar historial de movimientos:', err.message);
           return [];
         }),
+        inventoryApi.getSedes().catch((err) => {
+          console.warn('Aviso: no se pudieron cargar sedes:', err.message);
+          return [];
+        }),
       ]);
+
+      if (Array.isArray(sedesData) && sedesData.length > 0) {
+        const nombresApi = sedesData.map((s) => s.nombre || s).filter(Boolean);
+        const combinadas = Array.from(new Set([...SEDES, ...nombresApi]));
+        setSedesList(combinadas);
+      }
 
       const newItems = [];
 
@@ -816,6 +828,7 @@ function App() {
                       onRegisterLoan={handleRegisterLoan}
                       initialTab={inventarioParams.tab}
                       initialStockFilter={inventarioParams.stockFilter}
+                      sedes={sedesList}
                     />
                   )}
 
@@ -832,6 +845,11 @@ function App() {
                       onReturnLoan={handleReturnLoan}
                       initialSection={prestamosParams.section}
                       initialStatusFilter={prestamosParams.estado}
+                      sedes={sedesList}
+                      onSedeCreated={(nuevaSede) => {
+                        const nombreSede = nuevaSede.nombre || nuevaSede;
+                        setSedesList((prev) => Array.from(new Set([...prev, nombreSede])));
+                      }}
                     />
                   )}
 
