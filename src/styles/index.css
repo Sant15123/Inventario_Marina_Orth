@@ -2606,6 +2606,11 @@ tbody tr:hover {
    3. Fichas técnicas públicas (.public-asset-card)
    ========================================================================== */
 @media print {
+  @page {
+    size: letter portrait;
+    margin: 15mm;
+  }
+
   /* Fondo limpio y márgenes de impresión */
   html, body {
     background: #ffffff !important;
@@ -2693,8 +2698,9 @@ tbody tr:hover {
     /* si es un modal regular de edición o creación */
   }
 
-  /* CASO 1: GUÍA DE REMISIÓN / ACTA OFICIAL (.acta-remision-sheet) */
-  .acta-remision-sheet {
+  /* CASO 1: GUÍA DE REMISIÓN / ACTA OFICIAL (.acta-remision-sheet y .acta-prestamo-sheet) */
+  .acta-remision-sheet,
+  .acta-prestamo-sheet {
     display: block !important;
     background: #ffffff !important;
     color: #0f172a !important;
@@ -2705,16 +2711,24 @@ tbody tr:hover {
     max-height: none !important;
     overflow: visible !important;
     page-break-inside: auto !important;
-    font-size: 11pt !important;
+    font-size: 10.5pt !important;
   }
 
-  .acta-remision-sheet table {
+  .acta-remision-sheet table,
+  .acta-prestamo-sheet table {
     width: 100% !important;
     border-collapse: collapse !important;
   }
 
+  .acta-remision-sheet tr,
+  .acta-prestamo-sheet tr {
+    page-break-inside: avoid !important;
+  }
+
   .acta-remision-sheet th,
-  .acta-remision-sheet td {
+  .acta-remision-sheet td,
+  .acta-prestamo-sheet th,
+  .acta-prestamo-sheet td {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

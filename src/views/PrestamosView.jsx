@@ -6,6 +6,7 @@ import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalNuevoUsuarioRapido from '../components/modals/ModalNuevoUsuarioRapido';
 import ModalNuevoProyectoSteam from '../components/modals/ModalNuevoProyectoSteam';
 import ModalConfirmarRetorno from '../components/modals/ModalConfirmarRetorno';
+import ModalActaPrestamo from '../components/modals/ModalActaPrestamo';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -181,10 +182,16 @@ export default function PrestamosView({
         await onRetry();
       }
 
-      // Copiar valores para la notificación
+      // Copiar valores para la notificación y generación de acta
+      const equipoObj = items.find((it) => it.id === selectedEquipoId);
       const targetPlacas = [...selectedUnits];
       const targetCustodio = loanPerson;
+      const targetDoc = loanPersonDocumento;
+      const targetEmail = loanPersonEmail;
+      const targetSede = loanSede;
+      const targetProyecto = loanProyecto;
       const targetFecha = loanExpectedDate;
+      const targetMotivo = loanMotive;
 
       // Reset
       setShowLoanModal(false);
@@ -202,6 +209,24 @@ export default function PrestamosView({
         codigo: targetPlacas.join(', '),
         custodio: targetCustodio,
         fechaDevolucion: targetFecha,
+      });
+
+      // Generar y abrir de inmediato la Guía / Acta de Préstamo oficial imprimible
+      setPrestamoParaActa({
+        id: 'prest-' + Date.now(),
+        codigo_acta: `PREST-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        itemName: equipoObj?.name || 'Equipo Tecnológico Retornable',
+        itemId: selectedEquipoId,
+        unitCodes: targetPlacas,
+        person: targetCustodio,
+        solicitante: targetCustodio,
+        solicitante_documento: targetDoc,
+        email: targetEmail,
+        sede: targetSede,
+        proyecto: targetProyecto,
+        expectedReturn: targetFecha,
+        date: today(),
+        motive: targetMotivo || 'Préstamo para formación y actividades de sede',
       });
     } catch (err) {
       console.error('Error al registrar préstamo:', err);
@@ -361,6 +386,7 @@ export default function PrestamosView({
   const [editMotive, setEditMotive] = useState('');
   const [qrLoanItem, setQrLoanItem] = useState(null);
   const [remisionParaImprimir, setRemisionParaImprimir] = useState(null);
+  const [prestamoParaActa, setPrestamoParaActa] = useState(null);
 
   // Estados para Modal de Detalle / Ficha Técnica (Reutilizable universal)
   const [activoDetalleSeleccionado, setActivoDetalleSeleccionado] = useState(null);
@@ -715,13 +741,13 @@ export default function PrestamosView({
               <table className="w-full table-fixed" style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead className="bg-[#131b26] border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <tr>
-                    <th className="w-[24%] py-3 px-4 text-left truncate" style={{ width: '24%', padding: '10px 14px', textAlign: 'left' }}>EQUIPO</th>
+                    <th className="w-[22%] py-3 px-4 text-left truncate" style={{ width: '22%', padding: '10px 14px', textAlign: 'left' }}>EQUIPO</th>
                     <th className="w-[10%] py-3 px-2 text-center truncate" style={{ width: '10%', padding: '10px 8px', textAlign: 'center' }}>PLACA</th>
-                    <th className="w-[18%] py-3 px-3 text-left truncate" style={{ width: '18%', padding: '10px 12px', textAlign: 'left' }}>RESPONSABLE</th>
-                    <th className="w-[12%] py-3 px-2 text-center truncate" style={{ width: '12%', padding: '10px 8px', textAlign: 'center' }}>SEDE</th>
+                    <th className="w-[17%] py-3 px-3 text-left truncate" style={{ width: '17%', padding: '10px 12px', textAlign: 'left' }}>RESPONSABLE</th>
+                    <th className="w-[11%] py-3 px-2 text-center truncate" style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>SEDE</th>
                     <th className="w-[11%] py-3 px-2 text-center truncate" style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>F. PRÉSTAMO</th>
                     <th className="w-[11%] py-3 px-2 text-center truncate" style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>F. ENTREGA</th>
-                    <th className="w-[14%] py-3 px-3 text-center truncate" style={{ width: '14%', padding: '10px 8px', textAlign: 'center' }}>ACCIONES</th>
+                    <th className="w-[18%] py-3 px-3 text-center truncate" style={{ width: '18%', padding: '10px 8px', textAlign: 'center' }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -915,6 +941,7 @@ export default function PrestamosView({
                                 borderRadius: '6px',
                                 display: 'inline-flex',
                                 alignItems: 'center',
+                                justifyItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
                                 color: 'var(--text)',
@@ -924,6 +951,34 @@ export default function PrestamosView({
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
                                 <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            </button>
+
+                            {/* 3. 🖨️ Imprimir Guía / Acta de Préstamo Retornable */}
+                            <button
+                              type="button"
+                              className="btn-icon-crud w-7 h-7 flex items-center justify-center rounded shrink-0"
+                              title="Imprimir Guía / Acta de Préstamo y Responsabilidad"
+                              onClick={() => setPrestamoParaActa(m)}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(99, 102, 241, 0.12)',
+                                border: '1px solid rgba(99, 102, 241, 0.35)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#818cf8',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 6 2 18 2 18 9" />
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                <rect width="12" height="8" x="6" y="14" />
                               </svg>
                             </button>
 
@@ -1865,7 +1920,35 @@ export default function PrestamosView({
                 </div>
               )}
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn small"
+                onClick={() => {
+                  const loanToPrint = detailLoan;
+                  setDetailLoan(null);
+                  setPrestamoParaActa(loanToPrint);
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: 'rgba(132, 204, 22, 0.15)',
+                  color: '#84CC16',
+                  border: '1px solid rgba(132, 204, 22, 0.35)',
+                  fontWeight: 700,
+                  padding: '7px 14px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9" />
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                  <rect width="12" height="8" x="6" y="14" />
+                </svg>
+                Imprimir Acta de Préstamo
+              </button>
               <button type="button" className="btn btn-primary" onClick={() => setDetailLoan(null)}>Entendido</button>
             </div>
           </div>
@@ -2214,8 +2297,17 @@ export default function PrestamosView({
       )}
 
       {/* =========================================================================
-          MODAL: CONSULTA / DETALLE DEL EQUIPO (DESDE CLIC EN PLACA)
+          MODAL: GUÍA / ACTA DE PRÉSTAMO Y RESPONSABILIDAD DE ACTIVOS RETORNABLES (IMPRIMIBLE)
           ========================================================================= */}
+      {prestamoParaActa && (
+        <ModalActaPrestamo
+          loanData={prestamoParaActa}
+          itemsCatalog={items}
+          usuarios={usuarios}
+          allActiveLoans={rawActiveLoans}
+          onClose={() => setPrestamoParaActa(null)}
+        />
+      )}
       {mostrarModalDetalle && activoDetalleSeleccionado && (
         <ModalDetalleActivo
           item={activoDetalleSeleccionado}
