@@ -10,13 +10,43 @@ export default function ResumenView({
   onRetry,
   onNavigate,
 }) {
-  // Estados locales para consulta directa en caso de montaje autónomo
+  // Estado para KPIs rápidos desde /api/dashboard/kpis o cálculo paralelo
+  const [kpisData, setKpisData] = useState(null);
+  const [kpisLoading, setKpisLoading] = useState(true);
+
+  // Estados locales para consulta de tablas (alertas de stock y préstamos)
   const [localItems, setLocalItems] = useState(null);
   const [localMovements, setLocalMovements] = useState(null);
   const [localLoading, setLocalLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
-  // Consulta automática en tiempo real al montar la vista de Resumen
+  // 1. Carga inmediata y no bloqueante de KPIs en paralelo (< 2 segundos)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchKPIs = async () => {
+      try {
+        setKpisLoading(true);
+        // Intentar consultar el endpoint ligero de KPIs
+        const kpis = await inventoryApi.getDashboardKPIs();
+        if (isMounted && kpis && typeof kpis === 'object') {
+          setKpisData(kpis);
+        }
+      } catch (err) {
+        console.warn('No se pudo cargar KPIs ligeros de inmediato:', err.message);
+      } finally {
+        if (isMounted) {
+          setKpisLoading(false);
+        }
+      }
+    };
+
+    fetchKPIs();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // 2. Consulta automática en segundo plano para poblar tablas de stock y préstamos
   useEffect(() => {
     let isMounted = true;
     const fetchDirect = async () => {
@@ -153,23 +183,14 @@ export default function ResumenView({
     })
     .slice(0, 5);
 
-  if (effectiveLoading) {
-    return (
-      <div className="resumen-container">
-        <div className="panel empty" style={{ padding: '60px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⏳</div>
-          <strong style={{ fontSize: '1.15rem', color: 'var(--text)' }}>
-            Cargando datos de Supabase...
-          </strong>
-          <p style={{ color: 'var(--text-dim)', marginTop: '8px', fontSize: '0.95rem' }}>
-            Obteniendo indicadores de inventario y préstamos en tiempo real
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Valores finales de métricas calculados con fallback inteligente
+  const totalItemsCount = kpisData?.totalItems !== undefined ? kpisData.totalItems : effectiveItems.length;
+  const stockCriticoCount = kpisData?.stockCritico !== undefined ? kpisData.stockCritico : lowStockItems.length;
+  const prestamosActivosCount = kpisData?.prestamosActivos !== undefined ? kpisData.prestamosActivos : activeLoans.length;
+  const prestamosVencidosCount = kpisData?.prestamosVencidos !== undefined ? kpisData.prestamosVencidos : overdueLoans.length;
+  const showKpiSkeleton = kpisLoading && kpisData === null && effectiveItems.length === 0;
 
-  if (effectiveError) {
+  if (effectiveError && !kpisData && effectiveItems.length === 0) {
     return (
       <div className="resumen-container">
         <div className="panel empty" style={{ padding: '48px 20px', textAlign: 'center', borderColor: 'var(--red)' }}>
@@ -220,13 +241,19 @@ export default function ResumenView({
             <span className="stat-icon" aria-hidden="true">📦</span>
             <span className="pill default">Total</span>
           </div>
-          <div className="num mono-num">{items.length}</div>
+          <div className="num mono-num">
+            {showKpiSkeleton ? (
+              <span className="kpi-skeleton-box animate-pulse" style={{ width: '48px', height: '32px' }} />
+            ) : (
+              totalItemsCount
+            )}
+          </div>
           <div className="lbl">Materiales y Equipos registrados</div>
         </div>
 
         {/* KPI 2: En stock mínimo */}
         <div
-          className={`stat ${lowStockItems.length > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
+          className={`stat ${stockCriticoCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
           role="button"
           tabIndex={0}
           onClick={() => {
@@ -243,13 +270,21 @@ export default function ResumenView({
         >
           <div className="stat-header">
             <span className="stat-icon" aria-hidden="true">⚠️</span>
-            {lowStockItems.length > 0 ? (
-              <span className="pill low">{lowStockItems.length} crítico{lowStockItems.length !== 1 ? 's' : ''}</span>
+            {showKpiSkeleton ? (
+              <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
+            ) : stockCriticoCount > 0 ? (
+              <span className="pill low">{stockCriticoCount} crítico{stockCriticoCount !== 1 ? 's' : ''}</span>
             ) : (
               <span className="pill ok">Óptimo</span>
             )}
           </div>
-          <div className="num mono-num">{lowStockItems.length}</div>
+          <div className="num mono-num">
+            {showKpiSkeleton ? (
+              <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
+            ) : (
+              stockCriticoCount
+            )}
+          </div>
           <div className="lbl">En stock mínimo o por debajo</div>
         </div>
 
@@ -272,15 +307,25 @@ export default function ResumenView({
         >
           <div className="stat-header">
             <span className="stat-icon" aria-hidden="true">🔄</span>
-            <span className="pill prestado">En campo</span>
+            {showKpiSkeleton ? (
+              <span className="kpi-skeleton-box animate-pulse" style={{ width: '60px', height: '18px', borderRadius: '999px' }} />
+            ) : (
+              <span className="pill prestado">En campo</span>
+            )}
           </div>
-          <div className="num mono-num">{activeLoans.length}</div>
+          <div className="num mono-num">
+            {showKpiSkeleton ? (
+              <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
+            ) : (
+              prestamosActivosCount
+            )}
+          </div>
           <div className="lbl">Préstamos activos</div>
         </div>
 
         {/* KPI 4: Préstamos vencidos */}
         <div
-          className={`stat ${overdueLoans.length > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
+          className={`stat ${prestamosVencidosCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
           role="button"
           tabIndex={0}
           onClick={() => {
@@ -297,13 +342,21 @@ export default function ResumenView({
         >
           <div className="stat-header">
             <span className="stat-icon" aria-hidden="true">⏰</span>
-            {overdueLoans.length > 0 ? (
+            {showKpiSkeleton ? (
+              <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
+            ) : prestamosVencidosCount > 0 ? (
               <span className="pill vencido">Acción requerida</span>
             ) : (
               <span className="pill ok">Al día</span>
             )}
           </div>
-          <div className="num mono-num">{overdueLoans.length}</div>
+          <div className="num mono-num">
+            {showKpiSkeleton ? (
+              <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
+            ) : (
+              prestamosVencidosCount
+            )}
+          </div>
           <div className="lbl">Préstamos vencidos</div>
         </div>
       </div>
@@ -325,7 +378,13 @@ export default function ResumenView({
         </div>
 
         <div className="panel table-responsive">
-          {lowStockItems.length === 0 ? (
+          {effectiveLoading && effectiveItems.length === 0 ? (
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="kpi-skeleton-box animate-pulse" style={{ height: '36px', width: '100%' }} />
+              <div className="kpi-skeleton-box animate-pulse" style={{ height: '32px', width: '100%' }} />
+              <div className="kpi-skeleton-box animate-pulse" style={{ height: '32px', width: '100%' }} />
+            </div>
+          ) : lowStockItems.length === 0 ? (
             <div className="empty">
               <span>✅</span> Todos los materiales y equipos se encuentran por encima de su stock de seguridad.
             </div>
@@ -430,9 +489,15 @@ export default function ResumenView({
         </div>
 
         <div className="panel table-responsive">
-          {activeLoans.length === 0 ? (
+          {effectiveLoading && effectiveMovements.length === 0 ? (
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="kpi-skeleton-box animate-pulse" style={{ height: '36px', width: '100%' }} />
+              <div className="kpi-skeleton-box animate-pulse" style={{ height: '32px', width: '100%' }} />
+              <div className="kpi-skeleton-box animate-pulse" style={{ height: '32px', width: '100%' }} />
+            </div>
+          ) : activeLoans.length === 0 ? (
             <div className="empty">
-              <span>📋</span> {movements.length === 0 ? 'No hay registros en Supabase.' : 'No hay préstamos activos pendientes en este momento.'}
+              <span>📋</span> {effectiveMovements.length === 0 ? 'No hay registros de préstamos en la base de datos.' : 'No hay préstamos activos pendientes en este momento.'}
             </div>
           ) : (
             <table>

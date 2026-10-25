@@ -426,6 +426,17 @@ export const inventoryApi = {
     });
     return json?.data;
   },
+
+  // 12. KPIs y Métricas Ligeras del Dashboard (< 2s, conteo en servidor)
+  getDashboardKPIs: async () => {
+    try {
+      const json = await request('/dashboard/kpis');
+      return json?.data !== undefined ? json.data : json;
+    } catch (err) {
+      console.warn('Fallback al consultar /dashboard/kpis:', err.message);
+      return null;
+    }
+  },
 };
 
 export default inventoryApi;

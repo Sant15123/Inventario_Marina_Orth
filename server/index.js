@@ -22,6 +22,53 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', server: 'inventario-marina-orth-api', time: new Date().toISOString() });
 });
 
+// 0.1 GET /api/dashboard/kpis - Endpoint ultra-ligero para métricas y KPIs del Dashboard (< 100ms)
+app.get('/api/dashboard/kpis', async (req, res) => {
+  try {
+    const [
+      totalMaterialesRes,
+      totalActivosRes,
+      criticosConsumiblesRes,
+      prestamosActivosRes,
+      prestamosVencidosRes
+    ] = await Promise.all([
+      // Total consumibles
+      pool.query('SELECT COUNT(*) FROM consumibles'),
+      // Total activos
+      pool.query('SELECT COUNT(*) FROM activos'),
+      // Consumibles en stock crítico (disponible <= minimo o lte 5)
+      pool.query('SELECT COUNT(*) FROM consumibles WHERE disponible <= COALESCE(minimo, 5)'),
+      // Préstamos activos (estado = 'Activo' o 'activo')
+      pool.query("SELECT COUNT(*) FROM prestamos WHERE LOWER(estado) = 'activo'"),
+      // Préstamos vencidos (estado activo y fecha_devolucion_esperada < hoy)
+      pool.query("SELECT COUNT(*) FROM prestamos WHERE LOWER(estado) = 'activo' AND fecha_devolucion_esperada < CURRENT_DATE")
+    ]);
+
+    const totalConsumibles = parseInt(totalMaterialesRes.rows[0]?.count || '0', 10);
+    const totalActivos = parseInt(totalActivosRes.rows[0]?.count || '0', 10);
+    const totalItems = totalConsumibles + totalActivos;
+    const stockCritico = parseInt(criticosConsumiblesRes.rows[0]?.count || '0', 10);
+    const prestamosActivos = parseInt(prestamosActivosRes.rows[0]?.count || '0', 10);
+    const prestamosVencidos = parseInt(prestamosVencidosRes.rows[0]?.count || '0', 10);
+
+    res.json({
+      success: true,
+      data: {
+        totalItems,
+        totalConsumibles,
+        totalActivos,
+        stockCritico,
+        prestamosActivos,
+        prestamosVencidos,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    console.error('Error al calcular KPIs del dashboard:', err);
+    res.status(500).json({ success: false, error: 'Error al obtener KPIs del dashboard' });
+  }
+});
+
 // 1. GET /api/activos - Lista todos los activos ordenados por placa
 app.get('/api/activos', async (req, res) => {
   try {
