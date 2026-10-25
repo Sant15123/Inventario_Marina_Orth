@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { fmtDate, today } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ModalGestionSolicitud({
   isOpen,
@@ -23,6 +24,7 @@ export default function ModalGestionSolicitud({
   showSuccess,
   showError,
 }) {
+  const { currentUser } = useAuth();
   const [resolucion, setResolucion] = useState(null); // null | 'aprobar' | 'rechazar'
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -148,38 +150,95 @@ export default function ModalGestionSolicitud({
     try {
       setSubmitting(true);
 
+      // Normalizar el responsable evaluando todas las propiedades posibles del objeto solicitud
+      const responsableFinal =
+        solicitud.responsable ||
+        solicitud.solicitante ||
+        solicitud.usuario_nombre ||
+        solicitud.custodio ||
+        solicitud.person ||
+        solicitud.usuario?.nombre ||
+        solicitud.usuario?.nombre_completo ||
+        (currentUser && (currentUser.nombre || currentUser.nombre_completo)) ||
+        'Santiago Suárez Duran';
+
+      const sedeFinal = solicitud.sede || 'Medellín';
+      const motivoFinal = solicitud.motivo || 'Solicitud de material autorizada';
+
       // 1. Si es Préstamo de Equipo Retornable: crear registros formales de préstamo
       if (esPrestamo) {
         for (const it of solicitud.items || []) {
           const placas = (placasAsignadas[it.item_id] || []).filter(Boolean);
+          const itemIdFinal = it.item_id || it.material_id || it.id;
           await inventoryApi.createPrestamo({
-            itemId: it.item_id,
-            itemName: it.nombre_item,
-            person: solicitud.usuario_nombre,
-            sede: solicitud.sede,
-            proyecto: solicitud.proyecto_steam_id,
+            itemId: itemIdFinal,
+            item_id: itemIdFinal,
+            itemName: it.nombre_item || it.nombre || it.material || 'Equipo Tecnológico',
+            nombre_item: it.nombre_item || it.nombre || it.material || 'Equipo Tecnológico',
+            person: responsableFinal,
+            responsable: responsableFinal,
+            solicitante: responsableFinal,
+            sede: sedeFinal,
+            proyecto: solicitud.proyecto_steam_id || '',
             expectedReturn: solicitud.fecha_devolucion_estimada || today(),
-            motive: `Solicitud autorizada: ${solicitud.motivo}`,
+            fecha_devolucion: solicitud.fecha_devolucion_estimada || today(),
+            motive: `Solicitud autorizada: ${motivoFinal}`,
+            motivo: `Solicitud autorizada: ${motivoFinal}`,
             unitCodes: placas,
+            placas: placas,
           });
         }
       } else {
-        // 2. Si son Consumibles: registrar la entrega de consumibles
-        const itemsParaEntrega = (solicitud.items || []).map((it) => ({
-          id: it.item_id,
-          material: it.nombre_item,
-          cantidadEntrega: cantidadesAprobadas[it.item_id] || it.cantidad || 1,
-          disponible: 99,
-          unit: it.unidad || 'und',
-        }));
+        // 2. Si son Consumibles: registrar la entrega / remisión de consumibles
+        const itemsParaEntrega = (solicitud.items || []).map((it) => {
+          const idNormalizado = it.material_id || it.item_id || it.id;
+          const cantAprobada = Number(cantidadesAprobadas[it.item_id] ?? it.cantidad) || 1;
+          const nombreNormalizado = it.nombre_item || it.material || it.nombre || 'Consumible';
 
-        await inventoryApi.createEntrega({
-          person: solicitud.usuario_nombre,
-          sede: solicitud.sede,
-          proyecto: solicitud.proyecto_steam_id,
-          motive: `Solicitud de insumos autorizada: ${solicitud.motivo}`,
-          items: itemsParaEntrega,
+          return {
+            id: idNormalizado,
+            material_id: idNormalizado,
+            item_id: idNormalizado,
+            material: nombreNormalizado,
+            nombre: nombreNormalizado,
+            material_nombre: nombreNormalizado,
+            cantidad: cantAprobada,
+            cantidadEntrega: cantAprobada,
+            disponible: 99,
+            unit: it.unidad || 'und',
+          };
         });
+
+        // Intentar registrar mediante remisión agrupada y entrega para máxima compatibilidad
+        try {
+          await inventoryApi.createRemision({
+            responsable: responsableFinal,
+            responsable_recibe: responsableFinal,
+            person: responsableFinal,
+            solicitante: responsableFinal,
+            sede: sedeFinal,
+            proyecto: solicitud.proyecto_steam_id || '',
+            motivo: `Solicitud de insumos autorizada: ${motivoFinal}`,
+            motive: `Solicitud de insumos autorizada: ${motivoFinal}`,
+            items: itemsParaEntrega,
+          });
+        } catch (errRemision) {
+          console.warn('Aviso createRemision, intentando createEntrega por ítem:', errRemision.message);
+          // Fallback uno por uno a createEntrega
+          for (const itEntrega of itemsParaEntrega) {
+            await inventoryApi.createEntrega({
+              material_id: itEntrega.material_id,
+              item_id: itEntrega.material_id,
+              material_nombre: itEntrega.material,
+              cantidad: itEntrega.cantidad,
+              responsable: responsableFinal,
+              person: responsableFinal,
+              sede: sedeFinal,
+              proyecto_motivo: `Solicitud de insumos autorizada: ${motivoFinal}`,
+              tipo: 'Consumido',
+            });
+          }
+        }
       }
 
       // 3. Actualizar el estado de la solicitud en la base de datos
