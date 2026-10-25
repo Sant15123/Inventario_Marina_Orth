@@ -1,16 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import {
-  X,
-  AlertCircle,
-  Laptop,
-  Box,
-  MapPin,
-  Sparkles,
   User,
-  CheckCircle2,
-  XCircle,
+  MapPin,
+  Calendar,
+  Layers,
+  Sparkles,
+  AlertCircle,
   Plus,
   Minus,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { fmtDate, today } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
@@ -214,178 +213,195 @@ export default function ModalGestionSolicitud({
   };
 
   return (
-    <div
-      className="modal-backdrop"
-      onClick={() => !submitting && onClose()}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(6px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-        padding: '16px',
-      }}
-    >
+    <div className="modal-backdrop" onClick={() => !submitting && onClose()}>
       <div
-        className="modal-dialog bg-white dark:bg-[#0B132B] text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl"
+        className="modal-dialog"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '740px',
+          maxWidth: '650px',
           width: '100%',
-          maxHeight: '92vh',
+          maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
+          borderRadius: '16px',
         }}
       >
-        {/* =========================================================================
-            1. ESTRUCTURA Y CABECERA
-            ========================================================================= */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 bg-white dark:bg-[#0B132B]">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
-                Gestión y Aprobación de Solicitud
-              </h2>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                  solicitud.estado === 'APROBADO'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                    : solicitud.estado === 'RECHAZADO'
-                    ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
-                    : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                }`}
-              >
-                {solicitud.estado || 'PENDIENTE'}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Revisa los requerimientos, asigna placas físicas de inventario o autoriza despacho
-            </p>
+        {/* Encabezado estándar de los modales de la aplicación */}
+        <div className="modal-header" style={{ padding: '20px 24px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+              Gestión y Aprobación de Solicitud
+            </h3>
+            <span
+              className={`pill ${
+                solicitud.estado === 'APROBADO'
+                  ? 'ok'
+                  : solicitud.estado === 'RECHAZADO'
+                  ? 'low'
+                  : 'prestado'
+              }`}
+              style={{ fontSize: '11px', textTransform: 'uppercase', padding: '3px 9px', letterSpacing: '0.04em' }}
+            >
+              {solicitud.estado || 'PENDIENTE'}
+            </span>
           </div>
-
           <button
             type="button"
+            className="close-btn"
             onClick={onClose}
             disabled={submitting}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
             title="Cerrar ventana"
+            style={{ fontSize: '20px', lineHeight: 1 }}
           >
-            <X size={20} />
+            ✕
           </button>
         </div>
 
-        {/* =========================================================================
-            CONTENIDO SCROLLEABLE
-            ========================================================================= */}
-        <div style={{ overflowY: 'auto', padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Cuerpo del modal con el formulario y estructura nativa de la app */}
+        <div className="modal-body" style={{ padding: '22px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           {validationError && (
-            <div className="flex items-center gap-2.5 p-3.5 text-xs rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300">
-              <AlertCircle size={16} className="shrink-0" />
-              <span className="font-medium">{validationError}</span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                fontSize: '12.5px',
+                fontWeight: 600,
+              }}
+            >
+              <AlertCircle size={16} />
+              <span>{validationError}</span>
             </div>
           )}
 
-          {/* =========================================================================
-              2. PANEL DE INFORMACIÓN DEL SOLICITANTE (GRID 2x2)
-              ========================================================================= */}
-          <div className="bg-slate-50/80 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/60 dark:border-slate-800">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Solicitante */}
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100/70 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <User size={16} />
-                </div>
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-slate-400 block">
-                    Custodio / Docente
-                  </span>
-                  <strong className="text-sm font-bold text-gray-800 dark:text-gray-100">
-                    {solicitud.usuario_nombre || 'Docente Institucional'}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Sede de Destino */}
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-sky-100/70 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <MapPin size={16} />
-                </div>
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-slate-400 block">
-                    Sede / Ubicación
-                  </span>
-                  <span className="inline-block mt-0.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-                    {solicitud.sede || 'Medellín'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Tipo de Requerimiento */}
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-100/70 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                  {esPrestamo ? <Laptop size={16} /> : <Box size={16} />}
-                </div>
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-slate-400 block">
-                    Tipo de Requerimiento
-                  </span>
-                  <span
-                    className={`inline-block mt-0.5 px-2.5 py-0.5 rounded-md text-xs font-semibold border ${
-                      esPrestamo
-                        ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
-                        : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                    }`}
-                  >
-                    {esPrestamo ? 'Equipo Retornable (Préstamo)' : 'Consumibles / Insumos Robótica'}
-                  </span>
-                  {esPrestamo && solicitud.fecha_devolucion_estimada && (
-                    <div className="text-[11px] text-gray-400 mt-1">
-                      Retorno pactado: <strong className="text-gray-700 dark:text-gray-300 mono-num">{fmtDate(solicitud.fecha_devolucion_estimada)}</strong>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Proyecto STEAM */}
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-100/70 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-slate-400 block">
-                    Proyecto Vinculado
-                  </span>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-slate-200 block mt-0.5">
-                    {solicitud.proyecto_steam_id || 'Sin vincular a proyecto específico'}
-                  </span>
-                </div>
+          {/* Bloque 1: Datos del Requerimiento en formulario nativo de dos columnas */}
+          <div className="form-grid" style={{ gap: '14px' }}>
+            {/* Custodio / Solicitante Responsable */}
+            <div className="form-group full">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                <User size={14} style={{ color: '#84CC16' }} />
+                <span>Custodio / Solicitante Responsable</span>
+              </label>
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius)',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface-2)',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                }}
+              >
+                {solicitud.usuario_nombre || 'Docente Institucional'}
               </div>
             </div>
 
-            {/* Bloque de Justificación (Debajo del grid) */}
-            <div className="bg-white dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700/80 mt-3.5">
-              <span className="text-[10px] font-semibold tracking-wider uppercase text-gray-400 dark:text-slate-400 block mb-1">
-                Motivo / Justificación Pedagógica
-              </span>
-              <p className="text-sm text-gray-700 dark:text-slate-300 italic leading-relaxed">
-                "{solicitud.motivo || 'Sin justificación detallada'}"
-              </p>
+            {/* Sede / Municipio de Destino */}
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                <MapPin size={14} style={{ color: '#38bdf8' }} />
+                <span>Sede / Municipio de Destino</span>
+              </label>
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius)',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface-2)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span>{solicitud.sede || 'Medellín'}</span>
+                <span className="sede-badge municipal" style={{ margin: 0 }}>{solicitud.sede || 'Medellín'}</span>
+              </div>
+            </div>
+
+            {/* Tipo de Requerimiento o Fecha de Retorno */}
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                {esPrestamo ? <Calendar size={14} style={{ color: '#84CC16' }} /> : <Layers size={14} style={{ color: '#f59e0b' }} />}
+                <span>{esPrestamo ? 'Fecha de Devolución Pactada' : 'Tipo de Requerimiento'}</span>
+              </label>
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius)',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface-2)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                }}
+              >
+                {esPrestamo
+                  ? fmtDate(solicitud.fecha_devolucion_estimada)
+                  : 'Consumibles / Insumos Robótica'}
+              </div>
+              {esPrestamo && <small className="help-text">Fecha límite pactada para retornar los equipos.</small>}
+            </div>
+
+            {/* Proyecto STEAM Vinculado */}
+            <div className="form-group full">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                <Sparkles size={14} style={{ color: '#84CC16' }} />
+                <span>Proyecto STEAM Vinculado</span>
+              </label>
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius)',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface-2)',
+                  fontSize: '13px',
+                  color: 'var(--text)',
+                  fontWeight: solicitud.proyecto_steam_id ? 700 : 500,
+                }}
+              >
+                {solicitud.proyecto_steam_id ? (
+                  <span style={{ color: '#84CC16' }}>{solicitud.proyecto_steam_id}</span>
+                ) : (
+                  <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>-- Sin vincular a proyecto específico --</span>
+                )}
+              </div>
+            </div>
+
+            {/* Motivo y Observaciones del Préstamo */}
+            <div className="form-group full">
+              <label style={{ margin: 0 }}>Motivo y Justificación Pedagógica</label>
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 'var(--radius)',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface-2)',
+                  fontSize: '13px',
+                  fontStyle: 'italic',
+                  color: 'var(--text)',
+                  lineHeight: 1.45,
+                }}
+              >
+                "{solicitud.motivo || 'Sin observaciones adicionales'}"
+              </div>
             </div>
           </div>
 
-          {/* =========================================================================
-              3. SECCIÓN: ARTÍCULOS SOLICITADOS & ASIGNACIÓN FÍSICA
-              ========================================================================= */}
-          <div>
-            <h3 className="text-xs font-bold tracking-wider uppercase text-gray-500 dark:text-slate-400 mb-3">
+          {/* Bloque 2: Selección y Asignación de Artículos */}
+          <div style={{ marginTop: '6px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', display: 'block', marginBottom: '8px' }}>
               Artículos Solicitados & Asignación Física
-            </h3>
+            </label>
 
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {(solicitud.items || []).map((it, idx) => {
                 const invItem = inventarioMap.get(String(it.item_id));
                 const unitsDisponibles = (invItem?.units || []).filter((u) => u.status === 'disponible');
@@ -396,52 +412,71 @@ export default function ModalGestionSolicitud({
                 return (
                   <div
                     key={idx}
-                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface-2)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
                   >
-                    {/* Lado izquierdo: Metadatos */}
-                    <div className="space-y-1">
-                      <h4 className="text-base font-semibold text-gray-800 dark:text-gray-100">
-                        {it.nombre_item}
-                      </h4>
-                      <div className="text-xs text-gray-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
-                        <span>
-                          Solicitado: <strong className="text-gray-700 dark:text-gray-300 font-semibold">{it.cantidad} {it.unidad || 'und'}</strong>
-                        </span>
-                        <span>•</span>
-                        {!esPrestamo ? (
-                          <span>
-                            Stock disponible en bodega:{' '}
-                            <strong className={stockActualConsumible >= it.cantidad ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-amber-600 dark:text-amber-400 font-semibold'}>
-                              {stockActualConsumible} {it.unidad || 'und'}
-                            </strong>
-                          </span>
-                        ) : (
-                          <span>
-                            Equipos disponibles:{' '}
-                            <strong className={unitsDisponibles.length >= it.cantidad ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-amber-600 dark:text-amber-400 font-semibold'}>
-                              {unitsDisponibles.length} unidades
-                            </strong>
-                          </span>
-                        )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <div>
+                        <strong style={{ fontSize: '14px', color: 'var(--text-h)', display: 'block' }}>
+                          {it.nombre_item}
+                        </strong>
+                        <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                          <span>Solicitado: <strong>{it.cantidad} {it.unidad || 'und'}</strong></span>
+                          {' · '}
+                          {!esPrestamo ? (
+                            <span>
+                              Stock en bodega:{' '}
+                              <strong style={{ color: stockActualConsumible >= it.cantidad ? '#84CC16' : '#f59e0b' }}>
+                                {stockActualConsumible} {it.unidad || 'und'}
+                              </strong>
+                            </span>
+                          ) : (
+                            <span>
+                              Equipos disponibles en estante:{' '}
+                              <strong style={{ color: unitsDisponibles.length >= it.cantidad ? '#84CC16' : '#f59e0b' }}>
+                                {unitsDisponibles.length} unidades
+                              </strong>
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Lado derecho: Despacho / Asignación */}
-                    <div>
-                      {/* SI ES CONSUMIBLE: Control numérico con botones +/- */}
+                      {/* Control para Consumibles: Cantidad a despachar con botones */}
                       {!esPrestamo && !yaResuelta && (
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap font-medium">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)' }}>
                             Cant. a despachar:
                           </span>
-                          <div className="flex items-center border border-gray-300 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800 shadow-sm">
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              border: '1px solid var(--line)',
+                              borderRadius: 'var(--radius-sm)',
+                              overflow: 'hidden',
+                              background: 'var(--bg)',
+                            }}
+                          >
                             <button
                               type="button"
                               onClick={() => handleAjustarCantidad(it.item_id, -1, stockActualConsumible)}
-                              className="px-2.5 py-1.5 text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                              style={{
+                                padding: '6px 10px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text)',
+                                cursor: 'pointer',
+                              }}
                               title="Disminuir"
                             >
-                              <Minus size={14} />
+                              <Minus size={13} />
                             </button>
                             <input
                               type="number"
@@ -452,94 +487,147 @@ export default function ModalGestionSolicitud({
                                 const val = parseInt(e.target.value, 10) || 1;
                                 setCantidadesAprobadas((prev) => ({ ...prev, [it.item_id]: val }));
                               }}
-                              className="w-14 text-center font-bold text-xs text-gray-800 dark:text-gray-100 bg-transparent border-0 focus:outline-none"
+                              style={{
+                                width: '48px',
+                                textAlign: 'center',
+                                fontWeight: 700,
+                                fontSize: '13px',
+                                border: 'none',
+                                padding: '4px',
+                                background: 'transparent',
+                              }}
                             />
                             <button
                               type="button"
                               onClick={() => handleAjustarCantidad(it.item_id, 1, stockActualConsumible)}
-                              className="px-2.5 py-1.5 text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                              style={{
+                                padding: '6px 10px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text)',
+                                cursor: 'pointer',
+                              }}
                               title="Aumentar"
                             >
-                              <Plus size={14} />
+                              <Plus size={13} />
                             </button>
                           </div>
                         </div>
                       )}
-
-                      {/* SI ES EQUIPO RETORNABLE: Selectores dropdown limpios para elegir placa física */}
-                      {esPrestamo && !yaResuelta && (
-                        <div className="space-y-2">
-                          {Array.from({ length: it.cantidad }).map((_, unitIdx) => {
-                            const placaActual = asignadas[unitIdx] || '';
-
-                            return (
-                              <div key={unitIdx} className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap font-medium">
-                                  {it.cantidad > 1 ? `Placa ${unitIdx + 1}:` : 'Placa física:'}
-                                </span>
-                                <select
-                                  value={placaActual}
-                                  onChange={(e) => handleSelectPlacaDropdown(it.item_id, unitIdx, e.target.value)}
-                                  className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-gray-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 shadow-sm min-w-[200px]"
-                                >
-                                  <option value="">-- Asignar Placa (ej. P33) --</option>
-                                  {unitsDisponibles.map((u) => {
-                                    const code = u.placa || u.code;
-                                    const yaAsignadaEnOtro = asignadas.includes(code) && code !== placaActual;
-                                    return (
-                                      <option key={code} value={code} disabled={yaAsignadaEnOtro}>
-                                        {code} {u.model ? `(${u.model})` : ''} {yaAsignadaEnOtro ? '— (Ya seleccionada)' : ''}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* VISTA RESUELTA */}
-                      {yaResuelta && (
-                        <span className="text-xs font-semibold text-gray-600 dark:text-slate-400">
-                          {solicitud.estado === 'APROBADO' ? '✓ Despacho autorizado' : '✕ Requerimiento desestimado'}
-                        </span>
-                      )}
                     </div>
+
+                    {/* Selector de Placas Físicas para Equipos Retornables */}
+                    {esPrestamo && !yaResuelta && (
+                      <div
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px dashed var(--line-strong)',
+                          background: 'var(--bg)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-dim)' }}>
+                            Asignar placa física de inventario ({it.cantidad} requerida{it.cantidad > 1 ? 's' : ''}):
+                          </span>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              color: asignadas.length === it.cantidad ? '#84CC16' : '#f59e0b',
+                            }}
+                          >
+                            {asignadas.length} de {it.cantidad} seleccionada(s)
+                          </span>
+                        </div>
+
+                        {unitsDisponibles.length === 0 ? (
+                          <div style={{ fontSize: '11.5px', color: '#f59e0b', fontStyle: 'italic' }}>
+                            ⚠️ No hay placas disponibles de este equipo en bodega.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {Array.from({ length: it.cantidad }).map((_, unitIdx) => {
+                              const placaActual = asignadas[unitIdx] || '';
+
+                              return (
+                                <div key={unitIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--text-dim)', minWidth: '70px' }}>
+                                    {it.cantidad > 1 ? `Placa ${unitIdx + 1}:` : 'Placa:'}
+                                  </span>
+                                  <select
+                                    value={placaActual}
+                                    onChange={(e) => handleSelectPlacaDropdown(it.item_id, unitIdx, e.target.value)}
+                                    style={{
+                                      fontSize: '13px',
+                                      fontWeight: 600,
+                                      padding: '7px 10px',
+                                      flex: 1,
+                                    }}
+                                  >
+                                    <option value="">-- Elige una placa física disponible --</option>
+                                    {unitsDisponibles.map((u) => {
+                                      const code = u.placa || u.code;
+                                      const yaAsignadaEnOtro = asignadas.includes(code) && code !== placaActual;
+                                      return (
+                                        <option key={code} value={code} disabled={yaAsignadaEnOtro}>
+                                          {code} {u.model ? `(${u.model})` : ''} {yaAsignadaEnOtro ? '— (Asignada)' : ''}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* =========================================================================
-              PANEL DE RECHAZO (DESPLEGABLE)
-              ========================================================================= */}
+          {/* Panel de Rechazo (Desplegable) */}
           {resolucion === 'rechazar' && (
-            <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/40 space-y-2.5">
-              <label className="block text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wide">
-                Motivo del Rechazo (Obligatorio) <span className="text-rose-500">*</span>
+            <div
+              style={{
+                padding: '14px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                background: 'rgba(239, 68, 68, 0.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <label style={{ fontSize: '12.5px', fontWeight: 700, color: '#ef4444', margin: 0 }}>
+                Motivo del Rechazo (Obligatorio) *
               </label>
               <textarea
                 rows={2}
                 value={motivoRechazo}
                 onChange={(e) => setMotivoRechazo(e.target.value)}
-                placeholder="Ejemplo: No hay disponibilidad en la sede para las fechas requeridas; actividad no contemplada en el cronograma..."
-                className="w-full px-3 py-2 rounded-lg border border-rose-300 dark:border-rose-700 bg-white dark:bg-slate-900 text-xs text-gray-800 dark:text-slate-200 focus:outline-none focus:border-rose-500 shadow-sm"
+                placeholder="Ejemplo: No hay disponibilidad en la sede para las fechas requeridas..."
+                style={{ fontSize: '13px' }}
               />
-              <div className="flex justify-end gap-2 pt-1">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
                 <button
                   type="button"
+                  className="btn ghost small"
                   onClick={() => setResolucion(null)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
+                  className="btn small"
                   onClick={handleRechazar}
                   disabled={submitting || !motivoRechazo.trim()}
-                  className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
+                  style={{ background: '#ef4444', borderColor: '#ef4444', color: '#ffffff' }}
                 >
                   Confirmar Rechazo
                 </button>
@@ -548,40 +636,37 @@ export default function ModalGestionSolicitud({
           )}
         </div>
 
-        {/* =========================================================================
-            4. BARRA DE ACCIONES (FOOTER)
-            ========================================================================= */}
-        <div className="border-t border-gray-100 dark:border-slate-800/80 px-6 py-4 flex items-center justify-between bg-white dark:bg-[#0B132B]">
-          {/* Lado izquierdo: Botón Cerrar */}
+        {/* Barra de Acciones / Pie estándar del modal */}
+        <div className="modal-footer" style={{ padding: '16px 24px', justifyContent: 'space-between' }}>
           <button
             type="button"
+            className="btn ghost"
             onClick={onClose}
             disabled={submitting}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors font-medium"
           >
             Cerrar
           </button>
 
-          {/* Lado derecho: Acciones principales */}
           {!yaResuelta && resolucion !== 'rechazar' && (
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
                 type="button"
+                className="btn ghost"
                 onClick={() => setResolucion('rechazar')}
                 disabled={submitting}
-                className="border border-red-200 text-red-600 hover:bg-red-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40 px-4 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-colors"
+                style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.35)' }}
               >
-                <XCircle size={16} />
+                <XCircle size={15} />
                 <span>Rechazar Solicitud</span>
               </button>
 
               <button
                 type="button"
+                className="btn btn-primary"
                 onClick={handleAprobarYDespachar}
                 disabled={submitting}
-                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm shadow-sm flex items-center gap-2 transition-all hover:shadow cursor-pointer"
               >
-                <CheckCircle2 size={16} />
+                <CheckCircle size={15} />
                 <span>{submitting ? 'Procesando...' : 'Aprobar y Despachar'}</span>
               </button>
             </div>
