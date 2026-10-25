@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Laptop,
   Package,
@@ -13,11 +13,18 @@ import {
   MapPin,
   Tag,
   Layers,
+  PackagePlus,
+  Box,
+  Hourglass,
+  XCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { fmtDate, today } from '../services/mockData';
+import { useToast } from '../context/ToastContext';
+import { fmtDate, today, SEDES, PROYECTOS } from '../services/mockData';
+import inventoryApi from '../services/inventoryApi';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalQR from '../components/modals/ModalQR';
+import ModalSolicitudMaterial from '../components/modals/ModalSolicitudMaterial';
 
 // Normalizadores visuales institucionales
 const formatSede = (sede) => {
@@ -41,9 +48,15 @@ const formatFechaCompacta = (d) => {
   return d;
 };
 
-export default function MiPanelUsuarioView({ items = [], movements = [] }) {
+export default function MiPanelUsuarioView({
+  items = [],
+  movements = [],
+  sedes: propSedes,
+  proyectos: propProyectos,
+}) {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('equipos'); // 'equipos' | 'consumibles'
+  const { showSuccess, showError } = useToast();
+  const [activeTab, setActiveTab] = useState('equipos'); // 'equipos' | 'consumibles' | 'solicitudes'
 
   // Modal para ver detalle completo de activo (solo lectura)
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
@@ -52,6 +65,53 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
   // Modal para ver código QR
   const [modalQROpen, setModalQROpen] = useState(false);
   const [itemParaQR, setItemParaQR] = useState(null);
+
+  // Modal para solicitar nuevo equipo o material
+  const [modalSolicitudOpen, setModalSolicitudOpen] = useState(false);
+
+  // Sedes y Proyectos dinámicos
+  const sedesList = useMemo(() => {
+    return Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES;
+  }, [propSedes]);
+
+  const proyectosList = useMemo(() => {
+    return Array.isArray(propProyectos) && propProyectos.length > 0 ? propProyectos : PROYECTOS;
+  }, [propProyectos]);
+
+  // Lista de Solicitudes realizadas por el usuario
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [solicitudesLoading, setSolicitudesLoading] = useState(false);
+
+  // Paginación de 5 en 5 para la pestaña "Mis Solicitudes"
+  const [solicitudesPage, setSolicitudesPage] = useState(1);
+  const SOLICITUDES_PER_PAGE = 5;
+
+  // Cargar solicitudes del usuario
+  const fetchSolicitudes = async () => {
+    try {
+      setSolicitudesLoading(true);
+      const data = await inventoryApi.getSolicitudes();
+      if (Array.isArray(data)) {
+        // Filtrar solicitudes correspondientes a este usuario
+        const userId = currentUser?.id || currentUser?.documento;
+        const nombreNorm = (currentUser?.nombre || '').toLowerCase().trim();
+        const misSols = data.filter((s) => {
+          if (userId && (s.usuario_id === userId || String(s.usuario_id) === String(userId))) return true;
+          const sNombre = (s.usuario_nombre || '').toLowerCase().trim();
+          return sNombre && nombreNorm && (sNombre.includes(nombreNorm) || nombreNorm.includes(sNombre));
+        });
+        setSolicitudes(misSols);
+      }
+    } catch (err) {
+      console.warn('Aviso: no se pudieron cargar solicitudes desde API:', err.message);
+    } finally {
+      setSolicitudesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSolicitudes();
+  }, [currentUser]);
 
   // Normalizar nombre del usuario activo para match flexible
   const currentUserNameNorm = useMemo(() => {
@@ -256,10 +316,21 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
             <span className="text-xs text-slate-400 ml-1.5">(Doc. {usuario?.documento || '—'})</span> · {usuario?.cargo || 'Formador STEAM'}
           </p>
         </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={() => setModalSolicitudOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#84CC16] hover:bg-[#65A30D] text-slate-950 text-sm font-black transition-all shadow-md hover:shadow-lime-500/20 active:scale-95"
+          >
+            <PackagePlus size={18} />
+            <span>+ Solicitar Equipo o Material</span>
+          </button>
+        </div>
       </div>
 
       {/* Pestañas de Navegación */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <button
           type="button"
           onClick={() => setPestanaActiva('equipos')}
@@ -284,6 +355,19 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
         >
           <span>📦 Mis Consumibles Recibidos</span>
           <span className="px-2 py-0.5 rounded-full text-xs bg-black/10 dark:bg-white/10">{remisiones?.length || 0}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setPestanaActiva('solicitudes')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            pestanaActiva === 'solicitudes'
+              ? 'bg-[#84CC16] text-slate-950 shadow-sm'
+              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+          }`}
+        >
+          <span>📋 Mis Solicitudes</span>
+          <span className="px-2 py-0.5 rounded-full text-xs bg-black/10 dark:bg-white/10">{solicitudes?.length || 0}</span>
         </button>
       </div>
 
@@ -570,6 +654,233 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
         </section>
       )}
 
+      {/* =========================================================================
+          PESTAÑA 3: MIS SOLICITUDES
+          ========================================================================= */}
+      {activeTab === 'solicitudes' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="section-header" style={{ marginBottom: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>Requerimientos de Equipos e Insumos</span>
+                <span className="pill default" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                  {solicitudes.length} solicitudes
+                </span>
+              </h2>
+              <span className="section-subtitle" style={{ fontSize: '12.5px' }}>
+                Estado y seguimiento de tus solicitudes pedagógicas para aprobación administrativa
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setModalSolicitudOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#84CC16] hover:bg-[#65A30D] text-slate-950 text-xs font-black transition-all shadow-sm"
+            >
+              <PackagePlus size={16} />
+              <span>+ Nueva Solicitud</span>
+            </button>
+          </div>
+
+          <div
+            className="panel table-responsive"
+            style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+          >
+            {solicitudesLoading ? (
+              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span>⏳</span> Cargando tus solicitudes...
+              </div>
+            ) : solicitudes.length === 0 ? (
+              <div className="empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <span>📋</span>
+                <p>No tienes solicitudes radicadas en este momento.</p>
+                <button
+                  type="button"
+                  onClick={() => setModalSolicitudOpen(true)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Crear mi primera solicitud
+                </button>
+              </div>
+            ) : (
+              <table style={{ width: '100%', tableLayout: 'auto' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '120px', minWidth: '110px' }}>Fecha Radicado</th>
+                    <th style={{ width: '140px' }}>Tipo de Solicitud</th>
+                    <th style={{ minWidth: '220px' }}>Ítems Solicitados (Resumen)</th>
+                    <th style={{ width: '120px' }}>Sede</th>
+                    <th style={{ minWidth: '150px' }}>Motivo / Justificación</th>
+                    <th style={{ width: '140px', textAlign: 'center' }}>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {solicitudes
+                    .slice((solicitudesPage - 1) * SOLICITUDES_PER_PAGE, solicitudesPage * SOLICITUDES_PER_PAGE)
+                    .map((sol) => {
+                      const estadoUpper = String(sol.estado || 'PENDIENTE').toUpperCase();
+                      const esPrestamo = sol.tipo_solicitud === 'PRESTAMO_EQUIPO';
+
+                      return (
+                        <tr key={sol.id} style={{ height: '52px' }}>
+                          <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '10px 12px' }}>
+                            {fmtDate(sol.fecha_radicado || (sol.created_at ? sol.created_at.slice(0, 10) : ''))}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            {esPrestamo ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800">
+                                <Laptop size={13} />
+                                <span>Préstamo</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                                <Box size={13} />
+                                <span>Consumibles</span>
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              {Array.isArray(sol.items) && sol.items.length > 0 ? (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {sol.items.map((it, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                                    >
+                                      <span>{it.nombre_item || it.nombre}</span>
+                                      <strong className="text-[#84CC16]">x{it.cantidad}</strong>
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>Sin ítems detallados</span>
+                              )}
+                              {sol.fecha_devolucion_estimada && (
+                                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                                  Retorno estimado: <strong className="mono-num">{fmtDate(sol.fecha_devolucion_estimada)}</strong>
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span className="sede-badge municipal" style={{ padding: '2px 8px', fontSize: '11px' }}>
+                              {sol.sede || 'Medellín'}
+                            </span>
+                          </td>
+                          <td className="wrap" title={sol.motivo} style={{ padding: '10px 12px', fontSize: '12.5px' }}>
+                            <div style={{ maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {sol.motivo || '—'}
+                            </div>
+                            {sol.proyecto_steam_id && (
+                              <div style={{ fontSize: '11px', color: '#84CC16', fontWeight: 600, marginTop: '2px' }}>
+                                Proy: {sol.proyecto_steam_id}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            {estadoUpper === 'APROBADO' ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-700"
+                                title="Aprobado por administración"
+                              >
+                                <CheckCircle2 size={13} />
+                                <span>Aprobado</span>
+                              </span>
+                            ) : estadoUpper === 'RECHAZADO' ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-700"
+                                title={sol.observaciones_admin || 'Solicitud rechazada por administración'}
+                              >
+                                <XCircle size={13} />
+                                <span>Rechazado</span>
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-700"
+                                title="En revisión administrativa"
+                              >
+                                <Hourglass size={13} />
+                                <span>En revisión</span>
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            )}
+
+            {/* Paginación de 5 en 5 */}
+            {solicitudes.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderTop: '1px solid var(--line)',
+                  fontSize: '12.5px',
+                  color: 'var(--text-dim)',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div>
+                  Mostrando{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {(solicitudesPage - 1) * SOLICITUDES_PER_PAGE + 1}
+                  </strong>{' '}
+                  -{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {Math.min(solicitudesPage * SOLICITUDES_PER_PAGE, solicitudes.length)}
+                  </strong>{' '}
+                  de <strong style={{ color: 'var(--text-h)' }}>{solicitudes.length}</strong> solicitudes
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={solicitudesPage <= 1}
+                    onClick={() => setSolicitudesPage((p) => Math.max(1, p - 1))}
+                    style={{ padding: '3px 10px', fontSize: '12px', cursor: solicitudesPage <= 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    ← Anterior
+                  </button>
+
+                  <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
+                    Página {solicitudesPage} de {Math.max(1, Math.ceil(solicitudes.length / SOLICITUDES_PER_PAGE))}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={solicitudesPage >= Math.ceil(solicitudes.length / SOLICITUDES_PER_PAGE)}
+                    onClick={() =>
+                      setSolicitudesPage((p) =>
+                        Math.min(Math.ceil(solicitudes.length / SOLICITUDES_PER_PAGE), p + 1)
+                      )
+                    }
+                    style={{
+                      padding: '3px 10px',
+                      fontSize: '12px',
+                      cursor:
+                        solicitudesPage >= Math.ceil(solicitudes.length / SOLICITUDES_PER_PAGE)
+                          ? 'not-allowed'
+                          : 'pointer',
+                    }}
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* MODAL DETALLE DE ACTIVO (CONSULTA / SOLO LECTURA) */}
       {modalDetalleOpen && activoSeleccionado && (
         <ModalDetalleActivo
@@ -600,6 +911,25 @@ export default function MiPanelUsuarioView({ items = [], movements = [] }) {
               setModalDetalleOpen(true);
             }
           }}
+        />
+      )}
+
+      {/* MODAL SOLICITUD DE MATERIAL O EQUIPO */}
+      {modalSolicitudOpen && (
+        <ModalSolicitudMaterial
+          isOpen={modalSolicitudOpen}
+          onClose={() => setModalSolicitudOpen(false)}
+          currentUser={currentUser}
+          items={items}
+          sedes={sedesList}
+          proyectos={proyectosList}
+          onSolicitudCreated={(nuevaSol) => {
+            setSolicitudes((prev) => [nuevaSol, ...prev]);
+            setActiveTab('solicitudes');
+            setSolicitudesPage(1);
+          }}
+          showSuccess={showSuccess}
+          showError={showError}
         />
       )}
     </div>

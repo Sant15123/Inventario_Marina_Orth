@@ -229,6 +229,56 @@ export const inventoryApi = {
     return json?.data !== undefined ? json.data : json;
   },
 
+  // 5.0 Solicitudes de Inventario (Rol Custodio / Docente)
+  getSolicitudes: async (params = {}) => {
+    try {
+      const qs = new URLSearchParams(params).toString();
+      const endpoint = qs ? `/solicitudes?${qs}` : '/solicitudes';
+      const json = await request(endpoint);
+      return extraerArreglo(json);
+    } catch (err) {
+      // Fallback a almacenamiento local tolerante
+      try {
+        const local = localStorage.getItem('siga_solicitudes_inventario');
+        return local ? JSON.parse(local) : [];
+      } catch {
+        return [];
+      }
+    }
+  },
+
+  createSolicitud: async (data) => {
+    let apiSuccess = null;
+    try {
+      const json = await request('/solicitudes', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      apiSuccess = json?.data !== undefined ? json.data : json;
+    } catch (err) {
+      console.warn('API /solicitudes no disponible, guardando en local:', err.message);
+    }
+
+    // Asegurar persistencia local también
+    try {
+      const itemToSave = apiSuccess || {
+        ...data,
+        id: data.id || 'sol-' + Date.now(),
+        created_at: new Date().toISOString(),
+        fecha_radicado: new Date().toISOString().slice(0, 10),
+        estado: data.estado || 'PENDIENTE',
+      };
+      const local = localStorage.getItem('siga_solicitudes_inventario');
+      const list = local ? JSON.parse(local) : [];
+      list.unshift(itemToSave);
+      localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
+      return itemToSave;
+    } catch (e) {
+      if (apiSuccess) return apiSuccess;
+      throw e;
+    }
+  },
+
   // 5.1 Sedes y Municipios
   getSedes: async () => {
     const json = await request('/sedes');

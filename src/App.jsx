@@ -799,6 +799,7 @@ function App() {
                     <MiPanelUsuarioView
                       items={items}
                       movements={movements}
+                      sedes={sedesList}
                     />
                   )}
 

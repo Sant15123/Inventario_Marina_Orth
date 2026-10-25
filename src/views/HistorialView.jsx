@@ -7,7 +7,7 @@ export default function HistorialView({ movements = [] }) {
   const { currentUser, isUsuario, isOperador, isSupervisor } = useAuth();
   const [filterType, setFilterType] = useState('todos'); // 'todos' | 'prestamo' | 'entrega' | 'devolucion' | 'baja'
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 5;
 
   const typeLabel = {
     ingreso: 'Ingreso',
@@ -204,23 +204,23 @@ export default function HistorialView({ movements = [] }) {
           )}
         </div>
 
-        <div className="panel table-responsive">
+        <div className="panel table-responsive" style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           {filteredList.length === 0 ? (
-            <div className="empty">
+            <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span>📋</span> No se encontraron movimientos para el filtro seleccionado.
             </div>
           ) : (
-            <table>
+            <table className="historial-compact-table" style={{ width: '100%', tableLayout: 'auto' }}>
               <thead>
                 <tr>
-                  <th style={{ width: isUsuario ? '140px' : '110px' }}>Fecha</th>
+                  <th style={{ width: '120px', minWidth: '110px' }}>Fecha</th>
                   <th style={{ width: '110px' }}>Tipo</th>
-                  <th style={{ flex: isUsuario ? 1 : 'initial' }}>Elemento / Material</th>
-                  <th style={{ width: '130px' }}>Cantidad / Placas</th>
-                  {!isUsuario && <th>Responsable / Custodio</th>}
+                  <th style={{ minWidth: '220px' }}>Elemento / Material</th>
+                  <th style={{ width: '110px', textAlign: 'center' }}>Cant. / Placas</th>
+                  {!isUsuario && <th style={{ width: '180px', minWidth: '150px' }}>Responsable / Custodio</th>}
                   <th style={{ width: '120px' }}>Sede</th>
-                  <th>Motivo / Proyecto</th>
-                  <th style={{ width: '140px' }}>Estado</th>
+                  <th style={{ minWidth: '150px' }}>Motivo / Proyecto</th>
+                  <th style={{ width: '120px' }}>Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -254,47 +254,59 @@ export default function HistorialView({ movements = [] }) {
                       : `${m.qty || m.cantidad || 1} und`;
 
                   return (
-                    <tr key={m.id}>
-                      <td className="mono-num" style={{ whiteSpace: 'nowrap' }}>{fmtDate(m.date)}</td>
-                      <td>
+                    <tr key={m.id} style={{ height: '48px' }}>
+                      <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '8px 12px' }}>
+                        {fmtDate(m.date)}
+                      </td>
+                      <td style={{ padding: '8px 12px' }}>
                         {norm === 'devolucion' ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             Devolución
                           </span>
                         ) : norm === 'actualizacion' ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
                             Actualización
                           </span>
                         ) : (
-                          <span className={`pill ${typePillClass[m.type] || 'default'}`}>
+                          <span className={`pill ${typePillClass[m.type] || 'default'}`} style={{ padding: '2px 8px', fontSize: '11.5px' }}>
                             {typeLabel[m.type] || m.type || m.tipo}
                           </span>
                         )}
                       </td>
-                      <td style={{ minWidth: isUsuario ? '220px' : 'auto' }}>
-                        <strong>{m.itemName}</strong>
-                        {m.itemId && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'monospace' }}>
-                            ID: {m.itemId}
-                          </div>
-                        )}
+                      <td style={{ padding: '8px 12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <strong style={{ fontSize: '13px', lineHeight: 1.3 }}>{m.itemName}</strong>
+                          {m.itemId && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'monospace' }}>
+                              ID: {m.itemId}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="wrap mono-num">
-                        <span className="qty-indicator">{displayUnits}</span>
+                      <td className="wrap mono-num" style={{ padding: '8px 12px', textAlign: 'center' }}>
+                        <span className="qty-indicator" style={{ padding: '2px 6px', fontSize: '11.5px' }}>
+                          {displayUnits}
+                        </span>
                       </td>
                       {!isUsuario && (
-                        <td>
-                          <span className="person-name">{m.person || m.responsable || '—'}</span>
+                        <td style={{ padding: '8px 12px' }}>
+                          <span className="person-name" style={{ fontSize: '12.5px' }}>
+                            {m.person || m.responsable || '—'}
+                          </span>
                         </td>
                       )}
-                      <td>
-                        <span className="sede-badge municipal">{m.sede || 'Medellín'}</span>
+                      <td style={{ padding: '8px 12px' }}>
+                        <span className="sede-badge municipal" style={{ padding: '2px 8px', fontSize: '11px' }}>
+                          {m.sede || 'Medellín'}
+                        </span>
                       </td>
-                      <td className="wrap" title={m.motive || m.motivo || m.detalles}>
+                      <td className="wrap" title={m.motive || m.motivo || m.detalles} style={{ padding: '8px 12px', fontSize: '12.5px' }}>
                         {m.motive || m.motivo || m.detalles || '—'}
                       </td>
-                      <td>
-                        <span className={`pill ${statusClass}`}>{statusText}</span>
+                      <td style={{ padding: '8px 12px' }}>
+                        <span className={`pill ${statusClass}`} style={{ padding: '2px 8px', fontSize: '11.5px' }}>
+                          {statusText}
+                        </span>
                       </td>
                     </tr>
                   );
