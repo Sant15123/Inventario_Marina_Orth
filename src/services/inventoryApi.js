@@ -279,6 +279,35 @@ export const inventoryApi = {
     }
   },
 
+  updateSolicitud: async (id, patch) => {
+    let apiSuccess = null;
+    try {
+      const json = await request(`/solicitudes/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(patch),
+      });
+      apiSuccess = json?.data !== undefined ? json.data : json;
+    } catch (err) {
+      console.warn(`API PUT /solicitudes/${id} no disponible, actualizando local:`, err.message);
+    }
+
+    try {
+      const local = localStorage.getItem('siga_solicitudes_inventario');
+      if (local) {
+        const list = JSON.parse(local);
+        const idx = list.findIndex((s) => String(s.id) === String(id));
+        if (idx !== -1) {
+          list[idx] = { ...list[idx], ...patch, updated_at: new Date().toISOString() };
+          localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
+          return list[idx];
+        }
+      }
+    } catch (e) {
+      console.warn('Error al actualizar localStorage de solicitudes:', e);
+    }
+    return apiSuccess || { id, ...patch };
+  },
+
   // 5.1 Sedes y Municipios
   getSedes: async () => {
     const json = await request('/sedes');

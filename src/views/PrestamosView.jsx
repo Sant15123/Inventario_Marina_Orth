@@ -8,8 +8,9 @@ import ModalNuevoProyectoSteam from '../components/modals/ModalNuevoProyectoStea
 import ModalNuevaSede from '../components/modals/ModalNuevaSede';
 import ModalConfirmarRetorno from '../components/modals/ModalConfirmarRetorno';
 import ModalActaPrestamo from '../components/modals/ModalActaPrestamo';
+import ModalGestionSolicitud from '../components/modals/ModalGestionSolicitud';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
-import { Building2 } from 'lucide-react';
+import { Building2, CheckSquare, Clock, Inbox, Eye, Laptop, Box } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
@@ -99,6 +100,37 @@ export default function PrestamosView({
     fetchSedes();
     return () => { isMounted = false; };
   }, []);
+
+  // Bandeja de Solicitudes Entrantes (Rol Administrador / Supervisor)
+  const [solicitudesList, setSolicitudesList] = useState([]);
+  const [solicitudesLoading, setSolicitudesLoading] = useState(false);
+  const [solicitudesPage, setSolicitudesPage] = useState(1);
+  const [solicitudParaGestionar, setSolicitudParaGestionar] = useState(null);
+  const [modalGestionOpen, setModalGestionOpen] = useState(false);
+  const SOLICITUDES_PER_PAGE = 5;
+
+  const fetchSolicitudes = async () => {
+    try {
+      setSolicitudesLoading(true);
+      const data = await inventoryApi.getSolicitudes();
+      if (Array.isArray(data)) {
+        setSolicitudesList(data);
+      }
+    } catch (err) {
+      console.warn('Aviso: no se pudieron cargar solicitudes:', err.message);
+    } finally {
+      setSolicitudesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSolicitudes();
+  }, []);
+
+  // Conteo de solicitudes pendientes en vivo
+  const solicitudesPendientesCount = useMemo(() => {
+    return solicitudesList.filter((s) => String(s.estado || 'PENDIENTE').toUpperCase() === 'PENDIENTE').length;
+  }, [solicitudesList]);
 
   // Modales
   const [showLoanModal, setShowLoanModal] = useState(false);
@@ -664,6 +696,37 @@ export default function PrestamosView({
             <span>📦 Entregas Realizadas</span>
             <span className="tab-badge">{recentDeliveries.length}</span>
           </button>
+          {(isAdmin || isSupervisor) && (
+            <button
+              type="button"
+              className={`tab-btn ${activeSection === 'solicitudes' ? 'active' : ''}`}
+              onClick={() => setActiveSection('solicitudes')}
+              style={
+                activeSection === 'solicitudes'
+                  ? {}
+                  : solicitudesPendientesCount > 0
+                  ? { borderBottom: '2px solid #84CC16' }
+                  : {}
+              }
+            >
+              <span>📥 Solicitudes Entrantes</span>
+              {solicitudesPendientesCount > 0 ? (
+                <span
+                  className="tab-badge"
+                  style={{
+                    background: '#84CC16',
+                    color: '#0B132B',
+                    fontWeight: 800,
+                  }}
+                  title={`${solicitudesPendientesCount} solicitudes pendientes por gestionar`}
+                >
+                  {solicitudesPendientesCount} nuevas
+                </span>
+              ) : (
+                <span className="tab-badge">{solicitudesList.length}</span>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -1350,6 +1413,253 @@ export default function PrestamosView({
                   })}
                 </tbody>
               </table>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* =========================================================================
+          BLOQUE 3: BANDEJA DE SOLICITUDES ENTRANTES (ROL ADMIN / SUPERVISOR)
+          ========================================================================= */}
+      {(activeSection === 'all' || activeSection === 'solicitudes') && (isAdmin || isSupervisor) && (
+        <section>
+          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h2>
+                <span>Bandeja de Gestión y Aprobación de Solicitudes</span>
+                <span className="pill default" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                  {solicitudesList.length} solicitudes registradas
+                </span>
+                {solicitudesPendientesCount > 0 && (
+                  <span className="pill low" style={{ fontSize: '11px', padding: '2px 8px', background: 'rgba(132, 204, 22, 0.15)', color: '#84CC16', border: '1px solid rgba(132, 204, 22, 0.4)' }}>
+                    ⏳ {solicitudesPendientesCount} pendiente{solicitudesPendientesCount > 1 ? 's' : ''} de revisión
+                  </span>
+                )}
+              </h2>
+              <span className="section-subtitle">
+                Revisa requerimientos formulados por docentes y formadores STEAM, asigna placas físicas y autoriza salidas
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="panel table-responsive"
+            style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+          >
+            {solicitudesLoading ? (
+              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span>⏳</span> Cargando solicitudes entrelazadas...
+              </div>
+            ) : solicitudesList.length === 0 ? (
+              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span>📥</span> No se registran solicitudes entrantes en este momento.
+              </div>
+            ) : (
+              <table style={{ width: '100%', tableLayout: 'auto' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '125px', minWidth: '115px' }}>Fecha Radicado</th>
+                    <th style={{ minWidth: '160px' }}>Solicitante / Custodio</th>
+                    <th style={{ width: '140px' }}>Tipo</th>
+                    <th style={{ minWidth: '220px' }}>Resumen de Ítems</th>
+                    <th style={{ width: '120px' }}>Fecha Retorno</th>
+                    <th style={{ width: '120px', textAlign: 'center' }}>Estado</th>
+                    <th style={{ width: '130px', textAlign: 'center' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {solicitudesList
+                    .slice((solicitudesPage - 1) * SOLICITUDES_PER_PAGE, solicitudesPage * SOLICITUDES_PER_PAGE)
+                    .map((sol) => {
+                      const estadoUpper = String(sol.estado || 'PENDIENTE').toUpperCase();
+                      const esPrestamo = sol.tipo_solicitud === 'PRESTAMO_EQUIPO';
+                      const fechaRad = sol.fecha_radicado || (sol.created_at ? sol.created_at.slice(0, 10) : '');
+
+                      return (
+                        <tr key={sol.id} style={{ height: '52px' }}>
+                          <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '10px 12px' }}>
+                            {fmtDate(fechaRad)}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <div>
+                              <strong style={{ fontSize: '12.5px', color: 'var(--text-h)' }}>
+                                {sol.usuario_nombre || 'Docente'}
+                              </strong>
+                              <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                                Sede: <span className="sede-badge municipal">{sol.sede || 'Medellín'}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            {esPrestamo ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800">
+                                <Laptop size={12} />
+                                <span>Equipo Retornable</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                                <Box size={12} />
+                                <span>Consumibles Robótica</span>
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              {Array.isArray(sol.items) && sol.items.length > 0 ? (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {sol.items.map((it, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                                    >
+                                      <span>{it.nombre_item || it.nombre}</span>
+                                      <strong className="text-[#84CC16]">x{it.cantidad}</strong>
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>Sin ítems detallados</span>
+                              )}
+                              {sol.motivo && (
+                                <span
+                                  style={{
+                                    fontSize: '11px',
+                                    color: 'var(--text-dim)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: '260px',
+                                  }}
+                                  title={sol.motivo}
+                                >
+                                  "{sol.motivo}"
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '10px 12px' }}>
+                            {esPrestamo && sol.fecha_devolucion_estimada ? fmtDate(sol.fecha_devolucion_estimada) : '—'}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            {estadoUpper === 'APROBADO' ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-700"
+                              >
+                                <span>Aprobado</span>
+                              </span>
+                            ) : estadoUpper === 'RECHAZADO' ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-700"
+                                title={sol.observaciones_admin || 'Rechazado'}
+                              >
+                                <span>Rechazado</span>
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-700"
+                              >
+                                <span>Pendiente</span>
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSolicitudParaGestionar(sol);
+                                setModalGestionOpen(true);
+                              }}
+                              className="btn small"
+                              style={{
+                                backgroundColor: estadoUpper === 'PENDIENTE' ? '#84CC16' : 'rgba(255, 255, 255, 0.08)',
+                                color: estadoUpper === 'PENDIENTE' ? '#0B132B' : 'var(--text)',
+                                fontWeight: 700,
+                                padding: '4px 10px',
+                                fontSize: '11.5px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                              }}
+                              title="Revisar solicitud y autorizar despacho"
+                            >
+                              <CheckSquare size={13} />
+                              <span>{estadoUpper === 'PENDIENTE' ? 'Gestionar' : 'Ver Detalle'}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            )}
+
+            {/* Paginación de 5 en 5 para la bandeja de solicitudes */}
+            {solicitudesList.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderTop: '1px solid var(--line)',
+                  fontSize: '12.5px',
+                  color: 'var(--text-dim)',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div>
+                  Mostrando{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {(solicitudesPage - 1) * SOLICITUDES_PER_PAGE + 1}
+                  </strong>{' '}
+                  -{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {Math.min(solicitudesPage * SOLICITUDES_PER_PAGE, solicitudesList.length)}
+                  </strong>{' '}
+                  de <strong style={{ color: 'var(--text-h)' }}>{solicitudesList.length}</strong> solicitudes
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={solicitudesPage <= 1}
+                    onClick={() => setSolicitudesPage((p) => Math.max(1, p - 1))}
+                    style={{ padding: '3px 10px', fontSize: '12px', cursor: solicitudesPage <= 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    ← Anterior
+                  </button>
+
+                  <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
+                    Página {solicitudesPage} de {Math.max(1, Math.ceil(solicitudesList.length / SOLICITUDES_PER_PAGE))}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={solicitudesPage >= Math.ceil(solicitudesList.length / SOLICITUDES_PER_PAGE)}
+                    onClick={() =>
+                      setSolicitudesPage((p) =>
+                        Math.min(Math.ceil(solicitudesList.length / SOLICITUDES_PER_PAGE), p + 1)
+                      )
+                    }
+                    style={{
+                      padding: '3px 10px',
+                      fontSize: '12px',
+                      cursor:
+                        solicitudesPage >= Math.ceil(solicitudesList.length / SOLICITUDES_PER_PAGE)
+                          ? 'not-allowed'
+                          : 'pointer',
+                    }}
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </section>
@@ -2530,6 +2840,33 @@ export default function PrestamosView({
           }
         }}
       />
+
+      {/* =========================================================================
+          MODAL: GESTIÓN Y APROBACIÓN DE SOLICITUDES ENTRANTES (ADMIN / SUPERVISOR)
+          ========================================================================= */}
+      {modalGestionOpen && solicitudParaGestionar && (
+        <ModalGestionSolicitud
+          isOpen={modalGestionOpen}
+          onClose={() => {
+            setModalGestionOpen(false);
+            setSolicitudParaGestionar(null);
+          }}
+          solicitud={solicitudParaGestionar}
+          items={items}
+          onSolicitudResolved={async (solicitudActualizada) => {
+            // Actualizar la lista local de solicitudes
+            setSolicitudesList((prev) =>
+              prev.map((s) => (String(s.id) === String(solicitudActualizada.id) ? { ...s, ...solicitudActualizada } : s))
+            );
+            // Si hay callback de recarga de datos globales, invocarlo
+            if (onRetry) {
+              await onRetry();
+            }
+          }}
+          showSuccess={showSuccess}
+          showError={showError}
+        />
+      )}
     </div>
   );
 }
