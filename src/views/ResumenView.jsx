@@ -134,10 +134,24 @@ export default function ResumenView({
 
   // 1. Filtrado para alertas de stock (disponible <= minStock)
   const lowStockItems = effectiveItems.filter((it) => available(it) <= (it.minStock || 0));
+  // Limitar a las 5 alertas más críticas (menor disponibilidad primero)
+  const alertasVisibles = [...lowStockItems]
+    .sort((a, b) => available(a) - available(b))
+    .slice(0, 5);
 
   // 2. Préstamos activos y vencidos
   const activeLoans = effectiveMovements.filter((m) => m.type === 'prestamo' && m.status === 'activo');
   const overdueLoans = activeLoans.filter(isOverdue);
+  // Limitar a los 5 préstamos prioritarios (vencidos primero, luego próximos a vencer)
+  const prestamosVisibles = [...activeLoans]
+    .sort((a, b) => {
+      const aOverdue = isOverdue(a);
+      const bOverdue = isOverdue(b);
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      return new Date(a.expectedReturn || '9999-12-31') - new Date(b.expectedReturn || '9999-12-31');
+    })
+    .slice(0, 5);
 
   if (effectiveLoading) {
     return (
@@ -328,7 +342,7 @@ export default function ResumenView({
                 </tr>
               </thead>
               <tbody>
-                {lowStockItems.map((it) => {
+                {alertasVisibles.map((it) => {
                   const disp = available(it);
                   const min = it.minStock || 0;
                   const isCritical = disp === 0;
@@ -371,6 +385,33 @@ export default function ResumenView({
               </tbody>
             </table>
           )}
+          {lowStockItems.length > 5 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 18px',
+                borderTop: '1px solid var(--border)',
+                background: 'rgba(255, 255, 255, 0.02)',
+                fontSize: '0.88rem',
+              }}
+            >
+              <span style={{ color: 'var(--text-dim)' }}>
+                Mostrando las <strong>5</strong> alertas más críticas de <strong>{lowStockItems.length}</strong> registradas.
+              </span>
+              {onNavigate && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onNavigate('inventario')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  Ver inventario completo →
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -407,7 +448,7 @@ export default function ResumenView({
                 </tr>
               </thead>
               <tbody>
-                {activeLoans.map((m) => {
+                {prestamosVisibles.map((m) => {
                   const overdue = isOverdue(m);
                   const daysDiff = getDaysDiff(m.expectedReturn);
 
@@ -474,6 +515,33 @@ export default function ResumenView({
                 })}
               </tbody>
             </table>
+          )}
+          {activeLoans.length > 5 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 18px',
+                borderTop: '1px solid var(--border)',
+                background: 'rgba(255, 255, 255, 0.02)',
+                fontSize: '0.88rem',
+              }}
+            >
+              <span style={{ color: 'var(--text-dim)' }}>
+                Mostrando los <strong>5</strong> préstamos más urgentes de <strong>{activeLoans.length}</strong> activos.
+              </span>
+              {onNavigate && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onNavigate('prestamos')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  Ver todos los préstamos →
+                </button>
+              )}
+            </div>
           )}
         </div>
       </section>
