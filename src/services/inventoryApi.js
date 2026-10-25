@@ -234,9 +234,34 @@ export const inventoryApi = {
     try {
       const qs = new URLSearchParams(params).toString();
       const endpoint = qs ? `/solicitudes?${qs}` : '/solicitudes';
-      const json = await request(endpoint);
-      return extraerArreglo(json);
+      const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+      const token = getAuthToken();
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!res.ok) {
+        // Si el endpoint aún no está desplegado en backend (ej. 404 Not Found), usar fallback local silencioso
+        if (res.status === 404) {
+          console.warn('Endpoint /api/solicitudes aún no disponible en el backend (404), usando almacenamiento local.');
+        } else {
+          console.warn(`Respuesta no exitosa (${res.status}) al consultar /api/solicitudes, usando respaldo local.`);
+        }
+        try {
+          const local = localStorage.getItem('siga_solicitudes_inventario');
+          return local ? JSON.parse(local) : [];
+        } catch {
+          return [];
+        }
+      }
+
+      const json = await res.json().catch(() => null);
+      return extraerArreglo(json) || [];
     } catch (err) {
+      console.warn('Endpoint /api/solicitudes en espera de despliegue en backend, usando lista local:', err.message);
       // Fallback a almacenamiento local tolerante
       try {
         const local = localStorage.getItem('siga_solicitudes_inventario');

@@ -36,7 +36,7 @@ export default function PrestamosView({
   const [filterEstadoPrestamo, setFilterEstadoPrestamo] = useState(initialStatusFilter); // 'todos' | 'Activo' | 'Vencido'
 
   // Notificaciones y Modales Institucionales FMO
-  const { showLoanSuccess, showDeliverySuccess, showConfirmAction, showConfirmRetorno, showEditSuccess, showError, showInfo } = useToast();
+  const { showLoanSuccess, showDeliverySuccess, showConfirmAction, showConfirmRetorno, showEditSuccess, showError, showInfo, showSuccess } = useToast();
 
   useEffect(() => {
     if (initialSection) setActiveSection(initialSection);
@@ -113,11 +113,10 @@ export default function PrestamosView({
     try {
       setSolicitudesLoading(true);
       const data = await inventoryApi.getSolicitudes();
-      if (Array.isArray(data)) {
-        setSolicitudesList(data);
-      }
+      setSolicitudesList(Array.isArray(data) ? data : []);
     } catch (err) {
       console.warn('Aviso: no se pudieron cargar solicitudes:', err.message);
+      setSolicitudesList([]);
     } finally {
       setSolicitudesLoading(false);
     }

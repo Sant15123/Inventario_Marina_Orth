@@ -101,9 +101,12 @@ export default function MiPanelUsuarioView({
           return sNombre && nombreNorm && (sNombre.includes(nombreNorm) || nombreNorm.includes(sNombre));
         });
         setSolicitudes(misSols);
+      } else {
+        setSolicitudes([]);
       }
     } catch (err) {
       console.warn('Aviso: no se pudieron cargar solicitudes desde API:', err.message);
+      setSolicitudes([]);
     } finally {
       setSolicitudesLoading(false);
     }
