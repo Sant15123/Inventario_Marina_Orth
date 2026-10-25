@@ -2356,19 +2356,21 @@ export default function PrestamosView({
                   <label>Equipo</label>
                   <input type="text" disabled value={editingLoan.itemName} style={{ opacity: 0.7 }} />
                 </div>
-                <div className="form-group">
-                  <label>Custodio / Responsable *</label>
-                  <input
-                    required
-                    list="formadores-list-edit"
+                <div className="form-group full" style={{ marginBottom: '4px' }}>
+                  <SearchableUserSelect
+                    usuarios={usuarios}
                     value={editPerson}
-                    onChange={(e) => setEditPerson(e.target.value)}
+                    label="Custodio / Responsable *"
+                    placeholder="Buscar por nombre completo, cédula o rol..."
+                    onSelectUser={(u) => {
+                      setEditPerson(u.nombre || u.nombre_completo || '');
+                      if (u.sede) setEditSede(u.sede);
+                    }}
+                    onOpenNewUserModal={() => {
+                      setTargetModalForUser('editLoan');
+                      setShowNewUserModal(true);
+                    }}
                   />
-                  <datalist id="formadores-list-edit">
-                    {EMPLOYEES.map((p) => (
-                      <option key={p} value={p} />
-                    ))}
-                  </datalist>
                 </div>
                 <div className="form-group">
                   <label>Sede / Municipio *</label>
@@ -2758,6 +2760,9 @@ export default function PrestamosView({
               setLoanPersonDocumento(userCreado.documento);
               setLoanPersonEmail(userCreado.email);
               if (userCreado.sede) setLoanSede(userCreado.sede);
+            } else if (targetModalForUser === 'editLoan') {
+              setEditPerson(userCreado.nombre);
+              if (userCreado.sede) setEditSede(userCreado.sede);
             } else {
               setDeliveryPerson(userCreado.nombre);
               setDeliveryPersonDocumento(userCreado.documento);
