@@ -30,7 +30,7 @@ export default function ModalEditarUsuario({
     >
       {/* Tarjeta Modal: Compacta idéntica a modal de inventario max-w-lg */}
       <div
-        className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full flex flex-col max-h-[90vh] overflow-hidden"
         style={{
           borderRadius: '16px',
           maxWidth: '32rem', // max-w-lg (512px)
@@ -48,7 +48,7 @@ export default function ModalEditarUsuario({
       >
         {/* Cabecera Fija */}
         <div
-          className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
+          className="p-5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
           style={{
             backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
             borderBottom: '1px solid var(--line, #1e293b)',
@@ -126,18 +126,28 @@ export default function ModalEditarUsuario({
         {/* Formulario */}
         <form
           onSubmit={onSubmit}
-          className="flex flex-col flex-1 min-h-0"
-          style={{ margin: 0, display: 'flex', flexDirection: 'column' }}
+          className="flex flex-col flex-1 min-h-0 overflow-hidden"
+          style={{
+            margin: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
         >
           {/* Cuerpo Scrolleable Interno */}
           <div
-            className="p-5 overflow-y-auto space-y-4 max-h-[calc(90vh-140px)]"
+            className="overflow-y-auto flex-1 p-6 space-y-4"
             style={{
-              padding: '20px',
+              padding: '24px',
               backgroundColor: 'var(--surface, #0f172a)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '14px',
+              gap: '16px',
+              overflowY: 'auto',
+              flex: 1,
+              minHeight: 0,
             }}
           >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -319,13 +329,13 @@ export default function ModalEditarUsuario({
             </div>
           </div>
 
-          {/* Footer Fijo Abajo (Homologado con modal de Inventario y Cambio de Contraseña) */}
+          {/* Footer Fijo Abajo */}
           <div
-            className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] flex items-center justify-between shrink-0"
+            className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/90 flex-shrink-0 p-4 flex items-center justify-end gap-3"
             style={{
               backgroundColor: 'var(--surface-2, #0f172a)',
               borderTop: '1px solid var(--line, #1e293b)',
-              padding: '14px 20px',
+              padding: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
