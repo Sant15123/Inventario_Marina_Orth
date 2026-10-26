@@ -696,12 +696,16 @@ export function AuthProvider({ children }) {
           nombre_completo: datosActualizados.nombre || datosActualizados.nombre_completo,
           nombre: datosActualizados.nombre || datosActualizados.nombre_completo,
           telefono: datosActualizados.telefono,
-          email: datosActualizados.email,
+          email: datosActualizados.email ? datosActualizados.email.trim().toLowerCase() : undefined,
           rol: datosActualizados.rol,
           sede: datosActualizados.sede,
           cargo: datosActualizados.cargo,
           activo: datosActualizados.activo !== undefined ? datosActualizados.activo : true,
         };
+
+        if (datosActualizados.password && typeof datosActualizados.password === 'string' && datosActualizados.password.trim().length > 0) {
+          payloadApi.password = datosActualizados.password.trim();
+        }
 
         const response = await inventoryApi.updateUsuario(id, payloadApi);
         if (response && response.success !== false) {

@@ -225,6 +225,28 @@ export default function ModalEditarUsuario({
               />
             </div>
 
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                Contraseña (Opcional)
+              </label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder="Dejar en blanco para mantener la actual"
+                value={formData.password || ''}
+                onChange={(e) => onChangeFormData({ ...formData, password: e.target.value })}
+                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                style={{
+                  backgroundColor: 'var(--bg, #0f172a)',
+                  color: 'var(--text, #f8fafc)',
+                  borderColor: 'var(--line, #334155)',
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  borderRadius: '8px',
+                }}
+              />
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">

@@ -39,6 +39,7 @@ export default function UsuariosView() {
     rol: 'usuario',
     cargo: '',
     sede: 'Medellín',
+    password: '',
   });
 
   // Conteo reactivo por roles para las pestañas superiores
@@ -132,7 +133,14 @@ export default function UsuariosView() {
 
     setGuardandoEdicion(true);
     try {
-      await editarUsuario(usuarioEditando.id, formDataEditar);
+      const payloadParaEnviar = { ...formDataEditar };
+      if (!payloadParaEnviar.password || !payloadParaEnviar.password.trim()) {
+        delete payloadParaEnviar.password;
+      } else {
+        payloadParaEnviar.password = payloadParaEnviar.password.trim();
+      }
+
+      await editarUsuario(usuarioEditando.id, payloadParaEnviar);
       setModalEditarOpen(false);
       showEditSuccess(`Usuario ${formDataEditar.nombre}`);
       setUsuarioEditando(null);
