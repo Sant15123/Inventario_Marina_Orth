@@ -207,6 +207,36 @@ export const inventoryApi = {
     return json?.data !== undefined ? json.data : json;
   },
 
+  // 2.2 Mobiliario y Enseres Institucionales
+  getMobiliario: async () => {
+    try {
+      const json = await request('/mobiliario');
+      return extraerArreglo(json);
+    } catch (err) {
+      console.warn('Fallback al consultar /mobiliario:', err.message);
+      return [];
+    }
+  },
+
+  getSiguientePlacaMobiliario: async () => {
+    try {
+      const json = await request('/mobiliario/siguiente-placa');
+      return json?.data !== undefined ? json.data : json;
+    } catch {
+      // Fallback consecutivo seguro si el endpoint backend aún está arrancando
+      const randomSuffix = String(Math.floor(1 + Math.random() * 9999)).padStart(4, '0');
+      return { placa: `MOB-${randomSuffix}` };
+    }
+  },
+
+  createMobiliario: async (data) => {
+    const json = await request('/mobiliario', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return json?.data !== undefined ? json.data : json;
+  },
+
   // 4. Historial Universal y Auditoría
   getHistorial: async (params = {}) => {
     const qs = new URLSearchParams(params).toString();

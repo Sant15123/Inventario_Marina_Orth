@@ -4,6 +4,7 @@ import { QrCode, Eye, Pencil, Trash2, X } from 'lucide-react';
 import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
+import ModalRegistroMobiliario from '../components/modals/ModalRegistroMobiliario';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { available, SEDES, EMPLOYEES, PROYECTOS, today } from '../services/mockData';
@@ -539,19 +540,11 @@ export default function InventarioView({
     setModalNuevoOpen(true);
   };
 
+  // Estado para el modal dedicado de Nuevo Mobiliario
+  const [modalRegistroMobiliarioOpen, setModalRegistroMobiliarioOpen] = useState(false);
+
   const handleOpenCreateMobiliario = () => {
-    setFormDataNuevoEquipo({
-      ...initialFormNuevoEquipo,
-      placa: `MOB-${Date.now().toString().slice(-4)}`,
-      nombre: '',
-      categoria: 'Mobiliario',
-      area: 'Infraestructura',
-      ubicacion: 'Oficina Medellín',
-      ubicacion_estante: 'Zona Lab 1',
-      condicion: 'Buen Estado',
-    });
-    setPasoActualEquipo(1);
-    setModalNuevoEquipoOpen(true);
+    setModalRegistroMobiliarioOpen(true);
   };
 
   // Eliminación / Baja con confirmación para Papelería y Mobiliario
@@ -2106,13 +2099,30 @@ export default function InventarioView({
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isAdmin && (
             activeTab === 'equipos' ? (
-              <button
-                type="button"
-                className="btn small btn-primary"
-                onClick={() => handleOpenCreate('equipo')}
-              >
-                + Nuevo Equipo
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn small btn-primary"
+                  onClick={() => handleOpenCreate('equipo')}
+                >
+                  + Nuevo Equipo
+                </button>
+                <button
+                  type="button"
+                  className="btn small ghost"
+                  onClick={handleOpenCreateMobiliario}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    borderColor: 'var(--line, #334155)',
+                    color: 'var(--text, #f8fafc)',
+                  }}
+                  title="Registrar nuevo mueble o enser institucional"
+                >
+                  <span>🪑</span> + Nuevo Mobiliario
+                </button>
+              </div>
             ) : activeTab === 'papeleria' ? (
               <button
                 type="button"
@@ -6984,6 +6994,19 @@ export default function InventarioView({
           </div>
         </div>
       )}
+
+      {/* Modal Dedicado para Registro de Mobiliario y Enseres */}
+      <ModalRegistroMobiliario
+        isOpen={modalRegistroMobiliarioOpen}
+        onClose={() => setModalRegistroMobiliarioOpen(false)}
+        sedes={sedesList}
+        onMobiliarioCreated={(nuevoMobiliario) => {
+          setLocalMobiliario((prev) => [nuevoMobiliario, ...prev]);
+          if (cargarItems) {
+            cargarItems();
+          }
+        }}
+      />
     </div>
   );
 }
