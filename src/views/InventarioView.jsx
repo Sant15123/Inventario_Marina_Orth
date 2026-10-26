@@ -2104,28 +2104,6 @@ export default function InventarioView({
         </div>
 
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            type="button"
-            className="btn small secondary"
-            onClick={handleDescargarReporteExcel}
-            title="Descargar reporte oficial en formato Excel (.xlsx)"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              fontSize: '12.5px',
-              fontWeight: 600,
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Descargar reporte Excel</span>
-          </button>
-
           {isAdmin && (
             activeTab === 'equipos' ? (
               <button
