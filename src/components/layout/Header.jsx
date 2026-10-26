@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { User, ChevronDown, LogOut, KeyRound, ChevronRight } from 'lucide-react';
 import ModalCambiarPassword from '../modals/ModalCambiarPassword';
+import NotificationBell from './NotificationBell';
 
 /**
  * Header Component
@@ -17,6 +18,7 @@ export default function Header({
   onSync,
   theme = 'dark',
   onToggleTheme,
+  onNavigate,
 }) {
   const isDark = theme === 'dark';
   const navigate = useNavigate();
@@ -78,6 +80,15 @@ export default function Header({
       </div>
 
       <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* CAMPANITA DE NOTIFICACIONES EN TIEMPO REAL (SUPABASE) */}
+        <NotificationBell
+          onNavigateToSolicitudes={() => {
+            if (onNavigate) {
+              onNavigate('prestamos', { section: 'solicitudes' });
+            }
+          }}
+        />
+
         {/* SELECTOR DE PERFIL Y ROL INTERACTIVO */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button

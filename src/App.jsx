@@ -791,6 +791,7 @@ function App() {
                   onSync={handleSyncAndPurge}
                   theme={theme}
                   onToggleTheme={toggleTheme}
+                  onNavigate={handleNavigateFromSummary}
                 />
 
                 <main className="main-content">
