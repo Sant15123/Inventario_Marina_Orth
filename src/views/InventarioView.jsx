@@ -7001,10 +7001,15 @@ export default function InventarioView({
         onClose={() => setModalRegistroMobiliarioOpen(false)}
         sedes={sedesList}
         onMobiliarioCreated={(nuevoMobiliario) => {
-          setLocalMobiliario((prev) => [nuevoMobiliario, ...prev]);
-          if (cargarItems) {
-            cargarItems();
+          if (nuevoMobiliario) {
+            setLocalMobiliario((prev) => [nuevoMobiliario, ...prev]);
           }
+          if (typeof cargarConsumibles === 'function') {
+            cargarConsumibles();
+          } else if (typeof onRetry === 'function') {
+            onRetry();
+          }
+          setModalRegistroMobiliarioOpen(false);
         }}
       />
     </div>
