@@ -259,19 +259,12 @@ export default function HistorialView({ movements = [] }) {
                         {fmtDate(m.date)}
                       </td>
                       <td style={{ padding: '8px 12px' }}>
-                        {norm === 'devolucion' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Devolución
-                          </span>
-                        ) : norm === 'actualizacion' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-                            Actualización
-                          </span>
-                        ) : (
-                          <span className={`pill ${typePillClass[m.type] || 'default'}`} style={{ padding: '2px 8px', fontSize: '11.5px' }}>
-                            {typeLabel[m.type] || m.type || m.tipo}
-                          </span>
-                        )}
+                        <span
+                          className={`pill ${typePillClass[norm] || typePillClass[m.type] || 'default'}`}
+                          style={{ padding: '2px 8px', fontSize: '11.5px' }}
+                        >
+                          {typeLabel[norm] || typeLabel[m.type] || m.type || m.tipo}
+                        </span>
                       </td>
                       <td style={{ padding: '8px 12px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
