@@ -23,7 +23,7 @@ export default function Header({
   const isDark = theme === 'dark';
   const navigate = useNavigate();
   const { showInfo } = useToast();
-  const { currentUser, logout, isUsuario } = useAuth();
+  const { currentUser, logout, isUsuario, isSupervisor } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const dropdownRef = useRef(null);
@@ -80,14 +80,16 @@ export default function Header({
       </div>
 
       <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* CAMPANITA DE NOTIFICACIONES EN TIEMPO REAL (SUPABASE) */}
-        <NotificationBell
-          onNavigateToSolicitudes={() => {
-            if (onNavigate) {
-              onNavigate('prestamos', { section: 'solicitudes' });
-            }
-          }}
-        />
+        {/* CAMPANITA DE NOTIFICACIONES EN TIEMPO REAL (Oculta para rol 'usuario' y 'supervisor') */}
+        {!isUsuario && !isSupervisor && (
+          <NotificationBell
+            onNavigateToSolicitudes={() => {
+              if (onNavigate) {
+                onNavigate('prestamos', { section: 'solicitudes' });
+              }
+            }}
+          />
+        )}
 
         {/* SELECTOR DE PERFIL Y ROL INTERACTIVO */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
