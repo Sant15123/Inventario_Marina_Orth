@@ -67,7 +67,11 @@ export default function ModalGestionSolicitud({
   if (!isOpen || !solicitud) return null;
 
   const esPrestamo = solicitud.tipo_solicitud === 'PRESTAMO_EQUIPO';
-  const yaResuelta = solicitud.estado === 'APROBADO' || solicitud.estado === 'RECHAZADO';
+  const yaResuelta =
+    solicitud.estado === 'APROBADO' ||
+    solicitud.estado === 'APROBADA' ||
+    solicitud.estado === 'RECHAZADO' ||
+    solicitud.estado === 'RECHAZADA';
 
   // Manejador del cambio de placa física por dropdown
   const handleSelectPlacaDropdown = (itemId, indexUnit, placaSeleccionada) => {
@@ -93,32 +97,35 @@ export default function ModalGestionSolicitud({
 
   // Manejador del Rechazo
   const handleRechazar = async () => {
-    if (!motivoRechazo.trim()) {
-      setValidationError('Por favor ingresa el motivo obligatorio del rechazo.');
-      return;
-    }
+    const motivoFinal = motivoRechazo.trim() || 'Rechazado por administración';
 
     try {
       setSubmitting(true);
       setValidationError('');
 
       const patch = {
-        estado: 'RECHAZADO',
-        observaciones_admin: motivoRechazo.trim(),
+        estado: 'RECHAZADA',
+        motivo: motivoFinal,
+        observaciones_admin: motivoFinal,
         fecha_resolucion: today(),
       };
 
-      const actualizada = await inventoryApi.updateSolicitud(solicitud.id, patch);
+      let actualizada;
+      if (typeof inventoryApi.rechazarSolicitud === 'function') {
+        actualizada = await inventoryApi.rechazarSolicitud(solicitud.id, motivoFinal);
+      } else {
+        actualizada = await inventoryApi.updateSolicitud(solicitud.id, patch);
+      }
 
       if (showSuccess) {
         showSuccess(
           'Solicitud Rechazada',
-          `La solicitud de ${solicitud.usuario_nombre} ha sido marcada como rechazada.`
+          `La solicitud de ${solicitud.usuario_nombre || 'el usuario'} ha sido rechazada.`
         );
       }
 
       if (onSolicitudResolved) {
-        onSolicitudResolved(actualizada);
+        onSolicitudResolved(actualizada || { ...solicitud, ...patch });
       }
 
       onClose();
@@ -164,28 +171,51 @@ export default function ModalGestionSolicitud({
 
       const sedeFinal = solicitud.sede || 'Medellín';
       const motivoFinal = solicitud.motivo || 'Solicitud de material autorizada';
+      const fechaDevolucionFinal = solicitud.fecha_devolucion_estimada || today();
+      const usuarioDocumentoFinal = solicitud.usuario_documento || solicitud.custodio_documento || null;
+      const usuarioIdFinal = solicitud.usuario_id || null;
+
+      // Si no hay proyecto vinculado, enviar proyecto_id: null en lugar de cadena vacía o texto descriptivo
+      const proyectoIdFinal =
+        solicitud.proyecto_steam_id && String(solicitud.proyecto_steam_id).trim() !== ''
+          ? solicitud.proyecto_steam_id.trim()
+          : null;
 
       // 1. Si es Préstamo de Equipo Retornable: crear registros formales de préstamo
       if (esPrestamo) {
         for (const it of solicitud.items || []) {
           const placas = (placasAsignadas[it.item_id] || []).filter(Boolean);
           const itemIdFinal = it.item_id || it.material_id || it.id;
+          const primerPlaca = placas[0] || itemIdFinal;
+
+          // Registrar préstamo enviando los nombres de campos requeridos por el backend
           await inventoryApi.createPrestamo({
-            itemId: itemIdFinal,
-            item_id: itemIdFinal,
-            itemName: it.nombre_item || it.nombre || it.material || 'Equipo Tecnológico',
-            nombre_item: it.nombre_item || it.nombre || it.material || 'Equipo Tecnológico',
-            person: responsableFinal,
-            responsable: responsableFinal,
-            solicitante: responsableFinal,
-            sede: sedeFinal,
-            proyecto: solicitud.proyecto_steam_id || '',
-            expectedReturn: solicitud.fecha_devolucion_estimada || today(),
-            fecha_devolucion: solicitud.fecha_devolucion_estimada || today(),
-            motive: `Solicitud autorizada: ${motivoFinal}`,
-            motivo: `Solicitud autorizada: ${motivoFinal}`,
+            solicitud_id: solicitud.id,
+            item_id: primerPlaca,
+            placa_activo: primerPlaca,
+            activo_id: primerPlaca,
+            placas_asignadas: placas,
             unitCodes: placas,
             placas: placas,
+            tipo_item: 'activo',
+            cantidad: 1,
+            solicitante: responsableFinal,
+            responsable: responsableFinal,
+            person: responsableFinal,
+            usuario_id: usuarioIdFinal,
+            custodio_documento: usuarioDocumentoFinal,
+            solicitante_documento: usuarioDocumentoFinal,
+            sede: sedeFinal,
+            proyecto_id: proyectoIdFinal,
+            fecha_salida: today(),
+            fecha_devolucion_esperada: fechaDevolucionFinal,
+            fecha_devolucion_estimada: fechaDevolucionFinal,
+            fecha_devolucion: fechaDevolucionFinal,
+            expectedReturn: fechaDevolucionFinal,
+            motivo: `Solicitud autorizada: ${motivoFinal}`,
+            motive: `Solicitud autorizada: ${motivoFinal}`,
+            itemName: it.nombre_item || it.nombre || it.material || 'Equipo Tecnológico',
+            nombre_item: it.nombre_item || it.nombre || it.material || 'Equipo Tecnológico',
           });
         }
       } else {
@@ -212,12 +242,15 @@ export default function ModalGestionSolicitud({
         // Intentar registrar mediante remisión agrupada y entrega para máxima compatibilidad
         try {
           await inventoryApi.createRemision({
+            solicitud_id: solicitud.id,
             responsable: responsableFinal,
             responsable_recibe: responsableFinal,
             person: responsableFinal,
             solicitante: responsableFinal,
+            usuario_id: usuarioIdFinal,
+            custodio_documento: usuarioDocumentoFinal,
             sede: sedeFinal,
-            proyecto: solicitud.proyecto_steam_id || '',
+            proyecto_id: proyectoIdFinal,
             motivo: `Solicitud de insumos autorizada: ${motivoFinal}`,
             motive: `Solicitud de insumos autorizada: ${motivoFinal}`,
             items: itemsParaEntrega,
@@ -227,13 +260,17 @@ export default function ModalGestionSolicitud({
           // Fallback uno por uno a createEntrega
           for (const itEntrega of itemsParaEntrega) {
             await inventoryApi.createEntrega({
+              solicitud_id: solicitud.id,
               material_id: itEntrega.material_id,
               item_id: itEntrega.material_id,
               material_nombre: itEntrega.material,
               cantidad: itEntrega.cantidad,
               responsable: responsableFinal,
               person: responsableFinal,
+              usuario_id: usuarioIdFinal,
+              custodio_documento: usuarioDocumentoFinal,
               sede: sedeFinal,
+              proyecto_id: proyectoIdFinal,
               proyecto_motivo: `Solicitud de insumos autorizada: ${motivoFinal}`,
               tipo: 'Consumido',
             });
@@ -243,7 +280,7 @@ export default function ModalGestionSolicitud({
 
       // 3. Actualizar el estado de la solicitud en la base de datos
       const patch = {
-        estado: 'APROBADO',
+        estado: 'APROBADA',
         fecha_resolucion: today(),
         placas_asignadas: placasAsignadas,
         cantidades_aprobadas: cantidadesAprobadas,
@@ -254,12 +291,12 @@ export default function ModalGestionSolicitud({
       if (showSuccess) {
         showSuccess(
           'Solicitud Aprobada y Despachada',
-          `Se ha procesado exitosamente la solicitud de ${solicitud.usuario_nombre}. Los registros correspondientes han sido generados.`
+          `Se ha procesado exitosamente la solicitud de ${solicitud.usuario_nombre || 'el usuario'}. Los registros correspondientes han sido generados.`
         );
       }
 
       if (onSolicitudResolved) {
-        onSolicitudResolved(actualizada);
+        onSolicitudResolved(actualizada || { ...solicitud, ...patch });
       }
 
       onClose();
@@ -293,9 +330,9 @@ export default function ModalGestionSolicitud({
             </h3>
             <span
               className={`pill ${
-                solicitud.estado === 'APROBADO'
+                solicitud.estado === 'APROBADO' || solicitud.estado === 'APROBADA'
                   ? 'ok'
-                  : solicitud.estado === 'RECHAZADO'
+                  : solicitud.estado === 'RECHAZADO' || solicitud.estado === 'RECHAZADA'
                   ? 'low'
                   : 'prestado'
               }`}

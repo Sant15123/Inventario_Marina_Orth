@@ -316,12 +316,20 @@ export const inventoryApi = {
     let apiSuccess = null;
     try {
       const json = await request(`/solicitudes/${encodeURIComponent(id)}`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(patch),
       });
       apiSuccess = json?.data !== undefined ? json.data : json;
     } catch (err) {
-      console.warn(`API PUT /solicitudes/${id} no disponible, actualizando local:`, err.message);
+      try {
+        const jsonPut = await request(`/solicitudes/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          body: JSON.stringify(patch),
+        });
+        apiSuccess = jsonPut?.data !== undefined ? jsonPut.data : jsonPut;
+      } catch (errPut) {
+        console.warn(`API /solicitudes/${id} no disponible, actualizando local:`, errPut.message);
+      }
     }
 
     try {
@@ -339,6 +347,49 @@ export const inventoryApi = {
       console.warn('Error al actualizar localStorage de solicitudes:', e);
     }
     return apiSuccess || { id, ...patch };
+  },
+
+  rechazarSolicitud: async (id, motivo = 'Rechazado por administración') => {
+    const payload = {
+      estado: 'RECHAZADA',
+      motivo: motivo.trim() || 'Rechazado por administración',
+      observaciones_admin: motivo.trim() || 'Rechazado por administración',
+      fecha_resolucion: new Date().toISOString(),
+    };
+
+    let apiSuccess = null;
+    // Intentar endpoint dedicado si existe
+    try {
+      const json = await request(`/solicitudes/${encodeURIComponent(id)}/rechazar`, {
+        method: 'PATCH',
+        body: JSON.stringify({ motivo: payload.motivo, observaciones_admin: payload.observaciones_admin }),
+      });
+      apiSuccess = json?.data !== undefined ? json.data : json;
+    } catch {
+      // Fallback a PATCH/PUT general
+      try {
+        apiSuccess = await inventoryApi.updateSolicitud(id, payload);
+      } catch (errPatch) {
+        console.warn(`Error al rechazar solicitud ${id}:`, errPatch.message);
+      }
+    }
+
+    try {
+      const local = localStorage.getItem('siga_solicitudes_inventario');
+      if (local) {
+        const list = JSON.parse(local);
+        const idx = list.findIndex((s) => String(s.id) === String(id));
+        if (idx !== -1) {
+          list[idx] = { ...list[idx], ...payload, updated_at: new Date().toISOString() };
+          localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
+          return list[idx];
+        }
+      }
+    } catch (e) {
+      console.warn('Error al sincronizar cache local de solicitud rechazada:', e);
+    }
+
+    return apiSuccess || { id, ...payload };
   },
 
   // 5.1 Sedes y Municipios

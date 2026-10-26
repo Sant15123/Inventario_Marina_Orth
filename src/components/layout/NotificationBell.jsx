@@ -67,49 +67,64 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
 
   // Suscripción a eventos Realtime de Supabase
   useEffect(() => {
+    // 1. Conteo y carga inicial
     cargarSolicitudes();
 
-    let channel = null;
+    // 2. Suscripción en vivo al canal
+    let canal = null;
     try {
-      channel = supabase
-        .channel('solicitudes_realtime')
+      canal = supabase
+        .channel('notificaciones-campana')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'solicitudes_inventario' },
+          {
+            event: '*',
+            schema: 'public',
+            table: 'solicitudes_inventario',
+          },
           (payload) => {
-            const { eventType, new: newRecord, old: oldRecord } = payload;
             triggerBadgeAnimation();
 
-            setSolicitudes((prev) => {
-              if (eventType === 'INSERT') {
-                if (String(newRecord.estado || '').toUpperCase() === 'PENDIENTE') {
-                  const filtered = prev.filter((item) => item.id !== newRecord.id);
-                  return [newRecord, ...filtered];
-                }
-                return prev;
+            // Si entra una nueva solicitud pendiente
+            if (payload.eventType === 'INSERT') {
+              if (payload.new && String(payload.new.estado).toUpperCase() === 'PENDIENTE') {
+                setSolicitudes((prev) => {
+                  const filtered = prev.filter((s) => s.id !== payload.new.id);
+                  return [payload.new, ...filtered];
+                });
               }
+            }
 
-              if (eventType === 'UPDATE') {
-                if (String(newRecord.estado || '').toUpperCase() === 'PENDIENTE') {
-                  const exists = prev.some((item) => item.id === newRecord.id);
+            // Si una solicitud es aprobada o rechazada o actualizada
+            if (payload.eventType === 'UPDATE') {
+              const oldEstado = String(payload.old?.estado || '').toUpperCase();
+              const newEstado = String(payload.new?.estado || '').toUpperCase();
+
+              if (oldEstado === 'PENDIENTE' && newEstado !== 'PENDIENTE') {
+                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+              } else if (newEstado === 'PENDIENTE') {
+                setSolicitudes((prev) => {
+                  const exists = prev.some((s) => s.id === payload.new.id);
                   return exists
-                    ? prev.map((item) => (item.id === newRecord.id ? newRecord : item))
-                    : [newRecord, ...prev];
-                } else {
-                  // Si cambió a APROBADA o RECHAZADA, se retira de la lista pendiente
-                  return prev.filter((item) => item.id !== newRecord.id);
-                }
+                    ? prev.map((s) => (s.id === payload.new.id ? payload.new : s))
+                    : [payload.new, ...prev];
+                });
+              } else {
+                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
               }
+            }
 
-              if (eventType === 'DELETE') {
-                return prev.filter((item) => item.id !== oldRecord.id);
+            // Si se elimina una solicitud
+            if (payload.eventType === 'DELETE') {
+              const idEliminado = payload.old?.id;
+              if (idEliminado) {
+                setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
               }
-
-              return prev;
-            });
+            }
           }
         )
         .subscribe((status) => {
+          console.log('Estado canal realtime:', status);
           if (status === 'SUBSCRIBED') {
             setRealtimeActive(true);
           } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -121,8 +136,8 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     }
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (canal) {
+        supabase.removeChannel(canal);
       }
     };
   }, []);
