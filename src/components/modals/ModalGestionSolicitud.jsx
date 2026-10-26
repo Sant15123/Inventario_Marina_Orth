@@ -124,8 +124,19 @@ export default function ModalGestionSolicitud({
         );
       }
 
+      const solResuelta = actualizada || { ...solicitud, ...patch };
+
       if (onSolicitudResolved) {
-        onSolicitudResolved(actualizada || { ...solicitud, ...patch });
+        onSolicitudResolved(solResuelta);
+      }
+
+      // Notificar localmente a la campanita para decrementar el badge en vivo
+      try {
+        window.dispatchEvent(
+          new CustomEvent('siga:solicitud_resuelta', { detail: solResuelta })
+        );
+      } catch (e) {
+        console.warn('Error emitiendo evento de solicitud resuelta:', e);
       }
 
       onClose();
@@ -295,8 +306,19 @@ export default function ModalGestionSolicitud({
         );
       }
 
+      const solResuelta = actualizada || { ...solicitud, ...patch };
+
       if (onSolicitudResolved) {
-        onSolicitudResolved(actualizada || { ...solicitud, ...patch });
+        onSolicitudResolved(solResuelta);
+      }
+
+      // Notificar localmente a la campanita para decrementar el badge en vivo
+      try {
+        window.dispatchEvent(
+          new CustomEvent('siga:solicitud_resuelta', { detail: solResuelta })
+        );
+      } catch (e) {
+        console.warn('Error emitiendo evento de solicitud resuelta:', e);
       }
 
       onClose();

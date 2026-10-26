@@ -11,6 +11,7 @@ import inventoryApi from '../../services/inventoryApi';
 export default function NotificationBell({ onNavigateToSolicitudes }) {
   const [isOpen, setIsOpen] = useState(false);
   const [solicitudes, setSolicitudes] = useState([]);
+  const [contador, setContador] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isPulsing, setIsPulsing] = useState(false);
   const [realtimeActive, setRealtimeActive] = useState(false);
@@ -23,7 +24,8 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     );
   }, [solicitudes]);
 
-  const unreadCount = pendientes.length;
+  // Sincronizar el badge con el conteo o el estado contador
+  const unreadCount = Math.max(contador, pendientes.length);
 
   // Activar animación suave en el badge
   const triggerBadgeAnimation = () => {
@@ -46,6 +48,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
 
       if (!error && Array.isArray(data)) {
         setSolicitudes(data);
+        setContador(data.length);
         return;
       }
 
@@ -57,6 +60,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
           (s) => String(s.estado || 'PENDIENTE').toUpperCase() === 'PENDIENTE'
         );
         setSolicitudes(pendientesFallback);
+        setContador(pendientesFallback.length);
       }
     } catch (err) {
       console.warn('Error al obtener solicitudes para notificaciones:', err);
@@ -70,61 +74,76 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     // 1. Conteo y carga inicial
     cargarSolicitudes();
 
-    // 2. Suscripción en vivo al canal
+    // 2. Suscripción en vivo al canal Realtime
     let canal = null;
     try {
       canal = supabase
-        .channel('notificaciones-campana')
+        .channel('solicitudes-inventario-realtime')
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
+            schema: 'public',
+            table: 'solicitudes_inventario',
+          },
+          (payload) => {
+            if (payload?.new && String(payload.new.estado).toUpperCase() === 'PENDIENTE') {
+              triggerBadgeAnimation();
+              setContador((prev) => prev + 1);
+              setSolicitudes((prev) => {
+                const filtered = prev.filter((s) => s.id !== payload.new.id);
+                return [payload.new, ...filtered];
+              });
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
             schema: 'public',
             table: 'solicitudes_inventario',
           },
           (payload) => {
             triggerBadgeAnimation();
+            const oldEstado = String(payload.old?.estado || '').toUpperCase();
+            const newEstado = String(payload.new?.estado || '').toUpperCase();
 
-            // Si entra una nueva solicitud pendiente
-            if (payload.eventType === 'INSERT') {
-              if (payload.new && String(payload.new.estado).toUpperCase() === 'PENDIENTE') {
-                setSolicitudes((prev) => {
-                  const filtered = prev.filter((s) => s.id !== payload.new.id);
-                  return [payload.new, ...filtered];
-                });
-              }
+            // Si pasa de PENDIENTE a APROBADA o RECHAZADA
+            if (oldEstado === 'PENDIENTE' && newEstado !== 'PENDIENTE') {
+              setContador((prev) => Math.max(0, prev - 1));
+              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+            } else if (newEstado === 'PENDIENTE') {
+              setSolicitudes((prev) => {
+                const exists = prev.some((s) => s.id === payload.new.id);
+                if (!exists) {
+                  setContador((c) => c + 1);
+                  return [payload.new, ...prev];
+                }
+                return prev.map((s) => (s.id === payload.new.id ? payload.new : s));
+              });
+            } else {
+              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
             }
-
-            // Si una solicitud es aprobada o rechazada o actualizada
-            if (payload.eventType === 'UPDATE') {
-              const oldEstado = String(payload.old?.estado || '').toUpperCase();
-              const newEstado = String(payload.new?.estado || '').toUpperCase();
-
-              if (oldEstado === 'PENDIENTE' && newEstado !== 'PENDIENTE') {
-                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
-              } else if (newEstado === 'PENDIENTE') {
-                setSolicitudes((prev) => {
-                  const exists = prev.some((s) => s.id === payload.new.id);
-                  return exists
-                    ? prev.map((s) => (s.id === payload.new.id ? payload.new : s))
-                    : [payload.new, ...prev];
-                });
-              } else {
-                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
-              }
-            }
-
-            // Si se elimina una solicitud
-            if (payload.eventType === 'DELETE') {
-              const idEliminado = payload.old?.id;
-              if (idEliminado) {
-                setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
-              }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'solicitudes_inventario',
+          },
+          (payload) => {
+            const idEliminado = payload.old?.id;
+            if (idEliminado) {
+              setContador((prev) => Math.max(0, prev - 1));
+              setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
             }
           }
         )
         .subscribe((status) => {
-          console.log('Estado canal realtime:', status);
+          console.log('Suscripción Realtime activa:', status);
           if (status === 'SUBSCRIBED') {
             setRealtimeActive(true);
           } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -135,10 +154,36 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
       console.warn('Error configurando canal Realtime Supabase:', subErr);
     }
 
+    // 3. Listener local para sincronización reactiva inmediata entre pestañas o módulos
+    const handleLocalSolicitudCreated = (event) => {
+      const nuevaSol = event?.detail;
+      if (nuevaSol && String(nuevaSol.estado || 'PENDIENTE').toUpperCase() === 'PENDIENTE') {
+        triggerBadgeAnimation();
+        setContador((prev) => prev + 1);
+        setSolicitudes((prev) => {
+          const filtered = prev.filter((s) => s.id !== nuevaSol.id);
+          return [nuevaSol, ...filtered];
+        });
+      }
+    };
+
+    const handleLocalSolicitudResolved = (event) => {
+      const resuelta = event?.detail;
+      if (resuelta?.id) {
+        setContador((prev) => Math.max(0, prev - 1));
+        setSolicitudes((prev) => prev.filter((s) => s.id !== resuelta.id));
+      }
+    };
+
+    window.addEventListener('siga:solicitud_creada', handleLocalSolicitudCreated);
+    window.addEventListener('siga:solicitud_resuelta', handleLocalSolicitudResolved);
+
     return () => {
       if (canal) {
         supabase.removeChannel(canal);
       }
+      window.removeEventListener('siga:solicitud_creada', handleLocalSolicitudCreated);
+      window.removeEventListener('siga:solicitud_resuelta', handleLocalSolicitudResolved);
     };
   }, []);
 

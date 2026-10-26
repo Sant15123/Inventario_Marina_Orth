@@ -177,8 +177,19 @@ export default function ModalSolicitudMaterial({
           );
         }
 
+        const solicitudCreada = res.data || payload;
+
         if (onSolicitudCreated) {
-          onSolicitudCreated(res.data || payload);
+          onSolicitudCreated(solicitudCreada);
+        }
+
+        // Emitir evento reactivo local para actualizar de inmediato el badge de la campanita
+        try {
+          window.dispatchEvent(
+            new CustomEvent('siga:solicitud_creada', { detail: solicitudCreada })
+          );
+        } catch (e) {
+          console.warn('Error emitiendo evento de solicitud creada:', e);
         }
 
         // Cerrar modal únicamente tras respuesta exitosa
