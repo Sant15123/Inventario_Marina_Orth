@@ -1,182 +1,197 @@
-# SIGA - Módulo Frontend (Fundación Marina Orth)
+# SIGA-FMO Client (Single Page Application)
 
-Sistema de Información y Gestión de Activos (**SIGA**) diseñado para la **Fundación Marina Orth**. Esta aplicación web gestiona la trazabilidad completa del ciclo de vida de los equipos tecnológicos (laptops, tabletas, kits de robótica, proyectores) y consumibles/materiales utilizados en proyectos formativos y talleres STEAM en sedes educativas.
-
----
-
-## 📋 Descripción General
-
-El sistema centraliza las operaciones de inventario, préstamos con custodia institucional, salidas multi-insumo por canasta y generación de remisiones físicas oficiales con código QR.
-
-- **Propósito**: Control de existencias en tiempo real, trazabilidad de responsables, prevención de pérdidas de material didáctico/tecnológico y estandarización de actas de entrega y devolución.
-- **Identidad Visual Institucional**:
-  - **Verde Lima Corporativo**: `#84CC16` / `hsla(84, 81%, 44%, 1.00)` (acciones principales, badges activos, indicadores de éxito y acentos visuales).
-  - **Azul Oscuro / Marino Institucional**: `#0B132B` y variantes `#0F172A` / `#1E293B` (superficies estructuradas, headers y contrastes).
-  - **Tema Claro (Light Mode)**: Configurado como el tema predeterminado del sistema con persistencia opcional en almacenamiento local.
+> **Sistema de Información y Gestión de Activos (SIGA)**  
+> **Fundación Marina Orth (FMO)** — Plataforma web responsive para el control y radicación de solicitudes pedagógicas, gestión de inventario tecnológico y mobiliario en sedes formativas y laboratorios STEAM.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🌟 1. Visión General del Sistema
 
-- **React 18**: Biblioteca base para componentes declarativos y gestión de estado con hooks.
-- **Vite 6 / 8**: Entorno de desarrollo ultrarrápido y empaquetador para producción.
-- **Tailwind CSS & CSS Modules**: Diseño modular, clases de utilidad y compatibilidad con variables CSS para el sistema de temas.
-- **Lucide React**: Iconografía vectorial uniforme y optimizada.
-- **ExcelJS / xlsx**: Generación de reportes de inventario y libros maestros oficiales con estilos corporativos.
-- **QRCode.react / HTML5 QR Scanner**: Generación e interpretación de códigos QR para placas físicas.
+**SIGA-FMO Client** es una aplicación de página única (*Single Page Application*) moderna, rápida y altamente intuitiva diseñada para apoyar la operación pedagógica y logística de la **Fundación Marina Orth**.
+
+El sistema centraliza:
+- **Gestión Integral de Activos**: Registro y trazabilidad de ciclo de vida de equipos de cómputo, tablets, proyectores, kits de robótica e insumos didácticos.
+- **Control Especializado de Mobiliario y Enseres**: Registro modular e independiente de mesas, sillas, archivadores y dotación física por sede, desvinculado de la ficha técnica de hardware.
+- **Radicación y Aprobación de Solicitudes Pedagógicas**: Flujo integral para docentes y custodios con asignación de placas físicas y trazabilidad vinculada a Proyectos STEAM.
+- **Sincronización Reactiva en Tiempo Real**: Notificaciones instantáneas para administradores y supervisores ante nuevas solicitudes o cambios de estado sin necesidad de refrescar la página.
+- **Identidad Visual Corporativa**: Paleta institucional basada en Verde Lima FMO (`#84CC16`) y superficies oscuras de alto contraste (`#0F172A` / `#1E293B`), con soporte armónico para Modo Oscuro y Modo Claro.
 
 ---
 
-## 🔄 Diagrama de Flujo del Frontend
+## 🛠️ 2. Stack Tecnológico y Librerías
 
-El siguiente diagrama detalla la interacción del usuario y la navegación a través de los distintos módulos:
+| Categoría | Tecnologías / Librerías | Propósito |
+| :--- | :--- | :--- |
+| **Framework & Core** | **React 18 / 19**, **Vite** | Arquitectura reactiva declarativa basada en componentes y empaquetador ultrarrápido con Rolldown/ESBuild. |
+| **Enrutamiento** | **React Router DOM v7** | Navegación SPA por roles (Administrador, Supervisor, Usuario/Docente) y rutas públicas para lectura QR. |
+| **Estilos & Diseño** | **Tailwind CSS**, Vanilla CSS Custom Properties | Sistema de diseño coherente, utilidades responsivas y variables CSS institucionales (`--surface`, `--bg`, `--line`). |
+| **Iconografía** | **Lucide React** | Conjunto uniforme de iconos vectoriales optimizados para interfaces modernas. |
+| **Conexión & Estado** | **Fetch API / Axios**, **@supabase/supabase-js** | Consumo de la API REST del backend en Render y cliente WebSocket para eventos en tiempo real. |
+| **Notificaciones & Feedback** | **ToastContext** personalizado, SweetAlert2 / Toast | Sistema de alertas no bloqueantes con animaciones fluidas, chips identificadores y diálogos de confirmación de baja. |
+| **Reportes & Exportación** | **ExcelJS**, **File-Saver** | Generación descargable del Libro Maestro de inventario con formato y estilos corporativos. |
+| **Identificación & QR** | **QRCode.react** | Renderizado e impresión de códigos QR para placas físicas institucionales. |
+| **Hosting & CI/CD** | **Vercel** | Despliegue continuo automatizado enlazado a la rama `main` con certificados SSL y CDN global. |
 
-```mermaid
-flowchart TD
-    A[Inicio / Login / Acceso] --> B[Panel de Resumen]
-    B -->|KPIs, Alertas de Stock, Vencimiento Garantías| C{Navegación Principal}
+---
 
-    %% MODULO INVENTARIO
-    C -->|Módulo Inventario| D[InventarioView]
-    D --> D1[Equipos Tecnológicos]
-    D1 --> D1a[Tabla con código P-series / Placas]
-    D1 --> D1b[Asistente de 3 pasos: Nuevo / Editar Equipo]
-    D --> D2[Consumibles de Robótica]
-    D2 --> D2a[Catálogo de 142 referencias Rob0001 - Rob0142]
-    D2 --> D2b[Chips de filtrado por categoría y stock crítico]
+## ⚡ 3. Módulos y Flujos Implementados Recientemente
 
-    %% MODULO PRESTAMOS Y SALIDAS
-    C -->|Módulo Préstamos y Salidas| E[PrestamosView]
-    E --> E1[Préstamos Retornables]
-    E1 --> E1a[Registro con custodio, fecha pactada y observaciones]
-    E --> E2[Salidas Multi-Insumo]
-    E2 --> E2a[Selección en Canasta: Múltiples consumibles y cantidades]
-    E2 --> E2b[Generación de Remisión y Acta de Entrega con Firmas]
-    E --> E3[Devolución / Retorno de Préstamo]
+### 🔔 Campanita Reactiva en Tiempo Real (`NotificationBell`)
+- **Suscripción WebSocket Supabase Realtime**: Escucha eventos directos sobre la tabla PostgreSQL `public:solicitudes_inventario` a través del canal `solicitudes_bell_realtime`.
+- **Incremento y Decremento Automático**:
+  - Ante un evento `INSERT` con estado `PENDIENTE`: incrementa inmediatamente el contador del badge numérico en la barra de navegación sin requerir recarga.
+  - Ante un evento `UPDATE` (cuando la solicitud pasa a `APROBADA` o `RECHAZADA`): decrementa el badge reactivamente en vivo.
+- **Filtrado por Roles**: El componente oculta automáticamente la campanita si el usuario autenticado tiene rol de `usuario` o `supervisor`, mostrándose exclusivamente para el personal directivo y administradores de inventario.
 
-    %% CONSULTA Y STICKERS QR
-    D1a -->|Clic interactivo en Badge de Placa| F[ModalDetalleActivo: Ficha Técnica]
-    E1a -->|Clic en Badge de Placa| F
-    F -->|Editar este equipo| G[ModalEditarActivo: Asistente 3 Pasos]
-    F -->|Botón Código QR| H[ModalQR: Descarga e Impresión de Sticker]
-    
-    %% ENRUTAMIENTO DIRECTO QR
-    QRScan[Escaneo de Sticker Físico] -->|Ruta pública /activo/:id| I[DetalleActivoPublico: Ficha Técnica Móvil]
+### 📋 Bandeja de Aprobación y Gestión de Solicitudes (`ModalGestionSolicitud`)
+- **Validación Segura de Fechas**: Normalizador de fechas para evitar errores de renderizado (`Invalid Date`) en entornos de visualización locales e internacionales.
+- **Asignación de Placas Físicas**: Permite seleccionar y vincular placas reales del catálogo (`ACT-FMO-XXX`) o seriales de consumibles al despachar el material.
+- **Vinculación a Proyectos STEAM**: Asociación opcional con proyectos pedagógicos registrados en la fundación (ej. *Robótica Educativa Medellín*, *Semilleros STEAM*).
+- **Acciones Directas**: Botones integrados **"Aprobar y Despachar"** (despacha a `POST /api/prestamos` y actualiza estado) y **"Rechazar Solicitud"** (con captura de motivo y notificación toast).
+
+### 🪑 Gestión Especializada de Mobiliario (`ModalRegistroMobiliario`)
+- **Desacople Completo de Ficha Técnica de Cómputo**: Formulario wizard adaptativo de 3 pasos enfocado en enseres físicos (sin procesador, RAM ni seriales informáticos).
+  1. *Paso 1: Identificación y Ubicación*: Nombre del enser, código/placa, categoría (Mesas, Sillas, Lockers, Estanterías, Tableros), sede y cantidad.
+  2. *Paso 2: Atributos Físicos*: Material principal (Madera/MDF, Metal/Acero, Polipropileno, Malla), color, dimensiones (`Largo x Ancho x Alto cm`) y estado de conservación.
+  3. *Paso 3: Adquisición y Observaciones*: Fecha de adquisición, origen/proveedor y notas adicionales (ruedas con freno, cerraduras, etc.).
+- **Consecutivo Institucional Propio**: Autocompletado del consecutivo `MOB-XXXX` consultando `GET /api/mobiliario/siguiente-placa`.
+- **Tarjeta "Resumen Previo a Guardar" con Alto Contraste**: Contenedor claro (`bg-slate-50 border-slate-200`) estructurado en cuadrícula (`grid grid-cols-2 sm:grid-cols-4`) con badge esmeralda para la placa y píldora de estado, garantizando legibilidad total.
+- **Acceso Rápido**: Botón dedicado `🪑 + Nuevo Mobiliario` en la barra superior junto al botón de equipos y en la pestaña de Mobiliario.
+
+### 👥 Módulo de Usuarios y Modales Optimizados (`ModalEditarUsuario`, `ModalNuevoUsuario`)
+- **Control de Scroll y Viewport**: Estructura `max-h-[90vh]` con cuerpo scrolleable (`overflow-y-auto`) y footer fijo que garantiza la visibilidad permanente de los botones de acción (*"Guardar Cambios"* y *"Cancelar"*).
+- **Armonización de Paletas en Modo Oscuro**: Eliminación de bloques desentonantes y textos de bajo contraste en formularios de solicitudes y gestión de usuarios.
+
+---
+
+## 🔐 4. Variables de Entorno (`.env` y Vercel)
+
+El proyecto utiliza **Vite**, por lo que **todas las variables de entorno expuestas al cliente deben iniciar obligatoriamente con el prefijo `VITE_`**.
+
+### Archivo `.env` Local
+
+Crea o edita tu archivo `.env` en la raíz del proyecto:
+
+```env
+# URL de la API Backend (Express en Render o localhost)
+VITE_API_URL=https://inventario-marina-back.onrender.com/api
+
+# Configuración de Supabase Realtime & DB
+VITE_SUPABASE_URL=https://maaggiefwtdtwhzmazau.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
+### ⚠️ Configuración Crítica en Vercel
+1. Ingresa a tu panel en **Vercel > Project Settings > Environment Variables**.
+2. Añade las tres variables anteriores para los entornos de **Production**, **Preview** y **Development**.
+3. **Importante**: La variable `VITE_SUPABASE_ANON_KEY` debe ser registrada como variable segura (*Config / Mark as Safe*).
+4. Debido a cómo Vite empaqueta las variables de entorno en tiempo de compilación (*build time*), **cualquier cambio o adición de variables de entorno en Vercel requiere disparar un nuevo despliegue (Redeploy)** para que surtan efecto en el cliente web.
+
 ---
 
-## 📁 Arquitectura de Carpetas
-
-La estructura interna de `src/` está organizada según separación de responsabilidades:
+## 📂 5. Estructura de Carpetas del Proyecto
 
 ```text
 src/
-├── assets/                  # Imágenes institucionales, logos y recursos estáticos
-├── components/              # Componentes visuales modulares y reutilizables
-│   ├── layout/              # Header, Sidebar, Footer y contenedores de vistas
-│   ├── modals/              # Ventanas emergentes de interacción clave
-│   │   ├── ModalDetalleActivo.jsx  # Ficha técnica unificada (lectura de equipo)
-│   │   ├── ModalEditarActivo.jsx   # Formulario wizard de 3 pasos unificado
-│   │   ├── ModalEditarEquipo.jsx   # Alias de compatibilidad hacia ModalEditarActivo
-│   │   └── ModalQR.jsx             # Visualización y descarga del código QR
-│   └── ui/                  # Botones, inputs, badges y tarjetas de datos
-├── context/                 # Contextos de React (ThemeContext, AuthContext, etc.)
-├── hooks/                   # Custom hooks para encapsular lógica de estado y llamadas
-├── pages/                   # Vistas principales de enrutamiento
-├── services/                # Conexión con APIs backend y exportadores
-│   ├── inventoryApi.js      # Servicios HTTP REST con Axios / Fetch hacia el backend
-│   ├── mockData.js          # Datos de prueba, listado de sedes y proyectos FMO
-│   └── excelExportService.js# Generación de reportes limpios con ExcelJS / xlsx
-├── styles/                  # Hojas de estilo globales, variables de color e index.css
-└── views/                   # Vistas de pantallas operativas
-    ├── ResumenView.jsx      # Dashboard principal con métricas y alertas
-    ├── InventarioView.jsx   # Gestión integral de equipos y consumibles
-    ├── PrestamosView.jsx    # Préstamos en campo, salidas por canasta y actas
-    ├── HistorialView.jsx    # Auditoría de movimientos históricos
-    └── DetalleActivoPublico.jsx # Pantalla pública para escaneo rápido de QR
+├── assets/                  # Recursos gráficos, logotipos de la Fundación Marina Orth e iconos
+├── components/              # Componentes de interfaz modulares y reutilizables
+│   ├── auth/                # Formularios y guards de autenticación
+│   ├── common/              # Botones estándar, inputs, spinners y badges institucionales
+│   ├── layout/              # Estructura visual de la aplicación
+│   │   ├── Header.jsx       # Barra superior con selector de perfil y estado de conexión
+│   │   ├── NotificationBell.jsx # Campanita reactiva con suscripción Realtime a Supabase
+│   │   └── Sidebar.jsx      # Menú lateral responsive con navegación por roles
+│   └── modals/              # Ventanas modulares de captura y edición
+│       ├── ModalGestionSolicitud.jsx    # Aprobación y rechazo de requerimientos
+│       ├── ModalSolicitudMaterial.jsx   # Radicación de préstamos y consumibles
+│       ├── ModalRegistroMobiliario.jsx  # Asistente de 3 pasos exclusivo para muebles/enseres
+│       ├── ModalDetalleActivo.jsx       # Ficha técnica institucional de equipos
+│       ├── ModalEditarActivo.jsx        # Edición integral de activos
+│       ├── ModalEditarUsuario.jsx       # Gestión de credenciales y roles con scroll optimizado
+│       ├── ModalNuevoUsuario.jsx        # Creación administrativa de usuarios
+│       ├── ModalConfirmarRetorno.jsx    # Recepción y retorno a bodega
+│       └── ModalQR.jsx                  # Generador e impresión de stickers con código QR
+├── context/                 # Proveedores de estado global (Context API)
+│   ├── AuthContext.jsx      # Sesión de usuario, almacenamiento de token JWT y permisos
+│   └── ToastContext.jsx     # Sistema institucional de alertas, confirmaciones y modales de baja
+├── data/                    # Catálogos estáticos y semillas (catalogoPapeleriaFMO.json)
+├── hooks/                   # Custom Hooks para encapsular lógica reactiva
+├── pages/                   # Enrutamiento y vistas públicas (escaneo QR público)
+├── services/                # Conexiones con servicios externos
+│   ├── inventoryApi.js      # Cliente HTTP unificado para equipos, insumos y mobiliario
+│   ├── supabase.js          # Inicialización del cliente Supabase Realtime
+│   ├── excelExportService.js# Generador de reportes en formato Excel institucional
+│   └── mockData.js          # Listado inicial de sedes formativas y proyectos STEAM
+├── styles/                  # Hojas de estilo y configuraciones de diseño
+│   └── index.css            # Tokens CSS, variables de modo oscuro/claro y utilidades Tailwind
+└── views/                   # Pantallas y vistas principales de la aplicación
+    ├── ResumenView.jsx          # Panel de control (Dashboard) con métricas y alertas
+    ├── InventarioView.jsx       # Catálogo maestro (Equipos, Robótica, Papelería y Mobiliario)
+    ├── PrestamosView.jsx        # Préstamos retornables, salidas por canasta y actas
+    ├── MiPanelUsuarioView.jsx   # Vista simplificada para docentes y custodios de sede
+    ├── UsuariosView.jsx         # Administración y auditoría de cuentas de usuario
+    ├── HistorialView.jsx        # Trazabilidad completa de auditoría de movimientos
+    └── LoginView.jsx            # Autenticación segura de usuarios
 ```
 
 ---
 
-## 🚀 Instrucciones de Instalación y Uso
+## 🚀 6. Instalación y Ejecución Local
 
-### 1. Requisitos Previos
+### Prerrequisitos
+- **Node.js**: Versión `18.0.0` o superior (se recomienda Node 20 LTS).
+- **npm**: Versión `9.x` o superior.
 
-- **Node.js**: Versión 18.0 o superior instalada.
-- **Gestor de Paquetes**: `npm` v9+ (o `pnpm` / `yarn`).
-- **Backend Activo**: Servicio Express / API REST corriendo en local o remoto.
+### Pasos de Instalación
 
-### 2. Configuración del Entorno
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/Sant15123/Inventario_Marina_Orth.git
+   cd Inventario_Marina_Orth
+   ```
 
-Copia el archivo de ejemplo o crea un archivo `.env` en la raíz del frontend (`client/` o directorio raíz):
+2. **Instalar dependencias**:
+   ```bash
+   npm install
+   ```
 
-```env
-# Variables de Supabase (si aplica para autenticación o base de datos directa)
-VITE_SUPABASE_URL=tu_url_supabase
-VITE_SUPABASE_ANON_KEY=tu_anon_key
+3. **Configurar el entorno**:
+   ```bash
+   cp .env.example .env
+   # Asegúrate de verificar las variables VITE_API_URL y VITE_SUPABASE_*
+   ```
 
-# URL base de la API REST del backend
-VITE_API_BASE_URL=http://localhost:3000
-```
+4. **Iniciar el servidor de desarrollo**:
+   ```bash
+   npm run dev
+   ```
+   Para acceder desde dispositivos móviles, tabletas o lectores QR en la misma red Wi-Fi:
+   ```bash
+   npm run dev -- --host
+   ```
+   > La aplicación se ejecutará por defecto en `http://localhost:5173`.
 
-### 3. Comandos de Consola
+5. **Construir para producción**:
+   ```bash
+   npm run build
+   ```
 
-Instala dependencias:
-```bash
-npm install
-```
-
-Ejecuta el servidor de desarrollo local:
-```bash
-npm run dev
-```
-> La aplicación estará disponible en `http://localhost:5173`. Para permitir acceso desde la red local (por ejemplo desde tabletas o celulares para escanear QR), usa:
-> ```bash
-> npm run dev -- --host
-> ```
-
-Construir la versión de producción optimizada:
-```bash
-npm run build
-```
-
-Previsualizar la compilación de producción:
-```bash
-npm run preview
-```
+6. **Previsualizar compilación local**:
+   ```bash
+   npm run preview
+   ```
 
 ---
 
-## 📖 Guía Rápida para el Usuario Final
+## 🤝 7. Convenciones y Despliegue en Producción
 
-1. **Registrar un Equipo Tecnológico**:
-   - En la barra lateral, haz clic en **Inventario**.
-   - Presiona el botón verde **"+ Nuevo Equipo"**.
-   - Completa el asistente de 3 pasos:
-     1. *Identificación y Clasificación*: Código de placa, nombre, categoría, condición física y área.
-     2. *Ficha Técnica*: Serial, marca, modelo, procesador, memoria RAM y ubicación física.
-     3. *Adquisición y Credenciales*: Proveedor, valores de compra, fecha y credenciales de acceso.
-   - Guarda los cambios. El equipo aparecerá disponible para préstamo.
-
-2. **Consultar Ficha Técnica y Descargar Código QR**:
-   - En cualquier tabla donde aparezca una placa (`ACT-FMO-001`, `P33`, etc.), haz clic directamente sobre el badge.
-   - Se abrirá la ficha técnica completa con las especificaciones del equipo.
-   - Haz clic en **"Código QR"** para generar la etiqueta lista para imprimir y adherir al equipo físico.
-
-3. **Despachar Salidas Multi-Insumo (Canasta)**:
-   - Dirígete al módulo **Préstamos y Salidas**.
-   - Selecciona la pestaña **"Nueva Salida / Entrega"**.
-   - Agrega a la canasta los consumibles requeridos indicando cantidades para cada referencia.
-   - Asigna el responsable/custodio, la sede destino y el proyecto STEAM asociado.
-   - Confirma el despacho para generar el acta de entrega.
-
-4. **Impresión de Acta y Remisión Física**:
-   - En el historial de entregas o al finalizar la remisión, haz clic en **"Imprimir Acta"**.
-   - Se abrirá la vista de impresión con el membrete institucional de la Fundación Marina Orth, el desglose de insumos entregados y los espacios reglamentarios para firma de entrega y recibido.
+- **Estrategia de Ramas**: La rama `main` está enlazada directamente con Vercel. Cada `push` a `main` desencadena automáticamente una nueva compilación y despliegue a producción.
+- **Estándar de Commits**: Se utiliza la convención de *Conventional Commits* (`feat:`, `fix:`, `style:`, `docs:`, `refactor:`).
+- **Alineación con el Backend**: Las rutas del frontend consumen los endpoints estándar documentados en el backend (`/api/activos`, `/api/solicitudes`, `/api/mobiliario`, `/api/prestamos`, `/api/usuarios`).
 
 ---
 
-## 📄 Licencia y Créditos
+## 📄 8. Créditos y Licencia
 
-Desarrollado para la **Fundación Marina Orth** en apoyo a los programas de educación STEAM e innovación social en Colombia. Todos los derechos reservados.
+Desarrollado con dedicación para la **Fundación Marina Orth**, fortaleciendo la educación con tecnología, robótica e innovación STEAM en Colombia.  
+*Todos los derechos reservados.*
