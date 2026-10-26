@@ -314,9 +314,9 @@ export default function MiPanelUsuarioView({
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             Mis Solicitudes y Asignaciones
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Bienvenido(a), <strong className="text-slate-800 dark:text-slate-200 font-semibold">{usuario?.nombre || 'Docente'}</strong> 
-            <span className="text-xs text-slate-400 ml-1.5">(Doc. {usuario?.documento || '—'})</span> · {usuario?.cargo || 'Formador STEAM'}
+          <p className="text-sm text-slate-500 dark:text-slate-300 mt-1">
+            Bienvenido(a), <strong className="text-slate-800 dark:text-white font-bold">{usuario?.nombre || 'Docente'}</strong> 
+            <span className="text-xs text-slate-400 dark:text-slate-300 ml-1.5">(Doc. {usuario?.documento || '—'})</span> · <span className="dark:text-slate-200">{usuario?.cargo || 'Formador STEAM'}</span>
           </p>
         </div>
 
@@ -589,13 +589,13 @@ export default function MiPanelUsuarioView({
                     <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                       {rem.codigo_acta || rem.remision_id || rem.id || `REM-${idx + 1}`}
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      Fecha: <strong className="text-slate-700 dark:text-slate-300 font-semibold">{fmtDate(rem.date || rem.fecha_entrega)}</strong>
+                    <span className="text-xs text-slate-500 dark:text-slate-300 font-medium">
+                      Fecha: <strong className="text-slate-700 dark:text-slate-100 font-semibold">{fmtDate(rem.date || rem.fecha_entrega)}</strong>
                     </span>
                   </div>
 
                   <span
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 self-start sm:self-auto"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-lime-950/60 dark:text-lime-300 dark:border-lime-700/80 self-start sm:self-auto"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -604,6 +604,7 @@ export default function MiPanelUsuarioView({
                       maxWidth: 'max-content',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
+                      color: 'var(--lime-color, #bef264)',
                     }}
                   >
                     <CheckCircle2 size={14} className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
@@ -613,11 +614,11 @@ export default function MiPanelUsuarioView({
 
                 {/* Información de destino y proyecto */}
                 <div>
-                  <p className="text-sm text-slate-800 dark:text-slate-200 font-medium">
-                    Destino: <strong className="font-semibold">{rem.sede || 'Medellín'}</strong> · Proyecto: <strong className="font-semibold">{rem.proyecto || 'Talleres STEAM'}</strong>
+                  <p className="text-sm text-slate-800 dark:text-slate-100 font-medium">
+                    Destino: <strong className="font-semibold text-slate-900 dark:text-white">{rem.sede || 'Medellín'}</strong> · Proyecto: <strong className="font-semibold text-slate-900 dark:text-white">{rem.proyecto || 'Talleres STEAM'}</strong>
                   </p>
                   {rem.motivo && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-0.5">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 italic mt-0.5">
                       Motivo: {rem.motivo}
                     </p>
                   )}
@@ -625,7 +626,7 @@ export default function MiPanelUsuarioView({
 
                 {/* Sección de Materiales Entregados */}
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <p className="text-[11px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 mb-2">
+                  <p className="text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-300 mb-2">
                     MATERIALES ENTREGADOS ({Array.isArray(rem.items) ? rem.items.length : 1} ÍTEMS):
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -633,18 +634,18 @@ export default function MiPanelUsuarioView({
                       rem.items.map((it, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-100"
                         >
-                          <span>📦 {it.nombre || it.material || 'Consumible'}</span>
-                          <span className="px-1.5 py-0.5 rounded bg-lime-100 text-lime-800 dark:bg-lime-950/60 dark:text-lime-400 font-bold text-[10px]">
+                          <span style={{ color: 'var(--text, #f8fafc)' }}>📦 {it.nombre || it.material || 'Consumible'}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-lime-100 text-lime-900 dark:bg-lime-950/80 dark:text-lime-300 font-bold text-[10px]" style={{ color: 'var(--lime-color, #bef264)' }}>
                             x{it.cantidad || it.cantidadEntrega || 1}
                           </span>
                         </span>
                       ))
                     ) : (
-                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200">
-                        <span>📦 {rem.itemName || 'Material de Robótica'}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-lime-100 text-lime-800 dark:bg-lime-950/60 dark:text-lime-400 font-bold text-[10px]">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-100">
+                        <span style={{ color: 'var(--text, #f8fafc)' }}>📦 {rem.itemName || 'Material de Robótica'}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-lime-100 text-lime-900 dark:bg-lime-950/80 dark:text-lime-300 font-bold text-[10px]" style={{ color: 'var(--lime-color, #bef264)' }}>
                           x{rem.qty || 1}
                         </span>
                       </span>
@@ -731,12 +732,12 @@ export default function MiPanelUsuarioView({
                           </td>
                           <td style={{ padding: '10px 12px' }}>
                             {esPrestamo ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700/80" style={{ color: 'var(--sky-color, #38bdf8)' }}>
                                 <Laptop size={13} />
                                 <span>Préstamo</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-lime-950/60 dark:text-lime-300 dark:border-lime-700/80" style={{ color: 'var(--lime-color, #bef264)' }}>
                                 <Box size={13} />
                                 <span>Consumibles</span>
                               </span>
@@ -749,19 +750,19 @@ export default function MiPanelUsuarioView({
                                   {sol.items.map((it, idx) => (
                                     <span
                                       key={idx}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11.5px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-sm"
                                     >
-                                      <span>{it.nombre_item || it.nombre}</span>
-                                      <strong className="text-[#84CC16]">x{it.cantidad}</strong>
+                                      <span style={{ color: 'var(--text, #f8fafc)' }}>{it.nombre_item || it.nombre}</span>
+                                      <strong style={{ color: '#84CC16', fontWeight: 800 }}>x{it.cantidad}</strong>
                                     </span>
                                   ))}
                                 </div>
                               ) : (
-                                <span style={{ color: 'var(--text-dim)', fontSize: '12px' }}>Sin ítems detallados</span>
+                                <span style={{ color: 'var(--text-dim, #94a3b8)', fontSize: '12px' }}>Sin ítems detallados</span>
                               )}
                               {sol.fecha_devolucion_estimada && (
-                                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                                  Retorno estimado: <strong className="mono-num">{fmtDate(sol.fecha_devolucion_estimada)}</strong>
+                                <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
+                                  Retorno estimado: <strong className="mono-num" style={{ color: 'var(--text, #f8fafc)' }}>{fmtDate(sol.fecha_devolucion_estimada)}</strong>
                                 </span>
                               )}
                             </div>
@@ -771,8 +772,8 @@ export default function MiPanelUsuarioView({
                               {sol.sede || 'Medellín'}
                             </span>
                           </td>
-                          <td className="wrap" title={sol.motivo} style={{ padding: '10px 12px', fontSize: '12.5px' }}>
-                            <div style={{ maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <td className="wrap" title={sol.motivo} style={{ padding: '10px 12px', fontSize: '12.5px', color: 'var(--text, #f8fafc)' }}>
+                            <div style={{ maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text, #f8fafc)' }}>
                               {sol.motivo || '—'}
                             </div>
                             {sol.proyecto_steam_id && (
@@ -782,17 +783,19 @@ export default function MiPanelUsuarioView({
                             )}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            {estadoUpper === 'APROBADO' ? (
+                            {estadoUpper === 'APROBADO' || estadoUpper === 'APROBADA' ? (
                               <span
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-700"
+                                style={{ color: 'var(--lime-color, #bef264)' }}
                                 title="Aprobado por administración"
                               >
                                 <CheckCircle2 size={13} />
                                 <span>Aprobado</span>
                               </span>
-                            ) : estadoUpper === 'RECHAZADO' ? (
+                            ) : estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? (
                               <span
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-700"
+                                style={{ color: '#fda4af' }}
                                 title={sol.observaciones_admin || 'Solicitud rechazada por administración'}
                               >
                                 <XCircle size={13} />
@@ -801,6 +804,7 @@ export default function MiPanelUsuarioView({
                             ) : (
                               <span
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-700"
+                                style={{ color: '#fde047' }}
                                 title="En revisión administrativa"
                               >
                                 <Hourglass size={13} />

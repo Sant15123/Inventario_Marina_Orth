@@ -4476,12 +4476,22 @@ html.dark .dark\:bg-slate-800 {
 
 /* Institutional Green (#84CC16) Colors & Overrides */
 .text-emerald-600 {
-  color: #4d7c0f !important;
+  color: #84CC16 !important;
 }
 .text-emerald-700 {
-  color: #365314 !important;
+  color: #a3e635 !important;
 }
 .text-emerald-800 {
+  color: #bef264 !important;
+}
+
+[data-theme="light"] .text-emerald-600 {
+  color: #4d7c0f !important;
+}
+[data-theme="light"] .text-emerald-700 {
+  color: #365314 !important;
+}
+[data-theme="light"] .text-emerald-800 {
   color: #1a2e05 !important;
 }
 .bg-emerald-600 {
