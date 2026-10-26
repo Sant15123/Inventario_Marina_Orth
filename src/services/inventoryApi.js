@@ -48,7 +48,7 @@ async function request(path, options = {}) {
     const message = json?.message || json?.error || `Error HTTP ${res.status} al consultar ${path}`;
     const error = new Error(message);
     error.status = res.status;
-    error.response = json;
+    error.response = { data: json, status: res.status };
     throw error;
   }
 
@@ -273,35 +273,43 @@ export const inventoryApi = {
   },
 
   createSolicitud: async (data) => {
-    let apiSuccess = null;
-    try {
-      const json = await request('/solicitudes', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-      apiSuccess = json?.data !== undefined ? json.data : json;
-    } catch (err) {
-      console.warn('API /solicitudes no disponible, guardando en local:', err.message);
+    const url = `${API_BASE}/solicitudes`;
+    const token = getAuthToken();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    });
+
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMsg =
+        json?.message || json?.error || `Error del servidor al radicar la solicitud (HTTP ${res.status})`;
+      const error = new Error(errorMsg);
+      error.status = res.status;
+      error.response = { data: json, status: res.status };
+      throw error;
     }
 
-    // Asegurar persistencia local también
+    const createdData = json?.data !== undefined ? json.data : json;
+
     try {
-      const itemToSave = apiSuccess || {
-        ...data,
-        id: data.id || 'sol-' + Date.now(),
-        created_at: new Date().toISOString(),
-        fecha_radicado: new Date().toISOString().slice(0, 10),
-        estado: data.estado || 'PENDIENTE',
-      };
       const local = localStorage.getItem('siga_solicitudes_inventario');
       const list = local ? JSON.parse(local) : [];
-      list.unshift(itemToSave);
+      list.unshift(createdData);
       localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
-      return itemToSave;
     } catch (e) {
-      if (apiSuccess) return apiSuccess;
-      throw e;
+      console.warn('Error al sincronizar cache local de solicitudes:', e);
     }
+
+    return {
+      status: res.status,
+      data: createdData,
+    };
   },
 
   updateSolicitud: async (id, patch) => {

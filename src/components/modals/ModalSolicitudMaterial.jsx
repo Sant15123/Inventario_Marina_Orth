@@ -12,6 +12,7 @@ import {
   FileText,
   AlertCircle,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { today } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
@@ -149,6 +150,7 @@ export default function ModalSolicitudMaterial({
 
     try {
       setSubmitting(true);
+      setValidationError('');
 
       const payload = {
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
@@ -164,24 +166,39 @@ export default function ModalSolicitudMaterial({
         fecha_radicado: today(),
       };
 
-      const respuesta = await inventoryApi.createSolicitud(payload);
+      const res = await inventoryApi.createSolicitud(payload);
 
-      if (showSuccess) {
-        showSuccess(
-          'Solicitud enviada exitosamente',
-          'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
-        );
+      // Validación estricta del status HTTP
+      if (res && (res.status === 200 || res.status === 201)) {
+        if (showSuccess) {
+          showSuccess(
+            'Solicitud enviada exitosamente',
+            'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
+          );
+        }
+
+        if (onSolicitudCreated) {
+          onSolicitudCreated(res.data || payload);
+        }
+
+        // Cerrar modal únicamente tras respuesta exitosa
+        onClose();
+      } else {
+        throw new Error(res?.data?.message || 'No se pudo radicar la solicitud');
       }
+    } catch (error) {
+      console.error('Error al enviar solicitud:', error);
+      const mensaje =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Error al conectar con el servidor';
 
-      if (onSolicitudCreated) {
-        onSolicitudCreated(respuesta || payload);
+      setValidationError(`Error: ${mensaje}`);
+      if (showError) {
+        showError('Error al enviar solicitud', `Error: ${mensaje}`);
       }
-
-      onClose();
-    } catch (err) {
-      const msg = err.message || 'Error al enviar la solicitud';
-      setValidationError(msg);
-      if (showError) showError('Error al enviar solicitud', msg);
+      // No cerrar modal ni limpiar formulario si la petición falla (4xx o 5xx)
     } finally {
       setSubmitting(false);
     }
@@ -578,8 +595,17 @@ export default function ModalSolicitudMaterial({
                 if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#84CC16';
               }}
             >
-              <CheckCircle2 size={16} strokeWidth={2.5} />
-              <span>{submitting ? 'Enviando...' : 'Enviar Solicitud'}</span>
+              {submitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Enviando...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} strokeWidth={2.5} />
+                  <span>Enviar Solicitud</span>
+                </>
+              )}
             </button>
           </div>
         </form>
