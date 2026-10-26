@@ -158,19 +158,32 @@ export default function UsuariosView() {
   // Dar de baja / Eliminar usuario con confirmación institucional
   const handleEliminarUsuario = (u) => {
     if (u.id === currentUser?.id) {
-      showError('Acción no permitida', 'No puedes eliminar el usuario con el que has iniciado sesión.');
+      showError('Acción no permitida', 'No puedes dar de baja o eliminar el usuario con el que has iniciado sesión.');
       return;
     }
 
     showConfirmAction({
-      title: '¿Dar de baja usuario?',
-      message: `¿Seguro que deseas dar de baja o revocar el acceso a ${u.nombre} (${u.documento})? Esta acción actualizará los registros del sistema institucional.`,
+      title: 'Dar de baja usuario',
+      subtitle: 'Revocación de Acceso Institucional',
+      icon: 'user-x',
+      message: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <p style={{ margin: 0 }}>
+            ¿Estás seguro de que deseas dar de baja y revocar el acceso a{' '}
+            <strong style={{ color: 'var(--text, #ffffff)' }}>{u.nombre}</strong> (Documento:{' '}
+            <span style={{ fontFamily: 'monospace', color: 'var(--copper, #84CC16)' }}>{u.documento}</span>)?
+          </p>
+          <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>
+            El usuario perderá inmediatamente sus privilegios de acceso y sus registros históricos quedarán archivados en auditoría.
+          </p>
+        </div>
+      ),
       confirmText: 'Dar de Baja',
       cancelText: 'Cancelar',
       isDanger: true,
       onConfirm: () => {
         eliminarUsuario(u.id);
-        showEditSuccess(`Usuario ${u.nombre} dado de baja`);
+        showEditSuccess(`Usuario ${u.nombre} dado de baja exitosamente`);
       },
     });
   };

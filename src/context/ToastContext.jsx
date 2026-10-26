@@ -15,6 +15,9 @@ import {
   Pencil,
   ShieldCheck,
   LogOut,
+  UserX,
+  ShieldAlert,
+  Trash2,
 } from 'lucide-react';
 
 const ToastContext = createContext(null);
@@ -484,11 +487,11 @@ export function ToastProvider({ children }) {
       </div>
 
       {/* ============================================================== */}
-      {/* MODAL DE CONFIRMACIÓN INSTITUCIONAL                            */}
+      {/* MODAL INSTITUCIONAL DE CONFIRMACIÓN DE ACCIÓN / BAJA           */}
       {/* ============================================================== */}
       {confirmModal.isOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[999999] flex items-center justify-center p-4"
           style={{
             position: 'fixed',
             inset: 0,
@@ -496,70 +499,201 @@ export function ToastProvider({ children }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(2, 6, 23, 0.6)',
+            backgroundColor: 'rgba(2, 6, 23, 0.72)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
+            padding: '16px',
           }}
           onClick={confirmModal.onCancel}
         >
           <div
-            className="bg-white dark:bg-[#0B132B] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            className="rounded-2xl border flex flex-col max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             style={{
-              borderRadius: '16px',
+              borderRadius: '18px',
               maxWidth: '28rem',
               width: '100%',
+              backgroundColor: 'var(--surface, #0f172a)',
+              borderColor: 'var(--line-strong, #1e293b)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--line, rgba(255, 255, 255, 0.05))',
               overflow: 'hidden',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              position: 'relative',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Cabecera y Cuerpo (Header & Content) */}
-            <div className="pt-6 px-6">
-              {/* Icono superior destacado */}
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                  confirmModal.isDanger !== false
-                    ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
-                    : 'bg-lime-100 dark:bg-lime-950/40 text-lime-600 dark:text-lime-400'
-                }`}
-              >
-                {confirmModal.isDanger !== false ? (
-                  <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
-                ) : confirmModal.icon === 'return' ? (
-                  <ArrowDownToLine className="w-6 h-6 text-lime-600 dark:text-lime-400" />
-                ) : (
-                  <CheckCircle2 className="w-6 h-6 text-lime-600 dark:text-lime-400" />
-                )}
+            {/* Cabecera Institucional Fija con Icono Temático y Botón X */}
+            <div
+              className="flex items-center justify-between border-b"
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--line, #1e293b)',
+                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.85))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background:
+                      confirmModal.isDanger !== false
+                        ? 'rgba(244, 63, 94, 0.14)'
+                        : 'rgba(132, 204, 22, 0.15)',
+                    border:
+                      confirmModal.isDanger !== false
+                        ? '1px solid rgba(244, 63, 94, 0.35)'
+                        : '1px solid rgba(132, 204, 22, 0.35)',
+                    color:
+                      confirmModal.isDanger !== false ? 'var(--red, #f43f5e)' : '#84CC16',
+                    flexShrink: 0,
+                  }}
+                >
+                  {confirmModal.icon === 'user-x' ? (
+                    <UserX size={18} strokeWidth={2.2} />
+                  ) : confirmModal.icon === 'trash' ? (
+                    <Trash2 size={18} strokeWidth={2.2} />
+                  ) : confirmModal.icon === 'return' ? (
+                    <ArrowDownToLine size={18} strokeWidth={2.2} />
+                  ) : confirmModal.isDanger !== false ? (
+                    <ShieldAlert size={18} strokeWidth={2.2} />
+                  ) : (
+                    <CheckCircle2 size={18} strokeWidth={2.2} />
+                  )}
+                </div>
+                <div>
+                  <h4
+                    style={{
+                      margin: 0,
+                      fontSize: '15px',
+                      fontWeight: 800,
+                      color: 'var(--text, #f8fafc)',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    {confirmModal.title}
+                  </h4>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color:
+                        confirmModal.isDanger !== false
+                          ? 'var(--red, #f43f5e)'
+                          : 'var(--copper, #84CC16)',
+                      marginTop: '2px',
+                    }}
+                  >
+                    {confirmModal.subtitle ||
+                      (confirmModal.isDanger !== false
+                        ? 'Acción Crítica Institucional'
+                        : 'Confirmación Operativa')}
+                  </span>
+                </div>
               </div>
 
-              {/* Subtítulo o categoría */}
-              <span
-                className={`text-xs uppercase font-bold tracking-wider block text-center ${
-                  confirmModal.isDanger !== false
-                    ? 'text-rose-600 dark:text-rose-400'
-                    : 'text-lime-600 dark:text-lime-400'
-                }`}
+              {/* Botón de cierre X idéntico a los demás modales */}
+              <button
+                type="button"
+                onClick={confirmModal.onCancel}
+                className="close-btn"
+                aria-label="Cerrar modal"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted, #94a3b8)',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                }}
               >
-                {confirmModal.subtitle || (confirmModal.isDanger !== false ? 'Acción Crítica Institucional' : 'Confirmación Operativa')}
-              </span>
+                <X size={18} />
+              </button>
+            </div>
 
-              {/* Título principal */}
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mt-1">
-                {confirmModal.title}
-              </h3>
+            {/* Cuerpo del Mensaje Explicativo */}
+            <div
+              style={{
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
+              }}
+            >
+              {confirmModal.isDanger !== false && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(244, 63, 94, 0.08)',
+                    border: '1px solid rgba(244, 63, 94, 0.22)',
+                  }}
+                >
+                  <AlertTriangle
+                    size={16}
+                    style={{ color: 'var(--red, #f43f5e)', marginTop: '2px', flexShrink: 0 }}
+                  />
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      lineHeight: '1.45',
+                      color: 'var(--text-dim, #cbd5e1)',
+                    }}
+                  >
+                    Esta operación modificará los accesos y registros del sistema SIGA. Asegúrate de verificar antes de proceder.
+                  </span>
+                </div>
+              )}
 
-              {/* Texto explicativo */}
-              <div className="text-sm text-slate-600 dark:text-slate-300 text-center mt-2 px-4 leading-relaxed">
+              <div
+                style={{
+                  fontSize: '13.5px',
+                  lineHeight: '1.55',
+                  color: 'var(--text, #f1f5f9)',
+                }}
+              >
                 {confirmModal.message}
               </div>
             </div>
 
-            {/* Pie y Botones de Acción (Footer) */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-3 mt-5">
+            {/* Pie y Botones de Acción (Footer idéntico a modales SIGA) */}
+            <div
+              style={{
+                padding: '14px 20px',
+                borderTop: '1px solid var(--line, #1e293b)',
+                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.85))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '10px',
+              }}
+            >
               <button
                 type="button"
                 onClick={confirmModal.onCancel}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer"
+                className="btn ghost"
+                style={{
+                  padding: '7px 15px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  borderRadius: '10px',
+                }}
               >
                 {confirmModal.cancelText}
               </button>
@@ -567,16 +701,35 @@ export function ToastProvider({ children }) {
               <button
                 type="button"
                 onClick={confirmModal.onConfirm}
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center gap-2 cursor-pointer ${
-                  confirmModal.isDanger !== false
-                    ? 'text-white bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
-                    : 'text-slate-950 bg-[#84CC16] hover:bg-[#65A30D]'
-                }`}
+                className="btn"
+                style={{
+                  padding: '7px 16px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  borderRadius: '10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  ...(confirmModal.isDanger !== false
+                    ? {
+                        backgroundColor: 'var(--red, #e11d48)',
+                        borderColor: 'var(--red, #e11d48)',
+                        color: '#ffffff',
+                        boxShadow: '0 4px 12px rgba(225, 29, 72, 0.3)',
+                      }
+                    : {
+                        backgroundColor: '#84CC16',
+                        borderColor: '#84CC16',
+                        color: '#0f172a',
+                        boxShadow: '0 4px 12px rgba(132, 204, 22, 0.25)',
+                      }),
+                }}
               >
                 {confirmModal.isDanger !== false ? (
-                  <span>✕</span>
+                  <UserX size={15} strokeWidth={2.2} />
                 ) : (
-                  <Check className="w-4 h-4 text-slate-950 stroke-[3]" />
+                  <Check size={15} strokeWidth={2.5} />
                 )}
                 <span>{confirmModal.confirmText}</span>
               </button>
