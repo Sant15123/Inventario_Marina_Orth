@@ -789,31 +789,46 @@ export default function ModalRegistroMobiliario({
                 </div>
 
                 {/* Resumen Final de Registro */}
-                <div
-                  className="p-3.5 rounded-xl border flex flex-col gap-1.5"
-                  style={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-                    borderColor: 'var(--line, #334155)',
-                    fontSize: '12px',
-                  }}
-                >
-                  <span className="font-bold text-slate-200">Resumen previo a guardar:</span>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-400">
-                    <span>
-                      Placa: <strong className="text-lime-400 font-mono">{formData.placa}</strong>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2 mt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700 uppercase tracking-wide text-[11px]">
+                      Resumen previo a guardar:
                     </span>
-                    <span>
-                      Mueble: <strong className="text-slate-200">{formData.nombre || '—'}</strong>
+                    <span className="bg-emerald-100 text-emerald-800 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">
+                      {formData.placa || 'MOB-XXXX'}
                     </span>
-                    <span>
-                      Sede: <strong className="text-slate-200">{formData.sede}</strong>
-                    </span>
-                    <span>
-                      Cantidad: <strong className="text-slate-200">{formData.cantidad}</strong>
-                    </span>
-                    <span>
-                      Estado: <strong className="text-slate-200">{formData.estado}</strong>
-                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    <div className="flex flex-col">
+                      <span className="text-slate-400 text-[10px] font-semibold uppercase">Mueble</span>
+                      <strong className="text-slate-800 font-bold truncate" title={formData.nombre || '—'}>
+                        {formData.nombre || '—'}
+                      </strong>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-slate-400 text-[10px] font-semibold uppercase">Sede</span>
+                      <span className="text-slate-800 font-medium truncate">
+                        {formData.sede || '—'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-slate-400 text-[10px] font-semibold uppercase">Cantidad</span>
+                      <span className="text-slate-800 font-medium">
+                        {formData.cantidad || 1} und
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-slate-400 text-[10px] font-semibold uppercase mb-0.5">Estado</span>
+                      <div>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-lime-100 text-lime-800 border border-lime-300">
+                          {formData.estado || 'Bueno'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
