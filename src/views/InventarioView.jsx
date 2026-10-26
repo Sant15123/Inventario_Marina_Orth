@@ -4009,9 +4009,9 @@ export default function InventarioView({
                         style={{
                           padding: '5px 12px',
                           fontSize: '12px',
-                          background: 'rgba(171, 222, 22, 0.1)',
+                          background: 'rgba(132, 204, 22, 0.1)',
                           color: 'var(--copper)',
-                          border: '1px solid rgba(171, 222, 22, 0.4)',
+                          border: '1px solid rgba(132, 204, 22, 0.4)',
                           borderRadius: '6px',
                           cursor: 'pointer',
                           fontWeight: 600,
@@ -4607,21 +4607,21 @@ export default function InventarioView({
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         backgroundColor: isActive
-                          ? '#ABDE16'
+                          ? '#84CC16'
                           : isDone
-                            ? 'rgba(171, 222, 22, 0.12)'
+                            ? 'rgba(132, 204, 22, 0.12)'
                             : 'rgba(30, 41, 59, 0.4)',
                         color: isActive
                           ? '#0f172a'
                           : isDone
-                            ? '#ABDE16'
+                            ? '#84CC16'
                             : 'var(--text-dim, #94a3b8)',
                         border: isActive
-                          ? '1px solid #ABDE16'
+                          ? '1px solid #84CC16'
                           : isDone
-                            ? '1px solid rgba(171, 222, 22, 0.35)'
+                            ? '1px solid rgba(132, 204, 22, 0.35)'
                             : '1px solid var(--line, #334155)',
-                        boxShadow: isActive ? '0 2px 10px rgba(171, 222, 22, 0.3)' : 'none',
+                        boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
                       }}
                     >
                       <span
@@ -4647,7 +4647,7 @@ export default function InventarioView({
                           color: isActive
                             ? '#0f172a'
                             : isDone
-                              ? '#ABDE16'
+                              ? '#84CC16'
                               : 'var(--text-dim, #94a3b8)',
                         }}
                       >
@@ -4683,7 +4683,7 @@ export default function InventarioView({
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Datos Operativos
                       </h4>
@@ -4875,7 +4875,7 @@ export default function InventarioView({
                     <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Especificaciones y Condición
                       </h4>
@@ -4974,7 +4974,7 @@ export default function InventarioView({
                     <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Adquisición, Garantía y Notas
                       </h4>
@@ -5162,7 +5162,7 @@ export default function InventarioView({
                       style={{
                         padding: '8px 20px',
                         borderRadius: '8px',
-                        backgroundColor: '#ABDE16',
+                        backgroundColor: '#84CC16',
                         border: '1px solid #96c412',
                         color: '#0f172a',
                         fontSize: '13px',
@@ -5171,7 +5171,7 @@ export default function InventarioView({
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: '0 2px 12px rgba(171, 222, 22, 0.35)',
+                        boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
                         transition: 'all 0.15s ease',
                       }}
                     >
@@ -5352,21 +5352,21 @@ export default function InventarioView({
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         backgroundColor: isActive
-                          ? '#ABDE16'
+                          ? '#84CC16'
                           : isDone
-                            ? 'rgba(171, 222, 22, 0.12)'
+                            ? 'rgba(132, 204, 22, 0.12)'
                             : 'rgba(30, 41, 59, 0.4)',
                         color: isActive
                           ? '#0f172a'
                           : isDone
-                            ? '#ABDE16'
+                            ? '#84CC16'
                             : 'var(--text-dim, #94a3b8)',
                         border: isActive
-                          ? '1px solid #ABDE16'
+                          ? '1px solid #84CC16'
                           : isDone
-                            ? '1px solid rgba(171, 222, 22, 0.35)'
+                            ? '1px solid rgba(132, 204, 22, 0.35)'
                             : '1px solid var(--line, #334155)',
-                        boxShadow: isActive ? '0 2px 10px rgba(171, 222, 22, 0.3)' : 'none',
+                        boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
                       }}
                     >
                       <span
@@ -5392,7 +5392,7 @@ export default function InventarioView({
                           color: isActive
                             ? '#0f172a'
                             : isDone
-                              ? '#ABDE16'
+                              ? '#84CC16'
                               : 'var(--text-dim, #94a3b8)',
                         }}
                       >
@@ -5427,7 +5427,7 @@ export default function InventarioView({
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Datos Operativos
                       </h4>
@@ -5627,7 +5627,7 @@ export default function InventarioView({
                     <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Especificaciones y Condición
                       </h4>
@@ -5727,7 +5727,7 @@ export default function InventarioView({
                     <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Adquisición, Garantía y Notas
                       </h4>
@@ -5908,8 +5908,8 @@ export default function InventarioView({
                       style={{
                         padding: '8px 18px',
                         borderRadius: '8px',
-                        backgroundColor: '#ABDE16',
-                        border: '1px solid #ABDE16',
+                        backgroundColor: '#84CC16',
+                        border: '1px solid #84CC16',
                         color: '#020617',
                         fontSize: '13px',
                         fontWeight: 700,
@@ -5917,7 +5917,7 @@ export default function InventarioView({
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        boxShadow: '0 2px 10px rgba(171, 222, 22, 0.3)',
+                        boxShadow: '0 2px 10px rgba(132, 204, 22, 0.3)',
                         transition: 'all 0.15s ease',
                       }}
                     >
@@ -5934,7 +5934,7 @@ export default function InventarioView({
                       style={{
                         padding: '8px 20px',
                         borderRadius: '8px',
-                        backgroundColor: '#ABDE16',
+                        backgroundColor: '#84CC16',
                         border: '1px solid #96c412',
                         color: '#0f172a',
                         fontSize: '13px',
@@ -5943,7 +5943,7 @@ export default function InventarioView({
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: '0 2px 12px rgba(171, 222, 22, 0.35)',
+                        boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
                         transition: 'all 0.15s ease',
                       }}
                     >
@@ -6110,21 +6110,21 @@ export default function InventarioView({
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         backgroundColor: isActive
-                          ? '#ABDE16'
+                          ? '#84CC16'
                           : isDone
-                            ? 'rgba(171, 222, 22, 0.12)'
+                            ? 'rgba(132, 204, 22, 0.12)'
                             : 'rgba(30, 41, 59, 0.4)',
                         color: isActive
                           ? '#0f172a'
                           : isDone
-                            ? '#ABDE16'
+                            ? '#84CC16'
                             : 'var(--text-dim, #94a3b8)',
                         border: isActive
-                          ? '1px solid #ABDE16'
+                          ? '1px solid #84CC16'
                           : isDone
-                            ? '1px solid rgba(171, 222, 22, 0.35)'
+                            ? '1px solid rgba(132, 204, 22, 0.35)'
                             : '1px solid var(--line, #334155)',
-                        boxShadow: isActive ? '0 2px 10px rgba(171, 222, 22, 0.3)' : 'none',
+                        boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
                       }}
                     >
                       <span
@@ -6150,7 +6150,7 @@ export default function InventarioView({
                           color: isActive
                             ? '#0f172a'
                             : isDone
-                              ? '#ABDE16'
+                              ? '#84CC16'
                               : 'var(--text-dim, #94a3b8)',
                         }}
                       >
@@ -6187,7 +6187,7 @@ export default function InventarioView({
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Identificación y Clasificación
                       </h4>
@@ -6361,7 +6361,7 @@ export default function InventarioView({
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Especificaciones y Ficha Técnica
                       </h4>
@@ -6559,7 +6559,7 @@ export default function InventarioView({
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Adquisición, Garantía y Notas
                       </h4>
@@ -6812,8 +6812,8 @@ export default function InventarioView({
                       style={{
                         padding: '8px 18px',
                         borderRadius: '8px',
-                        backgroundColor: '#ABDE16',
-                        border: '1px solid #ABDE16',
+                        backgroundColor: '#84CC16',
+                        border: '1px solid #84CC16',
                         color: '#020617',
                         fontSize: '13px',
                         fontWeight: 700,
@@ -6821,7 +6821,7 @@ export default function InventarioView({
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        boxShadow: '0 2px 10px rgba(171, 222, 22, 0.3)',
+                        boxShadow: '0 2px 10px rgba(132, 204, 22, 0.3)',
                         transition: 'all 0.15s ease',
                       }}
                     >
@@ -6838,7 +6838,7 @@ export default function InventarioView({
                       style={{
                         padding: '8px 20px',
                         borderRadius: '8px',
-                        backgroundColor: '#ABDE16',
+                        backgroundColor: '#84CC16',
                         border: '1px solid #96c412',
                         color: '#0f172a',
                         fontSize: '13px',
@@ -6847,7 +6847,7 @@ export default function InventarioView({
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: '0 2px 12px rgba(171, 222, 22, 0.35)',
+                        boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
                         transition: 'all 0.15s ease',
                       }}
                     >

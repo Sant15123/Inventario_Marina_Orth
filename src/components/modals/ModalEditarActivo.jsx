@@ -289,21 +289,21 @@ export default function ModalEditarActivo({
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     backgroundColor: isActive
-                      ? '#ABDE16'
+                      ? '#84CC16'
                       : isDone
-                        ? 'rgba(171, 222, 22, 0.12)'
+                        ? 'rgba(132, 204, 22, 0.12)'
                         : 'rgba(30, 41, 59, 0.4)',
                     color: isActive
                       ? '#0f172a'
                       : isDone
-                        ? '#ABDE16'
+                        ? '#84CC16'
                         : 'var(--text-dim, #94a3b8)',
                     border: isActive
-                      ? '1px solid #ABDE16'
+                      ? '1px solid #84CC16'
                       : isDone
-                        ? '1px solid rgba(171, 222, 22, 0.35)'
+                        ? '1px solid rgba(132, 204, 22, 0.35)'
                         : '1px solid var(--line, #334155)',
-                    boxShadow: isActive ? '0 2px 10px rgba(171, 222, 22, 0.3)' : 'none',
+                    boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
                   }}
                 >
                   <span
@@ -330,7 +330,7 @@ export default function ModalEditarActivo({
                       color: isActive
                         ? '#0f172a'
                         : isDone
-                          ? '#ABDE16'
+                          ? '#84CC16'
                           : 'var(--text-dim, #94a3b8)',
                     }}
                   >
@@ -367,7 +367,7 @@ export default function ModalEditarActivo({
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                   >
                     Identificación y Clasificación
                   </h4>
@@ -547,7 +547,7 @@ export default function ModalEditarActivo({
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                   >
                     Especificaciones y Ficha Técnica
                   </h4>
@@ -745,7 +745,7 @@ export default function ModalEditarActivo({
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#ABDE16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                   >
                     Adquisición, Garantía y Credenciales
                   </h4>

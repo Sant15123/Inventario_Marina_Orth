@@ -219,7 +219,7 @@ export default function Header({
           >
             <span className="theme-toggle-icon" aria-hidden="true">
               {isDark ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ABDE16" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#84CC16" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="5"></circle>
                   <line x1="12" y1="1" x2="12" y2="3"></line>
                   <line x1="12" y1="21" x2="12" y2="23"></line>

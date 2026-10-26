@@ -1321,9 +1321,9 @@ export default function PrestamosView({
                                     fontFamily: 'var(--mono)',
                                     fontWeight: 700,
                                     fontSize: '11px',
-                                    backgroundColor: 'rgba(171, 222, 22, 0.12)',
-                                    color: '#ABDE16',
-                                    border: '1px solid rgba(171, 222, 22, 0.3)',
+                                    backgroundColor: 'rgba(132, 204, 22, 0.12)',
+                                    color: '#84CC16',
+                                    border: '1px solid rgba(132, 204, 22, 0.3)',
                                     padding: '1px 6px',
                                     borderRadius: '4px',
                                     whiteSpace: 'nowrap',
@@ -1366,7 +1366,7 @@ export default function PrestamosView({
                         </td>
                         <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <span className="item-motive" title={m.motive || m.motivo || m.proyecto}>
-                            {m.proyecto && <strong style={{ color: '#ABDE16', display: 'block', fontSize: '11px' }}>{m.proyecto}</strong>}
+                            {m.proyecto && <strong style={{ color: '#84CC16', display: 'block', fontSize: '11px' }}>{m.proyecto}</strong>}
                             {m.motive || m.motivo || 'Salida de bodega'}
                           </span>
                         </td>
@@ -1996,7 +1996,7 @@ export default function PrestamosView({
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
-                        color: '#ABDE16',
+                        color: '#84CC16',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
@@ -2007,9 +2007,9 @@ export default function PrestamosView({
                     {/* Badge contador total */}
                     <span
                       style={{
-                        backgroundColor: itemsEntrega.length > 0 ? 'rgba(171, 222, 22, 0.15)' : 'var(--surface, #0f172a)',
-                        color: itemsEntrega.length > 0 ? '#ABDE16' : 'var(--text-dim, #94a3b8)',
-                        border: itemsEntrega.length > 0 ? '1px solid rgba(171, 222, 22, 0.35)' : '1px solid var(--line, #334155)',
+                        backgroundColor: itemsEntrega.length > 0 ? 'rgba(132, 204, 22, 0.15)' : 'var(--surface, #0f172a)',
+                        color: itemsEntrega.length > 0 ? '#84CC16' : 'var(--text-dim, #94a3b8)',
+                        border: itemsEntrega.length > 0 ? '1px solid rgba(132, 204, 22, 0.35)' : '1px solid var(--line, #334155)',
                         fontSize: '11px',
                         fontWeight: 600,
                         padding: '3px 9px',
@@ -2076,8 +2076,8 @@ export default function PrestamosView({
                       disabled={!consumibleSeleccionadoId || maxAgregable <= 0}
                       className="btn"
                       style={{
-                        backgroundColor: '#ABDE16',
-                        color: '#0f172a',
+                        backgroundColor: '#84CC16',
+                        color: '#020617',
                         fontWeight: 700,
                         fontSize: '12px',
                         padding: '8px 14px',
@@ -2100,7 +2100,7 @@ export default function PrestamosView({
                     <small style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)', margin: 0 }}>
                       Stock total en bodega: <strong style={{ color: 'var(--text, #f8fafc)' }}>{maxAvailableConsumible} {consumibleSeleccionado.unit || 'und'}</strong>
                       {cantidadYaEnCanasta > 0 && ` (Ya en canasta: ${cantidadYaEnCanasta})`}
-                      {' • '}Disponible para agregar: <strong style={{ color: maxAgregable > 0 ? '#ABDE16' : '#ef4444' }}>{maxAgregable}</strong>
+                      {' • '}Disponible para agregar: <strong style={{ color: maxAgregable > 0 ? '#84CC16' : '#ef4444' }}>{maxAgregable}</strong>
                     </small>
                   )}
 
@@ -2162,11 +2162,11 @@ export default function PrestamosView({
                                       fontFamily: 'var(--mono)',
                                       fontWeight: 700,
                                       fontSize: '12.5px',
-                                      color: '#ABDE16',
-                                      backgroundColor: 'rgba(171, 222, 22, 0.1)',
+                                      color: '#84CC16',
+                                      backgroundColor: 'rgba(132, 204, 22, 0.12)',
                                       padding: '2px 8px',
                                       borderRadius: '4px',
-                                      border: '1px solid rgba(171, 222, 22, 0.25)',
+                                      border: '1px solid rgba(132, 204, 22, 0.3)',
                                     }}
                                   >
                                     {item.cantidadEntrega} {item.unit}
@@ -2228,8 +2228,8 @@ export default function PrestamosView({
                   className="btn btn-primary"
                   disabled={deliverySubmitting || itemsEntrega.length === 0 || !deliveryPerson || !deliverySede}
                   style={{
-                    backgroundColor: (deliverySubmitting || itemsEntrega.length === 0 || !deliveryPerson || !deliverySede) ? undefined : '#ABDE16',
-                    color: (deliverySubmitting || itemsEntrega.length === 0 || !deliveryPerson || !deliverySede) ? undefined : '#0f172a',
+                    backgroundColor: (deliverySubmitting || itemsEntrega.length === 0 || !deliveryPerson || !deliverySede) ? undefined : '#84CC16',
+                    color: (deliverySubmitting || itemsEntrega.length === 0 || !deliveryPerson || !deliverySede) ? undefined : '#020617',
                     fontWeight: 700,
                   }}
                 >
@@ -2275,7 +2275,7 @@ export default function PrestamosView({
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Devolución Esperada</label>
-                  <p style={{ margin: '2px 0 0', fontWeight: 700, color: isOverdue(detailLoan) ? 'var(--red)' : 'var(--emerald, #10b981)' }}>
+                  <p style={{ margin: '2px 0 0', fontWeight: 700, color: isOverdue(detailLoan) ? 'var(--red)' : 'var(--green, #84CC16)' }}>
                     {isOverdue(detailLoan) ? '⚠️ ' : ''}{fmtDate(detailLoan.expectedReturn)}
                   </p>
                 </div>
@@ -2460,8 +2460,8 @@ export default function PrestamosView({
                   className="btn small btn-primary no-print"
                   onClick={() => window.print()}
                   style={{
-                    backgroundColor: '#ABDE16',
-                    color: '#0f172a',
+                    backgroundColor: '#84CC16',
+                    color: '#020617',
                     fontWeight: 700,
                     padding: '6px 14px',
                     borderRadius: '6px',

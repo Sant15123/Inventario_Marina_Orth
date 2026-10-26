@@ -210,7 +210,14 @@ export default function ModalSolicitudMaterial({
         {/* 2. Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: 'rgba(132, 204, 22, 0.15)',
+                border: '1px solid rgba(132, 204, 22, 0.35)',
+                color: '#84CC16',
+              }}
+            >
               <PackagePlus size={20} />
             </div>
             <div>
@@ -252,10 +259,22 @@ export default function ModalSolicitudMaterial({
                 <button
                   type="button"
                   onClick={() => handleChangeTipo('PRESTAMO_EQUIPO')}
-                  className={
+                  className="rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all"
+                  style={
                     tipoSol === 'PRESTAMO_EQUIPO'
-                      ? 'bg-white text-emerald-700 shadow-sm font-semibold rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all dark:bg-slate-900 dark:text-emerald-400'
-                      : 'text-slate-600 hover:text-slate-900 font-medium rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all dark:text-slate-400 dark:hover:text-white'
+                      ? {
+                          backgroundColor: '#84CC16',
+                          color: '#020617',
+                          fontWeight: 700,
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+                          border: '1px solid #84CC16',
+                        }
+                      : {
+                          backgroundColor: 'transparent',
+                          color: 'var(--text-dim, #64748b)',
+                          fontWeight: 500,
+                          border: '1px solid transparent',
+                        }
                   }
                 >
                   <Laptop size={18} />
@@ -265,10 +284,22 @@ export default function ModalSolicitudMaterial({
                 <button
                   type="button"
                   onClick={() => handleChangeTipo('CONSUMIBLES')}
-                  className={
+                  className="rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all"
+                  style={
                     tipoSol === 'CONSUMIBLES'
-                      ? 'bg-white text-emerald-700 shadow-sm font-semibold rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all dark:bg-slate-900 dark:text-emerald-400'
-                      : 'text-slate-600 hover:text-slate-900 font-medium rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all dark:text-slate-400 dark:hover:text-white'
+                      ? {
+                          backgroundColor: '#84CC16',
+                          color: '#020617',
+                          fontWeight: 700,
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+                          border: '1px solid #84CC16',
+                        }
+                      : {
+                          backgroundColor: 'transparent',
+                          color: 'var(--text-dim, #64748b)',
+                          fontWeight: 500,
+                          border: '1px solid transparent',
+                        }
                   }
                 >
                   <Package size={18} />
@@ -291,7 +322,7 @@ export default function ModalSolicitudMaterial({
                     setSelectedItemId(e.target.value);
                     setCantidadInput(1);
                   }}
-                  className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#84CC16] focus:border-[#84CC16] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 >
                   <option value="">
                     {tipoSol === 'PRESTAMO_EQUIPO'
@@ -312,15 +343,22 @@ export default function ModalSolicitudMaterial({
                   value={cantidadInput}
                   onChange={(e) => setCantidadInput(e.target.value)}
                   placeholder="Cant."
-                  className="w-20 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-center font-semibold dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="w-20 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-center font-semibold focus:ring-2 focus:ring-[#84CC16] focus:border-[#84CC16] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 />
 
                 <button
                   type="button"
                   onClick={handleAddItem}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
+                  className="font-bold text-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95"
+                  style={{
+                    backgroundColor: '#84CC16',
+                    color: '#020617',
+                    border: '1px solid #84CC16',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#65A30D')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#84CC16')}
                 >
-                  <Plus size={16} />
+                  <Plus size={16} strokeWidth={2.5} />
                   <span>+ Agregar</span>
                 </button>
               </div>
@@ -339,7 +377,13 @@ export default function ModalSolicitudMaterial({
                         className="flex items-center justify-between px-3.5 py-2.5 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700 text-sm shadow-sm transition-all"
                       >
                         <div className="flex items-center gap-2.5 overflow-hidden">
-                          <span className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
+                          <span
+                            className="p-1.5 rounded-md shrink-0 flex items-center justify-center"
+                            style={{
+                              backgroundColor: 'rgba(132, 204, 22, 0.15)',
+                              color: '#84CC16',
+                            }}
+                          >
                             {it.tipo_item === 'equipo' ? <Laptop size={14} /> : <Package size={14} />}
                           </span>
                           <span className="font-medium text-slate-800 dark:text-slate-200 truncate text-xs">
@@ -347,7 +391,14 @@ export default function ModalSolicitudMaterial({
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                          <span
+                            className="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                            style={{
+                              backgroundColor: 'rgba(132, 204, 22, 0.18)',
+                              color: '#365314',
+                              border: '1px solid rgba(132, 204, 22, 0.4)',
+                            }}
+                          >
                             {it.cantidad} {it.unidad}
                           </span>
                           <button
@@ -371,7 +422,7 @@ export default function ModalSolicitudMaterial({
             {tipoSol === 'PRESTAMO_EQUIPO' && (
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-1.5">
-                  <Calendar size={14} className="text-emerald-600 dark:text-emerald-400" />
+                  <Calendar size={14} style={{ color: '#84CC16' }} />
                   <span>Fecha de Devolución Estimada</span>
                   <span className="text-rose-500">*</span>
                 </label>
@@ -381,7 +432,7 @@ export default function ModalSolicitudMaterial({
                   value={fechaEstimada}
                   onChange={(e) => setFechaEstimada(e.target.value)}
                   required={tipoSol === 'PRESTAMO_EQUIPO'}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 />
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
                   Fecha límite pactada para retornar los equipos a la bodega o sede central.
@@ -393,7 +444,7 @@ export default function ModalSolicitudMaterial({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-1.5">
-                  <MapPin size={14} className="text-emerald-600 dark:text-emerald-400" />
+                  <MapPin size={14} style={{ color: '#84CC16' }} />
                   <span>Sede / Municipio Destino</span>
                   <span className="text-rose-500">*</span>
                 </label>
@@ -401,7 +452,7 @@ export default function ModalSolicitudMaterial({
                   value={sede}
                   onChange={(e) => setSede(e.target.value)}
                   required
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 >
                   {sedes.map((s) => (
                     <option key={s} value={s}>
@@ -413,13 +464,13 @@ export default function ModalSolicitudMaterial({
 
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-1.5">
-                  <FolderGit2 size={14} className="text-emerald-600 dark:text-emerald-400" />
+                  <FolderGit2 size={14} style={{ color: '#84CC16' }} />
                   <span>Proyecto STEAM Vinculado (Opcional)</span>
                 </label>
                 <select
                   value={proyectoId}
                   onChange={(e) => setProyectoId(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                 >
                   <option value="">-- Sin vincular a proyecto específico --</option>
                   {proyectos.map((p) => {
@@ -438,7 +489,7 @@ export default function ModalSolicitudMaterial({
             {/* Motivo / Justificación */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-1.5">
-                <FileText size={14} className="text-emerald-600 dark:text-emerald-400" />
+                <FileText size={14} style={{ color: '#84CC16' }} />
                 <span>Motivo / Justificación Pedagógica o Técnica</span>
                 <span className="text-rose-500">*</span>
               </label>
@@ -448,7 +499,7 @@ export default function ModalSolicitudMaterial({
                 onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Describe detalladamente el taller, clase, evento o necesidad formativa que justifica esta solicitud..."
                 required
-                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
               />
             </div>
           </div>
@@ -459,7 +510,7 @@ export default function ModalSolicitudMaterial({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="text-slate-600 hover:text-slate-800 text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+              className="text-slate-600 hover:text-slate-800 text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
@@ -467,9 +518,20 @@ export default function ModalSolicitudMaterial({
             <button
               type="submit"
               disabled={submitting || itemsSolicitud.length === 0 || !motivo.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-sm hover:shadow flex items-center gap-2 transition-all"
+              className="text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm hover:shadow flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: '#84CC16',
+                color: '#020617',
+                border: '1px solid #84CC16',
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#65A30D';
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#84CC16';
+              }}
             >
-              <CheckCircle2 size={16} />
+              <CheckCircle2 size={16} strokeWidth={2.5} />
               <span>{submitting ? 'Enviando...' : 'Enviar Solicitud'}</span>
             </button>
           </div>
