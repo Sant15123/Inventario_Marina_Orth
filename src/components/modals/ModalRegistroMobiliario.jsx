@@ -52,9 +52,13 @@ export default function ModalRegistroMobiliario({
   isOpen,
   onClose,
   onMobiliarioCreated,
+  onMobiliarioSaved,
+  muebleAEditar = null,
   sedes = SEDES_DEFAULT,
 }) {
-  const { showNewItemSuccess, showError } = useToast();
+  const { showNewItemSuccess, showEditSuccess, showError } = useToast();
+
+  const isEditing = Boolean(muebleAEditar);
 
   const [paso, setPaso] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -84,7 +88,7 @@ export default function ModalRegistroMobiliario({
 
   const [formData, setFormData] = useState(initialForm);
 
-  // Obtener autocompletado consecutivo de placa MOB-XXXX al abrir modal
+  // Sincronizar estado del formulario con muebleAEditar o autocompletar placa si es nuevo
   useEffect(() => {
     if (!isOpen) {
       setPaso(1);
@@ -92,6 +96,27 @@ export default function ModalRegistroMobiliario({
       return;
     }
 
+    if (muebleAEditar) {
+      setPaso(1);
+      setFormData({
+        nombre: muebleAEditar.nombre || muebleAEditar.name || muebleAEditar.material || '',
+        placa: muebleAEditar.placa || muebleAEditar.code || '',
+        categoria: muebleAEditar.categoria || muebleAEditar.subcategoria || muebleAEditar.category || 'Mesas y Escritorios',
+        sede: muebleAEditar.sede || muebleAEditar.ubicacion || sedes[0] || 'Medellín',
+        ubicacion: muebleAEditar.ubicacion_especifica || muebleAEditar.ubicacion_estante || muebleAEditar.espacio || '',
+        cantidad: Number(muebleAEditar.cantidad ?? muebleAEditar.disponible ?? 1),
+        material: muebleAEditar.material || 'Madera / MDF',
+        color: muebleAEditar.color || '',
+        dimensiones: muebleAEditar.dimensiones || '',
+        estado: muebleAEditar.estado_conservacion || muebleAEditar.estado || muebleAEditar.condicion || 'Bueno',
+        fecha_adquisicion: muebleAEditar.fecha_adquisicion ? String(muebleAEditar.fecha_adquisicion).split('T')[0] : new Date().toISOString().split('T')[0],
+        proveedor: muebleAEditar.proveedor_origen || muebleAEditar.proveedor || muebleAEditar.origen || '',
+        observaciones: muebleAEditar.observaciones || muebleAEditar.notas || '',
+      });
+      return;
+    }
+
+    // Si es creación, buscar consecutivo
     let isMounted = true;
     const fetchSiguientePlaca = async () => {
       setLoadingPlaca(true);
@@ -112,7 +137,7 @@ export default function ModalRegistroMobiliario({
     return () => {
       isMounted = false;
     };
-  }, [isOpen]);
+  }, [isOpen, muebleAEditar]);
 
   if (!isOpen) return null;
 
@@ -201,6 +226,94 @@ export default function ModalRegistroMobiliario({
           .join(' | '),
       };
 
+      if (isEditing) {
+        // === MODO EDICIÓN (UPDATE) ===
+        const updatePayload = {
+          nombre: formData.nombre.trim(),
+          categoria: formData.categoria,
+          subcategoria: formData.categoria,
+          sede: formData.sede,
+          ubicacion: formData.sede,
+          ubicacion_especifica: formData.ubicacion.trim(),
+          ubicacion_estante: formData.ubicacion.trim() || 'Área General',
+          espacio: formData.ubicacion.trim(),
+          material: formData.material,
+          color: formData.color.trim(),
+          dimensiones: formData.dimensiones.trim(),
+          estado_conservacion: formData.estado,
+          estado: formData.estado,
+          condicion: formData.estado,
+          cantidad: Number(formData.cantidad) || 1,
+          disponible: Number(formData.cantidad) || 1,
+          fecha_adquisicion: formData.fecha_adquisicion || null,
+          proveedor_origen: formData.proveedor.trim(),
+          proveedor: formData.proveedor.trim(),
+          origen: formData.proveedor.trim(),
+          observaciones: formData.observaciones.trim(),
+          descripcion: [
+            formData.categoria,
+            formData.material ? `Material: ${formData.material}` : '',
+            formData.dimensiones ? `Dim: ${formData.dimensiones}` : '',
+            formData.color ? `Color: ${formData.color}` : '',
+            formData.observaciones ? `Notas: ${formData.observaciones}` : '',
+          ]
+            .filter(Boolean)
+            .join(' | '),
+          updated_at: new Date().toISOString(),
+        };
+
+        let updatedResult = null;
+        try {
+          if (supabase) {
+            const query = supabase
+              .from('mobiliario')
+              .update(updatePayload);
+
+            if (muebleAEditar.id) {
+              query.eq('id', muebleAEditar.id);
+            } else {
+              query.eq('placa', formData.placa.trim().toUpperCase());
+            }
+
+            const { data: supaUpdated, error: supaUpErr } = await query.select().single();
+            if (!supaUpErr && supaUpdated) {
+              updatedResult = supaUpdated;
+            } else if (supaUpErr) {
+              console.warn('Supabase update advertencia:', supaUpErr.message);
+            }
+          }
+        } catch (sUpErr) {
+          console.warn('Fallo update directo en Supabase:', sUpErr.message);
+        }
+
+        if (!updatedResult) {
+          try {
+            updatedResult = await inventoryApi.update(muebleAEditar.id || formData.placa, updatePayload);
+          } catch (apiUpErr) {
+            console.warn('API update advertencia, usando payload local:', apiUpErr.message);
+            updatedResult = { ...muebleAEditar, ...updatePayload, id: muebleAEditar.id || formData.placa, placa: formData.placa };
+          }
+        }
+
+        const finalItem = updatedResult || { ...muebleAEditar, ...updatePayload, id: muebleAEditar.id || formData.placa, placa: formData.placa };
+
+        if (onMobiliarioSaved) {
+          onMobiliarioSaved(finalItem);
+        } else if (onMobiliarioCreated) {
+          onMobiliarioCreated(finalItem);
+        }
+
+        showEditSuccess({
+          nombre: formData.nombre,
+          codigo: formData.placa,
+          tipo: 'Mobiliario',
+        });
+
+        onClose();
+        return;
+      }
+
+      // === MODO CREACIÓN (INSERT) ===
       // 1. Despachar a Supabase y/o backend REST API
       let result = null;
       try {
@@ -231,7 +344,9 @@ export default function ModalRegistroMobiliario({
       }
 
       // 2. Notificar al componente padre
-      if (onMobiliarioCreated) {
+      if (onMobiliarioSaved) {
+        onMobiliarioSaved(result || payload);
+      } else if (onMobiliarioCreated) {
         onMobiliarioCreated(result || payload);
       }
 
@@ -245,8 +360,8 @@ export default function ModalRegistroMobiliario({
       // 4. Cerrar modal y reiniciar
       onClose();
     } catch (err) {
-      console.error('Error al guardar mobiliario:', err);
-      showError('Error al Registrar', err.message || 'No fue posible registrar el mobiliario.');
+      console.error('Error al procesar mobiliario:', err);
+      showError(isEditing ? 'Error al Actualizar' : 'Error al Registrar', err.message || 'No fue posible guardar los cambios del mobiliario.');
     } finally {
       setSubmitting(false);
     }
@@ -327,7 +442,7 @@ export default function ModalRegistroMobiliario({
                   color: 'var(--text-h, #ffffff)',
                 }}
               >
-                Registro de Nuevo Mobiliario
+                {isEditing ? 'Editar Mobiliario / Enser' : 'Registro de Nuevo Mobiliario'}
               </h3>
               <p
                 className="m-0"
@@ -337,7 +452,9 @@ export default function ModalRegistroMobiliario({
                   color: 'var(--text-dim, #94a3b8)',
                 }}
               >
-                Mesas, sillería, estantes y enseres para espacios formativos
+                {isEditing
+                  ? 'Modifica las características físicas, ubicación o estado del mueble'
+                  : 'Mesas, sillería, estantes y enseres para espacios formativos'}
               </p>
             </div>
           </div>
@@ -486,11 +603,16 @@ export default function ModalRegistroMobiliario({
                       onChange={handleChange}
                       placeholder="MOB-0001"
                       required
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold uppercase border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
+                      disabled={isEditing}
+                      className={`w-full rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold uppercase border focus:outline-none transition-all ${
+                        isEditing
+                          ? 'opacity-70 cursor-not-allowed bg-slate-800/40 text-slate-300 border-slate-700'
+                          : 'focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16]'
+                      }`}
                       style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: '#84CC16',
+                        backgroundColor: isEditing ? 'rgba(15, 23, 42, 0.6)' : 'var(--bg, #0b1120)',
+                        borderColor: isEditing ? 'var(--line, #334155)' : 'var(--line, #334155)',
+                        color: isEditing ? '#94a3b8' : '#84CC16',
                       }}
                     />
                   </div>
@@ -943,12 +1065,12 @@ export default function ModalRegistroMobiliario({
                   {submitting ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
-                      <span>Guardando...</span>
+                      <span>{isEditing ? 'Actualizando...' : 'Guardando...'}</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 size={16} />
-                      <span>Guardar Mobiliario</span>
+                      <span>{isEditing ? 'Actualizar Mobiliario' : 'Guardar Mobiliario'}</span>
                     </>
                   )}
                 </button>

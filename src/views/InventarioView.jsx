@@ -465,10 +465,17 @@ export default function InventarioView({
     setModalNuevoOpen(true);
   };
 
-  // Estado para el modal dedicado de Nuevo Mobiliario
+  // Estado para el modal dedicado de Mobiliario (Creación y Edición)
   const [modalRegistroMobiliarioOpen, setModalRegistroMobiliarioOpen] = useState(false);
+  const [muebleSeleccionado, setMuebleSeleccionado] = useState(null);
 
   const handleOpenCreateMobiliario = () => {
+    setMuebleSeleccionado(null);
+    setModalRegistroMobiliarioOpen(true);
+  };
+
+  const handleOpenEditMobiliario = (item) => {
+    setMuebleSeleccionado(item);
     setModalRegistroMobiliarioOpen(true);
   };
 
@@ -3706,7 +3713,7 @@ export default function InventarioView({
                                 type="button"
                                 className="btn-icon-crud shrink-0"
                                 title="Editar mobiliario"
-                                onClick={() => handleOpenEdit(m)}
+                                onClick={() => handleOpenEditMobiliario(m)}
                                 style={{
                                   width: '28px',
                                   height: '28px',
@@ -6932,11 +6939,36 @@ export default function InventarioView({
         </div>
       )}
 
-      {/* Modal Dedicado para Registro de Mobiliario y Enseres */}
+      {/* Modal Dedicado para Registro y Edición de Mobiliario y Enseres */}
       <ModalRegistroMobiliario
         isOpen={modalRegistroMobiliarioOpen}
-        onClose={() => setModalRegistroMobiliarioOpen(false)}
+        onClose={() => {
+          setModalRegistroMobiliarioOpen(false);
+          setMuebleSeleccionado(null);
+        }}
         sedes={sedesList}
+        muebleAEditar={muebleSeleccionado}
+        onMobiliarioSaved={(muebleActualizado) => {
+          if (muebleActualizado) {
+            setMobiliario((prev) => {
+              const existe = prev.some((m) => m.id === muebleActualizado.id || m.placa === muebleActualizado.placa);
+              if (existe) {
+                return prev.map((m) => (m.id === muebleActualizado.id || m.placa === muebleActualizado.placa ? { ...m, ...muebleActualizado } : m));
+              }
+              return [muebleActualizado, ...prev];
+            });
+          }
+          if (typeof cargarMobiliario === 'function') {
+            cargarMobiliario();
+          }
+          if (typeof cargarConsumibles === 'function') {
+            cargarConsumibles();
+          } else if (typeof onRetry === 'function') {
+            onRetry();
+          }
+          setModalRegistroMobiliarioOpen(false);
+          setMuebleSeleccionado(null);
+        }}
         onMobiliarioCreated={(nuevoMobiliario) => {
           if (nuevoMobiliario) {
             setMobiliario((prev) => [nuevoMobiliario, ...prev.filter((m) => m.placa !== nuevoMobiliario.placa && m.id !== nuevoMobiliario.id)]);
@@ -6950,6 +6982,7 @@ export default function InventarioView({
             onRetry();
           }
           setModalRegistroMobiliarioOpen(false);
+          setMuebleSeleccionado(null);
         }}
       />
     </div>
