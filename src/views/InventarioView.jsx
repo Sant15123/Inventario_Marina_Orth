@@ -10,99 +10,12 @@ import { useAuth } from '../context/AuthContext';
 import { available, SEDES, EMPLOYEES, PROYECTOS, today } from '../services/mockData';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 import { exportarLibroMaestroExcelFMO } from '../services/excelExportService';
+import { supabase } from '../services/supabase';
 
 import catalogoPapeleriaFMO from '../data/catalogoPapeleriaFMO.json';
 
 // Catálogo oficial de Papelería institucional (Insumos de oficina y formación STEAM - 105 ítems)
 const DEFAULT_PAPELERIA = catalogoPapeleriaFMO;
-
-// Catálogo inicial de Mobiliario institucional (Mesas, sillas, armarios de sedes)
-const DEFAULT_MOBILIARIO = [
-  {
-    id: 'MOB-001',
-    placa: 'MOB-001',
-    code: 'MOB-001',
-    material: 'Mesa Modular de Robótica y Ensamble (6 Puestos)',
-    name: 'Mesa Modular de Robótica y Ensamble (6 Puestos)',
-    nombre: 'Mesa Modular de Robótica y Ensamble (6 Puestos)',
-    categoria: 'Mobiliario',
-    category: 'Mobiliario',
-    itemType: 'mobiliario',
-    disponible: 8,
-    quantity: 8,
-    sede: 'Medellín',
-    ubicacion: 'Medellín',
-    location: 'Medellín',
-    ubicacion_estante: 'Zona Lab 1',
-    estado: 'Bueno',
-    condicion: 'Buen Estado',
-    responsable: 'Bodega Central',
-    descripcion: 'Mesa de estructura metálica reforzada con superficie de melamina antiestática para ensamble STEAM.',
-  },
-  {
-    id: 'MOB-002',
-    placa: 'MOB-002',
-    code: 'MOB-002',
-    material: 'Sillas Ergonómicas Giratorias con Rodachines',
-    name: 'Sillas Ergonómicas Giratorias con Rodachines',
-    nombre: 'Sillas Ergonómicas Giratorias con Rodachines',
-    categoria: 'Mobiliario',
-    category: 'Mobiliario',
-    itemType: 'mobiliario',
-    disponible: 32,
-    quantity: 32,
-    sede: 'Medellín',
-    ubicacion: 'Medellín',
-    location: 'Medellín',
-    ubicacion_estante: 'Aula Central',
-    estado: 'Bueno',
-    condicion: 'Buen Estado',
-    responsable: 'Bodega Central',
-    descripcion: 'Sillas de oficina con espaldar en malla transpirable y regulación neumática de altura.',
-  },
-  {
-    id: 'MOB-003',
-    placa: 'MOB-003',
-    code: 'MOB-003',
-    material: 'Armario Metálico Modular de Seguridad para Kits',
-    name: 'Armario Metálico Modular de Seguridad para Kits',
-    nombre: 'Armario Metálico Modular de Seguridad para Kits',
-    categoria: 'Mobiliario',
-    category: 'Mobiliario',
-    itemType: 'mobiliario',
-    disponible: 4,
-    quantity: 4,
-    sede: 'Carmen de Viboral',
-    ubicacion: 'Carmen de Viboral',
-    location: 'Carmen de Viboral',
-    ubicacion_estante: 'Bodega M1',
-    estado: 'Bueno',
-    condicion: 'Nuevo',
-    responsable: 'Dolly Montoya',
-    descripcion: 'Gabinete doble puerta con chapa de seguridad de 4 bandejas ajustables.',
-  },
-  {
-    id: 'MOB-004',
-    placa: 'MOB-004',
-    code: 'MOB-004',
-    material: 'Carro Móvil de Almacenamiento & Carga STEAM',
-    name: 'Carro Móvil de Almacenamiento & Carga STEAM',
-    nombre: 'Carro Móvil de Almacenamiento & Carga STEAM',
-    categoria: 'Mobiliario',
-    category: 'Mobiliario',
-    itemType: 'mobiliario',
-    disponible: 2,
-    quantity: 2,
-    sede: 'La Ceja',
-    ubicacion: 'La Ceja',
-    location: 'La Ceja',
-    ubicacion_estante: 'Zona Carga',
-    estado: 'Bueno',
-    condicion: 'Buen Estado',
-    responsable: 'Santiago Galeano',
-    descripcion: 'Mueble con ruedas de uso rudo y regleta eléctrica interna para resguardo y carga simultánea.',
-  },
-];
 
 // Mapeador consistente para consumibles con soporte a todos los campos
 const mapConsumibleItem = (c) => {
@@ -366,24 +279,42 @@ export default function InventarioView({
     }
   }, [localPapeleria]);
 
-  // Estados persistentes y filtrado para MOBILIARIO
-  const [localMobiliario, setLocalMobiliario] = useState(() => {
+  // Estados y consulta directa a Supabase para MOBILIARIO (Sin datos quemados/mock)
+  const [mobiliario, setMobiliario] = useState([]);
+  const [loadingMobiliario, setLoadingMobiliario] = useState(false);
+
+  // Consulta directa a la tabla 'mobiliario' de Supabase
+  const cargarMobiliario = async () => {
     try {
-      const saved = localStorage.getItem('siga_mobiliario');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Error leyendo mobiliario de localStorage:', e);
+      setLoadingMobiliario(true);
+      // Limpiar rastro de localStorage obsoleto si existía
+      try {
+        localStorage.removeItem('siga_mobiliario');
+      } catch (_) {}
+
+      const { data, error } = await supabase
+        .from('mobiliario')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Error consultando tabla mobiliario en Supabase:', error.message);
+        // Si la tabla no está creada o hay error, data es vacío
+        setMobiliario([]);
+      } else {
+        setMobiliario(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.warn('Excepción al cargar mobiliario desde Supabase:', err.message);
+      setMobiliario([]);
+    } finally {
+      setLoadingMobiliario(false);
     }
-    return DEFAULT_MOBILIARIO;
-  });
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem('siga_mobiliario', JSON.stringify(localMobiliario));
-    } catch (e) {
-      console.warn('Error guardando mobiliario en localStorage:', e);
-    }
-  }, [localMobiliario]);
+    cargarMobiliario();
+  }, []);
 
   // Filtros y paginación para Papelería
   const [filterStockPapeleria, setFilterStockPapeleria] = useState('todos');
@@ -405,16 +336,10 @@ export default function InventarioView({
     return merged;
   }, [effectiveItems, localPapeleria]);
 
-  // Lista unificada de Mobiliario
+  // Lista unificada de Mobiliario exclusivamente desde Supabase y registros en sesión
   const rawMobiliario = useMemo(() => {
-    const fromApi = effectiveItems.filter((it) => it.categoria === 'Mobiliario' || it.category === 'Mobiliario' || String(it.id).toUpperCase().startsWith('MOB') || it.itemType === 'mobiliario');
-    const apiIds = new Set(fromApi.map((i) => i.id || i.placa));
-    const merged = [...fromApi];
-    localMobiliario.forEach((m) => {
-      if (!apiIds.has(m.id) && !apiIds.has(m.placa)) merged.push(m);
-    });
-    return merged;
-  }, [effectiveItems, localMobiliario]);
+    return Array.isArray(mobiliario) ? mobiliario : [];
+  }, [mobiliario]);
 
   // Función auxiliar para normalizar texto eliminando diacríticos / tildes y pasando a minúsculas
   const normalizeText = (text) => {
@@ -569,11 +494,17 @@ export default function InventarioView({
       codigo: code,
       nombre: item.nombre || item.material || item.name,
       onConfirm: async () => {
-        setLocalMobiliario((prev) => prev.filter((m) => m.id !== item.id && m.placa !== item.placa));
+        setMobiliario((prev) => prev.filter((m) => m.id !== item.id && m.placa !== item.placa));
         try {
+          if (supabase) {
+            await supabase
+              .from('mobiliario')
+              .delete()
+              .or(`id.eq.${item.id},placa.eq.${code}`);
+          }
           await inventoryApi.remove(code);
         } catch (e) {
-          // OK si es ítem local
+          // OK si falla endpoint api secundario
         }
       },
     });
@@ -3605,8 +3536,14 @@ export default function InventarioView({
           </div>
 
           {mobiliarioFiltrado.length === 0 ? (
-            <div className="panel empty">
-              <span>🪑</span> No se encontró mobiliario con los filtros seleccionados.
+            <div className="panel empty" style={{ padding: '36px 20px', textAlign: 'center' }}>
+              <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>🪑</span>
+              <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--text, #f8fafc)', fontWeight: 600 }}>
+                No hay mobiliario registrado en esta sede o catálogo.
+              </p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-dim, #94a3b8)' }}>
+                Registra uno nuevo con el botón superior.
+              </p>
             </div>
           ) : (
             <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
@@ -7002,7 +6939,10 @@ export default function InventarioView({
         sedes={sedesList}
         onMobiliarioCreated={(nuevoMobiliario) => {
           if (nuevoMobiliario) {
-            setLocalMobiliario((prev) => [nuevoMobiliario, ...prev]);
+            setMobiliario((prev) => [nuevoMobiliario, ...prev.filter((m) => m.placa !== nuevoMobiliario.placa && m.id !== nuevoMobiliario.id)]);
+          }
+          if (typeof cargarMobiliario === 'function') {
+            cargarMobiliario();
           }
           if (typeof cargarConsumibles === 'function') {
             cargarConsumibles();

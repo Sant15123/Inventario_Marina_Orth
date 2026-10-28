@@ -18,6 +18,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { inventoryApi } from '../../services/inventoryApi';
+import { supabase } from '../../services/supabase';
 import { useToast } from '../../context/ToastContext';
 
 const CATEGORIAS_MOBILIARIO = [
@@ -200,13 +201,33 @@ export default function ModalRegistroMobiliario({
           .join(' | '),
       };
 
-      // 1. Despachar a POST /api/mobiliario
-      let result;
+      // 1. Despachar a Supabase y/o backend REST API
+      let result = null;
       try {
-        result = await inventoryApi.createMobiliario(payload);
-      } catch (apiErr) {
-        console.warn('API error al crear mobiliario, usando respuesta local:', apiErr);
-        result = { ...payload, id: payload.placa, localSaved: true };
+        if (supabase) {
+          const { data: supaData, error: supaErr } = await supabase
+            .from('mobiliario')
+            .insert([payload])
+            .select()
+            .single();
+
+          if (!supaErr && supaData) {
+            result = supaData;
+          } else if (supaErr) {
+            console.warn('Supabase insert advertencia (intentando vía API REST):', supaErr.message);
+          }
+        }
+      } catch (sErr) {
+        console.warn('Fallo directo en Supabase:', sErr.message);
+      }
+
+      if (!result) {
+        try {
+          result = await inventoryApi.createMobiliario(payload);
+        } catch (apiErr) {
+          console.warn('API error al crear mobiliario, usando respuesta local:', apiErr);
+          result = { ...payload, id: payload.placa, localSaved: true };
+        }
       }
 
       // 2. Notificar al componente padre
