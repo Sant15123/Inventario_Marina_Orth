@@ -260,24 +260,55 @@ export default function InventarioView({
   const rawConsumibles = useMemo(() => effectiveItems.filter((it) => it.itemType === 'consumible' && it.categoria !== 'Papelería' && it.categoria !== 'Mobiliario'), [effectiveItems]);
   const equipos = useMemo(() => effectiveItems.filter((it) => it.itemType === 'equipo' && it.categoria !== 'Mobiliario'), [effectiveItems]);
 
-  // Estados persistentes y filtrado para PAPELERÍA
-  const [localPapeleria, setLocalPapeleria] = useState(() => {
+  // Estados y consulta directa a Supabase/API para PAPELERÍA (Sin datos de prueba o residuales de localStorage)
+  const [papeleria, setPapeleria] = useState([]);
+  const [loadingPapeleria, setLoadingPapeleria] = useState(false);
+
+  // Consulta directa a la tabla 'papeleria' de Supabase
+  const cargarPapeleria = async () => {
     try {
-      const saved = localStorage.getItem('siga_papeleria');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Error leyendo papelería de localStorage:', e);
+      setLoadingPapeleria(true);
+      // Purgar datos de prueba u obsoletos en localStorage
+      try {
+        const cached = localStorage.getItem('siga_papeleria');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const sanitized = Array.isArray(parsed)
+            ? parsed.filter(p => !String(p.id).toLowerCase().includes('prueba') && !String(p.id).toLowerCase().includes('pape5016') && !String(p.material || '').toLowerCase().includes('prueba'))
+            : [];
+          if (sanitized.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
+            localStorage.setItem('siga_papeleria', JSON.stringify(sanitized));
+          }
+        }
+      } catch (_) {}
+
+      const { data, error } = await supabase
+        .from('papeleria')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (error) {
+        console.warn('Error consultando tabla papeleria en Supabase:', error.message);
+        // Fallback a DEFAULT_PAPELERIA depurado
+        setPapeleria(Array.isArray(DEFAULT_PAPELERIA) ? DEFAULT_PAPELERIA.filter(p => !String(p.id).toLowerCase().includes('prueba') && !String(p.id).toLowerCase().includes('pape5016')) : []);
+      } else if (Array.isArray(data) && data.length > 0) {
+        // Excluir cualquier registro de prueba que pudiera filtrarse
+        const cleanData = data.filter(p => !String(p.id).toLowerCase().includes('prueba') && !String(p.id).toLowerCase().includes('pape5016') && !String(p.material || '').toLowerCase().includes('prueba'));
+        setPapeleria(cleanData);
+      } else {
+        setPapeleria([]);
+      }
+    } catch (err) {
+      console.warn('Excepción al cargar papelería desde Supabase:', err.message);
+      setPapeleria([]);
+    } finally {
+      setLoadingPapeleria(false);
     }
-    return DEFAULT_PAPELERIA;
-  });
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem('siga_papeleria', JSON.stringify(localPapeleria));
-    } catch (e) {
-      console.warn('Error guardando papelería en localStorage:', e);
-    }
-  }, [localPapeleria]);
+    cargarPapeleria();
+  }, []);
 
   // Estados y consulta directa a Supabase para MOBILIARIO (Sin datos quemados/mock)
   const [mobiliario, setMobiliario] = useState([]);
@@ -325,16 +356,19 @@ export default function InventarioView({
   const [filterSedeMobiliario, setFilterSedeMobiliario] = useState('todas');
   const [mobiliarioPage, setMobiliarioPage] = useState(1);
 
-  // Lista unificada de Papelería
+  // Lista unificada de Papelería exclusivamente desde Supabase y catálogo verificado
   const rawPapeleria = useMemo(() => {
-    const fromApi = effectiveItems.filter((it) => it.categoria === 'Papelería' || it.category === 'Papelería' || String(it.id).toUpperCase().startsWith('PAP') || it.subtipo === 'papeleria');
-    const apiIds = new Set(fromApi.map((i) => i.id));
-    const merged = [...fromApi];
-    localPapeleria.forEach((p) => {
-      if (!apiIds.has(p.id)) merged.push(p);
+    const baseList = Array.isArray(papeleria) && papeleria.length > 0
+      ? papeleria
+      : effectiveItems.filter((it) => it.categoria === 'Papelería' || it.category === 'Papelería' || String(it.id).toUpperCase().startsWith('PAP') || it.subtipo === 'papeleria');
+    
+    // Filtrado estricto: excluir cualquier elemento de prueba que no guarde relación con el inventario institucional
+    return baseList.filter((p) => {
+      const idStr = String(p.id || '').toLowerCase();
+      const matStr = String(p.material || p.name || '').toLowerCase();
+      return !idStr.includes('prueba') && !idStr.includes('pape5016') && !matStr.includes('prueba');
     });
-    return merged;
-  }, [effectiveItems, localPapeleria]);
+  }, [papeleria, effectiveItems]);
 
   // Lista unificada de Mobiliario exclusivamente desde Supabase y registros en sesión
   const rawMobiliario = useMemo(() => {
@@ -485,12 +519,27 @@ export default function InventarioView({
       codigo: item.id,
       nombre: item.material || item.name,
       onConfirm: async () => {
-        setLocalPapeleria((prev) => prev.filter((p) => p.id !== item.id));
+        setPapeleria((prev) => prev.filter((p) => p.id !== item.id));
         try {
+          if (supabase) {
+            await supabase
+              .from('papeleria')
+              .delete()
+              .eq('id', item.id);
+          }
           await inventoryApi.remove(item.id);
         } catch (e) {
-          // OK si es ítem local
+          // OK si falla endpoint api secundario
         }
+        // Purgar de localStorage si estuviese almacenado
+        try {
+          const cached = localStorage.getItem('siga_papeleria');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            const filtered = Array.isArray(parsed) ? parsed.filter((p) => p.id !== item.id) : [];
+            localStorage.setItem('siga_papeleria', JSON.stringify(filtered));
+          }
+        } catch (_) {}
       },
     });
   };
@@ -1461,7 +1510,7 @@ export default function InventarioView({
 
       // Si el ítem es de papelería, actualizar en localPapeleria
       if (esPapeleria) {
-        setLocalPapeleria((prev) =>
+        setPapeleria((prev) =>
           prev.map((p) =>
             p.id === idOriginal
               ? {
@@ -1697,7 +1746,7 @@ export default function InventarioView({
 
       // Si es de papelería, registrar en localPapeleria
       if (categoria === 'Papelería') {
-        setLocalPapeleria((prev) => {
+        setPapeleria((prev) => {
           const sinEste = prev.filter((p) => p.id !== id);
           return [payload, ...sinEste];
         });
@@ -1784,7 +1833,7 @@ export default function InventarioView({
 
       // Si es ítem de papelería, actualizar en localPapeleria
       if (item.subtipo === 'papeleria' || item.categoria === 'Papelería' || String(item.id).startsWith('Pape')) {
-        setLocalPapeleria((prev) =>
+        setPapeleria((prev) =>
           prev.map((p) =>
             p.id === item.id
               ? { ...p, disponible: newStock, quantity: newStock }
