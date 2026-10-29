@@ -974,7 +974,9 @@ export default function InventarioView({
       // Usar los activos actuales de la vista si están filtrados o consultar toda la base de datos
       const dataActivos = allEquiposUnits && allEquiposUnits.length > 0 ? allEquiposUnits : rawEquiposUnits;
       await exportarLibroMaestroExcelFMO({
-        activos: dataActivos.length > 0 ? dataActivos : undefined,
+        activos: dataActivos && dataActivos.length > 0 ? dataActivos : undefined,
+        papeleria: rawPapeleria && rawPapeleria.length > 0 ? rawPapeleria : undefined,
+        mobiliario: rawMobiliario && rawMobiliario.length > 0 ? rawMobiliario : undefined,
       });
     } catch (error) {
       console.error('Error al exportar reporte Excel:', error);

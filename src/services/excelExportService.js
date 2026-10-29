@@ -1,6 +1,8 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { inventoryApi } from './inventoryApi';
+import { supabase } from './supabase';
+import catalogoPapeleriaFMO from '../data/catalogoPapeleriaFMO.json';
 
 /**
  * Paleta Institucional Verde Lima Fundación Marina Orth
@@ -28,10 +30,10 @@ const COLORS = {
   textPrimary: 'FF0F172A',      // Slate-900
   
   // Badges de Estados según requerimiento institucional
-  dispBg: 'FFD9F99D', dispText: 'FF365314',     // Disponible / Devuelto: Verde lima claro (#D9F99D), texto (#365314)
-  campoBg: 'FFFEF08A', campoText: 'FF854D0E',   // En campo / Prestado: Amarillo cálido (#FEF08A), texto (#854D0E)
-  bajaBg: 'FFFEE2E2', bajaText: 'FF991B1B',     // De baja / Vencido: Fondo (#FEE2E2), texto (#991B1B)
-  alertaBg: 'FFFEF3C7', alertaText: 'FF92400E', // Mantenimiento: Ámbar (#FEF3C7), texto (#92400E)
+  dispBg: 'FFD9F99D', dispText: 'FF365314',     // Disponible / Devuelto / Normal: Verde lima claro
+  campoBg: 'FFFEF08A', campoText: 'FF854D0E',   // En campo / Prestado: Amarillo cálido
+  bajaBg: 'FFFEE2E2', bajaText: 'FF991B1B',     // De baja / Vencido / Crítico: Rojo suave
+  alertaBg: 'FFFEF3C7', alertaText: 'FF92400E', // Mantenimiento / Regular: Ámbar
 };
 
 /**
@@ -73,21 +75,42 @@ function autoFitColumns(worksheet, minCol = 1, startRow = 5, margin = 4) {
 
 /**
  * Genera y descarga el Libro de Trabajo Maestro Multi-hoja institucional (SIGA FMO)
- * Sin errores XML, con nombres limpios de hojas, autofiltros delimitados y formato ARGB estricto.
+ * Incluye Resumen Ejecutivo con 3 bloques exhaustivos, Activos Tecnológicos, Robótica y Consumibles,
+ * Mobiliario, Papelería y Préstamos.
  * 
  * @param {Object} options - Parámetros opcionales para precarga o filtros
  */
 export async function exportarLibroMaestroExcelFMO(options = {}) {
-  // 1. Consulta previa de datos
-  let [activosRaw, consumiblesRaw, prestamosRaw] = await Promise.all([
-    options.activos || inventoryApi.getActivos().catch(() => []),
-    options.consumibles || inventoryApi.getConsumibles().catch(() => []),
-    options.prestamos || inventoryApi.getPrestamos().catch(() => []),
+  // 1. Consulta paralela de datos de las 5 colecciones
+  let [activosRaw, consumiblesRaw, prestamosRaw, mobiliarioRaw, papeleriaRaw] = await Promise.all([
+    options.activos ? Promise.resolve(options.activos) : inventoryApi.getActivos().catch(() => []),
+    options.consumibles ? Promise.resolve(options.consumibles) : inventoryApi.getConsumibles().catch(() => []),
+    options.prestamos ? Promise.resolve(options.prestamos) : inventoryApi.getPrestamos().catch(() => []),
+    options.mobiliario ? Promise.resolve(options.mobiliario) : (async () => {
+      try {
+        if (supabase) {
+          const { data, error } = await supabase.from('mobiliario').select('*').order('created_at', { ascending: false });
+          if (!error && Array.isArray(data) && data.length > 0) return data;
+        }
+      } catch (_) {}
+      return inventoryApi.getMobiliario().catch(() => []);
+    })(),
+    options.papeleria ? Promise.resolve(options.papeleria) : (async () => {
+      try {
+        if (supabase) {
+          const { data, error } = await supabase.from('papeleria').select('*').order('id', { ascending: true });
+          if (!error && Array.isArray(data) && data.length > 0) return data;
+        }
+      } catch (_) {}
+      return Array.isArray(catalogoPapeleriaFMO) ? catalogoPapeleriaFMO : [];
+    })(),
   ]);
 
   const activos = Array.isArray(activosRaw) ? activosRaw : (activosRaw?.data || []);
   const consumibles = Array.isArray(consumiblesRaw) ? consumiblesRaw : (consumiblesRaw?.data || []);
   const prestamos = Array.isArray(prestamosRaw) ? prestamosRaw : (prestamosRaw?.data || []);
+  const mobiliario = Array.isArray(mobiliarioRaw) ? mobiliarioRaw : (mobiliarioRaw?.data || []);
+  const papeleria = Array.isArray(papeleriaRaw) ? papeleriaRaw : (papeleriaRaw?.data || []);
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Fundación Marina Orth - SIGA';
@@ -102,163 +125,314 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   const fechaEmisionDDMMAAAA = `${dia}/${mes}/${anio}`;
   const fechaArchivoYYYYMMDD = `${anio}${mes}${dia}`;
 
+  // Cálculos de métricas globales
+  const totalActivos = activos.length;
+  const totalMobiliario = mobiliario.length;
+  const totalConsumibles = consumibles.length;
+  const totalPapeleria = papeleria.length;
+
+  const roboticaAlertas = consumibles.filter((c) => {
+    const disp = Number(c.disponible ?? c.quantity ?? 0);
+    const min = Number(c.minimo ?? c.minStock ?? 5);
+    return disp <= min;
+  });
+
+  const papeleriaAlertas = papeleria.filter((p) => {
+    const disp = Number(p.disponible ?? p.quantity ?? 0);
+    const min = Number(p.minimo ?? p.minStock ?? 3);
+    return disp <= min;
+  });
+
+  // Top 10 de materiales que requieren reabastecimiento urgente (combinando Robótica y Papelería)
+  const listaAlertas = [
+    ...roboticaAlertas.map((c) => ({
+      nombre: c.material || c.name || 'Insumo Robótica',
+      tipo: 'Robótica / STEAM',
+      disponible: Number(c.disponible ?? c.quantity ?? 0),
+      minimo: Number(c.minimo ?? c.minStock ?? 5),
+      diferencia: Number(c.disponible ?? c.quantity ?? 0) - Number(c.minimo ?? c.minStock ?? 5),
+    })),
+    ...papeleriaAlertas.map((p) => ({
+      nombre: p.material || p.name || 'Insumo Papelería',
+      tipo: 'Papelería / Didáctico',
+      disponible: Number(p.disponible ?? p.quantity ?? 0),
+      minimo: Number(p.minimo ?? p.minStock ?? 3),
+      diferencia: Number(p.disponible ?? p.quantity ?? 0) - Number(p.minimo ?? p.minStock ?? 3),
+    })),
+  ].sort((a, b) => a.diferencia - b.diferencia).slice(0, 10);
+
+  // Estados de conservación de Mobiliario
+  const estadosMobiliario = { Excelente: 0, Bueno: 0, Regular: 0, Malo: 0 };
+  mobiliario.forEach((m) => {
+    const est = String(m.estado_conservacion || m.estado || m.condicion || '').toLowerCase();
+    if (est.includes('excelente') || est.includes('nuevo')) {
+      estadosMobiliario.Excelente++;
+    } else if (est.includes('regular') || est.includes('repar') || est.includes('manten')) {
+      estadosMobiliario.Regular++;
+    } else if (est.includes('malo') || est.includes('danad') || est.includes('baja')) {
+      estadosMobiliario.Malo++;
+    } else {
+      estadosMobiliario.Bueno++;
+    }
+  });
+
+  // Consolidado de bienes por Sede institucional
+  const sedesClave = ['Medellín', 'Santuario', 'Villa del Socorro'];
+  const sedesMap = {};
+  sedesClave.forEach((s) => {
+    sedesMap[s] = { equipos: 0, mobiliario: 0, total: 0 };
+  });
+  sedesMap['Otras Sedes / Sin Asignar'] = { equipos: 0, mobiliario: 0, total: 0 };
+
+  const getSedeBucket = (sedeStr) => {
+    const s = String(sedeStr || '').toLowerCase();
+    if (s.includes('medell')) return 'Medellín';
+    if (s.includes('santuario')) return 'Santuario';
+    if (s.includes('villa') || s.includes('socorro')) return 'Villa del Socorro';
+    return 'Otras Sedes / Sin Asignar';
+  };
+
+  activos.forEach((a) => {
+    const b = getSedeBucket(a.sede || a.ubicacion);
+    if (!sedesMap[b]) sedesMap[b] = { equipos: 0, mobiliario: 0, total: 0 };
+    sedesMap[b].equipos++;
+    sedesMap[b].total++;
+  });
+
+  mobiliario.forEach((m) => {
+    const b = getSedeBucket(m.sede || m.ubicacion);
+    if (!sedesMap[b]) sedesMap[b] = { equipos: 0, mobiliario: 0, total: 0 };
+    sedesMap[b].mobiliario++;
+    sedesMap[b].total++;
+  });
+
   // =========================================================================
-  // HOJA 1: Resumen Ejecutivo (Estructura limpia libre de errores XML)
+  // HOJA 1: Resumen Ejecutivo (Reestructurada con 3 Bloques Exhaustivos)
   // =========================================================================
-  // 1. Crear la hoja sin filtros
   const sheetResumen = workbook.addWorksheet('Resumen Ejecutivo', {
     views: [{ showGridLines: true }],
     properties: { tabColor: { argb: 'FF84CC16' } },
   });
 
-  // 2. Definir anchos limpios de columna
-  sheetResumen.getColumn(1).width = 4;   // Margen izquierdo
-  sheetResumen.getColumn(2).width = 32;  // Métrica / Categoría
-  sheetResumen.getColumn(3).width = 16;  // Valor / Cantidad
-  sheetResumen.getColumn(4).width = 6;   // Separador central
-  sheetResumen.getColumn(5).width = 30;  // Métrica / Sede
-  sheetResumen.getColumn(6).width = 16;  // Valor / Cantidad
+  sheetResumen.getColumn(1).width = 4;   // Margen
+  sheetResumen.getColumn(2).width = 38;  // Concepto / Nombre
+  sheetResumen.getColumn(3).width = 22;  // Tipo / Detalle
+  sheetResumen.getColumn(4).width = 16;  // Stock / Valor
+  sheetResumen.getColumn(5).width = 16;  // Mínimo / Valor 2
+  sheetResumen.getColumn(6).width = 18;  // Estado / Alerta
 
-  // 3. Título Banner (Merge simple horizontal de una sola fila)
+  // Título Banner
   sheetResumen.mergeCells('B2:F2');
   const cellTitulo = sheetResumen.getCell('B2');
   cellTitulo.value = 'FUNDACIÓN MARINA ORTH - BALANCE CONSOLIDADO DE INVENTARIO';
   cellTitulo.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF0B132B' } };
   cellTitulo.alignment = { horizontal: 'center', vertical: 'middle' };
-  cellTitulo.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF84CC16' }, // Verde lima corporativo
-  };
+  cellTitulo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF84CC16' } };
   sheetResumen.getRow(2).height = 30;
 
   // Subtítulo
   sheetResumen.mergeCells('B3:F3');
   const cellSub = sheetResumen.getCell('B3');
-  cellSub.value = `Sistema SIGA | Reporte Oficial emitido el ${new Date().toLocaleDateString('es-CO')} | Total Activos: ${activos.length}`;
+  cellSub.value = `Sistema SIGA | Reporte Oficial emitido el ${fechaEmisionDDMMAAAA} | Total Existencias: ${totalActivos + totalMobiliario + totalConsumibles + totalPapeleria} registros`;
   cellSub.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FFFFFFFF' } };
   cellSub.alignment = { horizontal: 'center', vertical: 'middle' };
-  cellSub.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF65A30D' }, // Verde lima oscuro
-  };
+  cellSub.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF65A30D' } };
   sheetResumen.getRow(3).height = 20;
 
-  // Cálculos de métricas consolidadas
-  const totalActivos = activos.length;
-  const totalEnCampo = activos.filter((a) => {
-    const est = (a.estado || '').toLowerCase();
-    return est.includes('campo') || est === 'prestado';
-  }).length;
-  const totalConsumibles = consumibles.length;
-  const totalAlertasStock = consumibles.filter((c) => {
-    const disp = Number(c.disponible ?? 0);
-    const min = Number(c.minimo ?? 0);
-    return disp <= min;
-  }).length;
+  let rIdx = 5;
 
-  // Métricas adicionales para el bloque
-  const totalDisponibles = activos.filter((a) => (a.estado || '').toLowerCase() === 'disponible').length;
-  const totalMantenimiento = activos.filter((a) => (a.estado || '').toLowerCase().includes('mantenimiento')).length;
+  const aplicarEstiloSeccion = (rowNum, titulo) => {
+    sheetResumen.mergeCells(`B${rowNum}:F${rowNum}`);
+    const c = sheetResumen.getCell(`B${rowNum}`);
+    c.value = titulo;
+    c.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF14532D' } }; // Verde institucional oscuro
+    c.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+    sheetResumen.getRow(rowNum).height = 24;
+  };
 
-  // Distribución por Categorías
-  const catMap = {};
-  activos.forEach((a) => {
-    const cat = a.categoria || a.category || 'Otros';
-    catMap[cat] = (catMap[cat] || 0) + 1;
-  });
-  const distribucionCategorias = Object.keys(catMap).map((k) => ({
-    categoria: k,
-    cantidad: catMap[k],
-  })).sort((a, b) => b.cantidad - a.cantidad);
+  const aplicarFilaSubheader = (rowNum, valores) => {
+    const row = sheetResumen.getRow(rowNum);
+    valores.forEach((val, i) => {
+      const c = row.getCell(i + 2);
+      c.value = val;
+      c.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF166534' } };
+      c.alignment = { horizontal: i >= 2 ? 'center' : 'left', vertical: 'middle' };
+      c.border = {
+        top: { style: 'thin', color: { argb: COLORS.borderDark } },
+        bottom: { style: 'thin', color: { argb: COLORS.borderDark } },
+        left: { style: 'thin', color: { argb: COLORS.borderDark } },
+        right: { style: 'thin', color: { argb: COLORS.borderDark } },
+      };
+    });
+    row.height = 20;
+  };
 
-  // 4. Bloque de Indicadores Principales (KPIs) en celdas directas (Filas B y C)
-  const kpiHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF14532D' } }; // Verde bosque
-  const kpiHeaderFont = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  // -------------------------------------------------------------------------
+  // BLOQUE 1: BALANCE GENERAL DE EXISTENCIAS
+  // -------------------------------------------------------------------------
+  aplicarEstiloSeccion(rIdx, '1. BALANCE GENERAL DE EXISTENCIAS');
+  rIdx++;
+  aplicarFilaSubheader(rIdx, ['Categoría de Inventario', 'Tipo de Control', 'Total Registros', 'Disponibilidad', 'Estado Operativo']);
+  rIdx++;
 
-  sheetResumen.getCell('B5').value = 'MÉTRICAS CLAVE DEL SISTEMA';
-  sheetResumen.getCell('B5').font = kpiHeaderFont;
-  sheetResumen.getCell('B5').fill = kpiHeaderFill;
-
-  sheetResumen.getCell('C5').value = 'VALOR';
-  sheetResumen.getCell('C5').font = kpiHeaderFont;
-  sheetResumen.getCell('C5').fill = kpiHeaderFill;
-  sheetResumen.getCell('C5').alignment = { horizontal: 'center' };
-
-  const metricas = [
-    { label: 'Total Activos Tecnológicos', valor: totalActivos || 0 },
-    { label: 'Equipos Disponibles en Sede', valor: totalDisponibles || 0 },
-    { label: 'Activos Asignados en Campo / Préstamo', valor: totalEnCampo || 0 },
-    { label: 'Equipos en Mantenimiento', valor: totalMantenimiento || 0 },
-    { label: 'Total Insumos / Consumibles Robótica', valor: totalConsumibles || 0 },
-    { label: 'Alertas por Stock Mínimo Crítico', valor: totalAlertasStock || 0 },
+  const existenciasData = [
+    ['Equipos Tecnológicos (Cómputo / Robótica)', 'Placa ACT-FMO / Serial', totalActivos, `${activos.filter(a => (a.estado||'').toLowerCase() === 'disponible').length} en bodega`, 'Operativo'],
+    ['Muebles y Enseres de Sedes', 'Placa MOB-XXXX', totalMobiliario, `${mobiliario.filter(m => (m.estado||'').toLowerCase() === 'bueno' || (m.estado_conservacion||'').toLowerCase() === 'bueno').length} operativos`, 'Dotación'],
+    ['Referencias Materiales de Robótica STEAM', 'Código Rob-XXXX', totalConsumibles, `${roboticaAlertas.length} en alerta`, roboticaAlertas.length > 0 ? 'Reabastecer' : 'Óptimo'],
+    ['Referencias de Papelería e Insumos', 'Código Pape-XXXX', totalPapeleria, `${papeleriaAlertas.length} en alerta`, papeleriaAlertas.length > 0 ? 'Reabastecer' : 'Óptimo'],
   ];
 
-  let filaActual = 6;
-  metricas.forEach((m, idx) => {
-    const row = sheetResumen.getRow(filaActual);
-    row.getCell(2).value = m.label;
-    row.getCell(3).value = m.valor;
-    row.getCell(3).alignment = { horizontal: 'center' };
-    row.getCell(3).font = { bold: true };
-
-    const bg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF7FEE7'; // Alternado blanco y lima suave
-    row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-    row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-    row.getCell(2).border = {
-      top: { style: 'thin', color: { argb: COLORS.borderLight } },
-      bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
-      left: { style: 'thin', color: { argb: COLORS.borderLight } },
-      right: { style: 'thin', color: { argb: COLORS.borderLight } },
-    };
-    row.getCell(3).border = {
-      top: { style: 'thin', color: { argb: COLORS.borderLight } },
-      bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
-      left: { style: 'thin', color: { argb: COLORS.borderLight } },
-      right: { style: 'thin', color: { argb: COLORS.borderLight } },
-    };
-    filaActual++;
-  });
-
-  // 5. Mini tablas de distribución por Categoría a la derecha (Columnas E y F)
-  sheetResumen.getCell('E5').value = 'DISTRIBUCIÓN POR CATEGORÍA';
-  sheetResumen.getCell('E5').font = kpiHeaderFont;
-  sheetResumen.getCell('E5').fill = kpiHeaderFill;
-
-  sheetResumen.getCell('F5').value = 'EQUIPOS';
-  sheetResumen.getCell('F5').font = kpiHeaderFont;
-  sheetResumen.getCell('F5').fill = kpiHeaderFill;
-  sheetResumen.getCell('F5').alignment = { horizontal: 'center' };
-
-  let filaCat = 6;
-  (distribucionCategorias || []).slice(0, 6).forEach((cat, idx) => {
-    const row = sheetResumen.getRow(filaCat);
-    row.getCell(5).value = cat.categoria || 'Sin categoría';
-    row.getCell(6).value = cat.cantidad || 0;
-    row.getCell(6).alignment = { horizontal: 'center' };
-    row.getCell(6).font = { bold: true };
-
+  existenciasData.forEach((rowVals, idx) => {
+    const row = sheetResumen.getRow(rIdx);
     const bg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF7FEE7';
-    row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-    row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-    row.getCell(5).border = {
-      top: { style: 'thin', color: { argb: COLORS.borderLight } },
-      bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
-      left: { style: 'thin', color: { argb: COLORS.borderLight } },
-      right: { style: 'thin', color: { argb: COLORS.borderLight } },
-    };
-    row.getCell(6).border = {
-      top: { style: 'thin', color: { argb: COLORS.borderLight } },
-      bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
-      left: { style: 'thin', color: { argb: COLORS.borderLight } },
-      right: { style: 'thin', color: { argb: COLORS.borderLight } },
-    };
-    filaCat++;
+    rowVals.forEach((val, cIdx) => {
+      const c = row.getCell(cIdx + 2);
+      c.value = val;
+      c.font = { name: 'Calibri', size: 10, bold: cIdx === 0 || cIdx === 2, color: { argb: COLORS.textPrimary } };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      c.alignment = { horizontal: cIdx >= 2 ? 'center' : 'left', vertical: 'middle' };
+      c.border = {
+        top: { style: 'thin', color: { argb: COLORS.borderLight } },
+        bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
+        left: { style: 'thin', color: { argb: COLORS.borderLight } },
+        right: { style: 'thin', color: { argb: COLORS.borderLight } },
+      };
+    });
+    row.height = 20;
+    rIdx++;
   });
+
+  rIdx++;
+
+  // -------------------------------------------------------------------------
+  // BLOQUE 2: SEMÁFORO Y ALERTAS DE STOCK MÍNIMO
+  // -------------------------------------------------------------------------
+  aplicarEstiloSeccion(rIdx, '2. SEMÁFORO Y ALERTAS DE STOCK MÍNIMO (REABASTECIMIENTO)');
+  rIdx++;
+  
+  // Resumen semáforo en fila doble
+  const rowSem = sheetResumen.getRow(rIdx);
+  sheetResumen.mergeCells(`B${rIdx}:C${rIdx}`);
+  rowSem.getCell(2).value = `Insumos de Robótica con Stock Bajo (≤ Mínimo): ${roboticaAlertas.length}`;
+  rowSem.getCell(2).font = { name: 'Calibri', size: 10, bold: true, color: { argb: roboticaAlertas.length > 0 ? 'FF991B1B' : 'FF166534' } };
+  rowSem.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: roboticaAlertas.length > 0 ? 'FFFEE2E2' : 'FFDCFCE7' } };
+  rowSem.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+
+  sheetResumen.mergeCells(`D${rIdx}:F${rIdx}`);
+  rowSem.getCell(4).value = `Insumos de Papelería con Stock Bajo (≤ Mínimo): ${papeleriaAlertas.length}`;
+  rowSem.getCell(4).font = { name: 'Calibri', size: 10, bold: true, color: { argb: papeleriaAlertas.length > 0 ? 'FF991B1B' : 'FF166534' } };
+  rowSem.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: papeleriaAlertas.length > 0 ? 'FFFEE2E2' : 'FFDCFCE7' } };
+  rowSem.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+  rowSem.height = 22;
+  rIdx++;
+
+  // Subcabecera Top 10
+  aplicarFilaSubheader(rIdx, ['Top 10 Materiales que Requieren Reabastecimiento Urgente', 'Tipo de Insumo', 'Stock Actual', 'Mínimo Requerido', 'Estado Alerta']);
+  rIdx++;
+
+  if (listaAlertas.length === 0) {
+    const row = sheetResumen.getRow(rIdx);
+    sheetResumen.mergeCells(`B${rIdx}:F${rIdx}`);
+    row.getCell(2).value = '✅ Todos los insumos de Robótica y Papelería se encuentran por encima del umbral mínimo de seguridad.';
+    row.getCell(2).font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF166534' } };
+    row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } };
+    row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.height = 20;
+    rIdx++;
+  } else {
+    listaAlertas.forEach((item, idx) => {
+      const row = sheetResumen.getRow(rIdx);
+      const rowVals = [item.nombre, item.tipo, item.disponible, item.minimo, 'CRÍTICO'];
+      rowVals.forEach((val, cIdx) => {
+        const c = row.getCell(cIdx + 2);
+        c.value = val;
+        c.font = { name: 'Calibri', size: 10, bold: cIdx === 2 || cIdx === 4, color: cIdx === 4 ? { argb: 'FF991B1B' } : { argb: COLORS.textPrimary } };
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: cIdx === 4 ? 'FFFEE2E2' : (idx % 2 === 0 ? 'FFFFFFFF' : 'FFF7FEE7') } };
+        c.alignment = { horizontal: cIdx >= 2 ? 'center' : 'left', vertical: 'middle' };
+        c.border = {
+          top: { style: 'thin', color: { argb: COLORS.borderLight } },
+          bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
+          left: { style: 'thin', color: { argb: COLORS.borderLight } },
+          right: { style: 'thin', color: { argb: COLORS.borderLight } },
+        };
+      });
+      row.height = 19;
+      rIdx++;
+    });
+  }
+
+  rIdx++;
+
+  // -------------------------------------------------------------------------
+  // BLOQUE 3: ESTADO FÍSICO Y DISTRIBUCIÓN
+  // -------------------------------------------------------------------------
+  aplicarEstiloSeccion(rIdx, '3. ESTADO FÍSICO Y DISTRIBUCIÓN POR SEDE');
+  rIdx++;
+
+  // Subheader Mobiliario y Sedes
+  aplicarFilaSubheader(rIdx, ['Estado de Conservación (Mobiliario)', 'Cantidad Muebles', 'Sede Formativa FMO', 'Equipos Cómputo', 'Mobiliario Sede']);
+  rIdx++;
+
+  const estadosArr = [
+    { label: 'Excelente / Como Nuevo', val: estadosMobiliario.Excelente },
+    { label: 'Bueno / Totalmente Funcional', val: estadosMobiliario.Bueno },
+    { label: 'Regular / Requiere Mantenimiento', val: estadosMobiliario.Regular },
+    { label: 'Malo / Candidato a Baja', val: estadosMobiliario.Malo },
+  ];
+
+  const sedesRows = [
+    { sede: 'Medellín', eq: sedesMap['Medellín']?.equipos || 0, mob: sedesMap['Medellín']?.mobiliario || 0 },
+    { sede: 'Santuario', eq: sedesMap['Santuario']?.equipos || 0, mob: sedesMap['Santuario']?.mobiliario || 0 },
+    { sede: 'Villa del Socorro', eq: sedesMap['Villa del Socorro']?.equipos || 0, mob: sedesMap['Villa del Socorro']?.mobiliario || 0 },
+    { sede: 'Otras Sedes / Sin Asignar', eq: sedesMap['Otras Sedes / Sin Asignar']?.equipos || 0, mob: sedesMap['Otras Sedes / Sin Asignar']?.mobiliario || 0 },
+  ];
+
+  for (let i = 0; i < 4; i++) {
+    const row = sheetResumen.getRow(rIdx);
+    const est = estadosArr[i];
+    const s = sedesRows[i];
+    const bg = i % 2 === 0 ? 'FFFFFFFF' : 'FFF7FEE7';
+
+    // Col B y C: Mobiliario
+    row.getCell(2).value = est.label;
+    row.getCell(2).font = { name: 'Calibri', size: 10, color: { argb: COLORS.textPrimary } };
+    row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+    row.getCell(3).value = est.val;
+    row.getCell(3).font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.textPrimary } };
+    row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+    row.getCell(3).alignment = { horizontal: 'center' };
+
+    // Col D, E y F: Sedes
+    row.getCell(4).value = s.sede;
+    row.getCell(4).font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.textPrimary } };
+    row.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+    row.getCell(5).value = `${s.eq} equipos`;
+    row.getCell(5).font = { name: 'Calibri', size: 10, color: { argb: COLORS.textPrimary } };
+    row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+    row.getCell(5).alignment = { horizontal: 'center' };
+
+    row.getCell(6).value = `${s.mob} muebles`;
+    row.getCell(6).font = { name: 'Calibri', size: 10, color: { argb: COLORS.textPrimary } };
+    row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+    row.getCell(6).alignment = { horizontal: 'center' };
+
+    for (let c = 2; c <= 6; c++) {
+      row.getCell(c).border = {
+        top: { style: 'thin', color: { argb: COLORS.borderLight } },
+        bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
+        left: { style: 'thin', color: { argb: COLORS.borderLight } },
+        right: { style: 'thin', color: { argb: COLORS.borderLight } },
+      };
+    }
+    row.height = 20;
+    rIdx++;
+  }
 
   // =========================================================================
-  // HOJA 2: Activos Tecnologicos (Nombre limpio sin emojis)
+  // HOJA 2: Activos Tecnologicos
   // =========================================================================
   const wsActivos = workbook.addWorksheet('Activos Tecnologicos', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
@@ -266,7 +440,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     properties: { tabColor: { argb: COLORS.limePrimary } },
   });
 
-  // Fila 1: Banner Superior (Estilizado exclusivamente en A1)
   wsActivos.mergeCells('A1:K1');
   const aT1 = wsActivos.getCell('A1');
   aT1.value = 'FUNDACIÓN MARINA ORTH - REPORTE DE ACTIVOS TECNOLÓGICOS';
@@ -275,7 +448,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   aT1.alignment = { horizontal: 'center', vertical: 'middle' };
   wsActivos.getRow(1).height = 28;
 
-  // Fila 2: Subtítulo (Estilizado exclusivamente en A2)
   wsActivos.mergeCells('A2:K2');
   const aT2 = wsActivos.getCell('A2');
   aT2.value = `Catálogo Maestro de Equipos y Cómputo - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${activos.length} activos`;
@@ -284,7 +456,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   aT2.alignment = { horizontal: 'center', vertical: 'middle' };
   wsActivos.getRow(2).height = 20;
 
-  // Fila 3: Línea decorativa (Estilizado exclusivamente en A3)
   wsActivos.mergeCells('A3:K3');
   const aT3 = wsActivos.getCell('A3');
   aT3.value = '';
@@ -298,40 +469,35 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     { key: 'categoria', header: 'Categoría', align: 'left' },
     { key: 'marca', header: 'Marca', align: 'left' },
     { key: 'modelo', header: 'Modelo', align: 'left' },
-    { key: 'serial', header: 'Serial', align: 'center' },
+    { key: 'serial', header: 'Número de Serie', align: 'left' },
+    { key: 'sede', header: 'Sede Asignada', align: 'left' },
+    { key: 'responsable', header: 'Responsable / Custodio', align: 'left' },
+    { key: 'estado', header: 'Estado Físico', align: 'center' },
     { key: 'condicion', header: 'Condición', align: 'center' },
-    { key: 'estado', header: 'Estado', align: 'center' },
-    { key: 'ubicacion', header: 'Sede / Ubicación', align: 'left' },
-    { key: 'responsable', header: 'Responsable Actual', align: 'left' },
-    { key: 'valor_compra', header: 'Valor Compra', align: 'right' },
+    { key: 'valor', header: 'Valor Comercial', align: 'right' },
   ];
 
-  // Fila 5: Cabeceras
-  const headerActivosRow = wsActivos.getRow(5);
-  headerActivosRow.values = colsActivosDef.map((c) => c.header);
-  headerActivosRow.height = 26;
-  headerActivosRow.eachCell(styleHeaderCell);
+  const headerActRow = wsActivos.getRow(5);
+  headerActRow.values = colsActivosDef.map((c) => c.header);
+  headerActRow.height = 26;
+  headerActRow.eachCell(styleHeaderCell);
 
   let rAIdx = 6;
   activos.forEach((a, idx) => {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const placa = a.placa || a.code || a.id || '—';
-    const nombre = a.nombre || a.name || 'Equipo';
+    const placa = a.placa || a.code || a.id || 'S/P';
+    const nombre = a.nombre || a.name || a.material || 'Equipo Tecnológico';
     const categoria = a.categoria || a.category || 'Tecnología';
-    const marca = a.marca || 'Estándar';
-    const modelo = a.modelo || a.model || 'General';
-    const serial = a.serial || '—';
-    const condicion = a.condicion || 'Bueno';
+    const marca = a.marca || a.brand || '—';
+    const modelo = a.modelo || a.model || '—';
+    const serial = a.serial || a.serialNumber || '—';
+    const sede = a.sede || a.ubicacion || a.location || 'Medellín';
+    const responsable = a.responsable || a.custodio || a.assignedTo || 'Bodega Central';
     const estado = a.estado || 'Disponible';
-    const sede = a.sede || '';
-    const ubicacion = a.ubicacion || a.location || '';
-    const ubicacionStr = sede && !ubicacion.toLowerCase().includes(sede.toLowerCase())
-      ? `${sede} - ${ubicacion}`
-      : (ubicacion || sede || 'Medellín');
-    const responsable = a.responsable || a.custodio || '—';
-    const valor = Number(a.valor_compra ?? a.valor_total ?? 0);
+    const condicion = a.condicion || 'Buen Estado';
+    const valor = Number(a.valor_unitario ?? a.valor_compra ?? a.precio ?? 0);
 
     const row = wsActivos.addRow([
       placa,
@@ -340,11 +506,11 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
       marca,
       modelo,
       serial,
-      condicion,
-      estado,
-      ubicacionStr,
+      sede,
       responsable,
-      valor > 0 ? valor : 0,
+      estado,
+      condicion,
+      valor,
     ]);
 
     row.height = 22;
@@ -361,7 +527,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
         right: { style: 'thin', color: { argb: COLORS.borderLight } },
       };
 
-      if (colNumber === 1 || colNumber === 6) {
+      if (colNumber === 1) {
         cell.font = { name: 'Consolas', size: 9.5, bold: true, color: { argb: COLORS.textPrimary } };
       }
 
@@ -369,8 +535,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
         cell.numFmt = '"$"#,##0.00';
       }
 
-      // Badges de Estado
-      if (colNumber === 8) {
+      if (colNumber === 9) {
         const est = String(cell.value || '').toLowerCase().trim();
         if (est === 'disponible') {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dispBg } };
@@ -391,7 +556,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rAIdx++;
   });
 
-  // Fila Total Activos
   const totActRow = wsActivos.getRow(rAIdx);
   totActRow.getCell(1).value = 'TOTAL:';
   totActRow.getCell(2).value = `${activos.length} activos inventariados`;
@@ -409,17 +573,15 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  // Rango de autoFilter estricto desde la cabecera hasta la última fila de datos (antes de totales)
   const ultimaFilaDatosActivos = Math.max(5, rAIdx - 1);
   wsActivos.autoFilter = {
     from: { row: 5, column: 1 },
     to: { row: ultimaFilaDatosActivos, column: 11 },
   };
-
   autoFitColumns(wsActivos, 1, 5, 4);
 
   // =========================================================================
-  // HOJA 2: Robotica y Consumibles (Nombre limpio sin emojis)
+  // HOJA 3: Robotica y Consumibles
   // =========================================================================
   const wsConsumibles = workbook.addWorksheet('Robotica y Consumibles', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
@@ -427,7 +589,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     properties: { tabColor: { argb: COLORS.limePrimary } },
   });
 
-  // Fila 1: Banner Superior
   wsConsumibles.mergeCells('A1:I1');
   const cT1 = wsConsumibles.getCell('A1');
   cT1.value = 'FUNDACIÓN MARINA ORTH - MATERIALES Y CONSUMIBLES DE ROBÓTICA';
@@ -436,7 +597,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   cT1.alignment = { horizontal: 'center', vertical: 'middle' };
   wsConsumibles.getRow(1).height = 28;
 
-  // Fila 2: Subtítulo
   wsConsumibles.mergeCells('A2:I2');
   const cT2 = wsConsumibles.getCell('A2');
   cT2.value = `Control de Insumos y Stock en Bodega - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${consumibles.length} ítems`;
@@ -445,7 +605,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   cT2.alignment = { horizontal: 'center', vertical: 'middle' };
   wsConsumibles.getRow(2).height = 20;
 
-  // Fila 3: Línea decorativa
   wsConsumibles.mergeCells('A3:I3');
   const cT3 = wsConsumibles.getCell('A3');
   cT3.value = '';
@@ -465,7 +624,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     { key: 'observaciones', header: 'Observaciones', align: 'left' },
   ];
 
-  // Fila 5: Cabeceras
   const headerConsRow = wsConsumibles.getRow(5);
   headerConsRow.values = colsConsumiblesDef.map((c) => c.header);
   headerConsRow.height = 26;
@@ -485,7 +643,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const estado = c.estado || 'Bueno';
     const ubicacion = c.ubicacion || c.location || 'Oficina FMO';
     const observaciones = c.observaciones || c.descripcion || c.description || '—';
-
     const esAlerta = disp <= min;
 
     const row = wsConsumibles.addRow([
@@ -518,7 +675,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
         cell.font = { name: 'Consolas', size: 9.5, bold: true, color: { argb: COLORS.textPrimary } };
       }
 
-      // Alerta de Stock Mínimo
       if (colNumber === 4 && esAlerta) {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } };
         cell.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFB91C1C' } };
@@ -534,7 +690,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rCIdx++;
   });
 
-  // Fila Total Consumibles
   const totConsRow = wsConsumibles.getRow(rCIdx);
   totConsRow.getCell(1).value = 'TOTAL:';
   totConsRow.getCell(2).value = `${consumibles.length} tipos de materiales`;
@@ -542,7 +697,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   totConsRow.getCell(5).value = { formula: `SUM(E6:E${rCIdx - 1})` };
   totConsRow.height = 24;
 
-  totConsRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+  totConsRow.eachCell({ includeEmpty: true }, (cell) => {
     cell.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: COLORS.white } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerGreenDark } };
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -552,17 +707,295 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  // Autofiltro delimitado
   const ultimaFilaDatosConsumibles = Math.max(5, rCIdx - 1);
   wsConsumibles.autoFilter = {
     from: { row: 5, column: 1 },
     to: { row: ultimaFilaDatosConsumibles, column: 9 },
   };
-
   autoFitColumns(wsConsumibles, 1, 5, 4);
 
   // =========================================================================
-  // HOJA 3: Prestamos y Asignaciones (Nombre limpio sin emojis)
+  // HOJA 4: Mobiliario (NUEVA HOJA)
+  // =========================================================================
+  const wsMobiliario = workbook.addWorksheet('Mobiliario', {
+    pageSetup: { orientation: 'landscape', paperSize: 9 },
+    views: [{ state: 'frozen', ySplit: 5 }],
+    properties: { tabColor: { argb: COLORS.limePrimary } },
+  });
+
+  wsMobiliario.mergeCells('A1:M1');
+  const mT1 = wsMobiliario.getCell('A1');
+  mT1.value = 'FUNDACIÓN MARINA ORTH - INVENTARIO DE MOBILIARIO Y ENSERES';
+  mT1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: COLORS.titleDark } };
+  mT1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limePrimary } };
+  mT1.alignment = { horizontal: 'center', vertical: 'middle' };
+  wsMobiliario.getRow(1).height = 28;
+
+  wsMobiliario.mergeCells('A2:M2');
+  const mT2 = wsMobiliario.getCell('A2');
+  mT2.value = `Dotación, Mesas de Robótica y Sillería - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${mobiliario.length} muebles`;
+  mT2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: COLORS.white } };
+  mT2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeMedium } };
+  mT2.alignment = { horizontal: 'center', vertical: 'middle' };
+  wsMobiliario.getRow(2).height = 20;
+
+  wsMobiliario.mergeCells('A3:M3');
+  const mT3 = wsMobiliario.getCell('A3');
+  mT3.value = '';
+  mT3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeLight } };
+  wsMobiliario.getRow(3).height = 4;
+  wsMobiliario.getRow(4).height = 8;
+
+  const colsMobiliarioDef = [
+    { key: 'placa', header: 'Placa / Código', align: 'center' },
+    { key: 'nombre', header: 'Nombre del Mueble', align: 'left' },
+    { key: 'categoria', header: 'Categoría', align: 'left' },
+    { key: 'sede', header: 'Sede Formativa', align: 'left' },
+    { key: 'ubicacion_especifica', header: 'Ubicación Específica', align: 'left' },
+    { key: 'material', header: 'Material Principal', align: 'left' },
+    { key: 'color', header: 'Color', align: 'center' },
+    { key: 'dimensiones', header: 'Dimensiones', align: 'center' },
+    { key: 'estado_conservacion', header: 'Estado Conservación', align: 'center' },
+    { key: 'cantidad', header: 'Cantidad', align: 'center' },
+    { key: 'fecha_adquisicion', header: 'Fecha Adquisición', align: 'center' },
+    { key: 'proveedor_origen', header: 'Proveedor / Origen', align: 'left' },
+    { key: 'observaciones', header: 'Observaciones', align: 'left' },
+  ];
+
+  const headerMobRow = wsMobiliario.getRow(5);
+  headerMobRow.values = colsMobiliarioDef.map((c) => c.header);
+  headerMobRow.height = 26;
+  headerMobRow.eachCell(styleHeaderCell);
+
+  let rMIdx = 6;
+  mobiliario.forEach((m, idx) => {
+    const isEven = idx % 2 === 0;
+    const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
+
+    const placa = m.placa || m.code || m.id || 'S/P';
+    const nombre = m.nombre || m.name || m.material || 'Mobiliario';
+    const categoria = m.categoria || m.subcategoria || m.category || 'Mesas y Escritorios';
+    const sede = m.sede || m.ubicacion || 'Medellín';
+    const ubicacionEsp = m.ubicacion_especifica || m.ubicacion_estante || m.espacio || '—';
+    const material = m.material || '—';
+    const color = m.color || '—';
+    const dimensiones = m.dimensiones || '—';
+    const estado = m.estado_conservacion || m.estado || m.condicion || 'Bueno';
+    const cantidad = Number(m.cantidad ?? m.disponible ?? 1);
+    const fechaAdq = m.fecha_adquisicion ? String(m.fecha_adquisicion).split('T')[0] : '—';
+    const proveedor = m.proveedor_origen || m.proveedor || m.origen || '—';
+    const obs = m.observaciones || m.descripcion || '—';
+
+    const row = wsMobiliario.addRow([
+      placa,
+      nombre,
+      categoria,
+      sede,
+      ubicacionEsp,
+      material,
+      color,
+      dimensiones,
+      estado,
+      cantidad,
+      fechaAdq,
+      proveedor,
+      obs,
+    ]);
+
+    row.height = 22;
+
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const colDef = colsMobiliarioDef[colNumber - 1];
+      cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textPrimary } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      cell.alignment = { horizontal: colDef ? colDef.align : 'left', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: COLORS.borderLight } },
+        bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
+        left: { style: 'thin', color: { argb: COLORS.borderLight } },
+        right: { style: 'thin', color: { argb: COLORS.borderLight } },
+      };
+
+      if (colNumber === 1) {
+        cell.font = { name: 'Consolas', size: 9.5, bold: true, color: { argb: COLORS.textPrimary } };
+      }
+
+      // Estilo de Estado
+      if (colNumber === 9) {
+        const estStr = String(cell.value || '').toLowerCase();
+        if (estStr.includes('excelente') || estStr.includes('nuevo')) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dispBg } };
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.dispText } };
+        } else if (estStr.includes('bueno')) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dispBg } };
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.dispText } };
+        } else if (estStr.includes('regular')) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.alertaBg } };
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.alertaText } };
+        } else if (estStr.includes('malo') || estStr.includes('baja')) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.bajaBg } };
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.bajaText } };
+        }
+      }
+    });
+
+    rMIdx++;
+  });
+
+  const totMobRow = wsMobiliario.getRow(rMIdx);
+  totMobRow.getCell(1).value = 'TOTAL:';
+  totMobRow.getCell(2).value = `${mobiliario.length} muebles registrados`;
+  totMobRow.getCell(10).value = { formula: `SUM(J6:J${rMIdx - 1})` };
+  totMobRow.height = 24;
+
+  totMobRow.eachCell({ includeEmpty: true }, (cell) => {
+    cell.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: COLORS.white } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerGreenDark } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'medium', color: { argb: COLORS.limePrimary } },
+      bottom: { style: 'medium', color: { argb: COLORS.limePrimary } },
+    };
+  });
+
+  const ultimaFilaDatosMobiliario = Math.max(5, rMIdx - 1);
+  wsMobiliario.autoFilter = {
+    from: { row: 5, column: 1 },
+    to: { row: ultimaFilaDatosMobiliario, column: 13 },
+  };
+  autoFitColumns(wsMobiliario, 1, 5, 4);
+
+  // =========================================================================
+  // HOJA 5: Papeleria (NUEVA HOJA)
+  // =========================================================================
+  const wsPapeleria = workbook.addWorksheet('Papeleria', {
+    pageSetup: { orientation: 'landscape', paperSize: 9 },
+    views: [{ state: 'frozen', ySplit: 5 }],
+    properties: { tabColor: { argb: COLORS.limePrimary } },
+  });
+
+  wsPapeleria.mergeCells('A1:H1');
+  const paT1 = wsPapeleria.getCell('A1');
+  paT1.value = 'FUNDACIÓN MARINA ORTH - INVENTARIO DE PAPELERÍA E INSUMOS EDUCATIVOS';
+  paT1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: COLORS.titleDark } };
+  paT1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limePrimary } };
+  paT1.alignment = { horizontal: 'center', vertical: 'middle' };
+  wsPapeleria.getRow(1).height = 28;
+
+  wsPapeleria.mergeCells('A2:H2');
+  const paT2 = wsPapeleria.getCell('A2');
+  paT2.value = `Control de Insumos Pedagógicos y Oficina - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${papeleria.length} referencias`;
+  paT2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: COLORS.white } };
+  paT2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeMedium } };
+  paT2.alignment = { horizontal: 'center', vertical: 'middle' };
+  wsPapeleria.getRow(2).height = 20;
+
+  wsPapeleria.mergeCells('A3:H3');
+  const paT3 = wsPapeleria.getCell('A3');
+  paT3.value = '';
+  paT3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeLight } };
+  wsPapeleria.getRow(3).height = 4;
+  wsPapeleria.getRow(4).height = 8;
+
+  const colsPapeleriaDef = [
+    { key: 'id', header: 'Código', align: 'center' },
+    { key: 'material', header: 'Material / Insumo', align: 'left' },
+    { key: 'categoria', header: 'Categoría', align: 'left' },
+    { key: 'sede', header: 'Sede Asignada', align: 'left' },
+    { key: 'disponible', header: 'Stock Disponible', align: 'center' },
+    { key: 'minimo', header: 'Stock Mínimo', align: 'center' },
+    { key: 'estado_alerta', header: 'Estado Alerta', align: 'center' },
+    { key: 'ubicacion', header: 'Ubicación / Contenedor', align: 'left' },
+  ];
+
+  const headerPapRow = wsPapeleria.getRow(5);
+  headerPapRow.values = colsPapeleriaDef.map((c) => c.header);
+  headerPapRow.height = 26;
+  headerPapRow.eachCell(styleHeaderCell);
+
+  let rPaIdx = 6;
+  papeleria.forEach((p, idx) => {
+    const isEven = idx % 2 === 0;
+    const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
+
+    const idCod = p.id || `Pape${String(idx + 1).padStart(4, '0')}`;
+    const material = p.material || p.name || 'Insumo Papelería';
+    const categoria = p.categoria || p.category || 'Papelería';
+    const sede = p.sede || p.ubicacion_sede || 'Medellín';
+    const disp = Number(p.disponible ?? p.quantity ?? 0);
+    const min = Number(p.minimo ?? p.minStock ?? 3);
+    const estadoAlerta = disp <= min ? 'CRÍTICO' : 'NORMAL';
+    const ubicacion = p.ubicacion_estante || p.caja || p.ubicacion || p.location || 'Bodega General';
+
+    const row = wsPapeleria.addRow([
+      idCod,
+      material,
+      categoria,
+      sede,
+      disp,
+      min,
+      estadoAlerta,
+      ubicacion,
+    ]);
+
+    row.height = 22;
+
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const colDef = colsPapeleriaDef[colNumber - 1];
+      cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textPrimary } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      cell.alignment = { horizontal: colDef ? colDef.align : 'left', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: COLORS.borderLight } },
+        bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
+        left: { style: 'thin', color: { argb: COLORS.borderLight } },
+        right: { style: 'thin', color: { argb: COLORS.borderLight } },
+      };
+
+      if (colNumber === 1) {
+        cell.font = { name: 'Consolas', size: 9.5, bold: true, color: { argb: COLORS.textPrimary } };
+      }
+
+      if (colNumber === 7) {
+        if (estadoAlerta === 'CRÍTICO') {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } };
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFB91C1C' } };
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dispBg } };
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.dispText } };
+        }
+      }
+    });
+
+    rPaIdx++;
+  });
+
+  const totPapRow = wsPapeleria.getRow(rPaIdx);
+  totPapRow.getCell(1).value = 'TOTAL:';
+  totPapRow.getCell(2).value = `${papeleria.length} referencias inventariadas`;
+  totPapRow.getCell(5).value = { formula: `SUM(E6:E${rPaIdx - 1})` };
+  totPapRow.getCell(6).value = { formula: `SUM(F6:F${rPaIdx - 1})` };
+  totPapRow.height = 24;
+
+  totPapRow.eachCell({ includeEmpty: true }, (cell) => {
+    cell.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: COLORS.white } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerGreenDark } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'medium', color: { argb: COLORS.limePrimary } },
+      bottom: { style: 'medium', color: { argb: COLORS.limePrimary } },
+    };
+  });
+
+  const ultimaFilaDatosPapeleria = Math.max(5, rPaIdx - 1);
+  wsPapeleria.autoFilter = {
+    from: { row: 5, column: 1 },
+    to: { row: ultimaFilaDatosPapeleria, column: 8 },
+  };
+  autoFitColumns(wsPapeleria, 1, 5, 4);
+
+  // =========================================================================
+  // HOJA 6: Prestamos y Asignaciones
   // =========================================================================
   const wsPrestamos = workbook.addWorksheet('Prestamos y Asignaciones', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
@@ -570,7 +1003,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     properties: { tabColor: { argb: COLORS.limePrimary } },
   });
 
-  // Fila 1: Banner Superior
   wsPrestamos.mergeCells('A1:G1');
   const pT1 = wsPrestamos.getCell('A1');
   pT1.value = 'FUNDACIÓN MARINA ORTH - CONTROL DE PRÉSTAMOS Y ASIGNACIONES';
@@ -579,7 +1011,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   pT1.alignment = { horizontal: 'center', vertical: 'middle' };
   wsPrestamos.getRow(1).height = 28;
 
-  // Fila 2: Subtítulo
   wsPrestamos.mergeCells('A2:G2');
   const pT2 = wsPrestamos.getCell('A2');
   pT2.value = `Trazabilidad de Custodias y Equipos en Campo - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${prestamos.length} registros`;
@@ -588,7 +1019,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   pT2.alignment = { horizontal: 'center', vertical: 'middle' };
   wsPrestamos.getRow(2).height = 20;
 
-  // Fila 3: Línea decorativa
   wsPrestamos.mergeCells('A3:G3');
   const pT3 = wsPrestamos.getCell('A3');
   pT3.value = '';
@@ -606,7 +1036,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     { key: 'estado', header: 'Estado del Préstamo', align: 'center' },
   ];
 
-  // Fila 5: Cabeceras
   const headerPresRow = wsPrestamos.getRow(5);
   headerPresRow.values = colsPrestamosDef.map((c) => c.header);
   headerPresRow.height = 26;
@@ -655,7 +1084,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
         cell.font = { name: 'Consolas', size: 9.5, bold: true, color: { argb: COLORS.textPrimary } };
       }
 
-      // Estado del préstamo
       if (colNumber === 7) {
         const est = String(cell.value || '').toLowerCase().trim();
         if (est === 'devuelto' || est === 'completado') {
@@ -674,7 +1102,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rPIdx++;
   });
 
-  // Fila Total Préstamos
   const totPresRow = wsPrestamos.getRow(rPIdx);
   totPresRow.getCell(1).value = 'TOTAL:';
   totPresRow.getCell(2).value = `${prestamos.length} asignaciones gestionadas`;
@@ -690,13 +1117,11 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  // Autofiltro delimitado
   const ultimaFilaDatosPrestamos = Math.max(5, rPIdx - 1);
   wsPrestamos.autoFilter = {
     from: { row: 5, column: 1 },
     to: { row: ultimaFilaDatosPrestamos, column: 7 },
   };
-
   autoFitColumns(wsPrestamos, 1, 5, 4);
 
   // =========================================================================
