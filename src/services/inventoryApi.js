@@ -133,29 +133,109 @@ export const inventoryApi = {
     return found;
   },
 
-  // Obtener ítem universal (sea equipo tecnológico o material de robótica)
+  // Obtener ítem universal (sea equipo tecnológico, mobiliario, robótica o papelería)
   getItemUniversal: async (id) => {
-    const isRob = String(id).toLowerCase().startsWith('rob');
-    if (isRob) {
+    const rawId = String(id || '').trim();
+    const idLower = rawId.toLowerCase();
+
+    // 1. Si es Mobiliario (MOB-XXXX)
+    if (idLower.startsWith('mob')) {
       try {
-        const c = await inventoryApi.getConsumibleById(id);
-        return { ...c, __tipo: 'consumible' };
+        const { supabase } = await import('./supabase');
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('mobiliario')
+            .select('*')
+            .or(`placa.ilike.${rawId},id.ilike.${rawId}`)
+            .limit(1)
+            .maybeSingle();
+          if (!error && data) {
+            return { ...data, __tipo: 'mobiliario', tipo: 'mobiliario' };
+          }
+        }
+      } catch (_) {}
+
+      try {
+        const json = await request(`/mobiliario/${encodeURIComponent(rawId)}`);
+        const data = json?.data !== undefined ? json.data : json;
+        if (data && (data.placa || data.id)) {
+          return { ...data, __tipo: 'mobiliario', tipo: 'mobiliario' };
+        }
+      } catch (_) {}
+    }
+
+    // 2. Si es Papelería (PapeXXXX)
+    if (idLower.startsWith('pape')) {
+      try {
+        const { supabase } = await import('./supabase');
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('papeleria')
+            .select('*')
+            .eq('id', rawId)
+            .limit(1)
+            .maybeSingle();
+          if (!error && data) {
+            return { ...data, __tipo: 'papeleria', tipo: 'papeleria' };
+          }
+        }
+      } catch (_) {}
+
+      try {
+        const catalogoModule = await import('../data/catalogoPapeleriaFMO.json');
+        const cat = catalogoModule.default || catalogoModule;
+        const found = Array.isArray(cat) && cat.find(p => String(p.id).toLowerCase() === idLower);
+        if (found) {
+          return { ...found, __tipo: 'papeleria', tipo: 'papeleria' };
+        }
+      } catch (_) {}
+    }
+
+    // 3. Si es Robótica / Consumible (RobXXXX)
+    if (idLower.startsWith('rob')) {
+      try {
+        const c = await inventoryApi.getConsumibleById(rawId);
+        return { ...c, __tipo: 'robotica', tipo: 'robotica' };
       } catch {
         // Fallback a activos
       }
     }
 
+    // 4. Búsqueda principal como Activo Tecnológico
     try {
-      const a = await inventoryApi.getActivoByPlaca(id);
-      return { ...a, __tipo: 'equipo' };
+      const a = await inventoryApi.getActivoByPlaca(rawId);
+      return { ...a, __tipo: 'equipo', tipo: 'tecnologia' };
     } catch (errActivo) {
-      // Si falló activo, intentar buscar en consumibles
+      // 5. Fallbacks cruzados
       try {
-        const c = await inventoryApi.getConsumibleById(id);
-        return { ...c, __tipo: 'consumible' };
-      } catch {
-        throw new Error(errActivo.message || `No se encontró ningún activo o material con el código "${id}"`);
-      }
+        const c = await inventoryApi.getConsumibleById(rawId);
+        return { ...c, __tipo: 'robotica', tipo: 'robotica' };
+      } catch (_) {}
+
+      try {
+        const { supabase } = await import('./supabase');
+        if (supabase) {
+          // Intentar en mobiliario
+          const { data: mob } = await supabase
+            .from('mobiliario')
+            .select('*')
+            .or(`placa.ilike.${rawId},id.ilike.${rawId}`)
+            .limit(1)
+            .maybeSingle();
+          if (mob) return { ...mob, __tipo: 'mobiliario', tipo: 'mobiliario' };
+
+          // Intentar en papeleria
+          const { data: pap } = await supabase
+            .from('papeleria')
+            .select('*')
+            .eq('id', rawId)
+            .limit(1)
+            .maybeSingle();
+          if (pap) return { ...pap, __tipo: 'papeleria', tipo: 'papeleria' };
+        }
+      } catch (_) {}
+
+      throw new Error(errActivo.message || `No se encontró ningún activo, mobiliario o material con el código "${rawId}"`);
     }
   },
 

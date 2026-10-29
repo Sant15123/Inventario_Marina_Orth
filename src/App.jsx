@@ -774,6 +774,10 @@ function App() {
         path="/activo/:placa"
         element={<DetalleActivoPublico items={items} movements={movements} />}
       />
+      <Route
+        path="/activo/:id"
+        element={<DetalleActivoPublico items={items} movements={movements} />}
+      />
 
       {/* RUTA PRINCIPAL PROTEGIDA CON JWT: PANEL ADMINISTRATIVO */}
       <Route
