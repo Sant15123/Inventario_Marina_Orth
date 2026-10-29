@@ -37,6 +37,15 @@ const COLORS = {
 };
 
 /**
+ * Sanitiza valores para evitar null, undefined o tipos incompatibles que corrompen el XML de Excel
+ */
+const sanitizar = (val, fallback = '') => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') return val.trim();
+  return val;
+};
+
+/**
  * Aplica estilos limpios y estrictos a las cabeceras de columnas (Fila 5)
  */
 function styleHeaderCell(cell) {
@@ -75,8 +84,11 @@ function autoFitColumns(worksheet, minCol = 1, startRow = 5, margin = 4) {
 
 /**
  * Genera y descarga el Libro de Trabajo Maestro Multi-hoja institucional (SIGA FMO)
- * Incluye Resumen Ejecutivo con 3 bloques exhaustivos, Activos Tecnológicos, Robótica y Consumibles,
- * Mobiliario, Papelería y Préstamos.
+ * Estructura XML 100% limpia sin errores de recuperación en Excel:
+ * - Nombres de hojas sanitizados (< 30 caracteres, sin caracteres prohibidos)
+ * - Valores numéricos precalculados (sin fórmulas desalineadas o cadenas no resueltas)
+ * - Rangos de celdas combinadas estrictos
+ * - Tipado MIME exacto de salida
  * 
  * @param {Object} options - Parámetros opcionales para precarga o filtros
  */
@@ -125,11 +137,35 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   const fechaEmisionDDMMAAAA = `${dia}/${mes}/${anio}`;
   const fechaArchivoYYYYMMDD = `${anio}${mes}${dia}`;
 
-  // Cálculos de métricas globales
+  // Cálculos de métricas globales precalculadas
   const totalActivos = activos.length;
   const totalMobiliario = mobiliario.length;
   const totalConsumibles = consumibles.length;
   const totalPapeleria = papeleria.length;
+
+  const totalValorActivos = activos.reduce((acc, a) => {
+    return acc + Number(a.valor_unitario ?? a.valor_compra ?? a.precio ?? 0);
+  }, 0);
+
+  const totalCantidadConsumibles = consumibles.reduce((acc, c) => {
+    return acc + Number(c.disponible ?? c.quantity ?? 0);
+  }, 0);
+
+  const totalMinimoConsumibles = consumibles.reduce((acc, c) => {
+    return acc + Number(c.minimo ?? c.minStock ?? 5);
+  }, 0);
+
+  const totalCantidadMobiliario = mobiliario.reduce((acc, m) => {
+    return acc + Number(m.cantidad ?? m.disponible ?? 1);
+  }, 0);
+
+  const totalCantidadPapeleria = papeleria.reduce((acc, p) => {
+    return acc + Number(p.disponible ?? p.quantity ?? 0);
+  }, 0);
+
+  const totalMinimoPapeleria = papeleria.reduce((acc, p) => {
+    return acc + Number(p.minimo ?? p.minStock ?? 3);
+  }, 0);
 
   const roboticaAlertas = consumibles.filter((c) => {
     const disp = Number(c.disponible ?? c.quantity ?? 0);
@@ -143,17 +179,17 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     return disp <= min;
   });
 
-  // Top 10 de materiales que requieren reabastecimiento urgente (combinando Robótica y Papelería)
+  // Top 10 de materiales que requieren reabastecimiento urgente (Robótica y Papelería)
   const listaAlertas = [
     ...roboticaAlertas.map((c) => ({
-      nombre: c.material || c.name || 'Insumo Robótica',
+      nombre: sanitizar(c.material || c.name, 'Insumo Robótica'),
       tipo: 'Robótica / STEAM',
       disponible: Number(c.disponible ?? c.quantity ?? 0),
       minimo: Number(c.minimo ?? c.minStock ?? 5),
       diferencia: Number(c.disponible ?? c.quantity ?? 0) - Number(c.minimo ?? c.minStock ?? 5),
     })),
     ...papeleriaAlertas.map((p) => ({
-      nombre: p.material || p.name || 'Insumo Papelería',
+      nombre: sanitizar(p.material || p.name, 'Insumo Papelería'),
       tipo: 'Papelería / Didáctico',
       disponible: Number(p.disponible ?? p.quantity ?? 0),
       minimo: Number(p.minimo ?? p.minStock ?? 3),
@@ -207,7 +243,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   });
 
   // =========================================================================
-  // HOJA 1: Resumen Ejecutivo (Reestructurada con 3 Bloques Exhaustivos)
+  // HOJA 1: "Resumen Ejecutivo"
   // =========================================================================
   const sheetResumen = workbook.addWorksheet('Resumen Ejecutivo', {
     views: [{ showGridLines: true }],
@@ -221,7 +257,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   sheetResumen.getColumn(5).width = 16;  // Mínimo / Valor 2
   sheetResumen.getColumn(6).width = 18;  // Estado / Alerta
 
-  // Título Banner
+  // Título Banner (B2:F2)
   sheetResumen.mergeCells('B2:F2');
   const cellTitulo = sheetResumen.getCell('B2');
   cellTitulo.value = 'FUNDACIÓN MARINA ORTH - BALANCE CONSOLIDADO DE INVENTARIO';
@@ -230,7 +266,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   cellTitulo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF84CC16' } };
   sheetResumen.getRow(2).height = 30;
 
-  // Subtítulo
+  // Subtítulo (B3:F3)
   sheetResumen.mergeCells('B3:F3');
   const cellSub = sheetResumen.getCell('B3');
   cellSub.value = `Sistema SIGA | Reporte Oficial emitido el ${fechaEmisionDDMMAAAA} | Total Existencias: ${totalActivos + totalMobiliario + totalConsumibles + totalPapeleria} registros`;
@@ -246,7 +282,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const c = sheetResumen.getCell(`B${rowNum}`);
     c.value = titulo;
     c.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF14532D' } }; // Verde institucional oscuro
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF14532D' } };
     c.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
     sheetResumen.getRow(rowNum).height = 24;
   };
@@ -312,7 +348,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   aplicarEstiloSeccion(rIdx, '2. SEMÁFORO Y ALERTAS DE STOCK MÍNIMO (REABASTECIMIENTO)');
   rIdx++;
   
-  // Resumen semáforo en fila doble
   const rowSem = sheetResumen.getRow(rIdx);
   sheetResumen.mergeCells(`B${rIdx}:C${rIdx}`);
   rowSem.getCell(2).value = `Insumos de Robótica con Stock Bajo (≤ Mínimo): ${roboticaAlertas.length}`;
@@ -328,7 +363,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   rowSem.height = 22;
   rIdx++;
 
-  // Subcabecera Top 10
   aplicarFilaSubheader(rIdx, ['Top 10 Materiales que Requieren Reabastecimiento Urgente', 'Tipo de Insumo', 'Stock Actual', 'Mínimo Requerido', 'Estado Alerta']);
   rIdx++;
 
@@ -371,7 +405,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   aplicarEstiloSeccion(rIdx, '3. ESTADO FÍSICO Y DISTRIBUCIÓN POR SEDE');
   rIdx++;
 
-  // Subheader Mobiliario y Sedes
   aplicarFilaSubheader(rIdx, ['Estado de Conservación (Mobiliario)', 'Cantidad Muebles', 'Sede Formativa FMO', 'Equipos Cómputo', 'Mobiliario Sede']);
   rIdx++;
 
@@ -432,7 +465,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   }
 
   // =========================================================================
-  // HOJA 2: Activos Tecnologicos
+  // HOJA 2: "Activos Tecnologicos"
   // =========================================================================
   const wsActivos = workbook.addWorksheet('Activos Tecnologicos', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
@@ -487,16 +520,16 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const placa = a.placa || a.code || a.id || 'S/P';
-    const nombre = a.nombre || a.name || a.material || 'Equipo Tecnológico';
-    const categoria = a.categoria || a.category || 'Tecnología';
-    const marca = a.marca || a.brand || '—';
-    const modelo = a.modelo || a.model || '—';
-    const serial = a.serial || a.serialNumber || '—';
-    const sede = a.sede || a.ubicacion || a.location || 'Medellín';
-    const responsable = a.responsable || a.custodio || a.assignedTo || 'Bodega Central';
-    const estado = a.estado || 'Disponible';
-    const condicion = a.condicion || 'Buen Estado';
+    const placa = sanitizar(a.placa || a.code || a.id, 'S/P');
+    const nombre = sanitizar(a.nombre || a.name || a.material, 'Equipo Tecnológico');
+    const categoria = sanitizar(a.categoria || a.category, 'Tecnología');
+    const marca = sanitizar(a.marca || a.brand, '—');
+    const modelo = sanitizar(a.modelo || a.model, '—');
+    const serial = sanitizar(a.serial || a.serialNumber, '—');
+    const sede = sanitizar(a.sede || a.ubicacion || a.location, 'Medellín');
+    const responsable = sanitizar(a.responsable || a.custodio || a.assignedTo, 'Bodega Central');
+    const estado = sanitizar(a.estado, 'Disponible');
+    const condicion = sanitizar(a.condicion, 'Buen Estado');
     const valor = Number(a.valor_unitario ?? a.valor_compra ?? a.precio ?? 0);
 
     const row = wsActivos.addRow([
@@ -556,10 +589,11 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rAIdx++;
   });
 
+  // Fila Total Activos con valor precalculado
   const totActRow = wsActivos.getRow(rAIdx);
   totActRow.getCell(1).value = 'TOTAL:';
   totActRow.getCell(2).value = `${activos.length} activos inventariados`;
-  totActRow.getCell(11).value = { formula: `SUM(K6:K${rAIdx - 1})` };
+  totActRow.getCell(11).value = totalValorActivos;
   totActRow.getCell(11).numFmt = '"$"#,##0.00';
   totActRow.height = 24;
 
@@ -581,7 +615,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   autoFitColumns(wsActivos, 1, 5, 4);
 
   // =========================================================================
-  // HOJA 3: Robotica y Consumibles
+  // HOJA 3: "Robotica y Consumibles"
   // =========================================================================
   const wsConsumibles = workbook.addWorksheet('Robotica y Consumibles', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
@@ -634,15 +668,15 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const idCod = c.id || `Rob${String(idx + 1).padStart(4, '0')}`;
-    const material = c.material || c.name || 'Insumo';
-    const categoria = c.categoria || c.category || 'Robótica';
+    const idCod = sanitizar(c.id, `Rob${String(idx + 1).padStart(4, '0')}`);
+    const material = sanitizar(c.material || c.name, 'Insumo');
+    const categoria = sanitizar(c.categoria || c.category, 'Robótica');
     const disp = Number(c.disponible ?? c.quantity ?? 0);
     const min = Number(c.minimo ?? c.minStock ?? 5);
-    const condicion = c.condicion || 'Nuevo';
-    const estado = c.estado || 'Bueno';
-    const ubicacion = c.ubicacion || c.location || 'Oficina FMO';
-    const observaciones = c.observaciones || c.descripcion || c.description || '—';
+    const condicion = sanitizar(c.condicion, 'Nuevo');
+    const estado = sanitizar(c.estado, 'Bueno');
+    const ubicacion = sanitizar(c.ubicacion || c.location, 'Oficina FMO');
+    const observaciones = sanitizar(c.observaciones || c.descripcion || c.description, '—');
     const esAlerta = disp <= min;
 
     const row = wsConsumibles.addRow([
@@ -690,11 +724,12 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rCIdx++;
   });
 
+  // Fila Total Consumibles con valores precalculados
   const totConsRow = wsConsumibles.getRow(rCIdx);
   totConsRow.getCell(1).value = 'TOTAL:';
   totConsRow.getCell(2).value = `${consumibles.length} tipos de materiales`;
-  totConsRow.getCell(4).value = { formula: `SUM(D6:D${rCIdx - 1})` };
-  totConsRow.getCell(5).value = { formula: `SUM(E6:E${rCIdx - 1})` };
+  totConsRow.getCell(4).value = totalCantidadConsumibles;
+  totConsRow.getCell(5).value = totalMinimoConsumibles;
   totConsRow.height = 24;
 
   totConsRow.eachCell({ includeEmpty: true }, (cell) => {
@@ -715,9 +750,9 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   autoFitColumns(wsConsumibles, 1, 5, 4);
 
   // =========================================================================
-  // HOJA 4: Mobiliario (NUEVA HOJA)
+  // HOJA 4: "Mobiliario y Enseres" (Nombre sanitizado sin caracteres especiales)
   // =========================================================================
-  const wsMobiliario = workbook.addWorksheet('Mobiliario', {
+  const wsMobiliario = workbook.addWorksheet('Mobiliario y Enseres', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
     views: [{ state: 'frozen', ySplit: 5 }],
     properties: { tabColor: { argb: COLORS.limePrimary } },
@@ -772,19 +807,19 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const placa = m.placa || m.code || m.id || 'S/P';
-    const nombre = m.nombre || m.name || m.material || 'Mobiliario';
-    const categoria = m.categoria || m.subcategoria || m.category || 'Mesas y Escritorios';
-    const sede = m.sede || m.ubicacion || 'Medellín';
-    const ubicacionEsp = m.ubicacion_especifica || m.ubicacion_estante || m.espacio || '—';
-    const material = m.material || '—';
-    const color = m.color || '—';
-    const dimensiones = m.dimensiones || '—';
-    const estado = m.estado_conservacion || m.estado || m.condicion || 'Bueno';
+    const placa = sanitizar(m.placa || m.code || m.id, 'S/P');
+    const nombre = sanitizar(m.nombre || m.name || m.material, 'Mobiliario');
+    const categoria = sanitizar(m.categoria || m.subcategoria || m.category, 'Mesas y Escritorios');
+    const sede = sanitizar(m.sede || m.ubicacion, 'Medellín');
+    const ubicacionEsp = sanitizar(m.ubicacion_especifica || m.ubicacion_estante || m.espacio, '—');
+    const material = sanitizar(m.material, '—');
+    const color = sanitizar(m.color, '—');
+    const dimensiones = sanitizar(m.dimensiones, '—');
+    const estado = sanitizar(m.estado_conservacion || m.estado || m.condicion, 'Bueno');
     const cantidad = Number(m.cantidad ?? m.disponible ?? 1);
     const fechaAdq = m.fecha_adquisicion ? String(m.fecha_adquisicion).split('T')[0] : '—';
-    const proveedor = m.proveedor_origen || m.proveedor || m.origen || '—';
-    const obs = m.observaciones || m.descripcion || '—';
+    const proveedor = sanitizar(m.proveedor_origen || m.proveedor || m.origen, '—');
+    const obs = sanitizar(m.observaciones || m.descripcion, '—');
 
     const row = wsMobiliario.addRow([
       placa,
@@ -820,7 +855,6 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
         cell.font = { name: 'Consolas', size: 9.5, bold: true, color: { argb: COLORS.textPrimary } };
       }
 
-      // Estilo de Estado
       if (colNumber === 9) {
         const estStr = String(cell.value || '').toLowerCase();
         if (estStr.includes('excelente') || estStr.includes('nuevo')) {
@@ -842,10 +876,11 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rMIdx++;
   });
 
+  // Fila Total Mobiliario con valor precalculado
   const totMobRow = wsMobiliario.getRow(rMIdx);
   totMobRow.getCell(1).value = 'TOTAL:';
   totMobRow.getCell(2).value = `${mobiliario.length} muebles registrados`;
-  totMobRow.getCell(10).value = { formula: `SUM(J6:J${rMIdx - 1})` };
+  totMobRow.getCell(10).value = totalCantidadMobiliario;
   totMobRow.height = 24;
 
   totMobRow.eachCell({ includeEmpty: true }, (cell) => {
@@ -866,9 +901,9 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   autoFitColumns(wsMobiliario, 1, 5, 4);
 
   // =========================================================================
-  // HOJA 5: Papeleria (NUEVA HOJA)
+  // HOJA 5: "Papeleria e Insumos" (Nombre sanitizado sin caracteres especiales)
   // =========================================================================
-  const wsPapeleria = workbook.addWorksheet('Papeleria', {
+  const wsPapeleria = workbook.addWorksheet('Papeleria e Insumos', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
     views: [{ state: 'frozen', ySplit: 5 }],
     properties: { tabColor: { argb: COLORS.limePrimary } },
@@ -918,14 +953,14 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const idCod = p.id || `Pape${String(idx + 1).padStart(4, '0')}`;
-    const material = p.material || p.name || 'Insumo Papelería';
-    const categoria = p.categoria || p.category || 'Papelería';
-    const sede = p.sede || p.ubicacion_sede || 'Medellín';
+    const idCod = sanitizar(p.id, `Pape${String(idx + 1).padStart(4, '0')}`);
+    const material = sanitizar(p.material || p.name, 'Insumo Papelería');
+    const categoria = sanitizar(p.categoria || p.category, 'Papelería');
+    const sede = sanitizar(p.sede || p.ubicacion_sede, 'Medellín');
     const disp = Number(p.disponible ?? p.quantity ?? 0);
     const min = Number(p.minimo ?? p.minStock ?? 3);
     const estadoAlerta = disp <= min ? 'CRÍTICO' : 'NORMAL';
-    const ubicacion = p.ubicacion_estante || p.caja || p.ubicacion || p.location || 'Bodega General';
+    const ubicacion = sanitizar(p.ubicacion_estante || p.caja || p.ubicacion || p.location, 'Bodega General');
 
     const row = wsPapeleria.addRow([
       idCod,
@@ -970,11 +1005,12 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rPaIdx++;
   });
 
+  // Fila Total Papelería con valores precalculados
   const totPapRow = wsPapeleria.getRow(rPaIdx);
   totPapRow.getCell(1).value = 'TOTAL:';
   totPapRow.getCell(2).value = `${papeleria.length} referencias inventariadas`;
-  totPapRow.getCell(5).value = { formula: `SUM(E6:E${rPaIdx - 1})` };
-  totPapRow.getCell(6).value = { formula: `SUM(F6:F${rPaIdx - 1})` };
+  totPapRow.getCell(5).value = totalCantidadPapeleria;
+  totPapRow.getCell(6).value = totalMinimoPapeleria;
   totPapRow.height = 24;
 
   totPapRow.eachCell({ includeEmpty: true }, (cell) => {
@@ -995,7 +1031,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   autoFitColumns(wsPapeleria, 1, 5, 4);
 
   // =========================================================================
-  // HOJA 6: Prestamos y Asignaciones
+  // HOJA 6: "Prestamos y Asignaciones"
   // =========================================================================
   const wsPrestamos = workbook.addWorksheet('Prestamos y Asignaciones', {
     pageSetup: { orientation: 'landscape', paperSize: 9 },
@@ -1047,14 +1083,14 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
     const idPrestamo = p.id ? `PR-${String(p.id).padStart(4, '0')}` : `PR-${idx + 1}`;
-    const solicitante = p.solicitante || p.person || 'Formador FMO';
-    const sede = p.sede || 'Medellín';
-    const placa = p.placa_activo || (p.unitCodes ? p.unitCodes.join(', ') : 'S/P');
-    const nomActivo = p.nombre_activo || p.itemName || '';
+    const solicitante = sanitizar(p.solicitante || p.person, 'Formador FMO');
+    const sede = sanitizar(p.sede, 'Medellín');
+    const placa = sanitizar(p.placa_activo || (p.unitCodes ? p.unitCodes.join(', ') : 'S/P'), 'S/P');
+    const nomActivo = sanitizar(p.nombre_activo || p.itemName, '');
     const activoFull = nomActivo ? `[${placa}] ${nomActivo}` : placa;
-    const fSalida = p.fecha_salida ? String(p.fecha_salida).split('T')[0] : (p.date || '—');
-    const fDevolucion = p.fecha_devolucion_esperada ? String(p.fecha_devolucion_esperada).split('T')[0] : (p.expectedReturn || '—');
-    const estado = p.estado || (p.status === 'devuelto' ? 'Devuelto' : 'En campo');
+    const fSalida = p.fecha_salida ? String(p.fecha_salida).split('T')[0] : sanitizar(p.date, '—');
+    const fDevolucion = p.fecha_devolucion_esperada ? String(p.fecha_devolucion_esperada).split('T')[0] : sanitizar(p.expectedReturn, '—');
+    const estado = sanitizar(p.estado || (p.status === 'devuelto' ? 'Devuelto' : 'En campo'), 'En campo');
 
     const row = wsPrestamos.addRow([
       idPrestamo,
@@ -1102,6 +1138,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     rPIdx++;
   });
 
+  // Fila Total Préstamos con valor precalculado
   const totPresRow = wsPrestamos.getRow(rPIdx);
   totPresRow.getCell(1).value = 'TOTAL:';
   totPresRow.getCell(2).value = `${prestamos.length} asignaciones gestionadas`;
