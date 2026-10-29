@@ -37,12 +37,20 @@ const COLORS = {
 };
 
 /**
- * Sanitiza valores para evitar null, undefined o tipos incompatibles que corrompen el XML de Excel
+ * Sanitiza celdas eliminando caracteres de control ASCII no imprimibles,
+ * resolviendo null, undefined y valores numéricos no finitos que corrompen OpenXML.
  */
-const sanitizar = (val, fallback = '') => {
-  if (val === null || val === undefined) return fallback;
-  if (typeof val === 'string') return val.trim();
-  return val;
+const sanitizarCelda = (valor, fallback = '') => {
+  if (valor === null || valor === undefined) return fallback;
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) ? valor : 0;
+  }
+  if (typeof valor === 'boolean') return valor;
+  // Convertir a string, remover caracteres de control ASCII (excepto saltos válidos) y recortar
+  const str = String(valor)
+    .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '')
+    .trim();
+  return str || fallback;
 };
 
 /**
@@ -182,14 +190,14 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   // Top 10 de materiales que requieren reabastecimiento urgente (Robótica y Papelería)
   const listaAlertas = [
     ...roboticaAlertas.map((c) => ({
-      nombre: sanitizar(c.material || c.name, 'Insumo Robótica'),
+      nombre: sanitizarCelda(c.material || c.name, 'Insumo Robótica'),
       tipo: 'Robótica / STEAM',
       disponible: Number(c.disponible ?? c.quantity ?? 0),
       minimo: Number(c.minimo ?? c.minStock ?? 5),
       diferencia: Number(c.disponible ?? c.quantity ?? 0) - Number(c.minimo ?? c.minStock ?? 5),
     })),
     ...papeleriaAlertas.map((p) => ({
-      nombre: sanitizar(p.material || p.name, 'Insumo Papelería'),
+      nombre: sanitizarCelda(p.material || p.name, 'Insumo Papelería'),
       tipo: 'Papelería / Didáctico',
       disponible: Number(p.disponible ?? p.quantity ?? 0),
       minimo: Number(p.minimo ?? p.minStock ?? 3),
@@ -520,16 +528,16 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const placa = sanitizar(a.placa || a.code || a.id, 'S/P');
-    const nombre = sanitizar(a.nombre || a.name || a.material, 'Equipo Tecnológico');
-    const categoria = sanitizar(a.categoria || a.category, 'Tecnología');
-    const marca = sanitizar(a.marca || a.brand, '—');
-    const modelo = sanitizar(a.modelo || a.model, '—');
-    const serial = sanitizar(a.serial || a.serialNumber, '—');
-    const sede = sanitizar(a.sede || a.ubicacion || a.location, 'Medellín');
-    const responsable = sanitizar(a.responsable || a.custodio || a.assignedTo, 'Bodega Central');
-    const estado = sanitizar(a.estado, 'Disponible');
-    const condicion = sanitizar(a.condicion, 'Buen Estado');
+    const placa = sanitizarCelda(a.placa || a.code || a.id, 'S/P');
+    const nombre = sanitizarCelda(a.nombre || a.name || a.material, 'Equipo Tecnológico');
+    const categoria = sanitizarCelda(a.categoria || a.category, 'Tecnología');
+    const marca = sanitizarCelda(a.marca || a.brand, '—');
+    const modelo = sanitizarCelda(a.modelo || a.model, '—');
+    const serial = sanitizarCelda(a.serial || a.serialNumber, '—');
+    const sede = sanitizarCelda(a.sede || a.ubicacion || a.location, 'Medellín');
+    const responsable = sanitizarCelda(a.responsable || a.custodio || a.assignedTo, 'Bodega Central');
+    const estado = sanitizarCelda(a.estado, 'Disponible');
+    const condicion = sanitizarCelda(a.condicion, 'Buen Estado');
     const valor = Number(a.valor_unitario ?? a.valor_compra ?? a.precio ?? 0);
 
     const row = wsActivos.addRow([
@@ -607,11 +615,9 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  const ultimaFilaDatosActivos = Math.max(5, rAIdx - 1);
-  wsActivos.autoFilter = {
-    from: { row: 5, column: 1 },
-    to: { row: ultimaFilaDatosActivos, column: 11 },
-  };
+  if (rAIdx > 6) {
+    wsActivos.autoFilter = `A5:K${rAIdx - 1}`;
+  }
   autoFitColumns(wsActivos, 1, 5, 4);
 
   // =========================================================================
@@ -668,15 +674,15 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const idCod = sanitizar(c.id, `Rob${String(idx + 1).padStart(4, '0')}`);
-    const material = sanitizar(c.material || c.name, 'Insumo');
-    const categoria = sanitizar(c.categoria || c.category, 'Robótica');
+    const idCod = sanitizarCelda(c.id, `Rob${String(idx + 1).padStart(4, '0')}`);
+    const material = sanitizarCelda(c.material || c.name, 'Insumo');
+    const categoria = sanitizarCelda(c.categoria || c.category, 'Robótica');
     const disp = Number(c.disponible ?? c.quantity ?? 0);
     const min = Number(c.minimo ?? c.minStock ?? 5);
-    const condicion = sanitizar(c.condicion, 'Nuevo');
-    const estado = sanitizar(c.estado, 'Bueno');
-    const ubicacion = sanitizar(c.ubicacion || c.location, 'Oficina FMO');
-    const observaciones = sanitizar(c.observaciones || c.descripcion || c.description, '—');
+    const condicion = sanitizarCelda(c.condicion, 'Nuevo');
+    const estado = sanitizarCelda(c.estado, 'Bueno');
+    const ubicacion = sanitizarCelda(c.ubicacion || c.location, 'Oficina FMO');
+    const observaciones = sanitizarCelda(c.observaciones || c.descripcion || c.description, '—');
     const esAlerta = disp <= min;
 
     const row = wsConsumibles.addRow([
@@ -742,11 +748,9 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  const ultimaFilaDatosConsumibles = Math.max(5, rCIdx - 1);
-  wsConsumibles.autoFilter = {
-    from: { row: 5, column: 1 },
-    to: { row: ultimaFilaDatosConsumibles, column: 9 },
-  };
+  if (rCIdx > 6) {
+    wsConsumibles.autoFilter = `A5:I${rCIdx - 1}`;
+  }
   autoFitColumns(wsConsumibles, 1, 5, 4);
 
   // =========================================================================
@@ -807,19 +811,19 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const placa = sanitizar(m.placa || m.code || m.id, 'S/P');
-    const nombre = sanitizar(m.nombre || m.name || m.material, 'Mobiliario');
-    const categoria = sanitizar(m.categoria || m.subcategoria || m.category, 'Mesas y Escritorios');
-    const sede = sanitizar(m.sede || m.ubicacion, 'Medellín');
-    const ubicacionEsp = sanitizar(m.ubicacion_especifica || m.ubicacion_estante || m.espacio, '—');
-    const material = sanitizar(m.material, '—');
-    const color = sanitizar(m.color, '—');
-    const dimensiones = sanitizar(m.dimensiones, '—');
-    const estado = sanitizar(m.estado_conservacion || m.estado || m.condicion, 'Bueno');
+    const placa = sanitizarCelda(m.placa || m.code || m.id, 'S/P');
+    const nombre = sanitizarCelda(m.nombre || m.name || m.material, 'Mobiliario');
+    const categoria = sanitizarCelda(m.categoria || m.subcategoria || m.category, 'Mesas y Escritorios');
+    const sede = sanitizarCelda(m.sede || m.ubicacion, 'Medellín');
+    const ubicacionEsp = sanitizarCelda(m.ubicacion_especifica || m.ubicacion_estante || m.espacio, '—');
+    const material = sanitizarCelda(m.material, '—');
+    const color = sanitizarCelda(m.color, '—');
+    const dimensiones = sanitizarCelda(m.dimensiones, '—');
+    const estado = sanitizarCelda(m.estado_conservacion || m.estado || m.condicion, 'Bueno');
     const cantidad = Number(m.cantidad ?? m.disponible ?? 1);
     const fechaAdq = m.fecha_adquisicion ? String(m.fecha_adquisicion).split('T')[0] : '—';
-    const proveedor = sanitizar(m.proveedor_origen || m.proveedor || m.origen, '—');
-    const obs = sanitizar(m.observaciones || m.descripcion, '—');
+    const proveedor = sanitizarCelda(m.proveedor_origen || m.proveedor || m.origen, '—');
+    const obs = sanitizarCelda(m.observaciones || m.descripcion, '—');
 
     const row = wsMobiliario.addRow([
       placa,
@@ -893,11 +897,9 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  const ultimaFilaDatosMobiliario = Math.max(5, rMIdx - 1);
-  wsMobiliario.autoFilter = {
-    from: { row: 5, column: 1 },
-    to: { row: ultimaFilaDatosMobiliario, column: 13 },
-  };
+  if (rMIdx > 6) {
+    wsMobiliario.autoFilter = `A5:M${rMIdx - 1}`;
+  }
   autoFitColumns(wsMobiliario, 1, 5, 4);
 
   // =========================================================================
@@ -953,14 +955,14 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const isEven = idx % 2 === 0;
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
-    const idCod = sanitizar(p.id, `Pape${String(idx + 1).padStart(4, '0')}`);
-    const material = sanitizar(p.material || p.name, 'Insumo Papelería');
-    const categoria = sanitizar(p.categoria || p.category, 'Papelería');
-    const sede = sanitizar(p.sede || p.ubicacion_sede, 'Medellín');
+    const idCod = sanitizarCelda(p.id, `Pape${String(idx + 1).padStart(4, '0')}`);
+    const material = sanitizarCelda(p.material || p.name, 'Insumo Papelería');
+    const categoria = sanitizarCelda(p.categoria || p.category, 'Papelería');
+    const sede = sanitizarCelda(p.sede || p.ubicacion_sede, 'Medellín');
     const disp = Number(p.disponible ?? p.quantity ?? 0);
     const min = Number(p.minimo ?? p.minStock ?? 3);
     const estadoAlerta = disp <= min ? 'CRÍTICO' : 'NORMAL';
-    const ubicacion = sanitizar(p.ubicacion_estante || p.caja || p.ubicacion || p.location, 'Bodega General');
+    const ubicacion = sanitizarCelda(p.ubicacion_estante || p.caja || p.ubicacion || p.location, 'Bodega General');
 
     const row = wsPapeleria.addRow([
       idCod,
@@ -1023,11 +1025,9 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  const ultimaFilaDatosPapeleria = Math.max(5, rPaIdx - 1);
-  wsPapeleria.autoFilter = {
-    from: { row: 5, column: 1 },
-    to: { row: ultimaFilaDatosPapeleria, column: 8 },
-  };
+  if (rPaIdx > 6) {
+    wsPapeleria.autoFilter = `A5:H${rPaIdx - 1}`;
+  }
   autoFitColumns(wsPapeleria, 1, 5, 4);
 
   // =========================================================================
@@ -1083,14 +1083,14 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const bg = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
 
     const idPrestamo = p.id ? `PR-${String(p.id).padStart(4, '0')}` : `PR-${idx + 1}`;
-    const solicitante = sanitizar(p.solicitante || p.person, 'Formador FMO');
-    const sede = sanitizar(p.sede, 'Medellín');
-    const placa = sanitizar(p.placa_activo || (p.unitCodes ? p.unitCodes.join(', ') : 'S/P'), 'S/P');
-    const nomActivo = sanitizar(p.nombre_activo || p.itemName, '');
+    const solicitante = sanitizarCelda(p.solicitante || p.person, 'Formador FMO');
+    const sede = sanitizarCelda(p.sede, 'Medellín');
+    const placa = sanitizarCelda(p.placa_activo || (p.unitCodes ? p.unitCodes.join(', ') : 'S/P'), 'S/P');
+    const nomActivo = sanitizarCelda(p.nombre_activo || p.itemName, '');
     const activoFull = nomActivo ? `[${placa}] ${nomActivo}` : placa;
-    const fSalida = p.fecha_salida ? String(p.fecha_salida).split('T')[0] : sanitizar(p.date, '—');
-    const fDevolucion = p.fecha_devolucion_esperada ? String(p.fecha_devolucion_esperada).split('T')[0] : sanitizar(p.expectedReturn, '—');
-    const estado = sanitizar(p.estado || (p.status === 'devuelto' ? 'Devuelto' : 'En campo'), 'En campo');
+    const fSalida = p.fecha_salida ? String(p.fecha_salida).split('T')[0] : sanitizarCelda(p.date, '—');
+    const fDevolucion = p.fecha_devolucion_esperada ? String(p.fecha_devolucion_esperada).split('T')[0] : sanitizarCelda(p.expectedReturn, '—');
+    const estado = sanitizarCelda(p.estado || (p.status === 'devuelto' ? 'Devuelto' : 'En campo'), 'En campo');
 
     const row = wsPrestamos.addRow([
       idPrestamo,
@@ -1154,11 +1154,9 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     };
   });
 
-  const ultimaFilaDatosPrestamos = Math.max(5, rPIdx - 1);
-  wsPrestamos.autoFilter = {
-    from: { row: 5, column: 1 },
-    to: { row: ultimaFilaDatosPrestamos, column: 7 },
-  };
+  if (rPIdx > 6) {
+    wsPrestamos.autoFilter = `A5:G${rPIdx - 1}`;
+  }
   autoFitColumns(wsPrestamos, 1, 5, 4);
 
   // =========================================================================
