@@ -857,12 +857,12 @@ export default function PrestamosView({
               <table className="w-full table-fixed" style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead className="bg-[#131b26] border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <tr>
-                    <th className="w-[22%] py-3 px-4 text-left truncate" style={{ width: '22%', padding: '10px 14px', textAlign: 'left' }}>EQUIPO</th>
-                    <th className="w-[10%] py-3 px-2 text-center truncate" style={{ width: '10%', padding: '10px 8px', textAlign: 'center' }}>PLACA</th>
-                    <th className="w-[17%] py-3 px-3 text-left truncate" style={{ width: '17%', padding: '10px 12px', textAlign: 'left' }}>RESPONSABLE</th>
-                    <th className="w-[11%] py-3 px-2 text-center truncate" style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>SEDE</th>
-                    <th className="w-[11%] py-3 px-2 text-center truncate" style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>F. PRÉSTAMO</th>
-                    <th className="w-[11%] py-3 px-2 text-center truncate" style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>F. ENTREGA</th>
+                    <th className="w-[21%] py-3 px-3 text-left truncate" style={{ width: '21%', padding: '10px 12px', textAlign: 'left' }}>EQUIPO</th>
+                    <th className="w-[10%] py-3 px-2 text-center truncate" style={{ width: '10%', padding: '10px 6px', textAlign: 'center' }}>PLACA</th>
+                    <th className="w-[16%] py-3 px-3 text-left truncate" style={{ width: '16%', padding: '10px 10px', textAlign: 'left' }}>RESPONSABLE</th>
+                    <th className="w-[12%] min-w-[100px] py-3 px-2 text-center truncate" style={{ width: '12%', minWidth: '100px', padding: '10px 6px', textAlign: 'center' }}>SEDE</th>
+                    <th className="w-[11%] min-w-[95px] py-3 px-2 text-center truncate" style={{ width: '11%', minWidth: '95px', padding: '10px 6px', textAlign: 'center' }}>F. PRÉSTAMO</th>
+                    <th className="w-[12%] min-w-[100px] py-3 px-2 text-center truncate" style={{ width: '12%', minWidth: '100px', padding: '10px 6px', textAlign: 'center' }}>F. ENTREGA</th>
                     <th className="w-[18%] py-3 px-3 text-center truncate" style={{ width: '18%', padding: '10px 8px', textAlign: 'center' }}>ACCIONES</th>
                   </tr>
                 </thead>
@@ -952,15 +952,15 @@ export default function PrestamosView({
                         </td>
 
                         {/* 4. SEDE / MUNICIPIO (CENTRADO) */}
-                        <td style={{ padding: '0 8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+                        <td className="px-2 py-3 text-center whitespace-nowrap overflow-hidden max-w-[130px]" style={{ padding: '0 6px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', maxWidth: '130px', overflow: 'hidden' }}>
                           <span
-                            className="sede-badge municipal"
+                            className="inline-block max-w-[115px] truncate align-middle text-xs font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
                             title={m.sede || 'Medellín'}
                             style={{
                               fontSize: '11px',
-                              padding: '2px 8px',
+                              padding: '2px 6px',
                               display: 'inline-block',
-                              maxWidth: '140px',
+                              maxWidth: '115px',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -972,21 +972,21 @@ export default function PrestamosView({
                         </td>
 
                         {/* 5. FECHA PRÉSTAMO (DD/MM/YYYY CENTRADO) */}
-                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span className="mono-num" style={{ fontFamily: 'monospace', fontSize: '12px', color: '#cbd5e1' }}>
+                        <td className="px-2 py-2.5 text-center whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-200 min-w-[95px]" style={{ textAlign: 'center', paddingLeft: '6px', paddingRight: '6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span className="mono-num text-xs font-medium text-slate-700 dark:text-slate-200" style={{ fontFamily: 'monospace', fontSize: '12px' }}>
                             {formatFecha(fechaSalida)}
                           </span>
                         </td>
 
                         {/* 6. DEVOLUCIÓN PACTADA (DD/MM/YYYY CENTRADO) */}
-                        <td className="py-2.5" style={{ textAlign: 'center', paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td className="px-2 py-2.5 text-center whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-200 min-w-[100px]" style={{ textAlign: 'center', paddingLeft: '6px', paddingRight: '6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span
-                            className="mono-num"
+                            className="mono-num text-xs font-medium"
                             title={overdue ? 'Préstamo vencido' : 'En plazo'}
                             style={{
                               fontFamily: 'monospace',
                               fontSize: '12px',
-                              color: overdue ? 'var(--red, #ef4444)' : '#cbd5e1',
+                              color: overdue ? 'var(--red, #ef4444)' : undefined,
                               fontWeight: overdue ? 800 : 500,
                             }}
                           >
