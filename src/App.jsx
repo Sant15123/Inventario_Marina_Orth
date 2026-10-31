@@ -866,7 +866,7 @@ function App() {
 
                   {/* VISTA MÓDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}
                   {!isUsuario && (isAdmin || isSupervisor) && currentView === 'usuarios' && (
-                    <UsuariosView />
+                    <UsuariosView sedes={sedesList} />
                   )}
                 </main>
 

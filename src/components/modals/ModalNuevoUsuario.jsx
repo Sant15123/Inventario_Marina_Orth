@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   UserPlus,
   Key,
@@ -15,10 +15,85 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import inventoryApi from '../../services/inventoryApi';
+import { supabase } from '../../services/supabase';
 
-export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
+export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sedes: propSedes }) {
   const { crearUsuario, refetchUsuarios, usuarios = [] } = useAuth();
   const { addToast, showError } = useToast();
+
+  const [sedes, setSedes] = useState(() => {
+    if (Array.isArray(propSedes) && propSedes.length > 0) {
+      return propSedes.map((s, idx) => (typeof s === 'string' ? { id: idx, nombre: s } : s));
+    }
+    return [];
+  });
+  const [cargandoSedes, setCargandoSedes] = useState(sedes.length === 0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const cargarSedes = async () => {
+      try {
+        setCargandoSedes(true);
+        let lista = [];
+
+        // 1. Consulta directa con cliente de Supabase
+        try {
+          if (supabase) {
+            const { data, error } = await supabase
+              .from('sedes')
+              .select('id, nombre, activo')
+              .order('nombre', { ascending: true });
+
+            if (!error && Array.isArray(data) && data.length > 0) {
+              lista = data.filter((s) => s.activo !== false);
+            }
+          }
+        } catch (supaErr) {
+          console.warn('Consulta directa a Supabase sedes:', supaErr.message);
+        }
+
+        // 2. Fallback a API backend si Supabase directo falló o no retornó datos
+        if (lista.length === 0) {
+          try {
+            const apiData = await inventoryApi.getSedes();
+            if (Array.isArray(apiData) && apiData.length > 0) {
+              lista = apiData.map((s, idx) => (typeof s === 'string' ? { id: idx, nombre: s } : s));
+            }
+          } catch (apiErr) {
+            console.warn('Fallback a API sedes:', apiErr.message);
+          }
+        }
+
+        // 3. Fallback estricto de contingencia
+        if (lista.length === 0) {
+          lista = [
+            { id: 1, nombre: 'Medellín' },
+            { id: 2, nombre: 'Carmen de Viboral' },
+            { id: 3, nombre: 'La Ceja' },
+            { id: 4, nombre: 'El Retiro' },
+            { id: 5, nombre: 'Nacional' },
+          ];
+        }
+
+        if (isMounted) {
+          setSedes(lista);
+          setFormData((prev) => ({
+            ...prev,
+            sede: prev.sede || lista[0]?.nombre || 'Medellín',
+          }));
+        }
+      } catch (err) {
+        console.error('Error al cargar sedes:', err.message);
+      } finally {
+        if (isMounted) setCargandoSedes(false);
+      }
+    };
+
+    cargarSedes();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [formData, setFormData] = useState({
     documento: '',
@@ -143,7 +218,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
       nombre: '',
       email: '',
       rol: 'usuario',
-      sede: 'Medellín',
+      sede: sedes[0]?.nombre || 'Medellín',
       cargo: '',
     });
     setPassword('');
@@ -460,14 +535,19 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
             <div className="form-group">
               <label>Sede Institucional</label>
               <select
-                value={formData.sede}
+                value={formData.sede || ''}
                 onChange={(e) => setFormData({ ...formData, sede: e.target.value })}
+                disabled={cargandoSedes}
               >
-                <option value="Medellín">Medellín</option>
-                <option value="Carmen de Viboral">Carmen de Viboral</option>
-                <option value="La Ceja">La Ceja</option>
-                <option value="El Retiro">El Retiro</option>
-                <option value="Nacional">Nacional</option>
+                {cargandoSedes ? (
+                  <option value="">Cargando sedes...</option>
+                ) : (
+                  sedes.map((sede) => (
+                    <option key={sede.id || sede.nombre} value={sede.nombre}>
+                      {sede.nombre}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   UserPlus,
@@ -16,14 +16,63 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ModalNuevoUsuario from '../components/modals/ModalNuevoUsuario';
 import ModalEditarUsuario from '../components/modals/ModalEditarUsuario';
+import { supabase } from '../services/supabase';
+import inventoryApi from '../services/inventoryApi';
 
-export default function UsuariosView() {
+export default function UsuariosView({ sedes: propSedes }) {
   const { usuarios, crearUsuario, editarUsuario, eliminarUsuario, currentUser, isAdmin, isSupervisor } = useAuth();
   const { showNewItemSuccess, showEditSuccess, showConfirmAction, showError } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('todos'); // 'todos' | 'administrador' | 'supervisor' | 'operador' | 'usuario'
   const [filterSede, setFilterSede] = useState('todos');
+
+  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : []));
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSedes = async () => {
+      try {
+        let lista = [];
+        try {
+          if (supabase) {
+            const { data, error } = await supabase
+              .from('sedes')
+              .select('id, nombre, activo')
+              .order('nombre', { ascending: true });
+            if (!error && Array.isArray(data) && data.length > 0) {
+              lista = data.filter((s) => s.activo !== false).map((s) => s.nombre || s.nombre_sede || s);
+            }
+          }
+        } catch (sErr) {
+          console.warn('Consulta directa Supabase sedes:', sErr.message);
+        }
+
+        if (lista.length === 0) {
+          try {
+            const apiRes = await inventoryApi.getSedes();
+            if (Array.isArray(apiRes) && apiRes.length > 0) {
+              lista = apiRes.map((s) => s.nombre || s.nombre_sede || s);
+            }
+          } catch (apiErr) {
+            console.warn('Fallback API sedes:', apiErr.message);
+          }
+        }
+
+        if (lista.length === 0) {
+          lista = ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Nacional'];
+        }
+
+        if (isMounted) {
+          setSedesList(Array.from(new Set(lista)));
+        }
+      } catch (err) {
+        console.warn('Error al cargar sedes en UsuariosView:', err.message);
+      }
+    };
+    fetchSedes();
+    return () => { isMounted = false; };
+  }, []);
 
   // Estado para modal de Nuevo Usuario
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
@@ -413,11 +462,14 @@ export default function UsuariosView() {
                 style={{ padding: '5px 10px', fontSize: '12.5px' }}
               >
                 <option value="todos">Todas las sedes</option>
-                <option value="medell">Medellín</option>
-                <option value="carmen">El Carmen</option>
-                <option value="ceja">La Ceja</option>
-                <option value="retiro">El Retiro</option>
-                <option value="nacional">Nacional</option>
+                {sedesList.map((s) => {
+                  const nombre = typeof s === 'string' ? s : (s.nombre || s);
+                  return (
+                    <option key={nombre} value={nombre}>
+                      {nombre}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -718,6 +770,7 @@ export default function UsuariosView() {
         onUserCreated={() => {
           setCurrentPage(1);
         }}
+        sedes={sedesList}
       />
 
       {/* =========================================================================
@@ -731,6 +784,7 @@ export default function UsuariosView() {
         onChangeFormData={setFormDataEditar}
         onSubmit={handleGuardarEdicion}
         loading={guardandoEdicion}
+        sedes={sedesList}
       />
     </div>
   );
