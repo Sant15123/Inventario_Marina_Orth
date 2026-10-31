@@ -5,17 +5,19 @@ import { useAuth } from '../context/AuthContext';
 
 export default function HistorialView({ movements = [] }) {
   const { currentUser, isUsuario, isOperador, isSupervisor } = useAuth();
-  const [filterType, setFilterType] = useState('todos'); // 'todos' | 'prestamo' | 'entrega' | 'devolucion' | 'baja'
+  const [filterType, setFiltroTipo] = useState('TODOS');
+  const setFilterType = setFiltroTipo; // 'todos' | 'prestamo' | 'entrega' | 'devolucion' | 'baja'
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
   const typeLabel = {
     ingreso: 'Ingreso',
     prestamo: 'Préstamo',
-    entrega: 'Entrega',
+    entrega: 'Entrega / Salida',
     baja: 'Baja',
     devolucion: 'Devolución',
     actualizacion: 'Actualización',
+    eliminacion: 'Eliminación',
   };
 
   const typePillClass = {
@@ -25,17 +27,19 @@ export default function HistorialView({ movements = [] }) {
     baja: 'low',
     devolucion: 'ok',
     actualizacion: 'default',
+    eliminacion: 'low',
   };
 
   // Normalizador de tipo para filtros y etiquetas unificadas
   const normalizeType = (m) => {
     const raw = String(m.type || m.tipo || '').toLowerCase().trim();
-    if (raw === 'devolucion' || raw === 'devolución') return 'devolucion';
-    if (raw === 'actualizacion' || raw === 'actualización') return 'actualizacion';
-    if (raw === 'prestamo' || raw === 'préstamo') return 'prestamo';
-    if (raw === 'entrega' || raw === 'salida') return 'entrega';
-    if (raw === 'baja') return 'baja';
-    if (raw === 'ingreso') return 'ingreso';
+    if (raw.includes('devolu')) return 'devolucion';
+    if (raw.includes('actualiz') || raw.includes('edit')) return 'actualizacion';
+    if (raw.includes('presta')) return 'prestamo';
+    if (raw.includes('entreg') || raw.includes('salida')) return 'entrega';
+    if (raw.includes('baja')) return 'baja';
+    if (raw.includes('ingreso') || raw.includes('alta') || raw.includes('creac')) return 'ingreso';
+    if (raw.includes('elimin') || raw.includes('borr')) return 'eliminacion';
     return raw;
   };
 
@@ -99,15 +103,31 @@ export default function HistorialView({ movements = [] }) {
   }, [movements, isUsuario, isOperador, currentUser]);
 
   // Conteos dinámicos por tipo basados en los movimientos visibles del usuario
-  const countPrestamos = useMemo(() => userMovements.filter((m) => normalizeType(m) === 'prestamo').length, [userMovements]);
-  const countEntregas = useMemo(() => userMovements.filter((m) => normalizeType(m) === 'entrega').length, [userMovements]);
-  const countDevoluciones = useMemo(() => userMovements.filter((m) => normalizeType(m) === 'devolucion').length, [userMovements]);
-  const countBajas = useMemo(() => userMovements.filter((m) => normalizeType(m) === 'baja').length, [userMovements]);
+  const countPrestamos = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'prestamo').length, [userMovements]);
+  const countEntregas = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'entrega').length, [userMovements]);
+  const countDevoluciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'devolucion').length, [userMovements]);
+  const countBajas = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'baja').length, [userMovements]);
+  const countIngresos = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'ingreso').length, [userMovements]);
+  const countActualizaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'actualizacion').length, [userMovements]);
+  const countEliminaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'eliminacion').length, [userMovements]);
 
-  // Filtrado de movimientos según pestaña seleccionada
+  // Filtrado de movimientos según pestaña o selector seleccionado
   const filteredList = useMemo(() => {
-    if (filterType === 'todos') return userMovements;
-    return userMovements.filter((m) => normalizeType(m) === filterType);
+    return (userMovements || []).filter((m) => {
+      if (filterType !== 'TODOS' && filterType !== 'todos') {
+        const norm = normalizeType(m);
+        const match = norm === filterType.toLowerCase() ||
+          (filterType === 'prestamo' && norm === 'prestamo') ||
+          (filterType === 'entrega' && norm === 'entrega') ||
+          (filterType === 'devolucion' && norm === 'devolucion') ||
+          (filterType === 'baja' && norm === 'baja') ||
+          (filterType === 'ingreso' && norm === 'ingreso') ||
+          (filterType === 'actualizacion' && norm === 'actualizacion') ||
+          (filterType === 'eliminacion' && norm === 'eliminacion');
+        if (!match) return false;
+      }
+      return true;
+    });
   }, [userMovements, filterType]);
 
   // Paginación
@@ -163,45 +183,112 @@ export default function HistorialView({ movements = [] }) {
           )}
         </div>
 
-        {/* BARRA DE FILTROS POR TIPO DE MOVIMIENTO */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className={`btn small ${filterType === 'todos' ? 'btn-primary' : 'ghost'}`}
-            onClick={() => handleFilterChange('todos')}
-          >
-            Ver Todos ({userMovements.length})
-          </button>
-          <button
-            type="button"
-            className={`btn small ${filterType === 'prestamo' ? 'btn-primary' : 'ghost'}`}
-            onClick={() => handleFilterChange('prestamo')}
-          >
-            🔄 {isUsuario ? 'Mis Préstamos' : 'Préstamos'} ({countPrestamos})
-          </button>
-          <button
-            type="button"
-            className={`btn small ${filterType === 'entrega' ? 'btn-primary' : 'ghost'}`}
-            onClick={() => handleFilterChange('entrega')}
-          >
-            📦 {isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} ({countEntregas})
-          </button>
-          <button
-            type="button"
-            className={`btn small ${filterType === 'devolucion' ? 'btn-primary' : 'ghost'}`}
-            onClick={() => handleFilterChange('devolucion')}
-          >
-            ↩️ {isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} ({countDevoluciones})
-          </button>
-          {!isUsuario && (
+        {/* BARRA DE FILTROS POR TIPO DE MOVIMIENTO CON PÍLDORAS Y SELECTOR DROPDOWN */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               type="button"
-              className={`btn small ${filterType === 'baja' ? 'btn-primary' : 'ghost'}`}
-              onClick={() => handleFilterChange('baja')}
+              className={`btn small ${(filterType === 'TODOS' || filterType === 'todos') ? 'btn-primary' : 'ghost'}`}
+              onClick={() => handleFilterChange('TODOS')}
             >
-              ⚠️ Bajas ({countBajas})
+              Ver Todos ({userMovements.length})
             </button>
-          )}
+            <button
+              type="button"
+              className={`btn small ${filterType === 'prestamo' ? 'btn-primary' : 'ghost'}`}
+              onClick={() => handleFilterChange('prestamo')}
+            >
+              🔄 {isUsuario ? 'Mis Préstamos' : 'Préstamos'} ({countPrestamos})
+            </button>
+            <button
+              type="button"
+              className={`btn small ${filterType === 'entrega' ? 'btn-primary' : 'ghost'}`}
+              onClick={() => handleFilterChange('entrega')}
+            >
+              📦 {isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} ({countEntregas})
+            </button>
+            <button
+              type="button"
+              className={`btn small ${filterType === 'devolucion' ? 'btn-primary' : 'ghost'}`}
+              onClick={() => handleFilterChange('devolucion')}
+            >
+              ↩️ {isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} ({countDevoluciones})
+            </button>
+            {!isUsuario && (
+              <>
+                <button
+                  type="button"
+                  className={`btn small ${filterType === 'ingreso' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('ingreso')}
+                  title="Altas, creaciones y nuevos ingresos"
+                >
+                  📥 Ingresos ({countIngresos})
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${filterType === 'actualizacion' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('actualizacion')}
+                  title="Modificaciones y actualizaciones técnicas"
+                >
+                  ✏️ Actualizaciones ({countActualizaciones})
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${filterType === 'baja' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('baja')}
+                >
+                  ⚠️ Bajas ({countBajas})
+                </button>
+                {countEliminaciones > 0 && (
+                  <button
+                    type="button"
+                    className={`btn small ${filterType === 'eliminacion' ? 'btn-primary' : 'ghost'}`}
+                    onClick={() => handleFilterChange('eliminacion')}
+                  >
+                    🗑️ Eliminaciones ({countEliminaciones})
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Menú desplegable complementario para selección directa */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label htmlFor="select-tipo-operacion" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+              Tipo de Movimiento:
+            </label>
+            <select
+              id="select-tipo-operacion"
+              value={filterType.toLowerCase()}
+              onChange={(e) => handleFilterChange(e.target.value)}
+              className="form-select"
+              style={{
+                fontSize: '12.5px',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--line)',
+                color: 'var(--text-h)',
+                minWidth: '170px',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="todos">Todos los tipos ({userMovements.length})</option>
+              <option value="prestamo">Préstamo ({countPrestamos})</option>
+              <option value="entrega">Entrega / Salida ({countEntregas})</option>
+              <option value="devolucion">Devolución ({countDevoluciones})</option>
+              {!isUsuario && (
+                <>
+                  <option value="ingreso">Ingreso ({countIngresos})</option>
+                  <option value="actualizacion">Actualización ({countActualizaciones})</option>
+                  <option value="baja">Baja ({countBajas})</option>
+                  {countEliminaciones > 0 && (
+                    <option value="eliminacion">Eliminación ({countEliminaciones})</option>
+                  )}
+                </>
+              )}
+            </select>
+          </div>
         </div>
 
         <div className="panel table-responsive" style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
