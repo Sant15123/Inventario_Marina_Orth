@@ -204,7 +204,38 @@ export const inventoryApi = {
     // 4. Búsqueda principal como Activo Tecnológico
     try {
       const a = await inventoryApi.getActivoByPlaca(rawId);
-      return { ...a, __tipo: 'equipo', tipo: 'tecnologia' };
+      let activoObj = { ...a, __tipo: 'equipo', tipo: 'tecnologia' };
+
+      // Buscar si tiene préstamo activo asociado para enriquecer la ubicación y custodio vigente
+      try {
+        const prestamos = await inventoryApi.getPrestamos();
+        if (Array.isArray(prestamos)) {
+          const placaComp = rawId.toLowerCase();
+          const prestamoActivo = prestamos.find((p) => {
+            const matchPlaca = String(p.placa_activo || p.item_id || p.itemId || '').toLowerCase() === placaComp;
+            const pEstado = String(p.estado || p.status || '').toLowerCase();
+            const esActivo = pEstado === 'activo' || pEstado.includes('préstamo') || pEstado.includes('prestamo') || pEstado.includes('pendiente');
+            return matchPlaca && esActivo;
+          });
+
+          if (prestamoActivo) {
+            activoObj.prestamo_activo = {
+              id: prestamoActivo.id,
+              sede: prestamoActivo.sede,
+              responsable: prestamoActivo.solicitante || prestamoActivo.responsable || prestamoActivo.person || prestamoActivo.usuario_nombre,
+              usuario_nombre: prestamoActivo.solicitante || prestamoActivo.responsable || prestamoActivo.person || prestamoActivo.usuario_nombre,
+              ubicacion_especifica: prestamoActivo.ubicacion_especifica || prestamoActivo.ubicacion,
+              motivo: prestamoActivo.motivo || prestamoActivo.motive,
+              fecha_salida: prestamoActivo.fecha_salida || prestamoActivo.date,
+              fecha_devolucion_esperada: prestamoActivo.fecha_devolucion_esperada || prestamoActivo.expectedReturn,
+              estado: prestamoActivo.estado || prestamoActivo.status,
+            };
+            activoObj.estado = 'En campo';
+          }
+        }
+      } catch (_) {}
+
+      return activoObj;
     } catch (errActivo) {
       // 5. Fallbacks cruzados
       try {

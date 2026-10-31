@@ -26,7 +26,7 @@ const formatearFecha = (fechaRaw) => {
   });
 };
 
-export default function DetalleActivoPublico() {
+export default function DetalleActivoPublico({ items = [], movements = [] }) {
   const params = useParams();
   const idODPlaca = params.id || params.placa;
 
@@ -44,10 +44,37 @@ export default function DetalleActivoPublico() {
     setLoading(true);
     inventoryApi.getItemUniversal(idODPlaca)
       .then((data) => {
-        if (isMounted) {
-          setItemData(data);
-          setError(null);
+        if (!isMounted) return;
+
+        // Si se pasaron movements por props y no vino ya prestamo_activo, buscar en movements
+        if (Array.isArray(movements) && movements.length > 0 && !data.prestamo_activo) {
+          const placaComp = String(idODPlaca).toLowerCase();
+          const activeLoan = movements.find((m) => {
+            const isLoan = m.type === 'prestamo' && (m.status === 'activo' || m.status === 'prestado');
+            const hasUnit = Array.isArray(m.unitCodes) && m.unitCodes.some((c) => String(c).toLowerCase() === placaComp);
+            const hasItem = String(m.itemId || m.placa || '').toLowerCase() === placaComp;
+            return isLoan && (hasUnit || hasItem);
+          });
+
+          if (activeLoan) {
+            data = {
+              ...data,
+              prestamo_activo: {
+                id: activeLoan.id,
+                sede: activeLoan.sede,
+                responsable: activeLoan.person || activeLoan.responsable,
+                ubicacion_especifica: activeLoan.ubicacion_especifica || activeLoan.ubicacion,
+                motivo: activeLoan.motive || activeLoan.motivo,
+                fecha_salida: activeLoan.date || activeLoan.fecha_salida,
+                fecha_devolucion_esperada: activeLoan.expectedReturn || activeLoan.fecha_devolucion_esperada,
+                estado: activeLoan.status,
+              },
+            };
+          }
         }
+
+        setItemData(data);
+        setError(null);
       })
       .catch((err) => {
         if (isMounted) {
@@ -61,7 +88,7 @@ export default function DetalleActivoPublico() {
     return () => {
       isMounted = false;
     };
-  }, [idODPlaca]);
+  }, [idODPlaca, movements]);
 
   // Pantalla de carga
   if (loading) {
@@ -440,14 +467,27 @@ export default function DetalleActivoPublico() {
     // CASO 3: TECNOLOGÍA (ACT-FMO-XXX)
     // =========================================================================
     const estadoNorm = String(itemData.estado || 'Disponible').toLowerCase();
-    const isPrestado = estadoNorm.includes('campo') || estadoNorm.includes('prestado');
+    const tienePrestamoActivo = estadoNorm.includes('campo') || estadoNorm.includes('prestado') || Boolean(itemData.prestamo_activo);
     const isMantenimiento = estadoNorm.includes('mantenimiento') || estadoNorm.includes('repar');
     const isBaja = estadoNorm.includes('baja');
+
+    // Jerarquía dinámica de Sede, Ubicación y Responsable
+    const sedeActual = (tienePrestamoActivo && itemData.prestamo_activo?.sede)
+      ? itemData.prestamo_activo.sede
+      : (itemData.sede || 'Medellín');
+
+    const ubicacionActual = (tienePrestamoActivo && itemData.prestamo_activo?.ubicacion_especifica)
+      ? itemData.prestamo_activo.ubicacion_especifica
+      : (itemData.ubicacion || itemData.ubicacion_especifica || itemData.ubicacion_estante || 'Bodega Central');
+
+    const responsableActual = (tienePrestamoActivo && (itemData.prestamo_activo?.responsable || itemData.prestamo_activo?.usuario_nombre))
+      ? (itemData.prestamo_activo.responsable || itemData.prestamo_activo.usuario_nombre)
+      : (itemData.responsable || itemData.custodio || 'Bodega Central');
 
     let badgeClass = 'ok';
     let badgeLabel = '✅ Disponible en Bodega';
 
-    if (isPrestado) {
+    if (tienePrestamoActivo) {
       badgeClass = 'prestado';
       badgeLabel = '🔄 En Préstamo / En Campo';
     } else if (isMantenimiento) {
@@ -477,7 +517,7 @@ export default function DetalleActivoPublico() {
             <h2 className="hero-title">{itemData.nombre || itemData.name || 'Equipo Tecnológico'}</h2>
             <div className="hero-category">
               <span className="category-tag">💻 {itemData.categoria || 'Tecnología'}</span>
-              <span className="sede-badge municipal">{itemData.sede || 'Medellín'}</span>
+              <span className="sede-badge municipal">{sedeActual}</span>
             </div>
           </div>
 
@@ -539,12 +579,12 @@ export default function DetalleActivoPublico() {
 
             <div className="info-item">
               <span className="info-label">Sede / Municipio</span>
-              <span className="info-val">{itemData.sede || 'Medellín'}</span>
+              <span className="info-val">{sedeActual}</span>
             </div>
 
             <div className="info-item">
               <span className="info-label">Ubicación Física Específica</span>
-              <span className="info-val">{itemData.ubicacion || itemData.ubicacion_estante || 'Bodega Central'}</span>
+              <span className="info-val">{ubicacionActual}</span>
             </div>
 
             <div className="info-item">
@@ -554,23 +594,26 @@ export default function DetalleActivoPublico() {
 
             <div className="info-item">
               <span className="info-label">Responsable Actual</span>
-              <span className="info-val">{itemData.responsable || itemData.custodio || 'Bodega Central'}</span>
+              <span className="info-val">{responsableActual}</span>
             </div>
 
             {/* Si está en préstamo, destacar custodio y fecha prevista de retorno */}
-            {isPrestado && (
+            {tienePrestamoActivo && (
               <div className="info-item full loan-box-details">
                 <span className="info-label" style={{ color: 'var(--amber)' }}>
                   Detalles del Préstamo Activo
                 </span>
                 <div className="loan-subdetails">
                   <div>
-                    <strong>Custodio Responsable:</strong> {itemData.custodio || itemData.responsable || 'Personal asignado'}
+                    <strong>Custodio Responsable:</strong> {responsableActual}
+                  </div>
+                  <div>
+                    <strong>Sede de Comisión / Destino:</strong> {sedeActual}
                   </div>
                   <div>
                     <strong>Devolución Estimada:</strong>{' '}
                     <span className="mono-num" style={{ fontWeight: 700 }}>
-                      {formatearFecha(itemData.fecha_devolucion || itemData.fecha_devolucion_esperada)}
+                      {formatearFecha(itemData.prestamo_activo?.fecha_devolucion_esperada || itemData.fecha_devolucion || itemData.fecha_devolucion_esperada)}
                     </span>
                   </div>
                 </div>
