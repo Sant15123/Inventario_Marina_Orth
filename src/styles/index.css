@@ -2048,6 +2048,12 @@ footer {
   border: 1px solid rgba(171, 222, 22, 0.35);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  display: inline-block;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 
 .sede-badge.municipal {

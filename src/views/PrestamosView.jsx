@@ -952,8 +952,21 @@ export default function PrestamosView({
                         </td>
 
                         {/* 4. SEDE / MUNICIPIO (CENTRADO) */}
-                        <td style={{ padding: '0 8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span className="sede-badge municipal" title={m.sede || 'Medellín'} style={{ fontSize: '11px', padding: '2px 8px', display: 'inline-block' }}>
+                        <td style={{ padding: '0 8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+                          <span
+                            className="sede-badge municipal"
+                            title={m.sede || 'Medellín'}
+                            style={{
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              display: 'inline-block',
+                              maxWidth: '140px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              verticalAlign: 'middle',
+                            }}
+                          >
                             {m.sede || 'Medellín'}
                           </span>
                         </td>
@@ -1361,8 +1374,23 @@ export default function PrestamosView({
                         <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <span className="person-name" style={{ fontWeight: 600 }}>{m.person || m.responsable_recibe}</span>
                         </td>
-                        <td style={{ padding: '0 12px', verticalAlign: 'middle' }}>
-                          <span className="sede-badge municipal">{m.sede || 'Medellín'}</span>
+                        <td style={{ padding: '0 12px', verticalAlign: 'middle', maxWidth: '160px' }}>
+                          <span
+                            className="sede-badge municipal"
+                            title={m.sede || 'Medellín'}
+                            style={{
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              display: 'inline-block',
+                              maxWidth: '140px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              verticalAlign: 'middle',
+                            }}
+                          >
+                            {m.sede || 'Medellín'}
+                          </span>
                         </td>
                         <td className="py-2.5" style={{ paddingLeft: '12px', paddingRight: '12px' }}>
                           <span className="item-motive" title={m.motive || m.motivo || m.proyecto}>
@@ -1485,7 +1513,22 @@ export default function PrestamosView({
                                 {sol.usuario_nombre || 'Docente'}
                               </strong>
                               <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>
-                                Sede: <span className="sede-badge municipal">{sol.sede || 'Medellín'}</span>
+                                Sede: <span
+                                  className="sede-badge municipal"
+                                  title={sol.sede || 'Medellín'}
+                                  style={{
+                                    fontSize: '11px',
+                                    padding: '2px 8px',
+                                    display: 'inline-block',
+                                    maxWidth: '140px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    verticalAlign: 'middle',
+                                  }}
+                                >
+                                  {sol.sede || 'Medellín'}
+                                </span>
                               </div>
                             </div>
                           </td>
