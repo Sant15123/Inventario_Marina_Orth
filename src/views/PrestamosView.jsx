@@ -853,7 +853,7 @@ export default function PrestamosView({
               <span>📦</span> {movements.length === 0 ? 'No hay registros en Supabase.' : 'No hay préstamos de equipos activos en este momento. Todos los equipos están en bodega.'}
             </div>
           ) : (
-            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
+            <div className="panel" style={{ paddingBottom: '4px' }}>
               <table className="w-full table-fixed" style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead className="bg-[#131b26] border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <tr>
@@ -951,24 +951,33 @@ export default function PrestamosView({
                           </span>
                         </td>
 
-                        {/* 4. SEDE / MUNICIPIO (CENTRADO) */}
-                        <td className="px-2 py-3 text-center whitespace-nowrap overflow-hidden max-w-[130px]" style={{ padding: '0 6px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', maxWidth: '130px', overflow: 'hidden' }}>
-                          <span
-                            className="inline-block max-w-[115px] truncate align-middle text-xs font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                            title={m.sede || 'Medellín'}
-                            style={{
-                              fontSize: '11px',
-                              padding: '2px 6px',
-                              display: 'inline-block',
-                              maxWidth: '115px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              verticalAlign: 'middle',
-                            }}
-                          >
-                            {m.sede || 'Medellín'}
-                          </span>
+                        {/* 4. SEDE / MUNICIPIO (CENTRADO CON TOOLTIP FLOTANTE) */}
+                        <td className="px-2 py-3 text-center whitespace-nowrap max-w-[130px]" style={{ padding: '0 6px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', maxWidth: '130px' }}>
+                          <div className="relative group inline-block align-middle">
+                            <span
+                              className="inline-block max-w-[115px] truncate align-middle text-xs font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 cursor-help"
+                              title={m.sede || 'Medellín'}
+                              style={{
+                                fontSize: '11px',
+                                padding: '2px 6px',
+                                display: 'inline-block',
+                                maxWidth: '115px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                verticalAlign: 'middle',
+                              }}
+                            >
+                              {m.sede || 'Medellín'}
+                            </span>
+                            {/* Tooltip emergente estilizado en hover */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-50 pointer-events-none transition-all duration-150">
+                              <span className="relative z-10 px-2.5 py-1.5 text-xs font-semibold leading-snug text-white whitespace-normal bg-slate-900 border border-slate-700 rounded-md shadow-xl text-center min-w-[140px] max-w-[260px]">
+                                📍 {m.sede || 'Medellín'}
+                              </span>
+                              <div className="w-2 h-2 -mt-1 rotate-45 bg-slate-900 border-r border-b border-slate-700"></div>
+                            </div>
+                          </div>
                         </td>
 
                         {/* 5. FECHA PRÉSTAMO (DD/MM/YYYY CENTRADO) */}
