@@ -2091,30 +2091,13 @@ export default function InventarioView({
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isAdmin && (
             activeTab === 'equipos' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  className="btn small btn-primary"
-                  onClick={() => handleOpenCreate('equipo')}
-                >
-                  + Nuevo Equipo
-                </button>
-                <button
-                  type="button"
-                  className="btn small ghost"
-                  onClick={handleOpenCreateMobiliario}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    borderColor: 'var(--line, #334155)',
-                    color: 'var(--text, #f8fafc)',
-                  }}
-                  title="Registrar nuevo mueble o enser institucional"
-                >
-                  <span>🪑</span> + Nuevo Mobiliario
-                </button>
-              </div>
+              <button
+                type="button"
+                className="btn small btn-primary"
+                onClick={() => handleOpenCreate('equipo')}
+              >
+                + Nuevo Equipo
+              </button>
             ) : activeTab === 'papeleria' ? (
               <button
                 type="button"
