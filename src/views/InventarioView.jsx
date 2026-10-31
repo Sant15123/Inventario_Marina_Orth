@@ -173,7 +173,7 @@ export default function InventarioView({
   }, [initialStockFilter]);
 
   // Estados locales para carga directa en caso de montaje autónomo
-  const [localItems, setLocalItems] = useState(null);
+  const [localItems, setLocalItems] = useState([]);
   const [localLoading, setLocalLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
@@ -217,7 +217,7 @@ export default function InventarioView({
   }, []);
 
   // Determinar los datos vigentes (props del App o estado local)
-  const effectiveItems = localItems !== null ? localItems : items;
+  const effectiveItems = Array.isArray(localItems) && localItems.length > 0 ? localItems : (Array.isArray(items) ? items : []);
   const effectiveLoading = localLoading || loading;
   const effectiveError = localError || error;
 
@@ -257,8 +257,8 @@ export default function InventarioView({
   };
 
   // Separación de listas principales
-  const rawConsumibles = useMemo(() => effectiveItems.filter((it) => it.itemType === 'consumible' && it.categoria !== 'Papelería' && it.categoria !== 'Mobiliario'), [effectiveItems]);
-  const equipos = useMemo(() => effectiveItems.filter((it) => it.itemType === 'equipo' && it.categoria !== 'Mobiliario'), [effectiveItems]);
+  const rawConsumibles = useMemo(() => (Array.isArray(effectiveItems) ? effectiveItems : []).filter((it) => it && it.itemType === 'consumible' && it.categoria !== 'Papelería' && it.categoria !== 'Mobiliario'), [effectiveItems]);
+  const equipos = useMemo(() => (Array.isArray(effectiveItems) ? effectiveItems : []).filter((it) => it && it.itemType === 'equipo' && it.categoria !== 'Mobiliario'), [effectiveItems]);
 
   // Estados y consulta directa a Supabase/API para PAPELERÍA (Sin datos de prueba o residuales de localStorage)
   const [papeleria, setPapeleria] = useState([]);
@@ -1512,8 +1512,9 @@ export default function InventarioView({
 
       // Si el ítem es de papelería, actualizar en localPapeleria
       if (esPapeleria) {
-        setPapeleria((prev) =>
-          prev.map((p) =>
+        setPapeleria((prev) => {
+        if (!Array.isArray(prev)) return [];
+        return prev.map((p) =>
             p.id === idOriginal
               ? {
                 ...p,
@@ -1527,13 +1528,14 @@ export default function InventarioView({
                 caja: payload.ubicacion_estante,
               }
               : p
-          )
-        );
+          );
+        });
       }
 
       // Actualizar estado local inmediato optimista
-      setLocalItems((prev) =>
-        prev.map((it) =>
+      setLocalItems((prev) => {
+        const base = Array.isArray(prev) && prev.length > 0 ? prev : (Array.isArray(items) ? items : []);
+        return base.map((it) =>
           it.id === idOriginal
             ? {
                 ...it,
@@ -1552,8 +1554,8 @@ export default function InventarioView({
                 ubicacion_estante: payload.ubicacion_estante,
               }
             : it
-        )
-      );
+        );
+      });
 
       try {
         const primaryUrl = esPapeleria
@@ -1835,13 +1837,14 @@ export default function InventarioView({
 
       // Si es ítem de papelería, actualizar en localPapeleria
       if (item.subtipo === 'papeleria' || item.categoria === 'Papelería' || String(item.id).startsWith('Pape')) {
-        setPapeleria((prev) =>
-          prev.map((p) =>
+        setPapeleria((prev) => {
+        if (!Array.isArray(prev)) return [];
+        return prev.map((p) =>
             p.id === item.id
               ? { ...p, disponible: newStock, quantity: newStock }
               : p
-          )
-        );
+          );
+        });
       }
 
       try {
@@ -2171,7 +2174,7 @@ export default function InventarioView({
                 style={{ padding: '4px 10px', fontSize: '12.5px' }}
               >
                 <option value="todas">Todas las sedes</option>
-                {sedesList.map((s) => (
+                {(sedesList || []).map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
@@ -2249,7 +2252,7 @@ export default function InventarioView({
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedEquiposUnits.map((u, idx) => {
+                  {(paginatedEquiposUnits || []).map((u, idx) => {
                     let pillClass = 'ok';
                     let statusLabel = 'Disponible';
                     if (u.status === 'prestado') {
@@ -2746,7 +2749,7 @@ export default function InventarioView({
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedConsumibles.map((it) => {
+                  {(paginatedConsumibles || []).map((it) => {
                     const disp = Number(it.disponible ?? it.quantity ?? 0);
                     const min = Number(it.minimo ?? it.minStock ?? 5);
                     const isZero = disp <= 0;
@@ -3178,7 +3181,7 @@ export default function InventarioView({
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedPapeleria.map((it) => {
+                  {(paginatedPapeleria || []).map((it) => {
                     const disp = Number(it.disponible ?? it.quantity ?? 0);
                     const isZero = disp <= 0;
                     const isLow = disp > 0 && disp <= 3;
@@ -3617,7 +3620,7 @@ export default function InventarioView({
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedMobiliario.map((m) => {
+                  {(paginatedMobiliario || []).map((m) => {
                     const code = m.placa || m.code || m.id;
                     const nombre = m.nombre || m.material || m.name || 'Mueble Modular';
                     const sede = m.sede || m.ubicacion || 'Medellín';
