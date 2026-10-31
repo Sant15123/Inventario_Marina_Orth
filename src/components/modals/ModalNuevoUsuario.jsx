@@ -390,22 +390,30 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
                 <label>Documento de Identidad *</label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   required
                   maxLength={20}
                   placeholder="Ej: 1017123456"
                   value={formData.documento}
-                  onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setFormData({ ...formData, documento: val });
+                  }}
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
                 <label>Teléfono de Contacto *</label>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   required
-                  maxLength={20}
+                  maxLength={10}
                   placeholder="Ej: 3001234567"
                   value={formData.telefono}
-                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setFormData({ ...formData, telefono: val });
+                  }}
                 />
               </div>
             </div>
