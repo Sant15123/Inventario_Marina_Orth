@@ -391,6 +391,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
                 <input
                   type="text"
                   required
+                  maxLength={20}
                   placeholder="Ej: 1017123456"
                   value={formData.documento}
                   onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
@@ -401,6 +402,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
                 <input
                   type="tel"
                   required
+                  maxLength={20}
                   placeholder="Ej: 3001234567"
                   value={formData.telefono}
                   onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
@@ -414,6 +416,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
               <input
                 type="text"
                 required
+                maxLength={70}
                 placeholder="Ej: Laura Cristina Gómez"
                 value={formData.nombre}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
@@ -426,6 +429,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
               <input
                 type="email"
                 required
+                maxLength={80}
                 placeholder="ejemplo@fmo.org o usuario@gmail.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -464,6 +468,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated }) {
               <label>Cargo / Rol Operativo</label>
               <input
                 type="text"
+                maxLength={50}
                 placeholder="Ej: Formadora de Robótica STEAM"
                 value={formData.cargo}
                 onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}

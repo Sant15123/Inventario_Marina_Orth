@@ -3922,6 +3922,7 @@ export default function InventarioView({
                   <input
                     required
                     name="name"
+                    maxLength={90}
                     defaultValue={editingItem?.name || ''}
                     placeholder={
                       modalItemType === 'equipo'
@@ -3935,6 +3936,7 @@ export default function InventarioView({
                   <label>Categoría</label>
                   <input
                     name="category"
+                    maxLength={50}
                     defaultValue={editingItem?.category || ''}
                     placeholder="Cómputo, Robótica, Audiovisuales..."
                   />
@@ -3956,6 +3958,7 @@ export default function InventarioView({
                       required
                       type="number"
                       min="0"
+                      max="99999"
                       name="quantity"
                       defaultValue={editingItem ? editingItem.quantity : 1}
                     />
@@ -3968,6 +3971,7 @@ export default function InventarioView({
                     required
                     type="number"
                     min="0"
+                    max="99999"
                     name="minStock"
                     defaultValue={editingItem?.minStock ?? 5}
                   />
@@ -3977,6 +3981,7 @@ export default function InventarioView({
                   <label>Ubicación Física en Bodega / Laboratorio</label>
                   <input
                     name="location"
+                    maxLength={70}
                     defaultValue={editingItem?.location || ''}
                     placeholder="Ej. Estante A5 / Caja 2 - Lab Robótica"
                   />
@@ -4029,6 +4034,7 @@ export default function InventarioView({
                         >
                           <input
                             type="text"
+                            maxLength={25}
                             placeholder="Ej: P-01 (Placa)"
                             value={u.placa}
                             onChange={(e) => actualizarUnidad(idx, 'placa', e.target.value)}
@@ -4047,6 +4053,7 @@ export default function InventarioView({
                           />
                           <input
                             type="text"
+                            maxLength={60}
                             placeholder="Ej: ThinkPad L14 (Modelo)"
                             value={u.modelo}
                             onChange={(e) => actualizarUnidad(idx, 'modelo', e.target.value)}
@@ -4064,6 +4071,7 @@ export default function InventarioView({
                           />
                           <input
                             type="text"
+                            maxLength={60}
                             placeholder="Ej: PF-3X9011 (Serial)"
                             value={u.serial}
                             onChange={(e) => actualizarUnidad(idx, 'serial', e.target.value)}
@@ -4122,6 +4130,7 @@ export default function InventarioView({
                   <textarea
                     name="notes"
                     rows="2"
+                    maxLength={350}
                     defaultValue={editingItem?.notes || ''}
                     placeholder="Detalles sobre garantía, estado general o especificaciones técnicas."
                   />
@@ -4242,6 +4251,7 @@ export default function InventarioView({
                   <label>Solicitante / Formador Responsable *</label>
                   <input
                     required
+                    maxLength={90}
                     list="inventario-formadores-list"
                     value={loanPerson}
                     placeholder="Selecciona o escribe el nombre..."
@@ -4297,6 +4307,7 @@ export default function InventarioView({
                 <div className="form-group full">
                   <label>Motivo y Observaciones del Préstamo</label>
                   <input
+                    maxLength={140}
                     value={loanMotive}
                     placeholder="Ej. Clubes de Robótica - Taller de programación"
                     onChange={(e) => setLoanMotive(e.target.value)}
@@ -4382,6 +4393,7 @@ export default function InventarioView({
                   <label>Motivo o Referencia (Opcional)</label>
                   <input
                     type="text"
+                    maxLength={140}
                     value={movementReason}
                     placeholder={
                       stockMovementModal.type === 'ingreso'
@@ -4685,6 +4697,7 @@ export default function InventarioView({
                         required
                         type="text"
                         name="material"
+                        maxLength={90}
                         value={formDataEditar.material || ''}
                         onChange={(e) => setFormDataEditar({ ...formDataEditar, material: e.target.value })}
                         placeholder="Ej. ARDUINO UNO R3 con Cable USB"
@@ -4707,6 +4720,7 @@ export default function InventarioView({
                           required
                           type="text"
                           name="id"
+                          maxLength={25}
                           value={formDataEditar.id || ''}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, id: e.target.value })}
                           placeholder={isPapeleriaEdit ? "Ej. Pape0036" : "Ej. Rob0043"}
@@ -4778,6 +4792,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="ubicacion"
+                          maxLength={70}
                           value={formDataEditar.ubicacion || ''}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion: e.target.value })}
                           placeholder="Ej. Oficina FMO"
@@ -4797,6 +4812,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="ubicacion_estante"
+                          maxLength={70}
                           value={formDataEditar.ubicacion_estante || ''}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion_estante: e.target.value })}
                           placeholder="Ej. Caja Rimax 12, Estantería B-1"
@@ -4820,6 +4836,7 @@ export default function InventarioView({
                           required
                           type="number"
                           min="0"
+                          max="99999"
                           name="disponible"
                           value={formDataEditar.disponible ?? 0}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, disponible: e.target.value })}
@@ -4840,6 +4857,7 @@ export default function InventarioView({
                           required
                           type="number"
                           min="0"
+                          max="99999"
                           name="minimo"
                           value={formDataEditar.minimo ?? (isPapeleriaEdit ? 3 : 5)}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, minimo: e.target.value })}
@@ -4875,6 +4893,7 @@ export default function InventarioView({
                       <input
                         type="text"
                         name="caracteristicas"
+                        maxLength={120}
                         value={formDataEditar.caracteristicas || ''}
                         onChange={(e) => setFormDataEditar({ ...formDataEditar, caracteristicas: e.target.value })}
                         placeholder="Marcas, presentación, conectores, voltajes..."
@@ -4940,6 +4959,7 @@ export default function InventarioView({
                       <textarea
                         name="descripcion"
                         rows="2"
+                        maxLength={300}
                         value={formDataEditar.descripcion || ''}
                         onChange={(e) => setFormDataEditar({ ...formDataEditar, descripcion: e.target.value })}
                         placeholder="Descripción técnica del componente o material..."
@@ -4975,6 +4995,7 @@ export default function InventarioView({
                         <input
                           type="number"
                           min="0"
+                          max="999999999"
                           step="any"
                           name="valor_compra"
                           value={formDataEditar.valor_compra ?? ''}
@@ -5034,6 +5055,7 @@ export default function InventarioView({
                       <textarea
                         name="observaciones"
                         rows="2"
+                        maxLength={300}
                         value={formDataEditar.observaciones || ''}
                         onChange={(e) => setFormDataEditar({ ...formDataEditar, observaciones: e.target.value })}
                         placeholder="Detalles sobre proveedores, donaciones o especificaciones..."
@@ -5429,6 +5451,7 @@ export default function InventarioView({
                         required
                         type="text"
                         name="material"
+                        maxLength={90}
                         value={formDataNuevo.material || ''}
                         onChange={(e) => setFormDataNuevo({ ...formDataNuevo, material: e.target.value })}
                         placeholder={isPapeleriaNuevo ? "Ej. Carpetas de Cartón Yute Oficio" : "Ej. Sensor Ultrasónico HC-SR04 o Arduino UNO"}
@@ -5451,6 +5474,7 @@ export default function InventarioView({
                           required
                           type="text"
                           name="id"
+                          maxLength={25}
                           readOnly={false}
                           disabled={false}
                           value={formDataNuevo.id || ''}
@@ -5530,6 +5554,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="ubicacion"
+                          maxLength={70}
                           value={formDataNuevo.ubicacion || ''}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion: e.target.value })}
                           placeholder="Ej. Oficina FMO"
@@ -5549,6 +5574,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="ubicacion_estante"
+                          maxLength={70}
                           value={formDataNuevo.ubicacion_estante || ''}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion_estante: e.target.value })}
                           placeholder="Ej. Caja Rimax 12, Estantería B-1"
@@ -5572,6 +5598,7 @@ export default function InventarioView({
                           required
                           type="number"
                           min="0"
+                          max="99999"
                           name="disponible"
                           value={formDataNuevo.disponible ?? 10}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, disponible: e.target.value })}
@@ -5592,6 +5619,7 @@ export default function InventarioView({
                           required
                           type="number"
                           min="0"
+                          max="99999"
                           name="minimo"
                           value={formDataNuevo.minimo ?? (isPapeleriaNuevo ? 3 : 5)}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, minimo: e.target.value })}
@@ -5627,6 +5655,7 @@ export default function InventarioView({
                       <input
                         type="text"
                         name="caracteristicas"
+                        maxLength={120}
                         value={formDataNuevo.caracteristicas || ''}
                         onChange={(e) => setFormDataNuevo({ ...formDataNuevo, caracteristicas: e.target.value })}
                         placeholder="Marcas, presentación, conectores, voltajes..."
@@ -5693,6 +5722,7 @@ export default function InventarioView({
                       <textarea
                         name="descripcion"
                         rows="2"
+                        maxLength={300}
                         value={formDataNuevo.descripcion || ''}
                         onChange={(e) => setFormDataNuevo({ ...formDataNuevo, descripcion: e.target.value })}
                         placeholder="Descripción técnica del componente o material..."
@@ -5728,6 +5758,7 @@ export default function InventarioView({
                         <input
                           type="number"
                           min="0"
+                          max="999999999"
                           step="any"
                           name="valor_compra"
                           value={formDataNuevo.valor_compra ?? ''}
@@ -5787,6 +5818,7 @@ export default function InventarioView({
                       <textarea
                         name="observaciones"
                         rows="2"
+                        maxLength={300}
                         value={formDataNuevo.observaciones || ''}
                         onChange={(e) => setFormDataNuevo({ ...formDataNuevo, observaciones: e.target.value })}
                         placeholder="Detalles sobre proveedores, donaciones o especificaciones..."
@@ -6189,6 +6221,7 @@ export default function InventarioView({
                         required
                         type="text"
                         name="nombre"
+                        maxLength={90}
                         value={formDataNuevoEquipo.nombre || ''}
                         onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, nombre: e.target.value })}
                         placeholder="Ej. Portátil Lenovo ThinkPad L14"
@@ -6211,10 +6244,11 @@ export default function InventarioView({
                           required
                           type="text"
                           name="placa"
+                          maxLength={25}
                           readOnly={false}
                           disabled={false}
                           value={formDataNuevoEquipo.placa || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, placa: e.target.value })}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, placa: e.target.value.toUpperCase() })}
                           placeholder="Ej: P57 o PLA-901"
                           className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
@@ -6306,6 +6340,7 @@ export default function InventarioView({
                       <input
                         type="text"
                         name="area"
+                        maxLength={60}
                         value={formDataNuevoEquipo.area || ''}
                         onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, area: e.target.value })}
                         placeholder="Ej. Formación, Robótica, Administración..."
@@ -6325,6 +6360,7 @@ export default function InventarioView({
                       <textarea
                         name="descripcion"
                         rows="2"
+                        maxLength={350}
                         value={formDataNuevoEquipo.descripcion || ''}
                         onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, descripcion: e.target.value })}
                         placeholder="Descripción general del equipo o propósito institucional..."
@@ -6363,6 +6399,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="marca"
+                          maxLength={50}
                           value={formDataNuevoEquipo.marca || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, marca: e.target.value })}
                           placeholder="Ej. Lenovo, Dell, HP..."
@@ -6382,6 +6419,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="modelo"
+                          maxLength={60}
                           value={formDataNuevoEquipo.modelo || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, modelo: e.target.value })}
                           placeholder="Ej. ThinkPad L14"
@@ -6402,6 +6440,7 @@ export default function InventarioView({
                           required
                           type="text"
                           name="serial"
+                          maxLength={60}
                           value={formDataNuevoEquipo.serial || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, serial: e.target.value })}
                           placeholder="Ej. PF-3X9011"
@@ -6424,6 +6463,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="caracteristica_1"
+                          maxLength={120}
                           value={formDataNuevoEquipo.caracteristica_1 || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_1: e.target.value })}
                           placeholder="Ej. RAM 16GB / i5"
@@ -6443,6 +6483,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="caracteristica_2"
+                          maxLength={120}
                           value={formDataNuevoEquipo.caracteristica_2 || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_2: e.target.value })}
                           placeholder="Ej. SSD 512GB"
@@ -6462,6 +6503,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="caracteristica_3"
+                          maxLength={120}
                           value={formDataNuevoEquipo.caracteristica_3 || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_3: e.target.value })}
                           placeholder="Ej. Pantalla 14 FHD"
@@ -6484,6 +6526,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="ubicacion"
+                          maxLength={90}
                           value={formDataNuevoEquipo.ubicacion || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion: e.target.value })}
                           placeholder="Ej. Oficina Medellín"
@@ -6503,6 +6546,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="ubicacion_estante"
+                          maxLength={70}
                           value={formDataNuevoEquipo.ubicacion_estante || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion_estante: e.target.value })}
                           placeholder="Ej. Estante A-2, Caja 05, Gaveta 3"
@@ -6522,6 +6566,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="responsable"
+                          maxLength={90}
                           value={formDataNuevoEquipo.responsable || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, responsable: e.target.value })}
                           placeholder="Ej. Bodega Central o Custodio"
@@ -6561,6 +6606,7 @@ export default function InventarioView({
                         <input
                           type="text"
                           name="proveedor"
+                          maxLength={90}
                           value={formDataNuevoEquipo.proveedor || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, proveedor: e.target.value })}
                           placeholder="Ej. Lenovo Colombia"
@@ -6580,16 +6626,22 @@ export default function InventarioView({
                         <input
                           type="number"
                           min="0"
+                          max="999999999"
                           step="any"
                           name="valor_compra"
                           value={formDataNuevoEquipo.valor_compra ?? ''}
                           onChange={(e) => {
                             const val = e.target.value;
+                            if (val === '') {
+                              setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_compra: '', valor_total: '' });
+                              return;
+                            }
+                            const clamped = Math.max(0, Math.min(999999999, Number(val)));
                             const qty = Number(formDataNuevoEquipo.cantidad) || 1;
                             setFormDataNuevoEquipo({
                               ...formDataNuevoEquipo,
-                              valor_compra: val,
-                              valor_total: val !== '' ? Number(val) * qty : '',
+                              valor_compra: clamped,
+                              valor_total: clamped * qty,
                             });
                           }}
                           placeholder="Ej. 2800000"
@@ -6609,10 +6661,15 @@ export default function InventarioView({
                         <input
                           type="number"
                           min="0"
+                          max="999999999"
                           step="any"
                           name="valor_total"
                           value={formDataNuevoEquipo.valor_total ?? ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_total: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const clamped = val === '' ? '' : Math.max(0, Math.min(999999999, Number(val)));
+                            setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_total: clamped });
+                          }}
                           placeholder="Ej. 2800000"
                           className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
@@ -6671,6 +6728,7 @@ export default function InventarioView({
                       <textarea
                         name="claves_otros"
                         rows="2"
+                        maxLength={350}
                         value={formDataNuevoEquipo.claves_otros || ''}
                         onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, claves_otros: e.target.value })}
                         placeholder="PIN de acceso, usuario administrador o credenciales..."
@@ -6690,6 +6748,7 @@ export default function InventarioView({
                       <textarea
                         name="observaciones"
                         rows="2"
+                        maxLength={350}
                         value={formDataNuevoEquipo.observaciones || ''}
                         onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, observaciones: e.target.value })}
                         placeholder="Comentarios adicionales, estado del paquete, donante..."

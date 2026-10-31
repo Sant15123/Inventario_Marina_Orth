@@ -145,7 +145,7 @@ export default function ModalRegistroMobiliario({
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? (value === '' ? '' : Math.max(1, Number(value))) : value,
+      [name]: type === 'number' ? (value === '' ? '' : Math.max(1, Math.min(9999, Number(value)))) : value,
     }));
   };
 
@@ -566,6 +566,7 @@ export default function ModalRegistroMobiliario({
                   <input
                     type="text"
                     name="nombre"
+                    maxLength={90}
                     value={formData.nombre}
                     onChange={handleChange}
                     placeholder="Ej. Mesa de Trabajo Robótica STEAM 6 Puestos"
@@ -599,6 +600,7 @@ export default function ModalRegistroMobiliario({
                     <input
                       type="text"
                       name="placa"
+                      maxLength={25}
                       value={formData.placa}
                       onChange={handleChange}
                       placeholder="MOB-0001"
@@ -690,6 +692,7 @@ export default function ModalRegistroMobiliario({
                       type="number"
                       name="cantidad"
                       min="1"
+                      max="9999"
                       value={formData.cantidad}
                       onChange={handleChange}
                       className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all text-center font-bold"
@@ -714,6 +717,7 @@ export default function ModalRegistroMobiliario({
                   <input
                     type="text"
                     name="ubicacion"
+                    maxLength={80}
                     value={formData.ubicacion}
                     onChange={handleChange}
                     placeholder="Ej. Laboratorio STEAM 1, Sala de Reuniones Principal"
@@ -786,6 +790,7 @@ export default function ModalRegistroMobiliario({
                     <input
                       type="text"
                       name="color"
+                      maxLength={40}
                       value={formData.color}
                       onChange={handleChange}
                       placeholder="Ej. Gris Grafito / Negro"
@@ -812,6 +817,7 @@ export default function ModalRegistroMobiliario({
                     <input
                       type="text"
                       name="dimensiones"
+                      maxLength={50}
                       value={formData.dimensiones}
                       onChange={handleChange}
                       placeholder="Largo x Ancho x Alto cm (ej: 140 x 70 x 75 cm)"
@@ -894,6 +900,7 @@ export default function ModalRegistroMobiliario({
                     <input
                       type="text"
                       name="proveedor"
+                      maxLength={90}
                       value={formData.proveedor}
                       onChange={handleChange}
                       placeholder="Ej. Donación Fundación / Compra Dotación"
@@ -919,6 +926,7 @@ export default function ModalRegistroMobiliario({
                   <textarea
                     rows={4}
                     name="observaciones"
+                    maxLength={350}
                     value={formData.observaciones}
                     onChange={handleChange}
                     placeholder="Detalles físicos específicos: ruedas con freno de seguridad, gaveta con cerradura y llave, rayón leve en costado izquierdo, etc."

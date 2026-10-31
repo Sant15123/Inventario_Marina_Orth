@@ -158,6 +158,7 @@ export default function ModalEditarUsuario({
                 <input
                   type="text"
                   required
+                  maxLength={20}
                   value={formData.documento}
                   onChange={(e) => onChangeFormData({ ...formData, documento: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
@@ -178,6 +179,7 @@ export default function ModalEditarUsuario({
                 <input
                   type="tel"
                   required
+                  maxLength={20}
                   value={formData.telefono}
                   onChange={(e) => onChangeFormData({ ...formData, telefono: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
@@ -200,6 +202,7 @@ export default function ModalEditarUsuario({
               <input
                 type="text"
                 required
+                maxLength={70}
                 value={formData.nombre}
                 onChange={(e) => onChangeFormData({ ...formData, nombre: e.target.value })}
                 className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
@@ -221,6 +224,7 @@ export default function ModalEditarUsuario({
               <input
                 type="email"
                 required
+                maxLength={80}
                 value={formData.email}
                 onChange={(e) => onChangeFormData({ ...formData, email: e.target.value })}
                 className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
@@ -313,6 +317,7 @@ export default function ModalEditarUsuario({
               </label>
               <input
                 type="text"
+                maxLength={50}
                 placeholder="Ej: Formadora de Robótica STEAM"
                 value={formData.cargo}
                 onChange={(e) => onChangeFormData({ ...formData, cargo: e.target.value })}

@@ -384,8 +384,9 @@ export default function ModalEditarActivo({
                       required
                       type="text"
                       name="placa"
+                      maxLength={25}
                       value={formData.placa || ''}
-                      onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase() })}
                       placeholder="Ej: FMO-EQ-005 o PLA-901"
                       className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
@@ -404,6 +405,7 @@ export default function ModalEditarActivo({
                       required
                       type="text"
                       name="nombre"
+                      maxLength={90}
                       value={formData.nombre || ''}
                       onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                       placeholder="Ej. Computador portatil"
@@ -485,6 +487,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="area"
+                      maxLength={60}
                       value={formData.area || ''}
                       onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                       placeholder="Ej. Tecnología, Robótica, Formación..."
@@ -504,6 +507,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="ubicacion"
+                      maxLength={90}
                       value={formData.ubicacion || ''}
                       onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
                       placeholder="Ej. Sede Medellín, Sala de Cómputo"
@@ -525,6 +529,7 @@ export default function ModalEditarActivo({
                   <textarea
                     name="descripcion"
                     rows="2"
+                    maxLength={350}
                     value={formData.descripcion || ''}
                     onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                     placeholder="Descripción y detalles del equipo..."
@@ -563,6 +568,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="marca"
+                      maxLength={50}
                       value={formData.marca || ''}
                       onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
                       placeholder="Ej. Lenovo, Dell, HP..."
@@ -582,6 +588,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="modelo"
+                      maxLength={60}
                       value={formData.modelo || ''}
                       onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
                       placeholder="Ej. ThinkPad L14"
@@ -602,6 +609,7 @@ export default function ModalEditarActivo({
                       required
                       type="text"
                       name="serial"
+                      maxLength={60}
                       value={formData.serial || ''}
                       onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
                       placeholder="Ej. PF-3X9011"
@@ -624,6 +632,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="caracteristica_1"
+                      maxLength={120}
                       value={formData.caracteristica_1 || ''}
                       onChange={(e) => setFormData({ ...formData, caracteristica_1: e.target.value })}
                       placeholder="Ej. RAM 16GB / i5"
@@ -643,6 +652,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="caracteristica_2"
+                      maxLength={120}
                       value={formData.caracteristica_2 || ''}
                       onChange={(e) => setFormData({ ...formData, caracteristica_2: e.target.value })}
                       placeholder="Ej. SSD 512GB"
@@ -662,6 +672,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="caracteristica_3"
+                      maxLength={120}
                       value={formData.caracteristica_3 || ''}
                       onChange={(e) => setFormData({ ...formData, caracteristica_3: e.target.value })}
                       placeholder="Ej. Pantalla 14 FHD"
@@ -684,6 +695,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="ubicacion"
+                      maxLength={90}
                       value={formData.ubicacion || ''}
                       onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
                       placeholder="Ej. Oficina Medellín"
@@ -703,6 +715,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="ubicacion_estante"
+                      maxLength={70}
                       value={formData.ubicacion_estante || ''}
                       onChange={(e) => setFormData({ ...formData, ubicacion_estante: e.target.value })}
                       placeholder="Ej. Estante A-2, Caja 05"
@@ -722,6 +735,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="responsable"
+                      maxLength={90}
                       value={formData.responsable || ''}
                       onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
                       placeholder="Ej. Bodega Central o Custodio"
@@ -761,6 +775,7 @@ export default function ModalEditarActivo({
                     <input
                       type="text"
                       name="proveedor"
+                      maxLength={90}
                       value={formData.proveedor || ''}
                       onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
                       placeholder="Ej. Lenovo Colombia"
@@ -780,16 +795,22 @@ export default function ModalEditarActivo({
                     <input
                       type="number"
                       min="0"
+                      max="999999999"
                       step="any"
                       name="valor_compra"
                       value={formData.valor_compra ?? ''}
                       onChange={(e) => {
                         const val = e.target.value;
+                        if (val === '') {
+                          setFormData({ ...formData, valor_compra: '', valor_total: '' });
+                          return;
+                        }
+                        const clamped = Math.max(0, Math.min(999999999, Number(val)));
                         const qty = Number(formData.cantidad) || 1;
                         setFormData({
                           ...formData,
-                          valor_compra: val,
-                          valor_total: val !== '' ? Number(val) * qty : '',
+                          valor_compra: clamped,
+                          valor_total: clamped * qty,
                         });
                       }}
                       placeholder="Ej. 2800000"
@@ -809,10 +830,15 @@ export default function ModalEditarActivo({
                     <input
                       type="number"
                       min="0"
+                      max="999999999"
                       step="any"
                       name="valor_total"
                       value={formData.valor_total ?? ''}
-                      onChange={(e) => setFormData({ ...formData, valor_total: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const clamped = val === '' ? '' : Math.max(0, Math.min(999999999, Number(val)));
+                        setFormData({ ...formData, valor_total: clamped });
+                      }}
                       placeholder="Ej. 2800000"
                       className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
@@ -872,6 +898,7 @@ export default function ModalEditarActivo({
                     <textarea
                       name="claves_otros"
                       rows="2"
+                      maxLength={350}
                       value={formData.claves_otros || ''}
                       onChange={(e) => setFormData({ ...formData, claves_otros: e.target.value })}
                       placeholder="PIN de acceso, usuario administrador o credenciales..."
@@ -891,6 +918,7 @@ export default function ModalEditarActivo({
                     <textarea
                       name="observaciones"
                       rows="2"
+                      maxLength={350}
                       value={formData.observaciones || ''}
                       onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
                       placeholder="Comentarios adicionales, estado del paquete, donante..."

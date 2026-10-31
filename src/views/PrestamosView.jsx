@@ -1870,6 +1870,7 @@ export default function PrestamosView({
                 <div className="form-group full">
                   <label>Motivo y Observaciones del Préstamo</label>
                   <input
+                    maxLength={140}
                     placeholder="Ej. Taller de robótica móvil con estudiantes de grado 8°"
                     value={loanMotive}
                     onChange={(e) => setLoanMotive(e.target.value)}
@@ -2011,6 +2012,7 @@ export default function PrestamosView({
                   <div className="form-group" style={{ margin: 0 }}>
                     <label style={{ fontSize: '12px', fontWeight: 600 }}>Motivo De La Entrega</label>
                     <input
+                      maxLength={140}
                       placeholder="Ej. Armado de robots seguidores o semilleros"
                       value={deliveryMotive}
                       onChange={(e) => setDeliveryMotive(e.target.value)}
@@ -2435,6 +2437,7 @@ export default function PrestamosView({
                 <div className="form-group full">
                   <label>Motivo u Observaciones</label>
                   <input
+                    maxLength={350}
                     value={editMotive}
                     onChange={(e) => setEditMotive(e.target.value)}
                     placeholder="Observaciones del préstamo..."
