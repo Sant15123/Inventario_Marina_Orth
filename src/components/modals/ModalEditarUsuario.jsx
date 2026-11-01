@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Pencil, X, Loader2 } from 'lucide-react';
+import { Pencil, X, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import inventoryApi from '../../services/inventoryApi';
 
@@ -20,9 +20,27 @@ export default function ModalEditarUsuario({
     return [];
   });
   const [cargandoSedes, setCargandoSedes] = useState(sedes.length === 0);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+
+  // Evaluaciones de complejidad de contraseña (solo aplican si el usuario escribió algo)
+  const passwordVal = formData?.password || '';
+  const tienePassword = passwordVal.trim().length > 0;
+
+  const validacionesPassword = {
+    longitud: passwordVal.length >= 8,
+    mayuscula: /[A-Z]/.test(passwordVal),
+    minuscula: /[a-z]/.test(passwordVal),
+    numero: /[0-9]/.test(passwordVal),
+    especial: /[!@#$%^&*(),.?":{}|<>_\-]/.test(passwordVal),
+  };
+
+  const passwordValida = !tienePassword || Object.values(validacionesPassword).every(Boolean);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setMostrarPassword(false);
+      return;
+    }
     let isMounted = true;
     const cargarSedes = async () => {
       try {
@@ -85,6 +103,12 @@ export default function ModalEditarUsuario({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (tienePassword && !passwordValida) return;
+    if (onSubmit) onSubmit(e);
+  };
 
   return (
     <div
@@ -199,7 +223,7 @@ export default function ModalEditarUsuario({
 
         {/* Formulario */}
         <form
-          onSubmit={onSubmit}
+          onSubmit={handleFormSubmit}
           className="flex flex-col flex-1 min-h-0 overflow-hidden"
           style={{
             margin: 0,
@@ -322,25 +346,91 @@ export default function ModalEditarUsuario({
             </div>
 
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                Contraseña (Opcional)
-              </label>
-              <input
-                type="password"
-                autoComplete="new-password"
-                placeholder="Dejar en blanco para mantener la actual"
-                value={formData.password || ''}
-                onChange={(e) => onChangeFormData({ ...formData, password: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                style={{
-                  backgroundColor: 'var(--bg, #0f172a)',
-                  color: 'var(--text, #f8fafc)',
-                  borderColor: 'var(--line, #334155)',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  borderRadius: '8px',
-                }}
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                  Contraseña (Opcional)
+                </label>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Solo si deseas cambiarla
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type={mostrarPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Dejar en blanco para mantener la actual"
+                  value={formData.password || ''}
+                  onChange={(e) => onChangeFormData({ ...formData, password: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg pl-3 pr-10 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                  style={{
+                    backgroundColor: 'var(--bg, #0f172a)',
+                    color: 'var(--text, #f8fafc)',
+                    borderColor: 'var(--line, #334155)',
+                    padding: '8px 40px 8px 12px',
+                    fontSize: '13px',
+                    borderRadius: '8px',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarPassword((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 rounded transition-colors"
+                  title={mostrarPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  tabIndex={-1}
+                >
+                  {mostrarPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              {/* Requisitos visuales en vivo */}
+              {tienePassword && (
+                <div
+                  className="mt-2 p-2.5 rounded-lg border text-xs space-y-1.5 transition-all"
+                  style={{
+                    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                    borderColor: passwordValida ? 'rgba(132, 204, 22, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                  }}
+                >
+                  <div className="text-[11px] font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Requisitos para la nueva contraseña:</span>
+                    <span className={passwordValida ? 'text-lime-400 font-bold' : 'text-amber-400'}>
+                      {passwordValida ? '✓ Cumple requisitos' : 'Incompleto'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
+                    <div className={`flex items-center gap-1.5 ${validacionesPassword.longitud ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.longitud ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {validacionesPassword.longitud ? '✓' : '•'}
+                      </span>
+                      Mínimo 8 caracteres
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validacionesPassword.mayuscula ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.mayuscula ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {validacionesPassword.mayuscula ? '✓' : '•'}
+                      </span>
+                      Una mayúscula (A-Z)
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validacionesPassword.minuscula ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.minuscula ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {validacionesPassword.minuscula ? '✓' : '•'}
+                      </span>
+                      Una minúscula (a-z)
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validacionesPassword.numero ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.numero ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {validacionesPassword.numero ? '✓' : '•'}
+                      </span>
+                      Un número (0-9)
+                    </div>
+                    <div className={`flex items-center gap-1.5 col-span-1 sm:col-span-2 ${validacionesPassword.especial ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.especial ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {validacionesPassword.especial ? '✓' : '•'}
+                      </span>
+                      Un carácter especial (!@#$%^&*...)
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -457,23 +547,23 @@ export default function ModalEditarUsuario({
 
             <button
               type="submit"
-              disabled={loading}
-              className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md"
+              disabled={loading || (tienePassword && !passwordValida)}
+              className="px-5 py-2 rounded-lg text-xs font-semibold transition-all shadow-md"
               style={{
                 padding: '8px 20px',
                 borderRadius: '8px',
-                backgroundColor: '#84CC16',
-                border: '1px solid #65A30D',
-                color: '#020617',
+                backgroundColor: (tienePassword && !passwordValida) ? '#475569' : '#84CC16',
+                border: (tienePassword && !passwordValida) ? '1px solid #334155' : '1px solid #65A30D',
+                color: (tienePassword && !passwordValida) ? '#94a3b8' : '#020617',
                 fontSize: '13px',
                 fontWeight: 800,
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: loading || (tienePassword && !passwordValida) ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
+                boxShadow: (tienePassword && !passwordValida) ? 'none' : '0 2px 12px rgba(132, 204, 22, 0.35)',
                 transition: 'all 0.15s ease',
-                opacity: loading ? 0.7 : 1,
+                opacity: loading || (tienePassword && !passwordValida) ? 0.6 : 1,
               }}
             >
               {loading ? (

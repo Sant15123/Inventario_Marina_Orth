@@ -150,6 +150,7 @@ export default function UsuariosView({ sedes: propSedes }) {
       nombre: u.nombre || '',
       telefono: u.telefono || '',
       email: u.email || '',
+      password: '',
       rol: u.rol || 'usuario',
       cargo: u.cargo || '',
       sede: u.sede || 'Medellín',
@@ -186,7 +187,24 @@ export default function UsuariosView({ sedes: propSedes }) {
       if (!payloadParaEnviar.password || !payloadParaEnviar.password.trim()) {
         delete payloadParaEnviar.password;
       } else {
-        payloadParaEnviar.password = payloadParaEnviar.password.trim();
+        const pass = payloadParaEnviar.password.trim();
+        // Validar complejidad institucional de contraseña
+        const esValida =
+          pass.length >= 8 &&
+          /[A-Z]/.test(pass) &&
+          /[a-z]/.test(pass) &&
+          /[0-9]/.test(pass) &&
+          /[!@#$%^&*(),.?":{}|<>_\-]/.test(pass);
+
+        if (!esValida) {
+          showError(
+            'Contraseña no válida',
+            'La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.'
+          );
+          setGuardandoEdicion(false);
+          return;
+        }
+        payloadParaEnviar.password = pass;
       }
 
       await editarUsuario(usuarioEditando.id, payloadParaEnviar);
