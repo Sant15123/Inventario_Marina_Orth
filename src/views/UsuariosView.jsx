@@ -194,7 +194,7 @@ export default function UsuariosView({ sedes: propSedes }) {
           /[A-Z]/.test(pass) &&
           /[a-z]/.test(pass) &&
           /[0-9]/.test(pass) &&
-          /[!@#$%^&*(),.?":{}|<>_\-]/.test(pass);
+          /[@$!%*?&#]/.test(pass);
 
         if (!esValida) {
           showError(

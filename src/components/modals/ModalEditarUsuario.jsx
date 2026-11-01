@@ -31,7 +31,7 @@ export default function ModalEditarUsuario({
     mayuscula: /[A-Z]/.test(passwordVal),
     minuscula: /[a-z]/.test(passwordVal),
     numero: /[0-9]/.test(passwordVal),
-    especial: /[!@#$%^&*(),.?":{}|<>_\-]/.test(passwordVal),
+    especial: /[@$!%*?&#]/.test(passwordVal),
   };
 
   const passwordValida = !tienePassword || Object.values(validacionesPassword).every(Boolean);
@@ -345,90 +345,71 @@ export default function ModalEditarUsuario({
               />
             </div>
 
-            <div className="form-group" style={{ margin: 0 }}>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
+            {/* Campo Contraseña en Editar Usuario */}
+            <div className="space-y-1.5" style={{ margin: 0 }}>
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                   Contraseña (Opcional)
                 </label>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                <span className="text-xs text-slate-400">
                   Solo si deseas cambiarla
                 </span>
               </div>
+
               <div className="relative">
                 <input
-                  type={mostrarPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
+                  type={mostrarPassword ? "text" : "password"}
                   placeholder="Dejar en blanco para mantener la actual"
                   value={formData.password || ''}
                   onChange={(e) => onChangeFormData({ ...formData, password: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg pl-3 pr-10 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                  style={{
-                    backgroundColor: 'var(--bg, #0f172a)',
-                    color: 'var(--text, #f8fafc)',
-                    borderColor: 'var(--line, #334155)',
-                    padding: '8px 40px 8px 12px',
-                    fontSize: '13px',
-                    borderRadius: '8px',
-                  }}
+                  className="w-full px-3.5 py-2.5 pr-10 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-900 dark:text-slate-100 transition-all placeholder:text-slate-400"
                 />
                 <button
                   type="button"
-                  onClick={() => setMostrarPassword((prev) => !prev)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 rounded transition-colors"
+                  onClick={() => setMostrarPassword(!mostrarPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
                   title={mostrarPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                   tabIndex={-1}
                 >
-                  {mostrarPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {mostrarPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
 
-              {/* Requisitos visuales en vivo */}
+              {/* Tarjeta de Requisitos idéntica a Registrar Usuario */}
               {tienePassword && (
-                <div
-                  className="mt-2 p-2.5 rounded-lg border text-xs space-y-1.5 transition-all"
-                  style={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-                    borderColor: passwordValida ? 'rgba(132, 204, 22, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-                  }}
-                >
-                  <div className="text-[11px] font-semibold text-slate-300 mb-1 flex items-center justify-between">
-                    <span>Requisitos para la nueva contraseña:</span>
-                    <span className={passwordValida ? 'text-lime-400 font-bold' : 'text-amber-400'}>
-                      {passwordValida ? '✓ Cumple requisitos' : 'Incompleto'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
-                    <div className={`flex items-center gap-1.5 ${validacionesPassword.longitud ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
-                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.longitud ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
-                        {validacionesPassword.longitud ? '✓' : '•'}
-                      </span>
-                      Mínimo 8 caracteres
-                    </div>
-                    <div className={`flex items-center gap-1.5 ${validacionesPassword.mayuscula ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
-                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.mayuscula ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
-                        {validacionesPassword.mayuscula ? '✓' : '•'}
-                      </span>
-                      Una mayúscula (A-Z)
-                    </div>
-                    <div className={`flex items-center gap-1.5 ${validacionesPassword.minuscula ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
-                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.minuscula ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
-                        {validacionesPassword.minuscula ? '✓' : '•'}
-                      </span>
-                      Una minúscula (a-z)
-                    </div>
-                    <div className={`flex items-center gap-1.5 ${validacionesPassword.numero ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
-                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.numero ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
-                        {validacionesPassword.numero ? '✓' : '•'}
-                      </span>
-                      Un número (0-9)
-                    </div>
-                    <div className={`flex items-center gap-1.5 col-span-1 sm:col-span-2 ${validacionesPassword.especial ? 'text-lime-400 font-medium' : 'text-slate-400'}`}>
-                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] ${validacionesPassword.especial ? 'bg-lime-500/20 text-lime-400' : 'bg-slate-700 text-slate-400'}`}>
-                        {validacionesPassword.especial ? '✓' : '•'}
-                      </span>
-                      Un carácter especial (!@#$%^&*...)
-                    </div>
-                  </div>
+                <div className="mt-3 p-4 bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl space-y-2.5 transition-all">
+                  <h4 className="text-[11px] font-bold tracking-wider text-slate-600 dark:text-slate-300 uppercase">
+                    Requisitos de seguridad de contraseña:
+                  </h4>
+
+                  <ul className="space-y-2 text-xs">
+                    {[
+                      { label: "Mínimo 8 caracteres", cumplido: (formData.password || '').length >= 8 },
+                      { label: "Al menos una mayúscula (A-Z)", cumplido: /[A-Z]/.test(formData.password || '') },
+                      { label: "Al menos una minúscula (a-z)", cumplido: /[a-z]/.test(formData.password || '') },
+                      { label: "Al menos un número (0-9)", cumplido: /[0-9]/.test(formData.password || '') },
+                      { label: "Al menos un carácter especial (@$!%*?&#)", cumplido: /[@$!%*?&#]/.test(formData.password || '') }
+                    ].map((req, idx) => (
+                      <li key={idx} className="flex items-center gap-2.5">
+                        <span
+                          className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] transition-colors ${
+                            req.cumplido
+                              ? "bg-emerald-100 text-emerald-600 font-bold dark:bg-emerald-950/60 dark:text-emerald-400"
+                              : "bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                          }`}
+                        >
+                          {req.cumplido ? "✓" : "○"}
+                        </span>
+                        <span
+                          className={`transition-colors ${
+                            req.cumplido ? "text-slate-700 dark:text-slate-200 font-medium" : "text-slate-400 dark:text-slate-500"
+                          }`}
+                        >
+                          {req.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
