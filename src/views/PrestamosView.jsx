@@ -1641,13 +1641,13 @@ export default function PrestamosView({
                             })()}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            {estadoUpper === 'APROBADO' ? (
+                            {estadoUpper === 'APROBADO' || estadoUpper === 'APROBADA' ? (
                               <span
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-700"
                               >
                                 <span>Aprobado</span>
                               </span>
-                            ) : estadoUpper === 'RECHAZADO' ? (
+                            ) : estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? (
                               <span
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-700"
                                 title={sol.observaciones_admin || 'Rechazado'}
@@ -1671,8 +1671,8 @@ export default function PrestamosView({
                               }}
                               className="btn small"
                               style={{
-                                backgroundColor: estadoUpper === 'PENDIENTE' ? '#84CC16' : 'rgba(255, 255, 255, 0.08)',
-                                color: estadoUpper === 'PENDIENTE' ? '#0B132B' : 'var(--text)',
+                                backgroundColor: (estadoUpper === 'PENDIENTE') ? '#84CC16' : 'rgba(255, 255, 255, 0.08)',
+                                color: (estadoUpper === 'PENDIENTE') ? '#0B132B' : 'var(--text)',
                                 fontWeight: 700,
                                 padding: '4px 10px',
                                 fontSize: '11.5px',
