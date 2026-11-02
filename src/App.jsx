@@ -817,6 +817,11 @@ function App() {
                 <Header
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
+                  placeholder={
+                    currentView === 'usuarios'
+                      ? 'Buscar usuario por nombre, documento o correo...'
+                      : undefined
+                  }
                   onExportExcel={handleExportExcel}
                   onSync={handleSyncAndPurge}
                   theme={theme}
@@ -892,7 +897,7 @@ function App() {
 
                   {/* VISTA MÓDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}
                   {!isUsuario && (isAdmin || isSupervisor) && currentView === 'usuarios' && (
-                    <UsuariosView sedes={sedesList} />
+                    <UsuariosView sedes={sedesList} searchTerm={searchTerm} />
                   )}
                 </main>
 

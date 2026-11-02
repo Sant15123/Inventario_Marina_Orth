@@ -14,6 +14,7 @@ import NotificationBell from './NotificationBell';
 export default function Header({
   searchTerm,
   onSearchChange,
+  placeholder = 'Buscar equipo, consumible, código o responsable...',
   onExportExcel,
   onSync,
   theme = 'dark',
@@ -72,7 +73,7 @@ export default function Header({
         </span>
         <input
           type="search"
-          placeholder="Buscar equipo, consumible, código o responsable..."
+          placeholder={placeholder}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           aria-label="Buscar en el inventario"

@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   UserPlus,
-  Search,
   Pencil,
   Trash2,
   Shield,
@@ -19,13 +18,11 @@ import ModalEditarUsuario from '../components/modals/ModalEditarUsuario';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
 
-export default function UsuariosView({ sedes: propSedes }) {
+export default function UsuariosView({ sedes: propSedes, searchTerm = '', busquedaGlobal = '' }) {
   const { usuarios, crearUsuario, editarUsuario, eliminarUsuario, currentUser, isAdmin, isSupervisor } = useAuth();
   const { showNewItemSuccess, showEditSuccess, showConfirmAction, showError } = useToast();
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('todos'); // 'todos' | 'administrador' | 'supervisor' | 'operador' | 'usuario'
-  const [filterSede, setFilterSede] = useState('todos');
 
   const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : []));
 
@@ -97,30 +94,43 @@ export default function UsuariosView({ sedes: propSedes }) {
   const opCount = useMemo(() => usuarios.filter((u) => u.rol === 'operador').length, [usuarios]);
   const userCount = useMemo(() => usuarios.filter((u) => u.rol === 'usuario').length, [usuarios]);
 
-  // Filtrado reactivo de usuarios
+  // Filtrado reactivo de usuarios conectado al buscador del header superior
   const usuariosFiltrados = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim();
-    return usuarios.filter((u) => {
-      const matchSearch =
-        !term ||
-        u.nombre?.toLowerCase().includes(term) ||
-        u.documento?.toLowerCase().includes(term) ||
-        u.email?.toLowerCase().includes(term) ||
-        u.telefono?.toLowerCase().includes(term) ||
-        u.cargo?.toLowerCase().includes(term);
+    const query = (searchTerm || busquedaGlobal || '').toLowerCase().trim();
 
-      const matchTab = activeTab === 'todos' || u.rol === activeTab;
-      const matchSede =
-        filterSede === 'todos' ||
-        (u.sede || '').toLowerCase().includes(filterSede.toLowerCase());
+    return (usuarios || []).filter((usuario) => {
+      // 1. Filtro por Rol (botones superiores: Ver Todos, Admins, Supervisores, Operadores, Usuarios)
+      if (activeTab && activeTab !== 'todos') {
+        const rolNormalizado = (usuario.rol || '').toLowerCase().trim();
+        if (rolNormalizado !== activeTab.toLowerCase().trim()) {
+          return false;
+        }
+      }
 
-      return matchSearch && matchTab && matchSede;
+      // 2. Filtro por el Buscador Superior
+      if (query !== '') {
+        const matchNombre = usuario.nombre?.toLowerCase().includes(query);
+        const matchDocumento = String(usuario.documento || '').toLowerCase().includes(query);
+        const matchEmail = usuario.email?.toLowerCase().includes(query);
+        const matchCargo = usuario.cargo?.toLowerCase().includes(query);
+        const matchSede = usuario.sede?.toLowerCase().includes(query);
+        const matchTelefono = usuario.telefono?.toLowerCase().includes(query);
+
+        return matchNombre || matchDocumento || matchEmail || matchCargo || matchSede || matchTelefono;
+      }
+
+      return true;
     });
-  }, [usuarios, searchTerm, activeTab, filterSede]);
+  }, [usuarios, searchTerm, busquedaGlobal, activeTab]);
 
   // Paginación estándar (5 registros por página)
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE_USUARIOS = 5;
+
+  // Resetear a página 1 cada vez que cambie la búsqueda o el filtro de rol superior
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, busquedaGlobal, activeTab]);
 
   const totalPages = Math.max(1, Math.ceil(usuariosFiltrados.length / ITEMS_PER_PAGE_USUARIOS));
   const currentUsuariosPage = Math.min(currentPage, totalPages);
@@ -438,63 +448,6 @@ export default function UsuariosView({ sedes: propSedes }) {
           <span className="section-subtitle">
             Administración de personal, custodios STEAM y asignación de credenciales institucionales
           </span>
-        </div>
-
-        {/* =========================================================================
-            BARRA DE FILTROS COMPACTA (SIN SOBREPOSICIONES)
-            ========================================================================= */}
-        <div
-          className="filter-bar"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '12px',
-            marginBottom: '14px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', flex: 1 }}>
-            <div className="filter-group" style={{ flex: '1 1 260px', maxWidth: '380px' }}>
-              <label style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>Buscar:</label>
-              <input
-                type="search"
-                placeholder="Buscar por nombre, documento o correo..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                style={{ padding: '5px 10px', fontSize: '12.5px', width: '100%' }}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>Sede:</label>
-              <select
-                value={filterSede}
-                onChange={(e) => {
-                  setFilterSede(e.target.value);
-                  setCurrentPage(1);
-                }}
-                style={{ padding: '5px 10px', fontSize: '12.5px' }}
-              >
-                <option value="todos">Todas las sedes</option>
-                {sedesList.map((s) => {
-                  const nombre = typeof s === 'string' ? s : (s.nombre || s);
-                  return (
-                    <option key={nombre} value={nombre}>
-                      {nombre}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          </div>
-
-          <div className="filter-count" style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>
-            Mostrando <strong>{paginatedUsuarios.length}</strong> de <strong>{usuariosFiltrados.length}</strong> usuarios
-          </div>
         </div>
 
         {/* =========================================================================
