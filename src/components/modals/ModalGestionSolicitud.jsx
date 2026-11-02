@@ -496,6 +496,43 @@ export default function ModalGestionSolicitud({
             </div>
           )}
 
+          {/* Banner de Solicitud Rechazada */}
+          {(solicitud.estado === 'RECHAZADA' || solicitud.estado === 'RECHAZADO') && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1.5px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 800, fontSize: '13.5px' }}>
+                <XCircle size={18} />
+                <span>Solicitud Rechazada por Administración</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px' }}>
+                <span style={{ color: 'var(--text-dim, #94a3b8)', fontWeight: 600 }}>Nota / Justificación del Administrador:</span>
+                <div
+                  style={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.06)',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    color: 'var(--text, #f8fafc)',
+                    fontSize: '13px',
+                    lineHeight: 1.5,
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
+                  {solicitud.observaciones_admin || solicitud.motivo_rechazo || solicitud.nota_rechazo || formGestion.observaciones_admin || 'Sin observaciones registradas'}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Bloque 1: Datos del Requerimiento en formulario nativo de dos columnas */}
           <div className="form-grid" style={{ gap: '14px' }}>
             {/* Custodio / Solicitante Responsable */}

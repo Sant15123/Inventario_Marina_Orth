@@ -11,7 +11,7 @@ import ModalConfirmarRetorno from '../components/modals/ModalConfirmarRetorno';
 import ModalActaPrestamo from '../components/modals/ModalActaPrestamo';
 import ModalGestionSolicitud from '../components/modals/ModalGestionSolicitud';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
-import { Building2, CheckSquare, Clock, Inbox, Eye, Laptop, Box } from 'lucide-react';
+import { Building2, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
@@ -65,6 +65,7 @@ export default function PrestamosView({
   const [modalRetornoOpen, setModalRetornoOpen] = useState(false);
   const [prestamoParaRetorno, setPrestamoParaRetorno] = useState(null);
   const [cargandoRetorno, setCargandoRetorno] = useState(false);
+  const [modalMotivoRechazo, setModalMotivoRechazo] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -1646,31 +1647,58 @@ export default function PrestamosView({
                                 <span>Aprobado</span>
                               </span>
                             ) : estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                <span
-                                  className="badge-estado-rechazado"
-                                  title={sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo || 'Rechazado'}
-                                >
-                                  <span>Rechazado</span>
-                                </span>
-                                {(sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo) && (
-                                  <span
-                                    style={{
-                                      fontSize: '11px',
-                                      color: '#ef4444',
-                                      fontWeight: 600,
-                                      maxWidth: '140px',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap',
-                                      lineHeight: 1.2,
-                                    }}
-                                    title={`Motivo: ${sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo}`}
-                                  >
-                                    Motivo: {sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo}
-                                  </span>
-                                )}
-                              </div>
+                              (() => {
+                                const textoRechazo =
+                                  sol.observaciones_admin ||
+                                  sol.motivo_rechazo ||
+                                  sol.nota_rechazo ||
+                                  sol.justificacion_rechazo ||
+                                  '';
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                    <span
+                                      className="badge-estado-rechazado"
+                                      style={{ cursor: textoRechazo ? 'pointer' : 'default' }}
+                                      onClick={() => {
+                                        if (textoRechazo) setModalMotivoRechazo({ solicitud: sol, motivo: textoRechazo });
+                                      }}
+                                      title={textoRechazo ? `Motivo: ${textoRechazo} (Click para leer completo)` : 'Rechazado por administración'}
+                                    >
+                                      <XCircle size={13} />
+                                      <span>Rechazado</span>
+                                      {textoRechazo && <Info size={11} style={{ marginLeft: '2px', opacity: 0.9 }} />}
+                                    </span>
+                                    {textoRechazo ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setModalMotivoRechazo({ solicitud: sol, motivo: textoRechazo })}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          padding: '1px 4px',
+                                          color: '#ef4444',
+                                          fontSize: '11px',
+                                          fontWeight: 600,
+                                          maxWidth: '150px',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                          cursor: 'pointer',
+                                          textDecoration: 'underline dotted',
+                                          lineHeight: 1.2,
+                                        }}
+                                        title={`Motivo: ${textoRechazo} (Click para ver completo)`}
+                                      >
+                                        Motivo: {textoRechazo}
+                                      </button>
+                                    ) : (
+                                      <span style={{ fontSize: '10.5px', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                                        Sin motivo registrado
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()
                             ) : (
                               <span className="badge-estado-pendiente">
                                 <span>Pendiente</span>
@@ -1681,8 +1709,18 @@ export default function PrestamosView({
                             <button
                               type="button"
                               onClick={() => {
-                                setSolicitudParaGestionar(sol);
-                                setModalGestionOpen(true);
+                                const textoRechazo =
+                                  sol.observaciones_admin ||
+                                  sol.motivo_rechazo ||
+                                  sol.nota_rechazo ||
+                                  sol.justificacion_rechazo ||
+                                  '';
+                                if ((estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA') && textoRechazo) {
+                                  setModalMotivoRechazo({ solicitud: sol, motivo: textoRechazo });
+                                } else {
+                                  setSolicitudParaGestionar(sol);
+                                  setModalGestionOpen(true);
+                                }
                               }}
                               className="btn small"
                               style={{
@@ -1698,7 +1736,7 @@ export default function PrestamosView({
                                 gap: '5px',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
                               }}
-                              title="Revisar solicitud y autorizar despacho"
+                              title={estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? 'Ver motivo y detalles del rechazo' : 'Revisar solicitud y autorizar despacho'}
                             >
                               <CheckSquare size={13} />
                               <span>{estadoUpper === 'PENDIENTE' ? 'Gestionar' : 'Ver Detalle'}</span>
@@ -2989,6 +3027,193 @@ export default function PrestamosView({
           showSuccess={showSuccess}
           showError={showError}
         />
+      )}
+
+      {/* =========================================================================
+          MODAL: DETALLE DE MOTIVO DE RECHAZO (HOMOLOGADO CON VISTA USUARIO)
+          ========================================================================= */}
+      {modalMotivoRechazo && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(2, 6, 23, 0.75)',
+            backdropFilter: 'blur(6px)',
+            padding: '16px',
+          }}
+          onClick={() => setModalMotivoRechazo(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--surface, #1e293b)',
+              borderRadius: '16px',
+              border: '1px solid var(--line, #334155)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              maxWidth: '460px',
+              width: '100%',
+              overflow: 'hidden',
+              color: 'var(--text, #f8fafc)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--line, #334155)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ef4444',
+                  }}
+                >
+                  <XCircle size={20} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}>
+                    Motivo del Rechazo
+                  </h4>
+                  <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
+                    Retroalimentación registrada por Administración
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalMotivoRechazo(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-dim, #94a3b8)',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  padding: '4px',
+                  lineHeight: 1,
+                }}
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '12px',
+                  paddingBottom: '8px',
+                  borderBottom: '1px solid var(--line, #334155)',
+                }}
+              >
+                <span style={{ color: 'var(--text-dim, #94a3b8)' }}>Sede solicitante:</span>
+                <span style={{ fontWeight: 600 }}>{modalMotivoRechazo.solicitud?.sede || 'Medellín'}</span>
+              </div>
+
+              {modalMotivoRechazo.solicitud?.usuario_nombre && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                    paddingBottom: '8px',
+                    borderBottom: '1px solid var(--line, #334155)',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-dim, #94a3b8)' }}>Custodio solicitante:</span>
+                  <span style={{ fontWeight: 600 }}>{modalMotivoRechazo.solicitud.usuario_nombre}</span>
+                </div>
+              )}
+
+              {modalMotivoRechazo.solicitud?.motivo && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    fontSize: '12px',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-dim, #94a3b8)' }}>Propósito original de la solicitud:</span>
+                  <span style={{ fontStyle: 'italic', color: 'var(--text, #f8fafc)' }}>
+                    "{modalMotivoRechazo.solicitud.motivo}"
+                  </span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#ef4444' }}>
+                  Nota / Justificación del Administrador:
+                </label>
+                <div
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                    fontSize: '13px',
+                    lineHeight: 1.5,
+                    color: 'var(--text, #f8fafc)',
+                    whiteSpace: 'pre-wrap',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {modalMotivoRechazo.motivo}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: '12px 20px',
+                borderTop: '1px solid var(--line, #334155)',
+                backgroundColor: 'var(--surface-2, #0b1320)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setModalMotivoRechazo(null)}
+                className="btn"
+                style={{
+                  padding: '6px 16px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  backgroundColor: '#84CC16',
+                  color: '#020617',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
