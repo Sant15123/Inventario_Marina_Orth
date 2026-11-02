@@ -152,6 +152,7 @@ export default function ModalSolicitudMaterial({
       setSubmitting(true);
       setValidationError('');
 
+      const fechaDevolucionVal = tipoSol === 'PRESTAMO_EQUIPO' ? fechaEstimada : null;
       const payload = {
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
@@ -159,7 +160,10 @@ export default function ModalSolicitudMaterial({
         tipo_solicitud: tipoSol,
         proyecto_steam_id: proyectoId || null,
         motivo: motivo.trim(),
-        fecha_devolucion_estimada: tipoSol === 'PRESTAMO_EQUIPO' ? fechaEstimada : null,
+        fecha_devolucion: fechaDevolucionVal,
+        fecha_devolucion_estimada: fechaDevolucionVal,
+        fecha_retorno: fechaDevolucionVal,
+        fecha_limite: fechaDevolucionVal,
         estado: 'PENDIENTE',
         items: itemsSolicitud,
         created_at: new Date().toISOString(),

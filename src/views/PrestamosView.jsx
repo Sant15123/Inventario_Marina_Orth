@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { fmtDate, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, today } from '../services/mockData';
+import { fmtDate, formatearFechaSegura, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, today } from '../services/mockData';
+import { supabase } from '../services/supabase';
 import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
@@ -124,6 +125,59 @@ export default function PrestamosView({
 
   useEffect(() => {
     fetchSolicitudes();
+
+    // Suscripción Realtime a cambios en solicitudes (para reflejar inserciones, aprobaciones y rechazos en vivo)
+    let canal = null;
+    try {
+      if (supabase) {
+        canal = supabase
+          .channel('cambios-solicitudes-admin')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'solicitudes' },
+            (payload) => {
+              if (payload.eventType === 'INSERT' && payload.new) {
+                setSolicitudesList((prev) => [payload.new, ...prev.filter((s) => s.id !== payload.new.id)]);
+              } else if (payload.eventType === 'UPDATE' && payload.new) {
+                setSolicitudesList((prev) =>
+                  prev.map((s) => (s.id === payload.new.id ? { ...s, ...payload.new } : s))
+                );
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                setSolicitudesList((prev) => prev.filter((s) => s.id !== payload.old.id));
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'solicitudes_inventario' },
+            (payload) => {
+              if (payload.eventType === 'INSERT' && payload.new) {
+                setSolicitudesList((prev) => [payload.new, ...prev.filter((s) => s.id !== payload.new.id)]);
+              } else if (payload.eventType === 'UPDATE' && payload.new) {
+                setSolicitudesList((prev) =>
+                  prev.map((s) => (s.id === payload.new.id ? { ...s, ...payload.new } : s))
+                );
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                setSolicitudesList((prev) => prev.filter((s) => s.id !== payload.old.id));
+              }
+            }
+          )
+          .subscribe();
+      }
+    } catch (e) {
+      console.warn('Realtime solicitudes admin aviso:', e);
+    }
+
+    // Listener local de eventos reactivos del cliente
+    const handleLocalSol = () => fetchSolicitudes();
+    window.addEventListener('siga:solicitud_creada', handleLocalSol);
+    window.addEventListener('siga:solicitud_resuelta', handleLocalSol);
+
+    return () => {
+      if (canal && supabase) supabase.removeChannel(canal);
+      window.removeEventListener('siga:solicitud_creada', handleLocalSol);
+      window.removeEventListener('siga:solicitud_resuelta', handleLocalSol);
+    };
   }, []);
 
   // Conteo de solicitudes pendientes en vivo
@@ -1580,7 +1634,11 @@ export default function PrestamosView({
                             </div>
                           </td>
                           <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '10px 12px' }}>
-                            {esPrestamo && sol.fecha_devolucion_estimada ? fmtDate(sol.fecha_devolucion_estimada) : '—'}
+                            {(() => {
+                              if (!esPrestamo) return '—';
+                              const fDev = sol.fecha_devolucion || sol.fecha_retorno || sol.fecha_limite || sol.fecha_devolucion_estimada;
+                              return fDev ? formatearFechaSegura(fDev) : 'No especificada';
+                            })()}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                             {estadoUpper === 'APROBADO' ? (

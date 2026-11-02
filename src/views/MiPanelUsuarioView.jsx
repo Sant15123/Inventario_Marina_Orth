@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { fmtDate, today, SEDES, PROYECTOS } from '../services/mockData';
+import { fmtDate, formatearFechaSegura, today, SEDES, PROYECTOS } from '../services/mockData';
+import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalQR from '../components/modals/ModalQR';
@@ -114,6 +115,76 @@ export default function MiPanelUsuarioView({
 
   useEffect(() => {
     fetchSolicitudes();
+
+    // Suscripción Realtime a cambios en solicitudes para el solicitante
+    let canal = null;
+    const userId = currentUser?.id || currentUser?.documento;
+    const nombreNorm = (currentUser?.nombre || '').toLowerCase().trim();
+
+    const matchesUser = (record) => {
+      if (!record) return false;
+      if (userId && (record.usuario_id === userId || String(record.usuario_id) === String(userId))) return true;
+      const sNombre = (record.usuario_nombre || '').toLowerCase().trim();
+      return Boolean(sNombre && nombreNorm && (sNombre.includes(nombreNorm) || nombreNorm.includes(sNombre)));
+    };
+
+    try {
+      if (supabase) {
+        canal = supabase
+          .channel(`cambios-solicitudes-usr-${userId || 'anon'}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'solicitudes' },
+            (payload) => {
+              if (payload.eventType === 'INSERT' && payload.new) {
+                if (matchesUser(payload.new)) {
+                  setSolicitudes((prev) => [payload.new, ...prev.filter((s) => s.id !== payload.new.id)]);
+                }
+              } else if (payload.eventType === 'UPDATE' && payload.new) {
+                if (matchesUser(payload.new)) {
+                  setSolicitudes((prev) =>
+                    prev.map((s) => (s.id === payload.new.id ? { ...s, ...payload.new } : s))
+                  );
+                }
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.old.id));
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'solicitudes_inventario' },
+            (payload) => {
+              if (payload.eventType === 'INSERT' && payload.new) {
+                if (matchesUser(payload.new)) {
+                  setSolicitudes((prev) => [payload.new, ...prev.filter((s) => s.id !== payload.new.id)]);
+                }
+              } else if (payload.eventType === 'UPDATE' && payload.new) {
+                if (matchesUser(payload.new)) {
+                  setSolicitudes((prev) =>
+                    prev.map((s) => (s.id === payload.new.id ? { ...s, ...payload.new } : s))
+                  );
+                }
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.old.id));
+              }
+            }
+          )
+          .subscribe();
+      }
+    } catch (e) {
+      console.warn('Realtime solicitudes usuario aviso:', e);
+    }
+
+    const handleLocalSol = () => fetchSolicitudes();
+    window.addEventListener('siga:solicitud_creada', handleLocalSol);
+    window.addEventListener('siga:solicitud_resuelta', handleLocalSol);
+
+    return () => {
+      if (canal && supabase) supabase.removeChannel(canal);
+      window.removeEventListener('siga:solicitud_creada', handleLocalSol);
+      window.removeEventListener('siga:solicitud_resuelta', handleLocalSol);
+    };
   }, [currentUser]);
 
   // Normalizar nombre del usuario activo para match flexible
@@ -760,11 +831,15 @@ export default function MiPanelUsuarioView({
                               ) : (
                                 <span style={{ color: 'var(--text-dim, #94a3b8)', fontSize: '12px' }}>Sin ítems detallados</span>
                               )}
-                              {sol.fecha_devolucion_estimada && (
-                                <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
-                                  Retorno estimado: <strong className="mono-num" style={{ color: 'var(--text, #f8fafc)' }}>{fmtDate(sol.fecha_devolucion_estimada)}</strong>
-                                </span>
-                              )}
+                              {(() => {
+                                const fDev = sol.fecha_devolucion || sol.fecha_retorno || sol.fecha_limite || sol.fecha_devolucion_estimada;
+                                if (!fDev) return null;
+                                return (
+                                  <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
+                                    Retorno pactado: <strong className="mono-num" style={{ color: 'var(--text, #f8fafc)' }}>{formatearFechaSegura(fDev)}</strong>
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </td>
                           <td style={{ padding: '10px 12px' }}>

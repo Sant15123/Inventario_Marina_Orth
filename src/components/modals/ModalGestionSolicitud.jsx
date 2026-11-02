@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   User,
   MapPin,
@@ -10,9 +10,11 @@ import {
   Minus,
   CheckCircle,
   XCircle,
+  Edit3,
 } from 'lucide-react';
-import { fmtDate, today } from '../../services/mockData';
+import { fmtDate, formatearFechaSegura, today, SEDES, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
+import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ModalGestionSolicitud({
@@ -29,6 +31,62 @@ export default function ModalGestionSolicitud({
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
+
+  // Identificar si el usuario tiene rol Administrador para permitir edición previa a la aprobación
+  const esAdmin = useMemo(() => {
+    const rol = String(currentUser?.rol || currentUser?.role || '').toLowerCase();
+    return rol.includes('admin');
+  }, [currentUser]);
+
+  // Lista dinámica de sedes desde la base de datos
+  const [listaSedes, setListaSedes] = useState(SEDES || ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Nacional']);
+
+  useEffect(() => {
+    let isMounted = true;
+    const cargarSedes = async () => {
+      try {
+        if (supabase) {
+          const { data, error } = await supabase.from('sedes').select('id, nombre, activo').order('nombre', { ascending: true });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const activas = data.filter((s) => s.activo !== false).map((s) => s.nombre);
+            if (isMounted && activas.length > 0) {
+              setListaSedes(activas);
+              return;
+            }
+          }
+        }
+        const apiData = await inventoryApi.getSedes();
+        if (Array.isArray(apiData) && apiData.length > 0 && isMounted) {
+          setListaSedes(apiData.map((s) => (typeof s === 'string' ? s : s.nombre)));
+        }
+      } catch (e) {
+        console.warn('Carga sedes en ModalGestionSolicitud aviso:', e);
+      }
+    };
+    cargarSedes();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Formulario editable para el Administrador
+  const [formGestion, setFormGestion] = useState({
+    fecha_devolucion: '',
+    sede: '',
+    proyecto_steam_id: '',
+    observaciones_admin: '',
+  });
+
+  // Inicializar campos de edición con los datos de la solicitud
+  useEffect(() => {
+    if (solicitud) {
+      const fDev = solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada || '';
+      setFormGestion({
+        fecha_devolucion: fDev ? fDev.split('T')[0] : '',
+        sede: solicitud.sede || 'Medellín',
+        proyecto_steam_id: solicitud.proyecto_steam_id || '',
+        observaciones_admin: solicitud.observaciones_admin || '',
+      });
+    }
+  }, [solicitud]);
 
   // Para equipos retornables: asignación de placas físicas por cada ítem
   // Estado: { [item_id]: string[] (placas seleccionadas) }
@@ -180,17 +238,20 @@ export default function ModalGestionSolicitud({
         (currentUser && (currentUser.nombre || currentUser.nombre_completo)) ||
         'Santiago Suárez Duran';
 
-      const sedeFinal = solicitud.sede || 'Medellín';
+      const sedeFinal = (esAdmin && formGestion.sede) ? formGestion.sede : (solicitud.sede || 'Medellín');
       const motivoFinal = solicitud.motivo || 'Solicitud de material autorizada';
-      const fechaDevolucionFinal = solicitud.fecha_devolucion_estimada || today();
+      const rawFechaDev = (esAdmin && formGestion.fecha_devolucion) ? formGestion.fecha_devolucion : (solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada || today());
+      const fechaDevolucionFinal = rawFechaDev ? rawFechaDev.split('T')[0] : today();
       const usuarioDocumentoFinal = solicitud.usuario_documento || solicitud.custodio_documento || null;
       const usuarioIdFinal = solicitud.usuario_id || null;
 
       // Si no hay proyecto vinculado, enviar proyecto_id: null en lugar de cadena vacía o texto descriptivo
       const proyectoIdFinal =
-        solicitud.proyecto_steam_id && String(solicitud.proyecto_steam_id).trim() !== ''
-          ? solicitud.proyecto_steam_id.trim()
-          : null;
+        (esAdmin && formGestion.proyecto_steam_id)
+          ? (formGestion.proyecto_steam_id.trim() || null)
+          : (solicitud.proyecto_steam_id && String(solicitud.proyecto_steam_id).trim() !== ''
+              ? solicitud.proyecto_steam_id.trim()
+              : null);
 
       // 1. Si es Préstamo de Equipo Retornable: crear registros formales de préstamo
       if (esPrestamo) {
@@ -295,6 +356,13 @@ export default function ModalGestionSolicitud({
         fecha_resolucion: today(),
         placas_asignadas: placasAsignadas,
         cantidades_aprobadas: cantidadesAprobadas,
+        sede: sedeFinal,
+        fecha_devolucion: fechaDevolucionFinal,
+        fecha_devolucion_estimada: fechaDevolucionFinal,
+        fecha_retorno: fechaDevolucionFinal,
+        fecha_limite: fechaDevolucionFinal,
+        proyecto_steam_id: proyectoIdFinal,
+        observaciones_admin: formGestion.observaciones_admin?.trim() || solicitud.observaciones_admin || null,
       };
 
       const actualizada = await inventoryApi.updateSolicitud(solicitud.id, patch);
@@ -425,23 +493,47 @@ export default function ModalGestionSolicitud({
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                 <MapPin size={14} style={{ color: '#38bdf8' }} />
                 <span>Sede / Municipio de Destino</span>
+                {esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
               </label>
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--line)',
-                  background: 'var(--surface-2)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <span>{solicitud.sede || 'Medellín'}</span>
-                <span className="sede-badge municipal" style={{ margin: 0 }}>{solicitud.sede || 'Medellín'}</span>
-              </div>
+              {esAdmin && !yaResuelta ? (
+                <select
+                  value={formGestion.sede}
+                  onChange={(e) => setFormGestion({ ...formGestion, sede: e.target.value })}
+                  style={{
+                    padding: '9px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface-2)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'var(--text)',
+                    width: '100%',
+                  }}
+                >
+                  {listaSedes.map((sedeNom) => (
+                    <option key={sedeNom} value={sedeNom}>
+                      {sedeNom}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface-2)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span>{solicitud.sede || 'Medellín'}</span>
+                  <span className="sede-badge municipal" style={{ margin: 0 }}>{solicitud.sede || 'Medellín'}</span>
+                </div>
+              )}
             </div>
 
             {/* Tipo de Requerimiento o Fecha de Retorno */}
@@ -449,23 +541,50 @@ export default function ModalGestionSolicitud({
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                 {esPrestamo ? <Calendar size={14} style={{ color: '#84CC16' }} /> : <Layers size={14} style={{ color: '#f59e0b' }} />}
                 <span>{esPrestamo ? 'Fecha de Devolución Pactada' : 'Tipo de Requerimiento'}</span>
+                {esPrestamo && esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
               </label>
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--line)',
-                  background: 'var(--surface-2)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: 'var(--text)',
-                }}
-              >
-                {esPrestamo
-                  ? fmtDate(solicitud.fecha_devolucion_estimada)
-                  : 'Consumibles / Insumos Robótica'}
-              </div>
-              {esPrestamo && <small className="help-text">Fecha límite pactada para retornar los equipos.</small>}
+              {esPrestamo && esAdmin && !yaResuelta ? (
+                <div>
+                  <input
+                    type="date"
+                    value={formGestion.fecha_devolucion}
+                    min={today()}
+                    onChange={(e) => setFormGestion({ ...formGestion, fecha_devolucion: e.target.value })}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface-2)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                      width: '100%',
+                    }}
+                  />
+                  <small className="help-text">
+                    Fecha pactada: <strong style={{ color: '#84CC16' }}>{formGestion.fecha_devolucion ? formatearFechaSegura(formGestion.fecha_devolucion) : 'Pendiente'}</strong>
+                  </small>
+                </div>
+              ) : (
+                <div>
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface-2)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                    }}
+                  >
+                    {esPrestamo
+                      ? formatearFechaSegura(solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada)
+                      : 'Consumibles / Insumos Robótica'}
+                  </div>
+                  {esPrestamo && <small className="help-text">Fecha límite pactada para retornar los equipos.</small>}
+                </div>
+              )}
             </div>
 
             {/* Proyecto STEAM Vinculado */}
@@ -473,24 +592,64 @@ export default function ModalGestionSolicitud({
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                 <Sparkles size={14} style={{ color: '#84CC16' }} />
                 <span>Proyecto STEAM Vinculado</span>
+                {esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
               </label>
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--line)',
-                  background: 'var(--surface-2)',
-                  fontSize: '13px',
-                  color: 'var(--text)',
-                  fontWeight: solicitud.proyecto_steam_id ? 700 : 500,
-                }}
-              >
-                {solicitud.proyecto_steam_id ? (
-                  <span style={{ color: '#84CC16' }}>{solicitud.proyecto_steam_id}</span>
-                ) : (
-                  <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>-- Sin vincular a proyecto específico --</span>
-                )}
-              </div>
+              {esAdmin && !yaResuelta ? (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    maxLength={120}
+                    placeholder="Ej: Semillero Robótica 2026, Club Innovación..."
+                    value={formGestion.proyecto_steam_id}
+                    onChange={(e) => setFormGestion({ ...formGestion, proyecto_steam_id: e.target.value })}
+                    style={{
+                      padding: '9px 12px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface-2)',
+                      fontSize: '13px',
+                      color: 'var(--text)',
+                      flex: 1,
+                    }}
+                  />
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) setFormGestion({ ...formGestion, proyecto_steam_id: e.target.value });
+                    }}
+                    style={{
+                      maxWidth: '180px',
+                      padding: '9px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface-2)',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <option value="">Proyectos sugeridos...</option>
+                    {(PROYECTOS || []).map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface-2)',
+                    fontSize: '13px',
+                    color: 'var(--text)',
+                    fontWeight: solicitud.proyecto_steam_id ? 700 : 500,
+                  }}
+                >
+                  {solicitud.proyecto_steam_id ? (
+                    <span style={{ color: '#84CC16' }}>{solicitud.proyecto_steam_id}</span>
+                  ) : (
+                    <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>-- Sin vincular a proyecto específico --</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Motivo y Observaciones del Préstamo */}
@@ -511,6 +670,32 @@ export default function ModalGestionSolicitud({
                 "{solicitud.motivo || 'Sin observaciones adicionales'}"
               </div>
             </div>
+
+            {/* Observaciones / Justificación adicional de aprobación (Admin) */}
+            {esAdmin && !yaResuelta && (
+              <div className="form-group full">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Edit3 size={14} style={{ color: '#84CC16' }} />
+                  <span>Observaciones / Instrucciones de Aprobación (Opcional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  maxLength={250}
+                  value={formGestion.observaciones_admin}
+                  onChange={(e) => setFormGestion({ ...formGestion, observaciones_admin: e.target.value })}
+                  placeholder="Instrucciones para el custodio, condiciones del préstamo o notas de entrega..."
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface-2)',
+                    fontSize: '12.5px',
+                    color: 'var(--text)',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Bloque 2: Selección y Asignación de Artículos */}

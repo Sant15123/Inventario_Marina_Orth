@@ -735,11 +735,33 @@ export function today() {
 }
 
 /**
- * Formatea una fecha ISO a español legible (ej. 14 feb 2026)
+ * Formateador seguro con fallback defensivo antes de renderizar fechas en tablas y modales
+ */
+export const formatearFechaSegura = (fechaString) => {
+  if (!fechaString) return 'No especificada';
+  // Si viene en formato YYYY-MM-DD, asegurar parseo sin desajuste de zona horaria
+  let fecha = new Date(fechaString);
+  if (isNaN(fecha.getTime()) && typeof fechaString === 'string') {
+    fecha = new Date(fechaString.includes('T') ? fechaString : `${fechaString}T00:00:00`);
+  }
+  if (isNaN(fecha.getTime())) return 'Fecha pendiente';
+  return fecha.toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+/**
+ * Formatea una fecha ISO a español legible (ej. 14 feb 2026) con tolerancia
  */
 export function fmtDate(d) {
   if (!d) return '—';
-  const dt = new Date(d + 'T00:00:00');
+  let dt = new Date(d);
+  if (isNaN(dt.getTime()) && typeof d === 'string') {
+    dt = new Date(d.includes('T') ? d : `${d}T00:00:00`);
+  }
+  if (isNaN(dt.getTime())) return '—';
   return dt.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
