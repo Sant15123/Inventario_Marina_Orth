@@ -1642,22 +1642,18 @@ export default function PrestamosView({
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                             {estadoUpper === 'APROBADO' || estadoUpper === 'APROBADA' ? (
-                              <span
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-700"
-                              >
+                              <span className="badge-estado-aprobado">
                                 <span>Aprobado</span>
                               </span>
                             ) : estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? (
                               <span
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-700"
+                                className="badge-estado-rechazado"
                                 title={sol.observaciones_admin || 'Rechazado'}
                               >
                                 <span>Rechazado</span>
                               </span>
                             ) : (
-                              <span
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-700"
-                              >
+                              <span className="badge-estado-pendiente">
                                 <span>Pendiente</span>
                               </span>
                             )}
