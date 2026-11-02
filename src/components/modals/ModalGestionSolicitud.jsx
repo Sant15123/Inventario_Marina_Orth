@@ -11,11 +11,13 @@ import {
   CheckCircle,
   XCircle,
   Edit3,
+  ExternalLink,
 } from 'lucide-react';
 import { fmtDate, formatearFechaSegura, today, SEDES, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import ModalDetalleActivo from './ModalDetalleActivo';
 
 export default function ModalGestionSolicitud({
   isOpen,
@@ -31,6 +33,7 @@ export default function ModalGestionSolicitud({
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [itemParaModalDetalle, setItemParaModalDetalle] = useState(null);
 
   // Identificar si el usuario tiene rol Administrador para permitir edición previa a la aprobación
   const esAdmin = useMemo(() => {
@@ -934,36 +937,163 @@ export default function ModalGestionSolicitud({
                                     <div
                                       style={{
                                         marginLeft: '78px',
-                                        padding: '8px 12px',
-                                        borderRadius: '8px',
-                                        backgroundColor: 'rgba(132, 204, 22, 0.08)',
-                                        border: '1px solid rgba(132, 204, 22, 0.3)',
+                                        padding: '10px 14px',
+                                        borderRadius: '10px',
+                                        backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.65))',
+                                        border: '1px solid rgba(132, 204, 22, 0.35)',
                                         fontSize: '11.5px',
-                                        display: 'grid',
-                                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                                        gap: '4px 10px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '8px',
                                       }}
                                     >
-                                      <div>
-                                        <span style={{ color: 'var(--text-dim)' }}>Placa / Código: </span>
-                                        <strong style={{ color: '#84CC16' }}>{unidadSeleccionada.placa || unidadSeleccionada.code}</strong>
+                                      {/* Cabecera de la ficha */}
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #334155)', paddingBottom: '6px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <span
+                                            style={{
+                                              fontFamily: 'monospace',
+                                              fontWeight: 800,
+                                              fontSize: '11px',
+                                              color: '#0284c7',
+                                              backgroundColor: 'rgba(56, 189, 248, 0.14)',
+                                              border: '1px solid rgba(56, 189, 248, 0.4)',
+                                              padding: '2px 7px',
+                                              borderRadius: '4px',
+                                            }}
+                                          >
+                                            {unidadSeleccionada.placa || unidadSeleccionada.code}
+                                          </span>
+                                          <strong style={{ fontSize: '12px', color: 'var(--text-h, #ffffff)' }}>
+                                            {unidadSeleccionada.model || invItem?.nombre || invItem?.name || 'Equipo Tecnológico'}
+                                          </strong>
+                                          <span
+                                            style={{
+                                              fontSize: '10px',
+                                              fontWeight: 700,
+                                              color: '#16a34a',
+                                              backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                                              border: '1px solid rgba(34, 197, 94, 0.3)',
+                                              padding: '1px 6px',
+                                              borderRadius: '10px',
+                                            }}
+                                          >
+                                            ● Disponible
+                                          </span>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const objDetalle = {
+                                              ...invItem,
+                                              ...unidadSeleccionada,
+                                              id: unidadSeleccionada.placa || unidadSeleccionada.code || invItem?.id,
+                                              placa: unidadSeleccionada.placa || unidadSeleccionada.code,
+                                              codigo: unidadSeleccionada.placa || unidadSeleccionada.code,
+                                              nombre: invItem?.nombre || invItem?.name || it.nombre_item,
+                                              equipo: invItem?.equipo || invItem?.nombre || invItem?.name || it.nombre_item,
+                                              categoria: invItem?.categoria || invItem?.category || 'Equipos electrónicos',
+                                              condicion: unidadSeleccionada.condicion || invItem?.condicion || 'Bueno',
+                                              area: invItem?.area || 'Tecnología',
+                                              cantidad: 1,
+                                              disponible: 1,
+                                              marca: unidadSeleccionada.marca || invItem?.marca || 'LENOVO',
+                                              modelo: unidadSeleccionada.model || invItem?.modelo || invItem?.model || 'ThinkBook',
+                                              serial: unidadSeleccionada.serial || invItem?.serial || '—',
+                                              sede: unidadSeleccionada.sede || invItem?.sede || 'Oficina Medellín',
+                                              ubicacion: unidadSeleccionada.sede || invItem?.ubicacion || 'Oficina Medellín',
+                                              ubicacion_estante: unidadSeleccionada.ubicacion_estante || unidadSeleccionada.location || invItem?.ubicacion_estante || invItem?.location || 'B1',
+                                              responsable: unidadSeleccionada.responsable || 'Bodega Central',
+                                              custodio: unidadSeleccionada.responsable || 'Bodega Central',
+                                              descripcion: invItem?.descripcion || `Equipo estándar registrado bajo la placa ${unidadSeleccionada.placa || unidadSeleccionada.code}.`,
+                                              isEquipo: true,
+                                              itemType: 'equipo',
+                                            };
+                                            setItemParaModalDetalle(objDetalle);
+                                          }}
+                                          className="text-sky-500 hover:text-sky-400"
+                                          style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            fontSize: '11px',
+                                            fontWeight: 600,
+                                            padding: '2px 4px',
+                                          }}
+                                          title="Ver ficha técnica completa en modal"
+                                        >
+                                          <span>Ficha completa</span>
+                                          <ExternalLink size={12} />
+                                        </button>
                                       </div>
-                                      <div>
-                                        <span style={{ color: 'var(--text-dim)' }}>Serial: </span>
-                                        <span style={{ color: 'var(--text)', fontWeight: 600 }}>{unidadSeleccionada.serial || 'S/N'}</span>
+
+                                      {/* Grilla técnica completa y bien ordenada */}
+                                      <div
+                                        style={{
+                                          display: 'grid',
+                                          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                                          gap: '6px 12px',
+                                        }}
+                                      >
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>CATEGORÍA:</span>
+                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{invItem?.categoria || invItem?.category || 'Equipos electrónicos'}</span>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>CONDICIÓN:</span>
+                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.condicion || invItem?.condicion || 'Bueno'}</span>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>MARCA / FABRICANTE:</span>
+                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.marca || invItem?.marca || 'LENOVO'}</span>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>MODELO TÉCNICO:</span>
+                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.model || invItem?.modelo || invItem?.model || 'ThinkBook'}</span>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SERIAL DE FÁBRICA:</span>
+                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 700, fontFamily: 'monospace' }}>{unidadSeleccionada.serial || 'S/N'}</span>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SEDE BASE:</span>
+                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.sede || invItem?.sede || 'Oficina Medellín'}</span>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>ESTANTE / CAJA / GAVETA:</span>
+                                          <span
+                                            style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '3px',
+                                              color: '#65a30d',
+                                              backgroundColor: 'rgba(132, 204, 22, 0.14)',
+                                              border: '1px solid rgba(132, 204, 22, 0.35)',
+                                              padding: '1px 6px',
+                                              borderRadius: '4px',
+                                              fontWeight: 700,
+                                              fontSize: '11px',
+                                              marginTop: '2px',
+                                            }}
+                                          >
+                                            📦 {unidadSeleccionada.ubicacion_estante || unidadSeleccionada.location || invItem?.ubicacion_estante || invItem?.location || 'B1'}
+                                          </span>
+                                        </div>
+                                        <div>
+                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>RESPONSABLE / CUSTODIO:</span>
+                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.responsable || 'Bodega Central'}</span>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <span style={{ color: 'var(--text-dim)' }}>Modelo / Ref: </span>
-                                        <span style={{ color: 'var(--text)', fontWeight: 600 }}>{unidadSeleccionada.model || invItem?.name || 'Genérico'}</span>
-                                      </div>
-                                      <div>
-                                        <span style={{ color: 'var(--text-dim)' }}>Sede Base: </span>
-                                        <span style={{ color: 'var(--text)', fontWeight: 600 }}>{unidadSeleccionada.sede || invItem?.sede || 'Medellín'}</span>
-                                      </div>
-                                      {unidadSeleccionada.location && (
-                                        <div style={{ gridColumn: '1 / -1' }}>
-                                          <span style={{ color: 'var(--text-dim)' }}>Ubicación Física: </span>
-                                          <span style={{ color: 'var(--text)' }}>{unidadSeleccionada.location}</span>
+
+                                      {/* Descripción o notas si existen */}
+                                      {(invItem?.descripcion || unidadSeleccionada.notes || unidadSeleccionada.observaciones) && (
+                                        <div style={{ borderTop: '1px dashed var(--line, #334155)', paddingTop: '6px', fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
+                                          <strong style={{ color: 'var(--text, #f8fafc)' }}>Descripción: </strong>
+                                          <span>{invItem?.descripcion || unidadSeleccionada.notes || unidadSeleccionada.observaciones}</span>
                                         </div>
                                       )}
                                     </div>
@@ -1063,6 +1193,15 @@ export default function ModalGestionSolicitud({
           )}
         </div>
       </div>
+
+      {/* Modal Secundario de Consulta de Ficha Técnica Completa */}
+      {itemParaModalDetalle && (
+        <ModalDetalleActivo
+          isOpen={Boolean(itemParaModalDetalle)}
+          onClose={() => setItemParaModalDetalle(null)}
+          item={itemParaModalDetalle}
+        />
+      )}
     </div>
   );
 }
