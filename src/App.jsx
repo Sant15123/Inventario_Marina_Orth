@@ -202,7 +202,11 @@ function App() {
       // 1. Mapear registros de auditoría directa desde historial_movimientos
       if (Array.isArray(historialData) && historialData.length > 0) {
         historialData.forEach((h) => {
-          const rawTipo = String(h.tipo || '').toLowerCase();
+          const rawTipo = String(h.tipo || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
           let mappedType = rawTipo;
           if (rawTipo.includes('devolu')) mappedType = 'devolucion';
           else if (rawTipo.includes('presta')) mappedType = 'prestamo';
@@ -212,6 +216,13 @@ function App() {
 
           const dateStr = h.fecha ? h.fecha.split('T')[0] : (h.created_at ? h.created_at.split('T')[0] : today());
           const dedupeKey = `${mappedType}-${String(h.placa_o_id || '').toLowerCase()}-${dateStr}`;
+
+          // Prevenir duplicados directos en el historial (ej. inserciones gemelas de devolución)
+          const exactHistorialKey = `${mappedType}-${String(h.placa_o_id || '').toLowerCase()}-${dateStr}-${String(h.responsable || '').toLowerCase()}-${String(h.detalles || '').slice(0, 30)}`;
+          if (historialKeys.has(exactHistorialKey)) {
+            return;
+          }
+          historialKeys.add(exactHistorialKey);
           historialKeys.add(dedupeKey);
 
           newMovs.push({
@@ -234,7 +245,7 @@ function App() {
         });
       }
 
-      // 2. Mapear préstamos directamente desde la base de datos (vital para los préstamos activos)
+      // 2. Mapear préstamos directamente desde la base de datos (evitando duplicar con historial)
       if (Array.isArray(prestamosData)) {
         prestamosData.forEach((p) => {
           const isConsumible = p.tipo_item === 'consumible' || (p.placa_activo && (p.placa_activo.toUpperCase().startsWith('ROB') || p.placa_activo.toUpperCase().startsWith('MAT')));
@@ -244,7 +255,22 @@ function App() {
           const isActivo = p.estado === 'Activo';
           const loanKey = `prestamo-${String(p.placa_activo || '').toLowerCase()}-${fechaSalida}`;
 
-          if (isActivo || !historialKeys.has(loanKey)) {
+          const existingMov = newMovs.find(
+            (m) => m.type === 'prestamo' &&
+                   String(m.itemId || '').toLowerCase() === String(p.placa_activo || '').toLowerCase() &&
+                   m.date === fechaSalida
+          );
+
+          if (existingMov) {
+            // Actualizar datos del movimiento existente sin crear duplicado
+            if (isActivo) existingMov.status = 'activo';
+            if (p.fecha_devolucion_esperada) {
+              existingMov.expectedReturn = p.fecha_devolucion_esperada.split('T')[0];
+            }
+            if (fechaDev) {
+              existingMov.returnedDate = fechaDev;
+            }
+          } else if (isActivo || !historialKeys.has(loanKey)) {
             newMovs.push({
               id: `mov-db-${p.id}`,
               dbId: p.id,

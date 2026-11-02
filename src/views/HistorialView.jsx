@@ -32,7 +32,11 @@ export default function HistorialView({ movements = [] }) {
 
   // Normalizador de tipo para filtros y etiquetas unificadas
   const normalizeType = (m) => {
-    const raw = String(m.type || m.tipo || '').toLowerCase().trim();
+    const raw = String(m.type || m.tipo || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
     if (raw.includes('devolu')) return 'devolucion';
     if (raw.includes('actualiz') || raw.includes('edit')) return 'actualizacion';
     if (raw.includes('presta')) return 'prestamo';
