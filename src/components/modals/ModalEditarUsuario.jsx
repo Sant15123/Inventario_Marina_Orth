@@ -21,6 +21,8 @@ export default function ModalEditarUsuario({
   });
   const [cargandoSedes, setCargandoSedes] = useState(sedes.length === 0);
   const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
+  const [confirmarPassword, setConfirmarPassword] = useState('');
 
   // Evaluaciones de complejidad de contraseña (solo aplican si el usuario escribió algo)
   const passwordVal = formData?.password || '';
@@ -32,6 +34,7 @@ export default function ModalEditarUsuario({
     minuscula: /[a-z]/.test(passwordVal),
     numero: /[0-9]/.test(passwordVal),
     especial: /[@$!%*?&#]/.test(passwordVal),
+    coinciden: tienePassword && passwordVal === confirmarPassword,
   };
 
   const passwordValida = !tienePassword || Object.values(validacionesPassword).every(Boolean);
@@ -39,6 +42,8 @@ export default function ModalEditarUsuario({
   useEffect(() => {
     if (!isOpen) {
       setMostrarPassword(false);
+      setMostrarConfirmarPassword(false);
+      setConfirmarPassword('');
       return;
     }
     let isMounted = true;
@@ -349,7 +354,7 @@ export default function ModalEditarUsuario({
             <div className="space-y-1.5" style={{ margin: 0 }}>
               <div className="flex justify-between items-center">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Contraseña (Opcional)
+                  Nueva Contraseña (Opcional)
                 </label>
                 <span className="text-xs text-slate-400">
                   Solo si deseas cambiarla
@@ -399,44 +404,166 @@ export default function ModalEditarUsuario({
                 </button>
               </div>
 
-              {/* Tarjeta de Requisitos idéntica a Registrar Usuario */}
+              {/* Tarjeta de Requisitos idéntica a Modal de Cambio de Contraseña / Registrar */}
               {tienePassword && (
-                <div className="mt-3 p-4 bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl space-y-2.5 transition-all">
-                  <h4 className="text-[11px] font-bold tracking-wider text-slate-600 dark:text-slate-300 uppercase">
-                    Requisitos de seguridad de contraseña:
-                  </h4>
+                <div
+                  className="mt-3 p-3.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl space-y-2.5 transition-all"
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
+                    border: '1px solid var(--line, #334155)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: 'var(--text-muted, #64748b)',
+                      display: 'block',
+                    }}
+                  >
+                    Requisitos de seguridad
+                  </span>
 
-                  <ul className="space-y-2 text-xs">
-                    {[
-                      { label: "Mínimo 8 caracteres", cumplido: (formData.password || '').length >= 8 },
-                      { label: "Al menos una mayúscula (A-Z)", cumplido: /[A-Z]/.test(formData.password || '') },
-                      { label: "Al menos una minúscula (a-z)", cumplido: /[a-z]/.test(formData.password || '') },
-                      { label: "Al menos un número (0-9)", cumplido: /[0-9]/.test(formData.password || '') },
-                      { label: "Al menos un carácter especial (@$!%*?&#)", cumplido: /[@$!%*?&#]/.test(formData.password || '') }
-                    ].map((req, idx) => (
-                      <li key={idx} className="flex items-center gap-2.5">
-                        <span
-                          className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] transition-colors ${
-                            req.cumplido
-                              ? "bg-emerald-100 text-emerald-600 font-bold dark:bg-emerald-950/60 dark:text-emerald-400"
-                              : "bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-                          }`}
-                        >
-                          {req.cumplido ? "✓" : "○"}
-                        </span>
-                        <span
-                          className={`transition-colors ${
-                            req.cumplido ? "text-slate-700 dark:text-slate-200 font-medium" : "text-slate-400 dark:text-slate-500"
-                          }`}
-                        >
-                          {req.label}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                      gap: '4px 10px',
+                      fontSize: '11px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: validacionesPassword.longitud ? '#84CC16' : 'var(--text-dim, #94a3b8)',
+                        fontWeight: validacionesPassword.longitud ? 600 : 400,
+                        transition: 'color 0.15s ease',
+                      }}
+                    >
+                      <span>{validacionesPassword.longitud ? '✓' : '○'}</span>
+                      <span>Mínimo 8 caracteres</span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: (validacionesPassword.mayuscula && validacionesPassword.minuscula) ? '#84CC16' : 'var(--text-dim, #94a3b8)',
+                        fontWeight: (validacionesPassword.mayuscula && validacionesPassword.minuscula) ? 600 : 400,
+                        transition: 'color 0.15s ease',
+                      }}
+                    >
+                      <span>{(validacionesPassword.mayuscula && validacionesPassword.minuscula) ? '✓' : '○'}</span>
+                      <span>Mayúscula y minúscula</span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: validacionesPassword.numero ? '#84CC16' : 'var(--text-dim, #94a3b8)',
+                        fontWeight: validacionesPassword.numero ? 600 : 400,
+                        transition: 'color 0.15s ease',
+                      }}
+                    >
+                      <span>{validacionesPassword.numero ? '✓' : '○'}</span>
+                      <span>Al menos un número</span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: validacionesPassword.especial ? '#84CC16' : 'var(--text-dim, #94a3b8)',
+                        fontWeight: validacionesPassword.especial ? 600 : 400,
+                        transition: 'color 0.15s ease',
+                      }}
+                    >
+                      <span>{validacionesPassword.especial ? '✓' : '○'}</span>
+                      <span>Carácter especial</span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: validacionesPassword.coinciden ? '#84CC16' : 'var(--text-dim, #94a3b8)',
+                        fontWeight: validacionesPassword.coinciden ? 600 : 400,
+                        transition: 'color 0.15s ease',
+                        gridColumn: 'span 2',
+                      }}
+                    >
+                      <span>{validacionesPassword.coinciden ? '✓' : '○'}</span>
+                      <span>Contraseñas coinciden</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* Campo Confirmar Contraseña (solo si se está escribiendo una nueva clave) */}
+            {tienePassword && (
+              <div className="space-y-1.5" style={{ margin: 0 }}>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Confirmar Contraseña <span className="text-red-500">*</span>
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type={mostrarConfirmarPassword ? "text" : "password"}
+                    placeholder="Repite la nueva contraseña"
+                    value={confirmarPassword}
+                    onChange={(e) => setConfirmarPassword(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg pl-3 pr-10 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                      padding: '8px 36px 8px 12px',
+                      fontSize: '13px',
+                      borderRadius: '8px',
+                      boxSizing: 'border-box',
+                      width: '100%',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarConfirmarPassword(!mostrarConfirmarPassword)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
+                    title={mostrarConfirmarPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    tabIndex={-1}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                      zIndex: 10,
+                    }}
+                  >
+                    {mostrarConfirmarPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="form-group" style={{ margin: 0 }}>
