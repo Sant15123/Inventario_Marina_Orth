@@ -40,6 +40,35 @@ export default function ModalGestionSolicitud({
 
   // Lista dinámica de sedes desde la base de datos
   const [listaSedes, setListaSedes] = useState(SEDES || ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Nacional']);
+  // Lista dinámica de proyectos registrados desde la base de datos
+  const [listaProyectos, setListaProyectos] = useState(() => (PROYECTOS || ['Clubes de Robótica', 'Ratón de Biblioteca', 'Semillero STEAM', 'Siembra de Colores']));
+
+  useEffect(() => {
+    let isMounted = true;
+    const cargarProyectos = async () => {
+      try {
+        if (supabase) {
+          const { data, error } = await supabase.from('proyectos').select('id, nombre, activo').order('nombre', { ascending: true });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const activos = data.filter((p) => p.activo !== false).map((p) => p.nombre || p.name);
+            if (isMounted && activos.length > 0) {
+              setListaProyectos(activos);
+              return;
+            }
+          }
+        }
+        const apiData = await inventoryApi.getProyectos();
+        if (Array.isArray(apiData) && apiData.length > 0 && isMounted) {
+          const nombres = apiData.map((p) => (typeof p === 'string' ? p : p.nombre || p.name || p.proyecto)).filter(Boolean);
+          if (nombres.length > 0) setListaProyectos(nombres);
+        }
+      } catch (e) {
+        console.warn('Carga proyectos en ModalGestionSolicitud aviso:', e);
+      }
+    };
+    cargarProyectos();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -250,8 +279,8 @@ export default function ModalGestionSolicitud({
         (esAdmin && formGestion.proyecto_steam_id)
           ? (formGestion.proyecto_steam_id.trim() || null)
           : (solicitud.proyecto_steam_id && String(solicitud.proyecto_steam_id).trim() !== ''
-              ? solicitud.proyecto_steam_id.trim()
-              : null);
+            ? solicitud.proyecto_steam_id.trim()
+            : null);
 
       // 1. Si es Préstamo de Equipo Retornable: crear registros formales de préstamo
       if (esPrestamo) {
@@ -419,13 +448,12 @@ export default function ModalGestionSolicitud({
               Gestión y Aprobación de Solicitud
             </h3>
             <span
-              className={`pill ${
-                solicitud.estado === 'APROBADO' || solicitud.estado === 'APROBADA'
+              className={`pill ${solicitud.estado === 'APROBADO' || solicitud.estado === 'APROBADA'
                   ? 'ok'
                   : solicitud.estado === 'RECHAZADO' || solicitud.estado === 'RECHAZADA'
-                  ? 'low'
-                  : 'prestado'
-              }`}
+                    ? 'low'
+                    : 'prestado'
+                }`}
               style={{ fontSize: '11px', textTransform: 'uppercase', padding: '3px 9px', letterSpacing: '0.04em' }}
             >
               {solicitud.estado || 'PENDIENTE'}
@@ -489,68 +517,19 @@ export default function ModalGestionSolicitud({
             </div>
 
             {/* Sede / Municipio de Destino */}
-            <div className="form-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ height: '22px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <MapPin size={14} style={{ color: '#38bdf8' }} />
-                <span>Sede / Municipio de Destino</span>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>Sede / Municipio de Destino</span>
                 {esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
-              </label>
-              {esAdmin && !yaResuelta ? (
-                <select
-                  value={formGestion.sede}
-                  onChange={(e) => setFormGestion({ ...formGestion, sede: e.target.value })}
-                  style={{
-                    padding: '9px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--line)',
-                    background: 'var(--surface-2)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: 'var(--text)',
-                    width: '100%',
-                  }}
-                >
-                  {listaSedes.map((sedeNom) => (
-                    <option key={sedeNom} value={sedeNom}>
-                      {sedeNom}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--line)',
-                    background: 'var(--surface-2)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <span>{solicitud.sede || 'Medellín'}</span>
-                  <span className="sede-badge municipal" style={{ margin: 0 }}>{solicitud.sede || 'Medellín'}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Tipo de Requerimiento o Fecha de Retorno */}
-            <div className="form-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                {esPrestamo ? <Calendar size={14} style={{ color: '#84CC16' }} /> : <Layers size={14} style={{ color: '#f59e0b' }} />}
-                <span>{esPrestamo ? 'Fecha de Devolución Pactada' : 'Tipo de Requerimiento'}</span>
-                {esPrestamo && esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
-              </label>
-              {esPrestamo && esAdmin && !yaResuelta ? (
-                <div>
-                  <input
-                    type="date"
-                    value={formGestion.fecha_devolucion}
-                    min={today()}
-                    onChange={(e) => setFormGestion({ ...formGestion, fecha_devolucion: e.target.value })}
+              </div>
+              <div style={{ height: '42px', display: 'flex', alignItems: 'center' }}>
+                {esAdmin && !yaResuelta ? (
+                  <select
+                    value={formGestion.sede}
+                    onChange={(e) => setFormGestion({ ...formGestion, sede: e.target.value })}
                     style={{
+                      height: '42px',
                       padding: '8px 12px',
                       borderRadius: 'var(--radius)',
                       border: '1px solid var(--line)',
@@ -559,81 +538,137 @@ export default function ModalGestionSolicitud({
                       fontWeight: 600,
                       color: 'var(--text)',
                       width: '100%',
+                      boxSizing: 'border-box',
                     }}
-                  />
-                  <small className="help-text">
-                    Fecha pactada: <strong style={{ color: '#84CC16' }}>{formGestion.fecha_devolucion ? formatearFechaSegura(formGestion.fecha_devolucion) : 'Pendiente'}</strong>
-                  </small>
-                </div>
-              ) : (
-                <div>
+                  >
+                    {listaSedes.map((sedeNom) => (
+                      <option key={sedeNom} value={sedeNom}>
+                        {sedeNom}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
                   <div
                     style={{
-                      padding: '10px 14px',
+                      height: '42px',
+                      padding: '8px 14px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface-2)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <span>{solicitud.sede || 'Medellín'}</span>
+                    <span className="sede-badge municipal" style={{ margin: 0 }}>{solicitud.sede || 'Medellín'}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tipo de Requerimiento o Fecha de Retorno */}
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ height: '22px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {esPrestamo ? <Calendar size={14} style={{ color: '#84CC16' }} /> : <Layers size={14} style={{ color: '#f59e0b' }} />}
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>{esPrestamo ? 'Fecha de Devolución Pactada' : 'Tipo de Requerimiento'}</span>
+                {esPrestamo && esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
+              </div>
+              <div style={{ height: '42px', display: 'flex', alignItems: 'center' }}>
+                {esPrestamo && esAdmin && !yaResuelta ? (
+                  <input
+                    type="date"
+                    value={formGestion.fecha_devolucion}
+                    min={today()}
+                    onChange={(e) => setFormGestion({ ...formGestion, fecha_devolucion: e.target.value })}
+                    style={{
+                      height: '42px',
+                      padding: '8px 12px',
                       borderRadius: 'var(--radius)',
                       border: '1px solid var(--line)',
                       background: 'var(--surface-2)',
                       fontSize: '13px',
                       fontWeight: 600,
                       color: 'var(--text)',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      height: '42px',
+                      padding: '8px 14px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface-2)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      width: '100%',
+                      boxSizing: 'border-box',
                     }}
                   >
                     {esPrestamo
                       ? formatearFechaSegura(solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada)
                       : 'Consumibles / Insumos Robótica'}
                   </div>
-                  {esPrestamo && <small className="help-text">Fecha límite pactada para retornar los equipos.</small>}
-                </div>
+                )}
+              </div>
+              {esPrestamo && (
+                <small className="help-text" style={{ marginTop: '3px' }}>
+                  Fecha pactada: <strong style={{ color: '#84CC16' }}>{formGestion.fecha_devolucion ? formatearFechaSegura(formGestion.fecha_devolucion) : 'Pendiente'}</strong>
+                </small>
               )}
             </div>
 
             {/* Proyecto STEAM Vinculado */}
             <div className="form-group full">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '4px' }}>
                 <Sparkles size={14} style={{ color: '#84CC16' }} />
-                <span>Proyecto STEAM Vinculado</span>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>Proyecto STEAM Vinculado</span>
                 {esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
               </label>
               {esAdmin && !yaResuelta ? (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    maxLength={120}
-                    placeholder="Ej: Semillero Robótica 2026, Club Innovación..."
-                    value={formGestion.proyecto_steam_id}
-                    onChange={(e) => setFormGestion({ ...formGestion, proyecto_steam_id: e.target.value })}
-                    style={{
-                      padding: '9px 12px',
-                      borderRadius: 'var(--radius)',
-                      border: '1px solid var(--line)',
-                      background: 'var(--surface-2)',
-                      fontSize: '13px',
-                      color: 'var(--text)',
-                      flex: 1,
-                    }}
-                  />
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value) setFormGestion({ ...formGestion, proyecto_steam_id: e.target.value });
-                    }}
-                    style={{
-                      maxWidth: '180px',
-                      padding: '9px',
-                      borderRadius: 'var(--radius)',
-                      border: '1px solid var(--line)',
-                      background: 'var(--surface-2)',
-                      fontSize: '12px',
-                    }}
-                  >
-                    <option value="">Proyectos sugeridos...</option>
-                    {(PROYECTOS || []).map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  value={formGestion.proyecto_steam_id || ''}
+                  onChange={(e) => setFormGestion({ ...formGestion, proyecto_steam_id: e.target.value })}
+                  style={{
+                    height: '42px',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface-2)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'var(--text)',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <option value="">-- Sin vincular a proyecto específico --</option>
+                  {listaProyectos.map((proyNom) => (
+                    <option key={proyNom} value={proyNom}>
+                      {proyNom}
+                    </option>
+                  ))}
+                  {/* Si la solicitud traía un proyecto personalizado que no está en la lista estándar, conservarlo */}
+                  {formGestion.proyecto_steam_id && !listaProyectos.includes(formGestion.proyecto_steam_id) && (
+                    <option value={formGestion.proyecto_steam_id}>
+                      {formGestion.proyecto_steam_id}
+                    </option>
+                  )}
+                </select>
               ) : (
                 <div
                   style={{
+                    minHeight: '42px',
                     padding: '10px 14px',
                     borderRadius: 'var(--radius)',
                     border: '1px solid var(--line)',
@@ -641,6 +676,9 @@ export default function ModalGestionSolicitud({
                     fontSize: '13px',
                     color: 'var(--text)',
                     fontWeight: solicitud.proyecto_steam_id ? 700 : 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxSizing: 'border-box',
                   }}
                 >
                   {solicitud.proyecto_steam_id ? (
@@ -823,13 +861,13 @@ export default function ModalGestionSolicitud({
                     {esPrestamo && !yaResuelta && (
                       <div
                         style={{
-                          padding: '10px 12px',
+                          padding: '12px 14px',
                           borderRadius: 'var(--radius-sm)',
                           border: '1px dashed var(--line-strong)',
                           background: 'var(--bg)',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '8px',
+                          gap: '10px',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
@@ -851,36 +889,85 @@ export default function ModalGestionSolicitud({
                             ⚠️ No hay placas disponibles de este equipo en bodega.
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {Array.from({ length: it.cantidad }).map((_, unitIdx) => {
                               const placaActual = asignadas[unitIdx] || '';
+                              const unidadSeleccionada = unitsDisponibles.find(
+                                (u) => (u.placa || u.code) === placaActual
+                              );
 
                               return (
-                                <div key={unitIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '12px', color: 'var(--text-dim)', minWidth: '70px' }}>
-                                    {it.cantidad > 1 ? `Placa ${unitIdx + 1}:` : 'Placa:'}
-                                  </span>
-                                  <select
-                                    value={placaActual}
-                                    onChange={(e) => handleSelectPlacaDropdown(it.item_id, unitIdx, e.target.value)}
-                                    style={{
-                                      fontSize: '13px',
-                                      fontWeight: 600,
-                                      padding: '7px 10px',
-                                      flex: 1,
-                                    }}
-                                  >
-                                    <option value="">-- Elige una placa física disponible --</option>
-                                    {unitsDisponibles.map((u) => {
-                                      const code = u.placa || u.code;
-                                      const yaAsignadaEnOtro = asignadas.includes(code) && code !== placaActual;
-                                      return (
-                                        <option key={code} value={code} disabled={yaAsignadaEnOtro}>
-                                          {code} {u.model ? `(${u.model})` : ''} {yaAsignadaEnOtro ? '— (Asignada)' : ''}
-                                        </option>
-                                      );
-                                    })}
-                                  </select>
+                                <div key={unitIdx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '12px', color: 'var(--text-dim)', minWidth: '70px' }}>
+                                      {it.cantidad > 1 ? `Placa ${unitIdx + 1}:` : 'Placa:'}
+                                    </span>
+                                    <select
+                                      value={placaActual}
+                                      onChange={(e) => handleSelectPlacaDropdown(it.item_id, unitIdx, e.target.value)}
+                                      style={{
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        padding: '7px 10px',
+                                        flex: 1,
+                                        borderRadius: 'var(--radius-sm)',
+                                        border: '1px solid var(--line)',
+                                        background: 'var(--surface-2)',
+                                        color: 'var(--text)',
+                                      }}
+                                    >
+                                      <option value="">-- Elige una placa física disponible --</option>
+                                      {unitsDisponibles.map((u) => {
+                                        const code = u.placa || u.code;
+                                        const yaAsignadaEnOtro = asignadas.includes(code) && code !== placaActual;
+                                        return (
+                                          <option key={code} value={code} disabled={yaAsignadaEnOtro}>
+                                            {code} {u.model ? `(${u.model})` : ''} {yaAsignadaEnOtro ? '— (Asignada)' : ''}
+                                          </option>
+                                        );
+                                      })}
+                                    </select>
+                                  </div>
+
+                                  {/* Ficha de Detalles de la Unidad Seleccionada */}
+                                  {unidadSeleccionada && (
+                                    <div
+                                      style={{
+                                        marginLeft: '78px',
+                                        padding: '8px 12px',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(132, 204, 22, 0.08)',
+                                        border: '1px solid rgba(132, 204, 22, 0.3)',
+                                        fontSize: '11.5px',
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                                        gap: '4px 10px',
+                                      }}
+                                    >
+                                      <div>
+                                        <span style={{ color: 'var(--text-dim)' }}>Placa / Código: </span>
+                                        <strong style={{ color: '#84CC16' }}>{unidadSeleccionada.placa || unidadSeleccionada.code}</strong>
+                                      </div>
+                                      <div>
+                                        <span style={{ color: 'var(--text-dim)' }}>Serial: </span>
+                                        <span style={{ color: 'var(--text)', fontWeight: 600 }}>{unidadSeleccionada.serial || 'S/N'}</span>
+                                      </div>
+                                      <div>
+                                        <span style={{ color: 'var(--text-dim)' }}>Modelo / Ref: </span>
+                                        <span style={{ color: 'var(--text)', fontWeight: 600 }}>{unidadSeleccionada.model || invItem?.name || 'Genérico'}</span>
+                                      </div>
+                                      <div>
+                                        <span style={{ color: 'var(--text-dim)' }}>Sede Base: </span>
+                                        <span style={{ color: 'var(--text)', fontWeight: 600 }}>{unidadSeleccionada.sede || invItem?.sede || 'Medellín'}</span>
+                                      </div>
+                                      {unidadSeleccionada.location && (
+                                        <div style={{ gridColumn: '1 / -1' }}>
+                                          <span style={{ color: 'var(--text-dim)' }}>Ubicación Física: </span>
+                                          <span style={{ color: 'var(--text)' }}>{unidadSeleccionada.location}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
