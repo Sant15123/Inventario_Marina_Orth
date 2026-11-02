@@ -115,7 +115,7 @@ export default function ModalGestionSolicitud({
         fecha_devolucion: fDev ? fDev.split('T')[0] : '',
         sede: solicitud.sede || 'Medellín',
         proyecto_steam_id: solicitud.proyecto_steam_id || '',
-        observaciones_admin: solicitud.observaciones_admin || '',
+        observaciones_admin: solicitud.observaciones_admin || solicitud.motivo_rechazo || solicitud.nota_rechazo || '',
       });
     }
   }, [solicitud]);

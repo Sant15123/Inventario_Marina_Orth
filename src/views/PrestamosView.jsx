@@ -1646,12 +1646,31 @@ export default function PrestamosView({
                                 <span>Aprobado</span>
                               </span>
                             ) : estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? (
-                              <span
-                                className="badge-estado-rechazado"
-                                title={sol.observaciones_admin || 'Rechazado'}
-                              >
-                                <span>Rechazado</span>
-                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                <span
+                                  className="badge-estado-rechazado"
+                                  title={sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo || 'Rechazado'}
+                                >
+                                  <span>Rechazado</span>
+                                </span>
+                                {(sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo) && (
+                                  <span
+                                    style={{
+                                      fontSize: '11px',
+                                      color: '#ef4444',
+                                      fontWeight: 600,
+                                      maxWidth: '140px',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      lineHeight: 1.2,
+                                    }}
+                                    title={`Motivo: ${sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo}`}
+                                  >
+                                    Motivo: {sol.observaciones_admin || sol.motivo_rechazo || sol.nota_rechazo}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <span className="badge-estado-pendiente">
                                 <span>Pendiente</span>

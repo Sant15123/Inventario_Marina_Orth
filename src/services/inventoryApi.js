@@ -384,32 +384,47 @@ export const inventoryApi = {
         },
       });
 
-      if (!res.ok) {
-        // Si el endpoint aún no está desplegado en backend (ej. 404 Not Found), usar fallback local silencioso
-        if (res.status === 404) {
-          console.warn('Endpoint /api/solicitudes aún no disponible en el backend (404), usando almacenamiento local.');
-        } else {
-          console.warn(`Respuesta no exitosa (${res.status}) al consultar /api/solicitudes, usando respaldo local.`);
-        }
-        try {
-          const local = localStorage.getItem('siga_solicitudes_inventario');
-          return local ? JSON.parse(local) : [];
-        } catch {
-          return [];
-        }
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        const arrayResult = extraerArreglo(json) || [];
+        return arrayResult.map((s) => ({
+          ...s,
+          motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || s.nota_rechazo || null,
+          nota_rechazo: s.nota_rechazo || s.observaciones_admin || s.motivo_rechazo || null,
+          observaciones_admin: s.observaciones_admin || s.motivo_rechazo || s.nota_rechazo || null,
+        }));
       }
-
-      const json = await res.json().catch(() => null);
-      return extraerArreglo(json) || [];
     } catch (err) {
-      console.warn('Endpoint /api/solicitudes en espera de despliegue en backend, usando lista local:', err.message);
-      // Fallback a almacenamiento local tolerante
-      try {
-        const local = localStorage.getItem('siga_solicitudes_inventario');
-        return local ? JSON.parse(local) : [];
-      } catch {
-        return [];
+      console.warn('Endpoint /api/solicitudes no disponible en backend, intentando fallback:', err.message);
+    }
+
+    // Fallback con cliente Supabase directo
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('solicitudes_inventario')
+          .select('*')
+          .order('creado_en', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          return data.map((s) => ({
+            ...s,
+            motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || null,
+            nota_rechazo: s.nota_rechazo || s.observaciones_admin || null,
+            observaciones_admin: s.observaciones_admin || s.motivo_rechazo || null,
+          }));
+        }
       }
+    } catch (e) {
+      console.warn('Aviso Supabase fallback solicitudes:', e.message);
+    }
+
+    // Fallback a almacenamiento local tolerante
+    try {
+      const local = localStorage.getItem('siga_solicitudes_inventario');
+      return local ? JSON.parse(local) : [];
+    } catch {
+      return [];
     }
   },
 
