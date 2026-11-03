@@ -718,33 +718,51 @@ export default function PrestamosView({
         ? String(prestamoId).replace('mov-db-', '')
         : prestamoId);
 
-    // 1. Actualizar en Supabase si está disponible
+    // 1. Intentar actualizar directamente en Supabase si está disponible
+    // Se envía ÚNICAMENTE las columnas existentes en la tabla 'prestamos' (fecha_devolucion_esperada, motivo, sede)
+    // NO se envía 'proyecto' ni 'proyecto_steam' para evitar el error PGRST204
     try {
       if (supabase && targetDbId && !isNaN(Number(targetDbId))) {
         const updateFields = {
           fecha_devolucion_esperada: data.fecha_devolucion_esperada,
-          motivo: data.observaciones !== undefined ? data.observaciones : loanObj?.motive,
         };
-        if (data.sede) updateFields.sede = data.sede;
-        if (data.proyecto_steam) updateFields.proyecto = data.proyecto_steam;
-        if (data.custodio_id) updateFields.responsable = data.custodio_id;
+        // En la base de datos la columna es 'motivo'
+        if (data.observaciones !== undefined) {
+          updateFields.motivo = data.observaciones;
+        } else if (data.motivo !== undefined) {
+          updateFields.motivo = data.motivo;
+        }
+        if (data.sede) {
+          updateFields.sede = data.sede;
+        }
 
-        await supabase
+        const { error: sbError } = await supabase
           .from('prestamos')
           .update(updateFields)
           .eq('id', Number(targetDbId));
+
+        if (sbError) {
+          console.error('Error de Supabase al actualizar préstamo:', sbError);
+          throw sbError;
+        }
       }
     } catch (sbErr) {
-      console.warn('Actualización directa Supabase prestamo:', sbErr.message);
+      console.warn('Actualización directa Supabase prestamo:', sbErr.message || sbErr);
+      // Si el error no es de red ni fatal, permitir que inventoryApi intente como fallback
     }
 
-    // 2. Actualizar vía inventoryApi
+    // 2. Actualizar vía inventoryApi (backend REST o fallback estructurado)
     try {
       if (inventoryApi.updatePrestamo) {
-        await inventoryApi.updatePrestamo(targetDbId, data);
+        await inventoryApi.updatePrestamo(targetDbId, {
+          fecha_devolucion_esperada: data.fecha_devolucion_esperada,
+          observaciones: data.observaciones,
+          motivo: data.motivo || data.observaciones,
+          sede: data.sede,
+        });
       }
     } catch (apiErr) {
-      console.warn('Actualización API prestamo:', apiErr.message);
+      console.warn('Actualización API prestamo:', apiErr.message || apiErr);
     }
 
     // 3. Actualizar fecha de devolución del activo asociado si aplica
