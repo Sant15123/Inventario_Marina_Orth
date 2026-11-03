@@ -162,7 +162,7 @@ export default function InventarioView({
   const { currentUser, isAdmin, isSupervisor, isOperador } = useAuth();
 
   // Hook del sistema de notificaciones/alertas personalizadas FMO
-  const { showEditSuccess, showConfirmBaja, showConfirmAction, showNewItemSuccess, showLoanSuccess, showError, showInfo } = useToast();
+  const { showEditSuccess, showConfirmBaja, showConfirmAction, showNewItemSuccess, showLoanSuccess, showError, showInfo, showSuccess } = useToast();
 
   // Sincronizar si cambian las props iniciales
   useEffect(() => {
@@ -885,30 +885,42 @@ export default function InventarioView({
         await onRetireItem({ materialId, cantidadBaja, motivo });
       }
 
-      if (onRetry) {
-        await onRetry();
-      } else {
-        const [activosData, consumiblesData] = await Promise.all([
-          inventoryApi.getActivos(),
-          inventoryApi.getConsumibles(),
-        ]);
-        const loaded = [];
-        if (Array.isArray(consumiblesData)) {
-          consumiblesData.forEach((c) => {
-            loaded.push(mapConsumibleItem(c));
-          });
+      try {
+        if (onRetry) {
+          await onRetry();
+        } else {
+          const [activosData, consumiblesData] = await Promise.all([
+            inventoryApi.getActivos(),
+            inventoryApi.getConsumibles(),
+          ]);
+          const loaded = [];
+          if (Array.isArray(consumiblesData)) {
+            consumiblesData.forEach((c) => {
+              loaded.push(mapConsumibleItem(c));
+            });
+          }
+          if (Array.isArray(activosData)) {
+            activosData.forEach((a) => {
+              loaded.push(mapEquipoItem(a));
+            });
+          }
+          setLocalItems(loaded);
         }
-        if (Array.isArray(activosData)) {
-          activosData.forEach((a) => {
-            loaded.push(mapEquipoItem(a));
-          });
-        }
-        setLocalItems(loaded);
+      } catch (refreshErr) {
+        console.warn('Advertencia secundaria al refrescar vista:', refreshErr);
       }
-      showSuccess('Baja confirmada', `Se dieron de baja ${cantidadBaja} unidad(es) de ${consumibleParaBaja?.material || consumibleParaBaja?.name || 'material'}.`);
+
+      const msg = `Se dieron de baja ${cantidadBaja} unidad(es) de ${consumibleParaBaja?.material || consumibleParaBaja?.name || 'material'}.`;
+      if (typeof showSuccess === 'function') {
+        showSuccess('Baja confirmada', msg);
+      } else if (typeof showInfo === 'function') {
+        showInfo('Baja confirmada', msg);
+      }
     } catch (err) {
-      console.error('Error al dar de baja insumo:', err);
-      showError('Error al dar de baja', err.message || 'No se pudo procesar la baja del material');
+      console.error('Error capturado durante la baja en InventarioView:', err);
+      if (typeof showError === 'function') {
+        showError('Error al dar de baja', err?.message || 'No se pudo procesar la baja del material');
+      }
       throw err;
     } finally {
       setLocalLoading(false);

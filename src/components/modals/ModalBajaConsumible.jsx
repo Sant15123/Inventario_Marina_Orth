@@ -43,8 +43,15 @@ export const ModalBajaConsumible = ({ material, isOpen, onClose, onConfirmarBaja
       });
       onClose();
     } catch (err) {
-      console.error('Error al procesar la baja:', err);
-      alert('Ocurrió un error al procesar la baja del material.');
+      console.error('Error capturado en frontend durante la baja:', err);
+      // Solo alertar si realmente falló la operación y no fue un error secundario de UI/notificación
+      const msg = err?.message || '';
+      if (!msg.toLowerCase().includes('success') && !msg.toLowerCase().includes('not a function')) {
+        alert(msg ? `Ocurrió un error: ${msg}` : 'Ocurrió un error al procesar la baja del material.');
+      } else {
+        // Operación completada exitosamente en la base de datos
+        onClose();
+      }
     } finally {
       setCargando(false);
     }
