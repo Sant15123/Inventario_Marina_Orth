@@ -831,6 +831,8 @@ function App() {
                   placeholder={
                     currentView === 'usuarios'
                       ? 'Buscar usuario por nombre, documento o correo...'
+                      : currentView === 'historial'
+                      ? 'Buscar en el historial por equipo, responsable o motivo...'
                       : undefined
                   }
                   onExportExcel={handleExportExcel}

@@ -1,12 +1,17 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { fmtDate, isOverdue } from '../data/initialData';
 import { useAuth } from '../context/AuthContext';
+import BarraFiltrosHistorial from '../components/historial/BarraFiltrosHistorial';
+
+export { BarraFiltrosHistorial };
 
 export default function HistorialView({ movements = [] }) {
   const { currentUser, isUsuario, isOperador, isSupervisor } = useAuth();
   const [filterType, setFiltroTipo] = useState('TODOS');
   const setFilterType = setFiltroTipo; // 'todos' | 'prestamo' | 'entrega' | 'devolucion' | 'baja'
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
@@ -115,24 +120,53 @@ export default function HistorialView({ movements = [] }) {
   const countActualizaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'actualizacion').length, [userMovements]);
   const countEliminaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'eliminacion').length, [userMovements]);
 
-  // Filtrado de movimientos según pestaña o selector seleccionado
+  // Filtrado de movimientos según tipo de movimiento y rango de fechas (Desde - Hasta)
   const filteredList = useMemo(() => {
     return (userMovements || []).filter((m) => {
-      if (filterType !== 'TODOS' && filterType !== 'todos') {
+      // 1. Filtro por tipo de movimiento
+      if (filterType && filterType.toUpperCase() !== 'TODOS') {
         const norm = normalizeType(m);
-        const match = norm === filterType.toLowerCase() ||
-          (filterType === 'prestamo' && norm === 'prestamo') ||
-          (filterType === 'entrega' && norm === 'entrega') ||
-          (filterType === 'devolucion' && norm === 'devolucion') ||
-          (filterType === 'baja' && norm === 'baja') ||
-          (filterType === 'ingreso' && norm === 'ingreso') ||
-          (filterType === 'actualizacion' && norm === 'actualizacion') ||
-          (filterType === 'eliminacion' && norm === 'eliminacion');
+        const fNorm = filterType.toLowerCase().trim();
+        const match =
+          norm === fNorm ||
+          (fNorm.includes('presta') && norm === 'prestamo') ||
+          (fNorm.includes('entreg') && norm === 'entrega') ||
+          (fNorm.includes('devolu') && norm === 'devolucion') ||
+          (fNorm.includes('ingres') && norm === 'ingreso') ||
+          (fNorm.includes('actualiz') && norm === 'actualizacion') ||
+          (fNorm.includes('baja') && norm === 'baja') ||
+          (fNorm.includes('elimin') && norm === 'eliminacion');
         if (!match) return false;
       }
+
+      // 2. Filtro por rango de fechas puntual o intervalo
+      if (fechaDesde || fechaHasta) {
+        const rawDate = m.date || m.fecha || m.fullDate || m.created_at;
+        if (!rawDate) return false;
+        const movDateStr = String(rawDate).split('T')[0];
+
+        if (fechaDesde && movDateStr < fechaDesde) {
+          return false;
+        }
+        if (fechaHasta && movDateStr > fechaHasta) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [userMovements, filterType]);
+  }, [userMovements, filterType, fechaDesde, fechaHasta]);
+
+  // Resetear a página 1 cuando cambia el rango de fechas o el tipo
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [fechaDesde, fechaHasta, filterType]);
+
+  const handleResetFechas = () => {
+    setFechaDesde('');
+    setFechaHasta('');
+    setCurrentPage(1);
+  };
 
   // Paginación
   const totalPages = Math.max(1, Math.ceil(filteredList.length / ITEMS_PER_PAGE));
@@ -187,112 +221,94 @@ export default function HistorialView({ movements = [] }) {
           )}
         </div>
 
-        {/* BARRA DE FILTROS POR TIPO DE MOVIMIENTO CON PÍLDORAS Y SELECTOR DROPDOWN */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <button
-              type="button"
-              className={`btn small ${(filterType === 'TODOS' || filterType === 'todos') ? 'btn-primary' : 'ghost'}`}
-              onClick={() => handleFilterChange('TODOS')}
-            >
-              Ver Todos ({userMovements.length})
-            </button>
-            <button
-              type="button"
-              className={`btn small ${filterType === 'prestamo' ? 'btn-primary' : 'ghost'}`}
-              onClick={() => handleFilterChange('prestamo')}
-            >
-              🔄 {isUsuario ? 'Mis Préstamos' : 'Préstamos'} ({countPrestamos})
-            </button>
-            <button
-              type="button"
-              className={`btn small ${filterType === 'entrega' ? 'btn-primary' : 'ghost'}`}
-              onClick={() => handleFilterChange('entrega')}
-            >
-              📦 {isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} ({countEntregas})
-            </button>
-            <button
-              type="button"
-              className={`btn small ${filterType === 'devolucion' ? 'btn-primary' : 'ghost'}`}
-              onClick={() => handleFilterChange('devolucion')}
-            >
-              ↩️ {isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} ({countDevoluciones})
-            </button>
-            {!isUsuario && (
-              <>
+        {/* BARRA DE FILTROS POR TIPO DE MOVIMIENTO CON PÍLDORAS */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '8px' }}>
+          <button
+            type="button"
+            className={`btn small ${(filterType === 'TODOS' || filterType === 'todos') ? 'btn-primary' : 'ghost'}`}
+            onClick={() => handleFilterChange('TODOS')}
+          >
+            Ver Todos ({userMovements.length})
+          </button>
+          <button
+            type="button"
+            className={`btn small ${filterType.toLowerCase() === 'prestamo' ? 'btn-primary' : 'ghost'}`}
+            onClick={() => handleFilterChange('prestamo')}
+          >
+            🔄 {isUsuario ? 'Mis Préstamos' : 'Préstamos'} ({countPrestamos})
+          </button>
+          <button
+            type="button"
+            className={`btn small ${filterType.toLowerCase() === 'entrega' ? 'btn-primary' : 'ghost'}`}
+            onClick={() => handleFilterChange('entrega')}
+          >
+            📦 {isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} ({countEntregas})
+          </button>
+          <button
+            type="button"
+            className={`btn small ${filterType.toLowerCase() === 'devolucion' ? 'btn-primary' : 'ghost'}`}
+            onClick={() => handleFilterChange('devolucion')}
+          >
+            ↩️ {isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} ({countDevoluciones})
+          </button>
+          {!isUsuario && (
+            <>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'ingreso' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('ingreso')}
+                title="Altas, creaciones y nuevos ingresos"
+              >
+                📥 Ingresos ({countIngresos})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'actualizacion' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('actualizacion')}
+                title="Modificaciones y actualizaciones técnicas"
+              >
+                ✏️ Actualizaciones ({countActualizaciones})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'baja' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('baja')}
+              >
+                ⚠️ Bajas ({countBajas})
+              </button>
+              {countEliminaciones > 0 && (
                 <button
                   type="button"
-                  className={`btn small ${filterType === 'ingreso' ? 'btn-primary' : 'ghost'}`}
-                  onClick={() => handleFilterChange('ingreso')}
-                  title="Altas, creaciones y nuevos ingresos"
+                  className={`btn small ${filterType.toLowerCase() === 'eliminacion' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('eliminacion')}
                 >
-                  📥 Ingresos ({countIngresos})
+                  🗑️ Eliminaciones ({countEliminaciones})
                 </button>
-                <button
-                  type="button"
-                  className={`btn small ${filterType === 'actualizacion' ? 'btn-primary' : 'ghost'}`}
-                  onClick={() => handleFilterChange('actualizacion')}
-                  title="Modificaciones y actualizaciones técnicas"
-                >
-                  ✏️ Actualizaciones ({countActualizaciones})
-                </button>
-                <button
-                  type="button"
-                  className={`btn small ${filterType === 'baja' ? 'btn-primary' : 'ghost'}`}
-                  onClick={() => handleFilterChange('baja')}
-                >
-                  ⚠️ Bajas ({countBajas})
-                </button>
-                {countEliminaciones > 0 && (
-                  <button
-                    type="button"
-                    className={`btn small ${filterType === 'eliminacion' ? 'btn-primary' : 'ghost'}`}
-                    onClick={() => handleFilterChange('eliminacion')}
-                  >
-                    🗑️ Eliminaciones ({countEliminaciones})
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Menú desplegable complementario para selección directa */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label htmlFor="select-tipo-operacion" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
-              Tipo de Movimiento:
-            </label>
-            <select
-              id="select-tipo-operacion"
-              value={filterType.toLowerCase()}
-              onChange={(e) => handleFilterChange(e.target.value)}
-              className="form-select"
-              style={{
-                fontSize: '12.5px',
-                padding: '4px 10px',
-                borderRadius: '6px',
-                background: 'var(--surface-2)',
-                border: '1px solid var(--line)',
-                color: 'var(--text-h)',
-                minWidth: '170px',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="todos">Todos los tipos ({userMovements.length})</option>
-              <option value="prestamo">Préstamo ({countPrestamos})</option>
-              <option value="entrega">Entrega / Salida ({countEntregas})</option>
-              <option value="devolucion">Devolución ({countDevoluciones})</option>
-              {!isUsuario && (
-                <>
-                  <option value="ingreso">Ingreso ({countIngresos})</option>
-                  <option value="actualizacion">Actualización ({countActualizaciones})</option>
-                  <option value="baja">Baja ({countBajas})</option>
-                  {countEliminaciones > 0 && (
-                    <option value="eliminacion">Eliminación ({countEliminaciones})</option>
-                  )}
-                </>
               )}
-            </select>
-          </div>
+            </>
+          )}
+        </div>
+
+        {/* BARRA DE FILTROS UNIFICADA: SELECTOR DE TIPO Y RANGO DE FECHAS */}
+        <div style={{ marginBottom: '14px' }}>
+          <BarraFiltrosHistorial
+            filtroTipo={filterType}
+            setFiltroTipo={handleFilterChange}
+            fechaDesde={fechaDesde}
+            setFechaDesde={setFechaDesde}
+            fechaHasta={fechaHasta}
+            setFechaHasta={setFechaHasta}
+            onResetFechas={handleResetFechas}
+            totalCount={userMovements.length}
+            countPrestamos={countPrestamos}
+            countEntregas={countEntregas}
+            countDevoluciones={countDevoluciones}
+            countIngresos={countIngresos}
+            countActualizaciones={countActualizaciones}
+            countBajas={countBajas}
+            countEliminaciones={countEliminaciones}
+            isUsuario={isUsuario}
+          />
         </div>
 
         <div className="panel table-responsive" style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
