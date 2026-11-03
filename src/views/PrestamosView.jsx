@@ -2695,6 +2695,7 @@ export default function PrestamosView({
         onActualizar={handleActualizarPrestamo}
         sedes={sedesList}
         usuarios={usuarios}
+        proyectos={proyectosList}
       />
 
       {/* =========================================================================

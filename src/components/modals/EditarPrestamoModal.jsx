@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Laptop, Sparkles, Building2, User, FileText, Calendar } from 'lucide-react';
+import inventoryApi from '../../services/inventoryApi';
 
 export const EditarPrestamoModal = ({
   prestamo,
@@ -8,7 +9,8 @@ export const EditarPrestamoModal = ({
   onActualizar,
   onGuardar,
   sedes = [],
-  usuarios = []
+  usuarios = [],
+  proyectos = []
 }) => {
   const [fechaDevolucion, setFechaDevolucion] = useState('');
   const [sede, setSede] = useState('');
@@ -16,9 +18,27 @@ export const EditarPrestamoModal = ({
   const [observaciones, setObservaciones] = useState('');
   const [custodioId, setCustodioId] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [listaProyectos, setListaProyectos] = useState(proyectos);
 
   // Fecha mínima permitida: hoy (YYYY-MM-DD)
   const hoyStr = new Date().toISOString().split('T')[0];
+
+  // Sincronizar / cargar proyectos si vienen como prop o consultarlos
+  useEffect(() => {
+    if (Array.isArray(proyectos) && proyectos.length > 0) {
+      setListaProyectos(proyectos);
+    } else {
+      let isMounted = true;
+      inventoryApi.getProyectos?.()
+        .then((data) => {
+          if (isMounted && Array.isArray(data) && data.length > 0) {
+            setListaProyectos(data);
+          }
+        })
+        .catch(() => {});
+      return () => { isMounted = false; };
+    }
+  }, [proyectos]);
 
   useEffect(() => {
     if (prestamo) {
@@ -279,13 +299,27 @@ export const EditarPrestamoModal = ({
                   <Sparkles size={14} className="text-slate-400" />
                   Proyecto STEAM
                 </label>
-                <input
-                  type="text"
+                <select
                   value={proyectoSteam}
                   onChange={(e) => setProyectoSteam(e.target.value)}
-                  placeholder="Ej. Robótica, STEAM..."
-                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                />
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                >
+                  <option value="">-- Sin proyecto STEAM asociado --</option>
+                  {/* Si el préstamo ya tiene un proyecto que no está en la lista cargada, preservarlo */}
+                  {proyectoSteam && !listaProyectos.some((p) => (p.nombre || p) === proyectoSteam) && (
+                    <option value={proyectoSteam}>{proyectoSteam}</option>
+                  )}
+                  {listaProyectos.map((proj) => {
+                    const nombreProj = typeof proj === 'object' ? proj.nombre : proj;
+                    const sedeProj = typeof proj === 'object' ? (proj.sede_municipio || proj.municipio) : null;
+                    const idProj = typeof proj === 'object' ? (proj.id || nombreProj) : proj;
+                    return (
+                      <option key={idProj} value={nombreProj}>
+                        {nombreProj} {sedeProj ? `(${sedeProj})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             </div>
 
