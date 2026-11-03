@@ -59,7 +59,7 @@ export function base64UrlDecode(str) {
  * @param {number} expiresInSeconds Tiempo de validez (por defecto 7 días: 604800s)
  * @returns {string} Token en formato header.payload.signature
  */
-export function generateToken(payload, expiresInSeconds = 7 * 24 * 60 * 60) {
+export function generateToken(payload, expiresInSeconds = 2 * 60 * 60) { // Sesión institucional de 2 horas
   const header = {
     alg: 'HS256',
     typ: 'JWT',
@@ -93,31 +93,36 @@ export function generateToken(payload, expiresInSeconds = 7 * 24 * 60 * 60) {
  * @param {string} token Token JWT a verificar
  * @returns {Object|null} Payload decodificado o null si el token es inválido o expiró
  */
-export function verifyAndDecodeToken(token) {
+export function decodeToken(token) {
   if (!token || typeof token !== 'string') return null;
-
   const parts = token.trim().split('.');
-  if (parts.length !== 3) {
-    console.warn('Formato de token JWT inválido (no posee 3 segmentos).');
-    return null;
-  }
-
+  if (parts.length !== 3) return null;
   try {
     const payloadJson = base64UrlDecode(parts[1]);
-    const payload = JSON.parse(payloadJson);
-
-    // Verificar expiración
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      console.warn('La sesión ha expirado (Token JWT caducado).');
-      return null;
-    }
-
-    return payload;
+    return JSON.parse(payloadJson);
   } catch (err) {
     console.error('Error al decodificar payload JWT:', err);
     return null;
   }
+}
+
+/**
+ * Verifica y decodifica el token JWT
+ * @param {string} token Token JWT a verificar
+ * @returns {Object|null} Payload decodificado o null si el token es inválido o expiró
+ */
+export function verifyAndDecodeToken(token) {
+  const payload = decodeToken(token);
+  if (!payload) return null;
+
+  // Verificar expiración
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.exp && payload.exp < now) {
+    console.warn('La sesión ha expirado (Token JWT caducado).');
+    return null;
+  }
+
+  return payload;
 }
 
 /**

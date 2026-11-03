@@ -17,7 +17,19 @@ import { useAuth } from '../context/AuthContext';
 export default function LoginView({ theme = 'light', onToggleTheme }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, currentUser, authLoading } = useAuth();
+  const { login, isAuthenticated, currentUser, authLoading, sessionExpiredMessage, setSessionExpiredMessage } = useAuth();
+
+  // Mostrar advertencia de sesión caducada si existe
+  useEffect(() => {
+    const expiredMsg = sessionExpiredMessage || sessionStorage.getItem('siga_session_expired');
+    if (expiredMsg) {
+      setErrorMsg(expiredMsg);
+      try {
+        sessionStorage.removeItem('siga_session_expired');
+        if (setSessionExpiredMessage) setSessionExpiredMessage('');
+      } catch (_) {}
+    }
+  }, [sessionExpiredMessage, setSessionExpiredMessage]);
 
   // El tema se rige directamente por la propiedad activa
   const isDark = theme === 'dark';

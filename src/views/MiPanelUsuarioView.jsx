@@ -834,7 +834,7 @@ export default function MiPanelUsuarioView({
                                 <span style={{ color: 'var(--text-dim, #94a3b8)', fontSize: '12px' }}>Sin ítems detallados</span>
                               )}
                               {(() => {
-                                const fDev = sol.fecha_devolucion || sol.fecha_retorno || sol.fecha_limite || sol.fecha_devolucion_estimada;
+                                const fDev = sol.fecha_devolucion_estimada || sol.fecha_devolucion_esperada || sol.fecha_devolucion || sol.fecha_retorno || sol.fecha_limite;
                                 if (!fDev) return null;
                                 return (
                                   <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>

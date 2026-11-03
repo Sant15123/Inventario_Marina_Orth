@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Laptop, Sparkles, Building2, User, FileText, Calendar } from 'lucide-react';
+import { X, Laptop, Sparkles, Building2, User, FileText, Calendar, Pencil } from 'lucide-react';
 import inventoryApi from '../../services/inventoryApi';
 
 export const EditarPrestamoModal = ({
@@ -163,32 +163,51 @@ export const EditarPrestamoModal = ({
             flexShrink: 0,
           }}
         >
-          <div>
-            <span
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
               style={{
-                fontFamily: 'var(--mono)',
-                color: 'var(--text-dim, #94a3b8)',
-                fontSize: '12px',
-                fontWeight: 600,
-                display: 'block',
-                marginBottom: '4px',
-                letterSpacing: '0.05em',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--amber, #f59e0b)',
+                flexShrink: 0,
               }}
             >
-              {serialEquipo ? `PLACA: ${serialEquipo}` : 'GESTIÓN DE PRÉSTAMOS'}
-            </span>
-            <h3
-              className="text-base sm:text-lg font-bold text-slate-900 dark:text-white m-0"
-              style={{ margin: 0, fontSize: '17px', lineHeight: 1.3 }}
-            >
-              Editar Préstamo
-            </h3>
-            <p
-              className="text-xs text-slate-500 dark:text-slate-400 m-0"
-              style={{ margin: '4px 0 0 0', fontSize: '12px' }}
-            >
-              Modifica los datos del préstamo activo y sus especificaciones
-            </p>
+              <Pencil style={{ width: '18px', height: '18px' }} />
+            </div>
+            <div>
+              <span
+                style={{
+                  fontFamily: 'var(--mono)',
+                  color: 'var(--copper, #84CC16)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  display: 'block',
+                  marginBottom: '2px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                {serialEquipo ? `PLACA / ID: ${serialEquipo}` : 'GESTIÓN DE PRÉSTAMOS'}
+              </span>
+              <h3
+                className="text-base sm:text-lg font-bold text-slate-900 dark:text-white m-0"
+                style={{ margin: 0, fontSize: '17px', lineHeight: 1.3 }}
+              >
+                Editar Préstamo
+              </h3>
+              <p
+                className="text-xs text-slate-500 dark:text-slate-400 m-0"
+                style={{ margin: '3px 0 0 0', fontSize: '12px' }}
+              >
+                Modifica los datos del préstamo activo y sus especificaciones
+              </p>
+            </div>
           </div>
           <button
             type="button"

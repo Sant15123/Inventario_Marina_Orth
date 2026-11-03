@@ -1066,7 +1066,7 @@ export default function PrestamosView({
                 title={filterEstadoPrestamo === 'Vencido' ? 'Filtro activo. Clic para ver todos' : 'Ver únicamente préstamos con fecha vencida'}
               >
                 <span>⚠️</span>
-                <span>Préstamos Vencidos</span>
+                <span>⏰ Filtro: Vencidos</span>
                 <span
                   className="tab-badge"
                   style={{

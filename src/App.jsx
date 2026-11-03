@@ -964,7 +964,7 @@ function App() {
                   onSearchChange={setSearchTerm}
                   placeholder={
                     currentView === 'usuarios'
-                      ? 'Buscar usuario por nombre, documento o correo...'
+                      ? 'Buscar usuario por nombre, documento, correo, cargo o sede...'
                       : currentView === 'historial'
                       ? 'Buscar en el historial por equipo, responsable o motivo...'
                       : undefined
@@ -1044,7 +1044,7 @@ function App() {
 
                   {/* VISTA MÃDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}
                   {!isUsuario && (isAdmin || isSupervisor) && currentView === 'usuarios' && (
-                    <UsuariosView sedes={sedesList} searchTerm={searchTerm} />
+                    <UsuariosView sedes={sedesList} searchTerm={searchTerm} busquedaGlobal={searchTerm} />
                   )}
                 </main>
 

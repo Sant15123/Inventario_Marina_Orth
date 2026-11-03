@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { generateToken, verifyAndDecodeToken } from '../services/jwtService';
+import { generateToken, verifyAndDecodeToken, decodeToken } from '../services/jwtService';
 import { inventoryApi, API_BASE } from '../services/inventoryApi';
 
 const AuthContext = createContext(null);
@@ -348,10 +348,31 @@ export function AuthProvider({ children }) {
     return USUARIOS_INICIALES;
   });
 
-  // Token JWT en almacenamiento local
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState(() => {
+    try {
+      return sessionStorage.getItem('siga_session_expired') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  // Token JWT en almacenamiento local con verificación estricta de caducidad (2 horas)
   const [token, setToken] = useState(() => {
     try {
-      return localStorage.getItem('siga_token') || null;
+      const savedToken = localStorage.getItem('siga_token');
+      if (!savedToken) return null;
+      const payload = decodeToken(savedToken);
+      const now = Math.floor(Date.now() / 1000);
+      if (payload?.exp && payload.exp < now) {
+        localStorage.removeItem('siga_token');
+        localStorage.removeItem('siga_current_user');
+        localStorage.removeItem('siga_user');
+        try {
+          sessionStorage.setItem('siga_session_expired', 'Tu sesión ha caducado por inactividad tras 2 horas. Por favor ingresa nuevamente.');
+        } catch (_) {}
+        return null;
+      }
+      return savedToken;
     } catch {
       return null;
     }
@@ -369,6 +390,7 @@ export function AuthProvider({ children }) {
       }
       localStorage.removeItem('siga_token');
       localStorage.removeItem('siga_current_user');
+      localStorage.removeItem('siga_user');
       return null;
     } catch (e) {
       console.warn('Error al verificar sesión inicial:', e);
@@ -432,7 +454,7 @@ export function AuthProvider({ children }) {
     refetchUsuarios();
   }, [refetchUsuarios]);
 
-  // Verificar validez del token en cambios
+  // Verificar validez del token en cambios y caducidad al montar / cambiar
   useEffect(() => {
     if (token) {
       const decoded = verifyAndDecodeToken(token);
@@ -441,6 +463,11 @@ export function AuthProvider({ children }) {
         setCurrentUser(null);
         localStorage.removeItem('siga_token');
         localStorage.removeItem('siga_current_user');
+        localStorage.removeItem('siga_user');
+        setSessionExpiredMessage('Tu sesión ha caducado por inactividad tras 2 horas. Por favor ingresa nuevamente.');
+        try {
+          sessionStorage.setItem('siga_session_expired', 'Tu sesión ha caducado por inactividad tras 2 horas. Por favor ingresa nuevamente.');
+        } catch (_) {}
       }
     }
   }, [token]);
@@ -827,6 +854,8 @@ export function AuthProvider({ children }) {
         isSupervisor,
         isOperador,
         isUsuario,
+        sessionExpiredMessage,
+        setSessionExpiredMessage,
       }}
     >
       {children}
