@@ -229,12 +229,13 @@ function App() {
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .trim();
+          const rawCleaned = rawTipo.replace(/[^a-z]/g, '');
           let mappedType = rawTipo;
-          if (rawTipo.includes('devolu')) mappedType = 'devolucion';
-          else if (rawTipo.includes('presta')) mappedType = 'prestamo';
-          else if (rawTipo.includes('entreg') || rawTipo.includes('salida')) mappedType = 'entrega';
-          else if (rawTipo.includes('baja')) mappedType = 'baja';
-          else if (rawTipo.includes('actualiz')) mappedType = 'actualizacion';
+          if (rawTipo.includes('devolu') || rawCleaned.includes('devolu')) mappedType = 'devolucion';
+          else if (rawTipo.includes('presta') || rawCleaned.includes('presta') || rawCleaned.includes('prst')) mappedType = 'prestamo';
+          else if (rawTipo.includes('entreg') || rawTipo.includes('salida') || rawCleaned.includes('entreg')) mappedType = 'entrega';
+          else if (rawTipo.includes('baja') || rawCleaned.includes('baja')) mappedType = 'baja';
+          else if (rawTipo.includes('actualiz') || rawCleaned.includes('actualiz')) mappedType = 'actualizacion';
 
           const dateStr = h.fecha ? h.fecha.split('T')[0] : (h.created_at ? h.created_at.split('T')[0] : today());
           const dedupeKey = `${mappedType}-${String(h.placa_o_id || '').toLowerCase()}-${dateStr}`;
@@ -285,6 +286,10 @@ function App() {
 
           if (existingMov) {
             // Actualizar datos del movimiento existente sin crear duplicado
+            existingMov.dbId = p.id;
+            existingMov.prestamoId = p.id;
+            existingMov.prestamo_id = p.id;
+            existingMov.id = 'mov-db-' + p.id;
             if (isActivo) existingMov.status = 'activo';
             if (p.fecha_devolucion_esperada) {
               const fEsperada = p.fecha_devolucion_esperada.split('T')[0];

@@ -712,17 +712,37 @@ export default function PrestamosView({
 
   const handleActualizarPrestamo = async (prestamoId, data) => {
     const loanObj = movements.find((m) => m.id === prestamoId) || editingLoan;
-    const targetDbId =
-      loanObj?.dbId ||
-      (String(prestamoId).startsWith('mov-db-')
-        ? String(prestamoId).replace('mov-db-', '')
-        : prestamoId);
+
+    // Extraer la clave primaria real del registro en la tabla 'prestamos'
+    // Se previene el uso de IDs sintéticos de historial (ej. 500275)
+    let rawDbId =
+      loanObj?.prestamoId ||
+      loanObj?.prestamo_id ||
+      loanObj?.uuid ||
+      (loanObj?.dbId && Number(loanObj.dbId) < 500000 ? loanObj.dbId : null) ||
+      (String(prestamoId).startsWith('mov-db-') ? String(prestamoId).replace('mov-db-', '') : null) ||
+      (loanObj?.id && String(loanObj.id).startsWith('mov-db-') ? String(loanObj.id).replace('mov-db-', '') : null);
+
+    // Si aún tiene id sintético de historial (>= 500000), buscar en la lista de movimientos el préstamo real por placa
+    if (!rawDbId || Number(rawDbId) >= 500000) {
+      const placa = loanObj?.unitCodes?.[0] || loanObj?.itemId || loanObj?.placa;
+      const prestamoReal = movements.find(
+        (m) => (m.type || '').toLowerCase() === 'prestamo' &&
+               String(m.id).startsWith('mov-db-') &&
+               (m.unitCodes?.[0] === placa || m.itemId === placa)
+      );
+      if (prestamoReal) {
+        rawDbId = prestamoReal.dbId || String(prestamoReal.id).replace('mov-db-', '');
+      }
+    }
+
+    const targetDbId = rawDbId || prestamoId;
 
     // 1. Intentar actualizar directamente en Supabase si está disponible
     // Se envía ÚNICAMENTE las columnas existentes en la tabla 'prestamos' (fecha_devolucion_esperada, motivo, sede)
     // NO se envía 'proyecto' ni 'proyecto_steam' para evitar el error PGRST204
     try {
-      if (supabase && targetDbId && !isNaN(Number(targetDbId))) {
+      if (supabase && targetDbId && !isNaN(Number(targetDbId)) && Number(targetDbId) < 500000) {
         const updateFields = {
           fecha_devolucion_esperada: data.fecha_devolucion_esperada,
         };
@@ -753,7 +773,7 @@ export default function PrestamosView({
 
     // 2. Actualizar vía inventoryApi (backend REST o fallback estructurado)
     try {
-      if (inventoryApi.updatePrestamo) {
+      if (inventoryApi.updatePrestamo && targetDbId && Number(targetDbId) < 500000) {
         await inventoryApi.updatePrestamo(targetDbId, {
           fecha_devolucion_esperada: data.fecha_devolucion_esperada,
           observaciones: data.observaciones,
