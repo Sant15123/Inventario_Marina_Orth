@@ -4765,3 +4765,17 @@ html:not([data-theme="light"]) .dark\:text-emerald-400,
 html.dark .dark\:text-emerald-400 {
   color: #84CC16 !important;
 }
+
+/* Modal Utility Sizes */
+.max-w-xl {
+  max-width: 36rem !important;
+}
+.max-w-lg {
+  max-width: 32rem !important;
+}
+.max-w-md {
+  max-width: 28rem !important;
+}
+.max-w-sm {
+  max-width: 24rem !important;
+}
