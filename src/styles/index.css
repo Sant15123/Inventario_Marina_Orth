@@ -1697,6 +1697,16 @@ td.wrap {
   transition: all 0.15s ease;
   user-select: none;
   cursor: default;
+  overflow: hidden;
+}
+
+.badge-condicion .badge-condicion-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  display: inline-block;
 }
 
 /* Variante: Nuevos (Verde Lima Institucional) */

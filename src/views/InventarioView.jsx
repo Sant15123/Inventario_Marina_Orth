@@ -3308,23 +3308,23 @@ export default function InventarioView({
                           </div>
                         </td>
 
-                        {/* 4. CONDICIÓN: Badge estilo botón institucional acorde al diseño del sistema */}
-                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle', padding: '10px 6px', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', maxWidth: '100%' }}>
+                        {/* 4. CONDICION: Badge estilo boton institucional con texto comprimido y tooltip */}
+                        <td className="py-2.5" style={{ textAlign: 'center', verticalAlign: 'middle', padding: '8px 6px', overflow: 'hidden', maxWidth: '160px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}>
                             {esNuevo ? (
-                              <span className="badge-condicion nuevo" title="Condición: Nuevos">
+                              <span className="badge-condicion nuevo" title="Condición: Nuevos" style={{ maxWidth: '100%', minWidth: 0 }}>
                                 <span className="badge-condicion-dot" />
-                                <span>Nuevos</span>
+                                <span className="badge-condicion-text">Nuevos</span>
                               </span>
                             ) : esUsado ? (
-                              <span className="badge-condicion usado" title="Condición: Usados">
+                              <span className="badge-condicion usado" title="Condición: Usados" style={{ maxWidth: '100%', minWidth: 0 }}>
                                 <span className="badge-condicion-dot" />
-                                <span>Usados</span>
+                                <span className="badge-condicion-text">Usados</span>
                               </span>
                             ) : (
-                              <span className="badge-condicion mixto" title={`Condición: ${it.condicion || 'Nuevos y Usados'}`}>
+                              <span className="badge-condicion mixto" title={`Condición: ${it.condicion || 'Nuevos y Usados'}`} style={{ maxWidth: '100%', minWidth: 0 }}>
                                 <span className="badge-condicion-dot" />
-                                <span>{it.condicion || 'Nuevos y Usados'}</span>
+                                <span className="badge-condicion-text">{it.condicion || 'Nuevos y Usados'}</span>
                               </span>
                             )}
                           </div>
