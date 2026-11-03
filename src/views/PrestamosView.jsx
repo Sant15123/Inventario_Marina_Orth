@@ -720,12 +720,17 @@ export default function PrestamosView({
     // 1. Actualizar en Supabase si está disponible
     try {
       if (supabase && targetDbId && !isNaN(Number(targetDbId))) {
+        const updateFields = {
+          fecha_devolucion_esperada: data.fecha_devolucion_esperada,
+          motivo: data.observaciones !== undefined ? data.observaciones : loanObj?.motive,
+        };
+        if (data.sede) updateFields.sede = data.sede;
+        if (data.proyecto_steam) updateFields.proyecto = data.proyecto_steam;
+        if (data.custodio_id) updateFields.responsable = data.custodio_id;
+
         await supabase
           .from('prestamos')
-          .update({
-            fecha_devolucion_esperada: data.fecha_devolucion_esperada,
-            motivo: data.observaciones !== undefined ? data.observaciones : loanObj?.motive,
-          })
+          .update(updateFields)
           .eq('id', Number(targetDbId));
       }
     } catch (sbErr) {
@@ -747,6 +752,7 @@ export default function PrestamosView({
       if (placa && inventoryApi.updateActivo) {
         await inventoryApi.updateActivo(placa, {
           fecha_devolucion: data.fecha_devolucion_esperada,
+          ...(data.sede ? { sede: data.sede } : {}),
         });
       }
     } catch (_) { }
@@ -755,13 +761,25 @@ export default function PrestamosView({
     if (loanObj) {
       loanObj.expectedReturn = data.fecha_devolucion_esperada;
       loanObj.fecha_devolucion_esperada = data.fecha_devolucion_esperada;
-      if (data.observaciones) {
+      if (data.observaciones !== undefined) {
         loanObj.motive = data.observaciones;
         loanObj.motivo = data.observaciones;
       }
+      if (data.sede) {
+        loanObj.destination = data.sede;
+        loanObj.sede = data.sede;
+      }
+      if (data.proyecto_steam) {
+        loanObj.project = data.proyecto_steam;
+        loanObj.proyecto = data.proyecto_steam;
+      }
+      if (data.custodio_id) {
+        loanObj.custodian = data.custodio_id;
+        loanObj.responsable = data.custodio_id;
+      }
     }
 
-    showSuccess('Préstamo actualizado', 'Se guardaron los cambios de fecha de devolución pactada.');
+    showSuccess('Préstamo actualizado', 'Se guardaron los cambios del préstamo exitosamente.');
     if (onRetry) await onRetry();
   };
 
@@ -2675,6 +2693,8 @@ export default function PrestamosView({
         isOpen={Boolean(editingLoan)}
         onClose={() => setEditingLoan(null)}
         onActualizar={handleActualizarPrestamo}
+        sedes={sedesList}
+        usuarios={usuarios}
       />
 
       {/* =========================================================================
