@@ -5,6 +5,7 @@ import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalRegistroMobiliario from '../components/modals/ModalRegistroMobiliario';
+import ModalBajaConsumible from '../components/modals/ModalBajaConsumible';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { available, SEDES, EMPLOYEES, PROYECTOS, today } from '../services/mockData';
@@ -856,50 +857,62 @@ export default function InventarioView({
   // Modal de QR para Consumible
   const [qrConsumibleItem, setQrConsumibleItem] = useState(null);
 
-  // Manejador para eliminar consumible con confirmación previa institucional
+  // Estado para Modal Institucional de Baja de Consumibles
+  const [consumibleParaBaja, setConsumibleParaBaja] = useState(null);
+
+  // Manejador para abrir modal institucional de baja con validaciones previas de stock y estado
   const handleDeleteConsumable = (item) => {
-    const nombre = item.material || item.name;
-    const codigo = item.id;
+    const stock = Number(item.disponible ?? item.quantity ?? item.stock ?? 0);
+    const esBaja = (item.estado || '').toLowerCase().trim() === 'baja';
 
-    showConfirmBaja({
-      codigo,
-      nombre,
-      onConfirm: async () => {
-        try {
-          setLocalLoading(true);
-          await inventoryApi.remove(codigo);
+    if (esBaja) {
+      showError('Material en baja', 'No es posible dar de baja este insumo: el material ya cuenta con estado de Baja o se encuentra completamente retirado.');
+      return;
+    }
 
-          if (onRetireItem) {
-            await onRetireItem(codigo);
-          }
+    if (stock <= 0) {
+      showError('Stock no disponible', 'No es posible dar de baja este insumo: el stock disponible ya es 0.');
+      return;
+    }
 
-          if (onRetry) {
-            await onRetry();
-          } else {
-            const [activosData, consumiblesData] = await Promise.all([
-              inventoryApi.getActivos(),
-              inventoryApi.getConsumibles(),
-            ]);
-            const loaded = [];
-            if (Array.isArray(consumiblesData)) {
-              consumiblesData.forEach((c) => {
-                loaded.push(mapConsumibleItem(c));
-              });
-            }
-            if (Array.isArray(activosData)) {
-              activosData.forEach((a) => {
-                loaded.push(mapEquipoItem(a));
-              });
-            }
-            setLocalItems(loaded);
-          }
-        } catch (err) {
-          showError('Error al dar de baja material', err.message || 'Error del servidor');
-        } finally {
-          setLocalLoading(false);
+    setConsumibleParaBaja(item);
+  };
+
+  const handleConfirmarBajaConsumible = async ({ materialId, cantidadBaja, motivo }) => {
+    try {
+      setLocalLoading(true);
+      if (onRetireItem) {
+        await onRetireItem({ materialId, cantidadBaja, motivo });
+      }
+
+      if (onRetry) {
+        await onRetry();
+      } else {
+        const [activosData, consumiblesData] = await Promise.all([
+          inventoryApi.getActivos(),
+          inventoryApi.getConsumibles(),
+        ]);
+        const loaded = [];
+        if (Array.isArray(consumiblesData)) {
+          consumiblesData.forEach((c) => {
+            loaded.push(mapConsumibleItem(c));
+          });
         }
-      },
-    });
+        if (Array.isArray(activosData)) {
+          activosData.forEach((a) => {
+            loaded.push(mapEquipoItem(a));
+          });
+        }
+        setLocalItems(loaded);
+      }
+      showSuccess('Baja confirmada', `Se dieron de baja ${cantidadBaja} unidad(es) de ${consumibleParaBaja?.material || consumibleParaBaja?.name || 'material'}.`);
+    } catch (err) {
+      console.error('Error al dar de baja insumo:', err);
+      showError('Error al dar de baja', err.message || 'No se pudo procesar la baja del material');
+      throw err;
+    } finally {
+      setLocalLoading(false);
+    }
   };
 
   // Paginación para Consumibles (5 filas por página para vista compacta sin scroll vertical)
@@ -2949,37 +2962,50 @@ export default function InventarioView({
                               </button>
                             )}
 
-                            {/* 🗑️ Eliminar (Solo Administrador) */}
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                className="btn-icon-crud shrink-0"
-                                title="Eliminar material"
-                                onClick={() => handleDeleteConsumable(it)}
-                                style={{
-                                  width: '28px',
-                                  height: '28px',
-                                  flexShrink: 0,
-                                  background: 'rgba(239, 68, 68, 0.1)',
-                                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                                  borderRadius: '6px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  color: 'var(--red, #ef4444)',
-                                  transition: 'all 0.15s ease',
-                                }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M3 6h18" />
-                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                  <line x1="10" x2="10" y1="11" y2="17" />
-                                  <line x1="14" x2="14" y1="11" y2="17" />
-                                </svg>
-                              </button>
-                            )}
+                            {/* 🗑️ Dar de Baja / Eliminar (Solo Administrador) */}
+                            {isAdmin && (() => {
+                              const stock = Number(it.disponible ?? it.quantity ?? it.stock ?? 0);
+                              const esBaja = (it.estado || '').toLowerCase().trim() === 'baja';
+                              const deshabilitado = stock <= 0 || esBaja;
+
+                              return (
+                                <button
+                                  type="button"
+                                  className="btn-icon-crud shrink-0"
+                                  title={
+                                    esBaja
+                                      ? "Material ya retirado / Dado de baja"
+                                      : stock <= 0
+                                      ? "No es posible dar de baja: stock disponible en 0"
+                                      : "Dar de baja material / insumo"
+                                  }
+                                  onClick={() => handleDeleteConsumable(it)}
+                                  style={{
+                                    width: '28px',
+                                    height: '28px',
+                                    flexShrink: 0,
+                                    background: deshabilitado ? 'rgba(148, 163, 184, 0.12)' : 'rgba(239, 68, 68, 0.1)',
+                                    border: deshabilitado ? '1px solid rgba(148, 163, 184, 0.25)' : '1px solid rgba(239, 68, 68, 0.3)',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: deshabilitado ? 'not-allowed' : 'pointer',
+                                    opacity: deshabilitado ? 0.4 : 1,
+                                    color: deshabilitado ? '#94a3b8' : 'var(--red, #ef4444)',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                    <line x1="10" x2="10" y1="11" y2="17" />
+                                    <line x1="14" x2="14" y1="11" y2="17" />
+                                  </svg>
+                                </button>
+                              );
+                            })()}
                           </div>
                         </td>
                       </tr>
@@ -7080,6 +7106,15 @@ export default function InventarioView({
           setModalRegistroMobiliarioOpen(false);
           setMuebleSeleccionado(null);
         }}
+      />
+      {/* =========================================================================
+          MODAL: DAR DE BAJA MATERIAL / CONSUMIBLE
+          ========================================================================= */}
+      <ModalBajaConsumible
+        material={consumibleParaBaja}
+        isOpen={Boolean(consumibleParaBaja)}
+        onClose={() => setConsumibleParaBaja(null)}
+        onConfirmarBaja={handleConfirmarBajaConsumible}
       />
     </div>
   );

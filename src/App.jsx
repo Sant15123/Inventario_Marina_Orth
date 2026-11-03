@@ -623,34 +623,110 @@ function App() {
     }
   };
 
-  const handleRetireItem = (itemId) => {
-    const item = items.find((i) => i.id === itemId);
-    if (!item) return;
-    const qtyStr = window.prompt(`¿Cuántas unidades de "${item.name}" das de baja? (Disponibles: ${item.quantity})`);
-    if (!qtyStr) return;
-    const qty = Number(qtyStr);
-    if (isNaN(qty) || qty <= 0 || qty > item.quantity) {
-      alert('Cantidad inválida.');
-      return;
+  const handleRetireItem = async (arg1, arg2, arg3) => {
+    let materialId, cantidadBaja, motivo;
+    if (typeof arg1 === 'object' && arg1 !== null) {
+      materialId = arg1.materialId || arg1.itemId || arg1.id;
+      cantidadBaja = Number(arg1.cantidadBaja || arg1.qty || 1);
+      motivo = (arg1.motivo || arg1.motive || 'Baja de material confirmada por administrador').trim();
+    } else {
+      materialId = arg1;
+      cantidadBaja = Number(arg2 || 1);
+      motivo = (arg3 || 'Baja de material confirmada por administrador').trim();
     }
-    const motive = window.prompt('Motivo de la baja') || 'Baja de material';
+
+    const item =
+      items.find((i) => String(i.id).toLowerCase() === String(materialId).toLowerCase()) ||
+      items.find((i) => String(i.name || i.material).toLowerCase() === String(materialId).toLowerCase());
+
+    const currentStock = Number(item ? (item.disponible ?? item.quantity ?? 0) : 0);
+    const qty = isNaN(cantidadBaja) || cantidadBaja <= 0 ? 1 : cantidadBaja;
+    const newStock = Math.max(0, currentStock - qty);
+    const itemName = item?.name || item?.material || `Material (${materialId})`;
+    const itemSede = item?.sede || 'Medellín';
+
+    // 1. Actualizar estado local de items
     setItems((prev) =>
-      prev.map((i) => (i.id === itemId ? { ...i, quantity: i.quantity - qty } : i))
+      prev.map((i) => {
+        if (String(i.id).toLowerCase() === String(materialId).toLowerCase()) {
+          return {
+            ...i,
+            disponible: Math.max(0, (i.disponible ?? i.quantity ?? 0) - qty),
+            quantity: Math.max(0, (i.quantity ?? i.disponible ?? 0) - qty),
+            estado: newStock === 0 ? 'Baja' : i.estado,
+          };
+        }
+        return i;
+      })
     );
-    setMovements((prev) => [
-      {
-        id: 'mov-' + Date.now().toString(36),
-        type: 'baja',
-        itemId,
-        itemName: item.name,
-        qty,
-        person: '—',
-        motive,
-        date: today(),
-        status: 'cerrado',
-      },
-      ...prev,
-    ]);
+
+    // 2. Registrar movimiento en el estado local de movimientos / historial
+    const movId = 'mov-baja-' + Date.now().toString(36);
+    const nuevoMovimiento = {
+      id: movId,
+      dbId: Date.now(),
+      type: 'baja',
+      tipo: 'Baja',
+      itemId: item?.id || materialId,
+      placa_o_id: item?.id || materialId,
+      itemName: itemName,
+      elemento_nombre: itemName,
+      qty: qty,
+      cantidad: qty,
+      person: 'Administrador',
+      responsable: 'Administrador',
+      sede: itemSede,
+      motive: motivo,
+      motivo: motivo,
+      detalles: motivo,
+      date: today(),
+      fecha: today(),
+      status: 'cerrado',
+    };
+
+    setMovements((prev) => [nuevoMovimiento, ...prev]);
+
+    // 3. Persistir en la base de datos (PostgreSQL / Supabase)
+    try {
+      // A. Actualizar stock del consumible mediante inventoryApi
+      try {
+        await inventoryApi.update(item?.id || materialId, { disponible: newStock });
+      } catch (errApi) {
+        console.warn('Aviso al actualizar stock en inventoryApi:', errApi.message);
+      }
+
+      // B. Actualizar en Supabase si está disponible y registrar en historial_movimientos
+      try {
+        const { supabase } = await import('./services/supabase');
+        if (supabase) {
+          await supabase
+            .from('consumibles')
+            .update({ disponible: newStock })
+            .eq('id', item?.id || materialId);
+
+          await supabase
+            .from('historial_movimientos')
+            .insert([
+              {
+                tipo: 'Baja',
+                placa_o_id: String(item?.id || materialId),
+                elemento_nombre: itemName,
+                cantidad: qty,
+                responsable: 'Administrador',
+                sede: itemSede,
+                detalles: motivo,
+                fecha: new Date().toISOString(),
+              },
+            ]);
+        }
+      } catch (errSb) {
+        console.warn('Aviso al registrar en Supabase:', errSb.message);
+      }
+    } catch (errGeneral) {
+      console.error('Error general al persistir baja de material:', errGeneral);
+    } finally {
+      await refreshFromApi();
+    }
   };
 
   // Registrar préstamo con transacción en PostgreSQL (soporta tanto activos como consumibles)
