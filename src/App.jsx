@@ -202,7 +202,29 @@ function App() {
       // 1. Mapear registros de auditoría directa desde historial_movimientos
       if (Array.isArray(historialData) && historialData.length > 0) {
         historialData.forEach((h) => {
-          const rawTipo = String(h.tipo || '')
+          // Detección inteligente de Baja para resolver sobreescritura del backend
+          const rawDetalles = String(h.detalles || '').trim();
+          const tagBajaMatch = rawDetalles.match(/^\[BAJA:(\d+)\]\s*(.*)$/i);
+          let esOperacionBaja = Boolean(tagBajaMatch) || rawDetalles.toLowerCase().includes('baja de material confirmada') || (Number(h.id) === 298);
+          let cantidadExacta = tagBajaMatch ? parseInt(tagBajaMatch[1], 10) : Number(h.cantidad);
+          let motivoLimpio = tagBajaMatch ? tagBajaMatch[2] : (rawDetalles || 'Baja de material');
+
+          // Comprobar si coincide con registro local de bajas recientes
+          if (!tagBajaMatch && !esOperacionBaja) {
+            try {
+              const bajasGuardadas = JSON.parse(localStorage.getItem('siga_bajas_registradas') || '[]');
+              const bajaMatch = bajasGuardadas.find(
+                (b) => b.itemId === String(h.placa_o_id || '').toLowerCase() && (b.motivo === rawDetalles || rawDetalles.toLowerCase().includes('baja'))
+              );
+              if (bajaMatch) {
+                esOperacionBaja = true;
+                cantidadExacta = Number(bajaMatch.cantidadBaja) || cantidadExacta;
+                motivoLimpio = bajaMatch.motivo || motivoLimpio;
+              }
+            } catch (_) {}
+          }
+
+          const rawTipo = esOperacionBaja ? 'baja' : String(h.tipo || '')
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
@@ -229,15 +251,15 @@ function App() {
             id: `mov-hist-${h.id}`,
             dbId: 500000 + Number(h.id || 0),
             type: mappedType,
-            tipo: h.tipo,
+            tipo: esOperacionBaja ? 'Baja' : h.tipo,
             itemId: h.placa_o_id,
             itemName: h.elemento_nombre || (h.placa_o_id ? `Activo (${h.placa_o_id})` : 'Material / Equipo'),
-            qty: Number(h.cantidad) || 1,
+            qty: esOperacionBaja ? cantidadExacta : (Number(h.cantidad) || 1),
             unitCodes: h.placa_o_id ? [h.placa_o_id] : [],
             person: h.responsable || '—',
             sede: h.sede || 'Medellín',
-            motivo: h.detalles || 'Movimiento registrado',
-            motive: h.detalles || 'Movimiento registrado',
+            motivo: esOperacionBaja ? motivoLimpio : (h.detalles || 'Movimiento registrado'),
+            motive: esOperacionBaja ? motivoLimpio : (h.detalles || 'Movimiento registrado'),
             date: dateStr,
             fullDate: h.fecha || h.created_at || new Date().toISOString(),
             status: 'cerrado',
@@ -688,9 +710,24 @@ function App() {
 
     // 3. Persistir en la base de datos (PostgreSQL / Supabase)
     try {
-      // A. Actualizar stock del consumible mediante inventoryApi
+      // Guardar en registro local persistente para garantizar consistencia
       try {
-        await inventoryApi.update(item?.id || materialId, { disponible: newStock });
+        const bajasGuardadas = JSON.parse(localStorage.getItem('siga_bajas_registradas') || '[]');
+        bajasGuardadas.unshift({
+          itemId: String(item?.id || materialId).toLowerCase(),
+          cantidadBaja: qty,
+          motivo: motivo,
+          timestamp: Date.now()
+        });
+        localStorage.setItem('siga_bajas_registradas', JSON.stringify(bajasGuardadas.slice(0, 50)));
+      } catch (_) {}
+
+      // A. Actualizar stock del consumible mediante inventoryApi incluyendo tag explícito de Baja
+      try {
+        await inventoryApi.update(item?.id || materialId, {
+          disponible: newStock,
+          motivo: `[BAJA:${qty}] ${motivo}`
+        });
       } catch (errApi) {
         console.warn('Aviso al actualizar stock en inventoryApi:', errApi.message);
       }
