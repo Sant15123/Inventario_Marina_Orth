@@ -36,6 +36,7 @@ export default function PrestamosView({
   // Pestaña o bloque visible si se desea filtrar rápidamente
   const [activeSection, setActiveSection] = useState(initialSection); // 'all' | 'prestamos' | 'entregas'
   const [filterEstadoPrestamo, setFilterEstadoPrestamo] = useState(initialStatusFilter); // 'todos' | 'Activo' | 'Vencido'
+  const [versionActualizaciones, setVersionActualizaciones] = useState(0);
 
   // Notificaciones y Modales Institucionales FMO
   const { showLoanSuccess, showDeliverySuccess, showConfirmAction, showConfirmRetorno, showEditSuccess, showError, showInfo, showSuccess } = useToast();
@@ -237,7 +238,7 @@ export default function PrestamosView({
           (m.estado || '').toLowerCase() !== 'devuelto';
         return isPrestamo && isActivo && isNotReturned;
       }),
-    [movements]
+    [movements, versionActualizaciones]
   );
 
   const vencidosCount = useMemo(() => rawActiveLoans.filter(isOverdue).length, [rawActiveLoans]);
@@ -761,6 +762,8 @@ export default function PrestamosView({
     if (loanObj) {
       loanObj.expectedReturn = data.fecha_devolucion_esperada;
       loanObj.fecha_devolucion_esperada = data.fecha_devolucion_esperada;
+      loanObj.fecha_entrega = data.fecha_devolucion_esperada;
+      loanObj.fecha_limite = data.fecha_devolucion_esperada;
       if (data.observaciones !== undefined) {
         loanObj.motive = data.observaciones;
         loanObj.motivo = data.observaciones;
@@ -779,6 +782,7 @@ export default function PrestamosView({
       }
     }
 
+    setVersionActualizaciones((v) => v + 1);
     showSuccess('Préstamo actualizado', 'Se guardaron los cambios del préstamo exitosamente.');
     if (onRetry) await onRetry();
   };
@@ -1115,7 +1119,12 @@ export default function PrestamosView({
                     const overdue = isOverdue(m);
                     const firstCode = m.unitCodes && m.unitCodes.length > 0 ? m.unitCodes[0] : (m.placa || m.itemId);
                     const fechaSalida = m.date || m.fecha_salida || m.created_at;
-                    const fechaDevolucion = m.expectedReturn || m.fecha_devolucion_esperada || m.fecha_devolucion;
+                    const fechaDevolucion =
+                      m.fecha_devolucion_esperada ||
+                      m.expectedReturn ||
+                      m.fecha_entrega ||
+                      m.fecha_devolucion ||
+                      m.fecha_limite;
 
                     return (
                       <tr key={m.id} className={`${overdue ? 'row-overdue' : 'row-active'} h-auto`}>

@@ -49,7 +49,7 @@ function App() {
 
   const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario } = useAuth();
 
-  // Estado simple de navegación para las vistas
+  // Estado simple de navegaciÃ³n para las vistas
   const [currentView, setCurrentView] = useState('resumen');
 
   // Redirigir a 'mi-panel' si el rol activo es 'usuario'
@@ -68,7 +68,7 @@ function App() {
     }
   }, [isAdmin, isSupervisor, isUsuario, currentView]);
 
-  // Parámetros de navegación inicial para transferir filtros desde Resumen
+  // ParÃ¡metros de navegaciÃ³n inicial para transferir filtros desde Resumen
   const [inventarioParams, setInventarioParams] = useState({ tab: 'equipos', stockFilter: 'todos' });
   const [prestamosParams, setPrestamosParams] = useState({ section: 'all', estado: 'todos' });
 
@@ -91,12 +91,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
 
-  // Estado del inventario y movimientos (inicializados estrictamente con arreglos vacíos)
+  // Estado del inventario y movimientos (inicializados estrictamente con arreglos vacÃ­os)
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [sedesList, setSedesList] = useState(SEDES);
 
-  // Cargar datos reales desde Supabase / PostgreSQL al iniciar la aplicación
+  // Cargar datos reales desde Supabase / PostgreSQL al iniciar la aplicaciÃ³n
   const refreshFromApi = async () => {
     try {
       setLoading(true);
@@ -141,8 +141,8 @@ function App() {
             id: c.id,
             material: c.material || c.name || '',
             name: c.material || c.name || '',
-            categoria: c.categoria || 'Robótica',
-            category: c.categoria || 'Robótica',
+            categoria: c.categoria || 'RobÃ³tica',
+            category: c.categoria || 'RobÃ³tica',
             disponible: disp,
             quantity: disp,
             minimo: min,
@@ -162,9 +162,9 @@ function App() {
           const unitObj = {
             code: a.placa,
             placa: a.placa,
-            model: a.modelo || a.marca || 'Estándar',
-            serial: a.serial || '—',
-            sede: a.sede || 'Medellín',
+            model: a.modelo || a.marca || 'EstÃ¡ndar',
+            serial: a.serial || 'â',
+            sede: a.sede || 'MedellÃ­n',
             ubicacion_estante: a.ubicacion_estante || '',
             status: a.estado === 'En campo' ? 'prestado' : (a.estado || 'disponible').toLowerCase(),
             responsable: a.custodio || (a.estado === 'En campo' ? 'Custodio Temporal' : 'Bodega Central'),
@@ -180,10 +180,10 @@ function App() {
             newItems.push({
               id: `eq-${a.id || a.placa}`,
               name: a.nombre,
-              category: a.marca || 'Equipos de Cómputo',
+              category: a.marca || 'Equipos de CÃ³mputo',
               itemType: 'equipo',
-              location: a.sede ? `Sede ${a.sede}` : 'Bodega Medellín',
-              sede: a.sede || 'Medellín',
+              location: a.sede ? `Sede ${a.sede}` : 'Bodega MedellÃ­n',
+              sede: a.sede || 'MedellÃ­n',
               ubicacion_estante: a.ubicacion_estante || '',
               minStock: 1,
               units: [unitObj],
@@ -199,10 +199,10 @@ function App() {
       const newMovs = [];
       const historialKeys = new Set();
 
-      // 1. Mapear registros de auditoría directa desde historial_movimientos
+      // 1. Mapear registros de auditorÃ­a directa desde historial_movimientos
       if (Array.isArray(historialData) && historialData.length > 0) {
         historialData.forEach((h) => {
-          // Detección inteligente de Baja para resolver sobreescritura del backend
+          // DetecciÃ³n inteligente de Baja para resolver sobreescritura del backend
           const rawDetalles = String(h.detalles || '').trim();
           const tagBajaMatch = rawDetalles.match(/^\[BAJA:(\d+)\]\s*(.*)$/i);
           let esOperacionBaja = Boolean(tagBajaMatch) || rawDetalles.toLowerCase().includes('baja de material confirmada') || (Number(h.id) === 298);
@@ -239,7 +239,7 @@ function App() {
           const dateStr = h.fecha ? h.fecha.split('T')[0] : (h.created_at ? h.created_at.split('T')[0] : today());
           const dedupeKey = `${mappedType}-${String(h.placa_o_id || '').toLowerCase()}-${dateStr}`;
 
-          // Prevenir duplicados directos en el historial (ej. inserciones gemelas de devolución)
+          // Prevenir duplicados directos en el historial (ej. inserciones gemelas de devoluciÃ³n)
           const exactHistorialKey = `${mappedType}-${String(h.placa_o_id || '').toLowerCase()}-${dateStr}-${String(h.responsable || '').toLowerCase()}-${String(h.detalles || '').slice(0, 30)}`;
           if (historialKeys.has(exactHistorialKey)) {
             return;
@@ -256,8 +256,8 @@ function App() {
             itemName: h.elemento_nombre || (h.placa_o_id ? `Activo (${h.placa_o_id})` : 'Material / Equipo'),
             qty: esOperacionBaja ? cantidadExacta : (Number(h.cantidad) || 1),
             unitCodes: h.placa_o_id ? [h.placa_o_id] : [],
-            person: h.responsable || '—',
-            sede: h.sede || 'Medellín',
+            person: h.responsable || 'â',
+            sede: h.sede || 'MedellÃ­n',
             motivo: esOperacionBaja ? motivoLimpio : (h.detalles || 'Movimiento registrado'),
             motive: esOperacionBaja ? motivoLimpio : (h.detalles || 'Movimiento registrado'),
             date: dateStr,
@@ -267,7 +267,7 @@ function App() {
         });
       }
 
-      // 2. Mapear préstamos directamente desde la base de datos (evitando duplicar con historial)
+      // 2. Mapear prÃ©stamos directamente desde la base de datos (evitando duplicar con historial)
       if (Array.isArray(prestamosData)) {
         prestamosData.forEach((p) => {
           const isConsumible = p.tipo_item === 'consumible' || (p.placa_activo && (p.placa_activo.toUpperCase().startsWith('ROB') || p.placa_activo.toUpperCase().startsWith('MAT')));
@@ -287,12 +287,24 @@ function App() {
             // Actualizar datos del movimiento existente sin crear duplicado
             if (isActivo) existingMov.status = 'activo';
             if (p.fecha_devolucion_esperada) {
-              existingMov.expectedReturn = p.fecha_devolucion_esperada.split('T')[0];
+              const fEsperada = p.fecha_devolucion_esperada.split('T')[0];
+              existingMov.expectedReturn = fEsperada;
+              existingMov.fecha_devolucion_esperada = fEsperada;
+              existingMov.fecha_entrega = fEsperada;
+              existingMov.fecha_limite = fEsperada;
             }
             if (fechaDev) {
               existingMov.returnedDate = fechaDev;
+              existingMov.fecha_devolucion_real = fechaDev;
             }
+            if (p.sede) existingMov.sede = p.sede;
+            if (p.motivo) {
+              existingMov.motivo = p.motivo;
+              existingMov.motive = p.motivo;
+            }
+            if (p.solicitante) existingMov.person = p.solicitante;
           } else if (isActivo || !historialKeys.has(loanKey)) {
+            const fEsperada = p.fecha_devolucion_esperada ? p.fecha_devolucion_esperada.split('T')[0] : null;
             newMovs.push({
               id: `mov-db-${p.id}`,
               dbId: p.id,
@@ -308,13 +320,17 @@ function App() {
               motive: p.motivo || 'Préstamo operativo',
               date: fechaSalida,
               fullDate: p.fecha_salida || new Date().toISOString(),
-              expectedReturn: p.fecha_devolucion_esperada ? p.fecha_devolucion_esperada.split('T')[0] : null,
+              expectedReturn: fEsperada,
+              fecha_devolucion_esperada: fEsperada,
+              fecha_entrega: fEsperada,
+              fecha_limite: fEsperada,
               returnedDate: fechaDev,
+              fecha_devolucion_real: fechaDev,
               status: isActivo ? 'activo' : 'cerrado',
             });
           }
 
-          // Si fue devuelto y no está aún registrado en historial_movimientos, mapear devolución
+          // Si fue devuelto y no estÃ¡ aÃºn registrado en historial_movimientos, mapear devoluciÃ³n
           if (p.estado === 'Devuelto' && fechaDev) {
             const devKey = `devolucion-${String(p.placa_activo || '').toLowerCase()}-${fechaDev}`;
             if (!historialKeys.has(devKey)) {
@@ -322,13 +338,13 @@ function App() {
                 id: `mov-dev-${p.id}`,
                 dbId: 400000 + Number(p.id || 0),
                 type: 'devolucion',
-                tipo: 'Devolución',
+                tipo: 'DevoluciÃ³n',
                 itemId: p.placa_activo,
                 itemName: p.nombre_activo || (isConsumible ? `Insumo (${p.placa_activo})` : `Activo (${p.placa_activo})`),
                 qty: cant,
                 unitCodes: [p.placa_activo],
                 person: p.solicitante,
-                sede: p.sede || 'Medellín',
+                sede: p.sede || 'MedellÃ­n',
                 motivo: 'Retorno a bodega confirmado. Activo disponible.',
                 motive: 'Retorno a bodega confirmado. Activo disponible.',
                 date: fechaDev,
@@ -359,14 +375,14 @@ function App() {
               type: 'entrega',
               isRemision: true,
               itemId: rem.remision_id,
-              itemName: rawItems.length > 0 ? rawItems.map((it) => it.nombre || it.material).join(', ') : 'Remisión de Materiales',
+              itemName: rawItems.length > 0 ? rawItems.map((it) => it.nombre || it.material).join(', ') : 'RemisiÃ³n de Materiales',
               items: rawItems,
               total_items: rem.total_items || rawItems.length,
               total_unidades: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
               qty: rem.total_unidades || rawItems.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0),
               person: rem.responsable_recibe,
               responsable_recibe: rem.responsable_recibe,
-              sede: rem.sede || 'Medellín',
+              sede: rem.sede || 'MedellÃ­n',
               proyecto: rem.proyecto || '',
               motivo: rem.motivo || rem.proyecto || 'Salida de material para taller',
               motive: rem.motivo || rem.proyecto || 'Salida de material para taller',
@@ -379,7 +395,7 @@ function App() {
         });
       }
 
-      // 4. Mapear entregas de consumibles huérfanas (sin remisión asociada) para retrocompatibilidad
+      // 4. Mapear entregas de consumibles huÃ©rfanas (sin remisiÃ³n asociada) para retrocompatibilidad
       if (Array.isArray(entregasData)) {
         entregasData.forEach((ent) => {
           if (ent.remision_id && remisionIdsConocidos.has(ent.remision_id)) {
@@ -409,7 +425,7 @@ function App() {
               qty: Number(ent.cantidad) || 1,
               person: ent.responsable,
               responsable_recibe: ent.responsable,
-              sede: ent.sede || 'Medellín',
+              sede: ent.sede || 'MedellÃ­n',
               proyecto: '',
               motivo: ent.proyecto_motivo || '',
               motive: ent.proyecto_motivo || 'Salida de material para taller',
@@ -422,7 +438,7 @@ function App() {
         });
       }
 
-      // Ordenar movimientos cronológicamente: los más recientes arriba
+      // Ordenar movimientos cronolÃ³gicamente: los mÃ¡s recientes arriba
       newMovs.sort((a, b) => {
         const dateA = new Date(a.fullDate || a.date).getTime() || 0;
         const dateB = new Date(b.fullDate || b.date).getTime() || 0;
@@ -441,7 +457,7 @@ function App() {
     }
   };
 
-  // Función para purgar cualquier caché local obsoleta y asegurar sincronización pura con Supabase
+  // FunciÃ³n para purgar cualquier cachÃ© local obsoleta y asegurar sincronizaciÃ³n pura con Supabase
   const purgeLocalCache = () => {
     if (typeof window !== 'undefined') {
       const keysToRemove = [
@@ -469,7 +485,7 @@ function App() {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Limpiar la barra de búsqueda y filtros al cambiar de pestaña o módulo en el dashboard
+  // Limpiar la barra de bÃºsqueda y filtros al cambiar de pestaÃ±a o mÃ³dulo en el dashboard
   useEffect(() => {
     setSearchTerm('');
     if (currentView !== 'prestamos') {
@@ -477,7 +493,7 @@ function App() {
     }
   }, [currentView]);
 
-  // Filtro de búsqueda rápida
+  // Filtro de bÃºsqueda rÃ¡pida
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
     const term = searchTerm.toLowerCase().trim();
@@ -522,7 +538,7 @@ function App() {
     );
   }, [movements, searchTerm]);
 
-  // Manejadores de acciones con sincronización a la API de PostgreSQL
+  // Manejadores de acciones con sincronizaciÃ³n a la API de PostgreSQL
   const handleAddItem = async (data) => {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const itemType = data.itemType === 'equipo' ? 'equipo' : 'consumible';
@@ -551,7 +567,7 @@ function App() {
             model: parts[1] || '',
             serial: parts[2] || '',
             status: 'disponible',
-            sede: data.sede || 'Medellín',
+            sede: data.sede || 'MedellÃ­n',
           };
         })
         .filter((u) => u.code);
@@ -566,10 +582,10 @@ function App() {
           await inventoryApi.createActivo({
             placa: u.code,
             nombre: data.name,
-            marca: data.category || 'Tecnología',
+            marca: data.category || 'TecnologÃ­a',
             modelo: u.model || '',
             serial: u.serial || null,
-            sede: data.sede || 'Medellín',
+            sede: data.sede || 'MedellÃ­n',
             estado: 'Disponible',
           });
         } catch (e) {
@@ -616,7 +632,7 @@ function App() {
 
   const handleEditItem = async (edited) => {
     try {
-      // Si es un equipo tecnológico, actualizar en PostgreSQL via updateActivo
+      // Si es un equipo tecnolÃ³gico, actualizar en PostgreSQL via updateActivo
       if (edited.itemType === 'equipo') {
         const placaToUpdate = edited.placa || (edited.units && edited.units[0]?.placa) || (edited.units && edited.units[0]?.code);
         if (placaToUpdate) {
@@ -665,7 +681,7 @@ function App() {
     const qty = isNaN(cantidadBaja) || cantidadBaja <= 0 ? 1 : cantidadBaja;
     const newStock = Math.max(0, currentStock - qty);
     const itemName = item?.name || item?.material || `Material (${materialId})`;
-    const itemSede = item?.sede || 'Medellín';
+    const itemSede = item?.sede || 'MedellÃ­n';
 
     // 1. Actualizar estado local de items
     setItems((prev) =>
@@ -722,7 +738,7 @@ function App() {
         localStorage.setItem('siga_bajas_registradas', JSON.stringify(bajasGuardadas.slice(0, 50)));
       } catch (_) {}
 
-      // A. Actualizar stock del consumible mediante inventoryApi incluyendo tag explícito de Baja
+      // A. Actualizar stock del consumible mediante inventoryApi incluyendo tag explÃ­cito de Baja
       try {
         await inventoryApi.update(item?.id || materialId, {
           disponible: newStock,
@@ -732,7 +748,7 @@ function App() {
         console.warn('Aviso al actualizar stock en inventoryApi:', errApi.message);
       }
 
-      // B. Actualizar en Supabase si está disponible y registrar en historial_movimientos
+      // B. Actualizar en Supabase si estÃ¡ disponible y registrar en historial_movimientos
       try {
         const { supabase } = await import('./services/supabase');
         if (supabase) {
@@ -766,14 +782,14 @@ function App() {
     }
   };
 
-  // Registrar préstamo con transacción en PostgreSQL (soporta tanto activos como consumibles)
+  // Registrar prÃ©stamo con transacciÃ³n en PostgreSQL (soporta tanto activos como consumibles)
   const handleRegisterLoan = async (data) => {
     const isConsumible =
       data.tipo_item === 'consumible' ||
       (data.itemId && (data.itemId.toUpperCase().startsWith('ROB') || data.itemId.toUpperCase().startsWith('MAT')));
 
     if (isConsumible) {
-      // 1. Préstamo de consumible con cantidad
+      // 1. PrÃ©stamo de consumible con cantidad
       const finalCantidad = Math.max(1, parseInt(data.cantidad, 10) || 1);
       const itemId = data.itemId || (data.unitCodes && data.unitCodes[0]) || '';
       try {
@@ -783,18 +799,18 @@ function App() {
           tipo_item: 'consumible',
           cantidad: finalCantidad,
           solicitante: data.person,
-          sede: data.sede || 'Medellín',
-          motivo: data.motive || 'Préstamo de insumos para actividades formativas',
+          sede: data.sede || 'MedellÃ­n',
+          motivo: data.motive || 'PrÃ©stamo de insumos para actividades formativas',
           fecha_salida: today(),
           fecha_devolucion_esperada: data.expectedReturn || today(),
         });
       } catch (err) {
-        console.error('Error al registrar préstamo de consumible:', err);
-        alert(`Error al registrar préstamo de consumible: ${err.message}`);
+        console.error('Error al registrar prÃ©stamo de consumible:', err);
+        alert(`Error al registrar prÃ©stamo de consumible: ${err.message}`);
         throw err;
       }
     } else {
-      // 2. Préstamo de equipo tecnológico por placas seleccionadas
+      // 2. PrÃ©stamo de equipo tecnolÃ³gico por placas seleccionadas
       const unitCodes = Array.isArray(data.unitCodes) && data.unitCodes.length > 0 ? data.unitCodes : [data.itemId];
       for (const placa of unitCodes) {
         try {
@@ -804,14 +820,14 @@ function App() {
             tipo_item: 'activo',
             cantidad: 1,
             solicitante: data.person,
-            sede: data.sede || 'Medellín',
-            motivo: data.motive || 'Préstamo para formación',
+            sede: data.sede || 'MedellÃ­n',
+            motivo: data.motive || 'PrÃ©stamo para formaciÃ³n',
             fecha_salida: today(),
             fecha_devolucion_esperada: data.expectedReturn || today(),
           });
         } catch (e) {
           console.error(`Error de persistencia para placa ${placa}:`, e.message);
-          alert(`Error al registrar préstamo para ${placa}: ${e.message}`);
+          alert(`Error al registrar prÃ©stamo para ${placa}: ${e.message}`);
           throw e;
         }
       }
@@ -823,11 +839,11 @@ function App() {
 
   const handleRegisterDelivery = async (data) => {
     try {
-      // Si viene una remisión agrupada con canasta de múltiples ítems
+      // Si viene una remisiÃ³n agrupada con canasta de mÃºltiples Ã­tems
       if (Array.isArray(data.items) && data.items.length > 0) {
         await inventoryApi.createRemision({
           responsable_recibe: data.person || data.responsable_recibe,
-          sede: data.sede || 'Medellín',
+          sede: data.sede || 'MedellÃ­n',
           proyecto: data.proyecto || '',
           motivo: data.motive || data.motivo || 'Salida de material para taller / semillero',
           items: data.items.map((it) => {
@@ -849,13 +865,13 @@ function App() {
           material_nombre: itemName,
           cantidad: Number(data.qty) || 1,
           responsable: data.person,
-          sede: data.sede || 'Medellín',
+          sede: data.sede || 'MedellÃ­n',
           proyecto_motivo: data.motive || 'Salida de material para taller / semillero',
           tipo: 'Consumido',
         });
       }
     } catch (err) {
-      console.error('Error al persistir entrega/remisión en base de datos:', err);
+      console.error('Error al persistir entrega/remisiÃ³n en base de datos:', err);
       alert(`Error al guardar entrega en base de datos: ${err.message}`);
       throw err;
     }
@@ -864,7 +880,7 @@ function App() {
     await refreshFromApi();
   };
 
-  // Devolver préstamo y restaurar activo en PostgreSQL
+  // Devolver prÃ©stamo y restaurar activo en PostgreSQL
   const handleReturnLoan = async (movId) => {
     const mov = movements.find((m) => m.id === movId);
     if (!mov) return;
@@ -905,13 +921,13 @@ function App() {
 
   return (
     <Routes>
-      {/* RUTA DE INICIO DE SESIÓN INSTITUCIONAL */}
+      {/* RUTA DE INICIO DE SESIÃN INSTITUCIONAL */}
       <Route
         path="/login"
         element={<LoginView theme={theme} onToggleTheme={toggleTheme} />}
       />
 
-      {/* RUTA PÚBLICA / MÓVIL: FICHA DE ACTIVO POR CÓDIGO QR */}
+      {/* RUTA PÃBLICA / MÃVIL: FICHA DE ACTIVO POR CÃDIGO QR */}
       <Route
         path="/activo/:placa"
         element={<DetalleActivoPublico items={items} movements={movements} />}
@@ -995,7 +1011,7 @@ function App() {
                     />
                   )}
 
-                  {/* VISTA PRÉSTAMOS Y ENTREGAS */}
+                  {/* VISTA PRÃSTAMOS Y ENTREGAS */}
                   {!isUsuario && currentView === 'prestamos' && (
                     <PrestamosView
                       items={filteredItems}
@@ -1021,14 +1037,14 @@ function App() {
                     <HistorialView movements={filteredMovements} />
                   )}
 
-                  {/* VISTA MÓDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}
+                  {/* VISTA MÃDULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}
                   {!isUsuario && (isAdmin || isSupervisor) && currentView === 'usuarios' && (
                     <UsuariosView sedes={sedesList} searchTerm={searchTerm} />
                   )}
                 </main>
 
                 <footer>
-                  Registro interno · Fundación Marina Orth · Robótica & Nuevas Tecnologías · {fmtDate(today())}
+                  Registro interno Â· FundaciÃ³n Marina Orth Â· RobÃ³tica & Nuevas TecnologÃ­as Â· {fmtDate(today())}
                 </footer>
               </div>
             </div>
