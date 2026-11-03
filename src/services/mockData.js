@@ -776,42 +776,43 @@ export function available(item) {
 }
 
 /**
- * Verifica si un préstamo está en mora / vencido
+ * Definición exacta de vencimiento para préstamos:
+ * - No ha sido devuelto: estado no es 'Devuelto' ni 'Cerrado'.
+ * - Superó la fecha límite: fecha_devolucion_esperada es estrictamente menor a la fecha actual (< hoy a las 00:00:00 en hora local).
  */
-export function isOverdue(m) {
-  if (!m) return false;
-  // Si ya fue devuelto o cerrado, nunca está vencido
+export const esPrestamoVencido = (prestamo) => {
+  if (!prestamo) return false;
+  const estado = (prestamo.estado || prestamo.status || '').toLowerCase().trim();
   if (
-    m.status === 'cerrado' ||
-    m.status === 'devuelto' ||
-    (m.estado && m.estado.toLowerCase() === 'devuelto') ||
-    m.returnedDate ||
-    m.fecha_devolucion_real
+    estado.includes('devuelto') ||
+    estado.includes('cerrado') ||
+    estado.includes('cancelado') ||
+    prestamo.returnedDate ||
+    prestamo.fecha_devolucion_real
   ) {
     return false;
   }
 
-  const isTypePrestamo = !m.type || m.type.toLowerCase() === 'prestamo';
-  const isStatusActivo =
-    (m.status || '').toLowerCase() === 'activo' ||
-    (m.estado || '').toLowerCase() === 'activo';
+  const fechaLimiteStr =
+    prestamo.fecha_devolucion_esperada ||
+    prestamo.fecha_devolucion ||
+    prestamo.expectedReturn ||
+    prestamo.fecha_retorno ||
+    prestamo.fecha_limite;
+  if (!fechaLimiteStr) return false;
 
-  if (!isTypePrestamo || !isStatusActivo) return false;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
 
-  const rawDate =
-    m.fecha_devolucion_esperada ||
-    m.expectedReturn ||
-    m.fecha_devolucion ||
-    m.fecha_retorno ||
-    m.fecha_limite;
+  // Evitar problemas de desfase UTC extrayendo partes YYYY-MM-DD
+  const [year, month, day] = String(fechaLimiteStr).split('T')[0].split('-').map(Number);
+  if (!year || !month || !day) return false;
+  const fechaLimite = new Date(year, month - 1, day);
 
-  if (!rawDate) return false;
+  return fechaLimite < hoy;
+};
 
-  const dateStr = String(rawDate).split('T')[0];
-  const hoyStr = new Date().toISOString().split('T')[0];
-
-  return dateStr < hoyStr;
-}
+export const isOverdue = esPrestamoVencido;
 
 /**
  * Calcula días de diferencia para saber retraso o tiempo restante

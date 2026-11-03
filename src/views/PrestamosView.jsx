@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { fmtDate, formatearFechaSegura, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, today } from '../services/mockData';
+import { fmtDate, formatearFechaSegura, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, esPrestamoVencido, today } from '../services/mockData';
 import { supabase } from '../services/supabase';
 import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
@@ -45,8 +45,15 @@ export default function PrestamosView({
   }, [initialSection]);
 
   useEffect(() => {
-    if (initialStatusFilter) setFilterEstadoPrestamo(initialStatusFilter);
+    setFilterEstadoPrestamo(initialStatusFilter || 'todos');
   }, [initialStatusFilter]);
+
+  // Al salir del módulo de préstamos, limpiar el filtro y retornar al estado por defecto
+  useEffect(() => {
+    return () => {
+      setFilterEstadoPrestamo('todos');
+    };
+  }, []);
 
   // Catálogo dinámico de Proyectos STEAM poblado desde /api/proyectos
   const [proyectosList, setProyectosList] = useState([]);
@@ -737,7 +744,7 @@ export default function PrestamosView({
           fecha_devolucion: data.fecha_devolucion_esperada,
         });
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // 4. Actualizar el objeto reactivo en memoria
     if (loanObj) {
@@ -779,14 +786,20 @@ export default function PrestamosView({
           <button
             type="button"
             className={`tab-btn ${activeSection === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveSection('all')}
+            onClick={() => {
+              setActiveSection('all');
+              setFilterEstadoPrestamo('todos');
+            }}
           >
             <span>Ver Todos</span>
           </button>
           <button
             type="button"
             className={`tab-btn ${activeSection === 'prestamos' ? 'active' : ''}`}
-            onClick={() => setActiveSection('prestamos')}
+            onClick={() => {
+              setActiveSection('prestamos');
+              setFilterEstadoPrestamo('todos');
+            }}
           >
             <span>🔄 Préstamos Activos</span>
             <span className="tab-badge">{activeLoans.length}</span>
@@ -794,7 +807,10 @@ export default function PrestamosView({
           <button
             type="button"
             className={`tab-btn ${activeSection === 'entregas' ? 'active' : ''}`}
-            onClick={() => setActiveSection('entregas')}
+            onClick={() => {
+              setActiveSection('entregas');
+              setFilterEstadoPrestamo('todos');
+            }}
           >
             <span>📦 Entregas Realizadas</span>
             <span className="tab-badge">{recentDeliveries.length}</span>
@@ -803,13 +819,16 @@ export default function PrestamosView({
             <button
               type="button"
               className={`tab-btn ${activeSection === 'solicitudes' ? 'active' : ''}`}
-              onClick={() => setActiveSection('solicitudes')}
+              onClick={() => {
+                setActiveSection('solicitudes');
+                setFilterEstadoPrestamo('todos');
+              }}
               style={
                 activeSection === 'solicitudes'
                   ? {}
                   : solicitudesPendientesCount > 0
-                  ? { borderBottom: '2px solid #84CC16' }
-                  : {}
+                    ? { borderBottom: '2px solid #84CC16' }
+                    : {}
               }
             >
               <span>📥 Solicitudes Entrantes</span>
@@ -902,60 +921,57 @@ export default function PrestamosView({
       {(activeSection === 'all' || activeSection === 'prestamos') && (
         <section>
           <div className="section-header">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-              <h2 style={{ margin: 0 }}>
-                <span>Préstamos de Equipos en Campo (Retornables)</span>
-              </h2>
-
-              {/* Filtro interactivo de Vencidos y En Plazo */}
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <h2>
+              <span>Préstamos de Equipos en Campo (Retornables)</span>
+              {filterEstadoPrestamo !== 'todos' ? (
                 <button
                   type="button"
-                  className={`pill ${filterEstadoPrestamo === 'todos' ? 'prestado' : ''}`}
+                  className={`pill ${filterEstadoPrestamo === 'Vencido' ? 'vencido' : 'prestado'}`}
                   style={{
                     cursor: 'pointer',
                     fontSize: '11px',
-                    padding: '3px 9px',
-                    fontWeight: filterEstadoPrestamo === 'todos' ? 700 : 500,
-                    opacity: filterEstadoPrestamo === 'todos' ? 1 : 0.7,
+                    padding: '2.5px 8px',
+                    marginLeft: '8px',
+                    border: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 700,
                   }}
                   onClick={() => setFilterEstadoPrestamo('todos')}
-                  title="Ver todos los préstamos activos"
+                  title="Clic para remover filtro y mostrar todos los préstamos"
                 >
-                  Todos ({rawActiveLoans.length})
+                  {filterEstadoPrestamo === 'Vencido' ? '⏰ Filtro: Vencidos' : '🔄 Filtro: Activos en plazo'} ({activeLoans.length}) ✕
                 </button>
+              ) : (
+                <span className="pill prestado" style={{ marginLeft: '8px' }}>
+                  {activeLoans.length} préstamos activos
+                </span>
+              )}
+
+              {/* Acceso rápido para activar filtro de vencidos cuando está en 'todos' y hay vencidos */}
+              {filterEstadoPrestamo === 'todos' && vencidosCount > 0 && (
                 <button
                   type="button"
-                  className={`pill ${filterEstadoPrestamo === 'Activo' ? 'prestado' : ''}`}
+                  className="pill vencido"
                   style={{
                     cursor: 'pointer',
                     fontSize: '11px',
-                    padding: '3px 9px',
-                    fontWeight: filterEstadoPrestamo === 'Activo' ? 700 : 500,
-                    opacity: filterEstadoPrestamo === 'Activo' ? 1 : 0.7,
+                    padding: '2.5px 8px',
+                    marginLeft: '8px',
+                    border: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 700,
                   }}
-                  onClick={() => setFilterEstadoPrestamo('Activo')}
-                  title="Ver solo préstamos vigentes dentro del plazo"
+                  onClick={() => setFilterEstadoPrestamo('Vencido')}
+                  title="Clic para filtrar únicamente los préstamos vencidos"
                 >
-                  ● En plazo ({alDiaCount})
+                  ⏰ {vencidosCount} vencidos
                 </button>
-                <button
-                  type="button"
-                  className={`pill ${filterEstadoPrestamo === 'Vencido' || vencidosCount > 0 ? 'vencido' : ''}`}
-                  style={{
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    padding: '3px 9px',
-                    fontWeight: filterEstadoPrestamo === 'Vencido' ? 700 : 500,
-                    opacity: filterEstadoPrestamo === 'Vencido' ? 1 : vencidosCount > 0 ? 0.8 : 0.5,
-                  }}
-                  onClick={() => setFilterEstadoPrestamo(filterEstadoPrestamo === 'Vencido' ? 'todos' : 'Vencido')}
-                  title="Filtrar préstamos vencidos con fecha de devolución superada"
-                >
-                  ⚠️ Vencidos ({vencidosCount})
-                </button>
-              </div>
-            </div>
+              )}
+            </h2>
             <span className="section-subtitle">
               Equipos de cómputo, tablets y proyectores asignados temporalmente a custodios en municipios
             </span>

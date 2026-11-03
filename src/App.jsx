@@ -447,9 +447,12 @@ function App() {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Limpiar la barra de búsqueda automáticamente al cambiar de pestaña o módulo en el dashboard
+  // Limpiar la barra de búsqueda y filtros al cambiar de pestaña o módulo en el dashboard
   useEffect(() => {
     setSearchTerm('');
+    if (currentView !== 'prestamos') {
+      setPrestamosParams({ section: 'all', estado: 'todos' });
+    }
   }, [currentView]);
 
   // Filtro de búsqueda rápida
@@ -811,7 +814,15 @@ function App() {
         element={
           <ProtectedRoute>
             <div className="layout">
-              <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+              <Sidebar
+                currentView={currentView}
+                onViewChange={(view) => {
+                  if (view === 'prestamos') {
+                    setPrestamosParams({ section: 'all', estado: 'todos' });
+                  }
+                  setCurrentView(view);
+                }}
+              />
 
               <div className="main-wrapper">
                 <Header

@@ -102,3 +102,4 @@ export const EditarPrestamoModal = ({ prestamo, isOpen, onClose, onActualizar })
 };
 
 export default EditarPrestamoModal;
+
