@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Laptop, Sparkles, Building2, User, FileText, Check, Calendar } from 'lucide-react';
+import { X, Laptop, Sparkles, Building2, User, FileText, Calendar } from 'lucide-react';
 
 export const EditarPrestamoModal = ({
   prestamo,
@@ -130,43 +130,53 @@ export const EditarPrestamoModal = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ENCABEZADO INSTITUCIONAL FIJO (Idéntico al de Editar Equipo Tecnológico) */}
+        {/* ENCABEZADO INSTITUCIONAL FIJO (Idéntico a ModalEditarActivo) */}
         <div
           className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
           style={{
+            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
             borderBottom: '1px solid var(--line, #e2e8f0)',
-            backgroundColor: 'var(--surface-2, #f8fafc)',
             padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexShrink: 0,
           }}
         >
           <div>
             <span
-              className="text-xs font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400 block"
-              style={{ color: 'var(--text-dim, #64748b)' }}
+              style={{
+                fontFamily: 'var(--mono)',
+                color: 'var(--text-dim, #94a3b8)',
+                fontSize: '12px',
+                fontWeight: 600,
+                display: 'block',
+                marginBottom: '2px',
+              }}
             >
-              {serialEquipo ? `PLACA / ID: ${serialEquipo}` : 'GESTIÓN DE PRÉSTAMOS'}
+              {serialEquipo ? `PLACA: ${serialEquipo}` : 'GESTIÓN DE PRÉSTAMOS'}
             </span>
             <h3
-              className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight"
-              style={{ color: 'var(--text, #0f172a)', margin: '2px 0 0 0' }}
+              className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0"
+              style={{ margin: 0, fontSize: '15px' }}
             >
               Editar Préstamo
             </h3>
             <p
-              className="text-xs text-slate-500 dark:text-slate-400 mt-0.5"
-              style={{ color: 'var(--text-muted, #94a3b8)', margin: '2px 0 0 0' }}
+              className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0"
+              style={{ margin: '2px 0 0 0', fontSize: '12px' }}
             >
-              Modifica los datos del préstamo activo y su fecha pactada
+              Modifica los datos del préstamo activo y sus especificaciones
             </p>
           </div>
           <button
             type="button"
-            onClick={onClose}
             disabled={cargando}
-            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-            title="Cerrar modal"
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+            title="Cerrar ventana"
           >
-            <X size={18} />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -180,7 +190,10 @@ export const EditarPrestamoModal = ({
         >
           {/* Subtítulo de Sección */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-            <h4 className="text-xs font-bold text-lime-600 dark:text-lime-400 uppercase tracking-wider">
+            <h4
+              className="text-xs font-bold uppercase tracking-wider"
+              style={{ color: 'var(--color-primary, #84CC16)', margin: 0 }}
+            >
               INFORMACIÓN Y CONDICIONES DEL PRÉSTAMO
             </h4>
             <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
@@ -197,7 +210,7 @@ export const EditarPrestamoModal = ({
                 type="text"
                 readOnly
                 value={`${nombreEquipo}${serialEquipo ? ` - [Placa: ${serialEquipo}]` : ''}`}
-                className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
+                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
               />
             </div>
 
@@ -212,7 +225,7 @@ export const EditarPrestamoModal = ({
                   value={custodioId}
                   onChange={(e) => setCustodioId(e.target.value)}
                   required
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-500/40 focus:border-lime-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                 >
                   <option value="">Seleccione un custodio...</option>
                   {usuarios.map((u) => {
@@ -230,7 +243,7 @@ export const EditarPrestamoModal = ({
                   type="text"
                   readOnly
                   value={prestamo.responsable || prestamo.custodian || prestamo.solicitante || 'Custodio no especificado'}
-                  className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
                 />
               )}
             </div>
@@ -246,7 +259,7 @@ export const EditarPrestamoModal = ({
                   value={sede}
                   onChange={(e) => setSede(e.target.value)}
                   required
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-500/40 focus:border-lime-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                 >
                   <option value="">Seleccione una sede...</option>
                   {sedesOpciones.map((s) => (
@@ -267,7 +280,7 @@ export const EditarPrestamoModal = ({
                   value={proyectoSteam}
                   onChange={(e) => setProyectoSteam(e.target.value)}
                   placeholder="Ej. Robótica, STEAM..."
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40 focus:border-lime-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                 />
               </div>
             </div>
@@ -284,7 +297,7 @@ export const EditarPrestamoModal = ({
                 value={fechaDevolucion}
                 onChange={(e) => setFechaDevolucion(e.target.value)}
                 required
-                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-500/40 focus:border-lime-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
               />
               <p className="text-[11px] text-slate-400 mt-1">
                 No es posible seleccionar fechas anteriores al día de hoy.
@@ -303,7 +316,7 @@ export const EditarPrestamoModal = ({
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
                 placeholder="Notas u observaciones sobre el préstamo..."
-                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40 focus:border-lime-500 transition-colors resize-none"
+                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
               />
               <div className="flex justify-end text-[10px] text-slate-400 mt-0.5">
                 {observaciones.length} / 250 caracteres
@@ -312,38 +325,82 @@ export const EditarPrestamoModal = ({
           </form>
         </div>
 
-        {/* FOOTER FIJO CON BOTONES */}
+        {/* FOOTER FIJO CON BOTONES INSTITUCIONALES (Idéntico a ModalEditarActivo y botones de la página) */}
         <div
-          className="p-4 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50 dark:bg-slate-900/90"
+          className="p-4 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80"
           style={{
-            borderTop: '1px solid var(--line, #e2e8f0)',
-            backgroundColor: 'var(--surface-2, #f8fafc)',
-            padding: '14px 20px',
+            padding: '12px 20px',
+            borderTop: '1px solid var(--line, #334155)',
+            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.95))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexShrink: 0,
           }}
         >
+          {/* Botón Cancelar (Izquierda) */}
           <button
             type="button"
-            onClick={onClose}
             disabled={cargando}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              backgroundColor: 'transparent',
+              border: '1px solid var(--line, #334155)',
+              color: 'var(--text-dim, #94a3b8)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
           >
             Cancelar
           </button>
+
+          {/* Botón Guardar Cambios (Derecha) */}
           <button
             type="submit"
             form="form-editar-prestamo"
             disabled={cargando}
-            className="px-5 py-2 text-sm font-semibold text-slate-900 bg-lime-500 hover:bg-lime-600 dark:bg-lime-400 dark:hover:bg-lime-500 rounded-lg shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+            className="px-5 py-2 rounded-lg text-xs font-semibold transition-all shadow-md cursor-pointer"
+            style={{
+              padding: '8px 20px',
+              borderRadius: '8px',
+              backgroundColor: '#84CC16',
+              border: '1px solid #65A30D',
+              color: '#020617',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: cargando ? 'not-allowed' : 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 10px rgba(132, 204, 22, 0.3)',
+              transition: 'all 0.15s ease',
+              opacity: cargando ? 0.7 : 1,
+            }}
           >
             {cargando ? (
               <>
-                <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                <span
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(15, 23, 42, 0.2)',
+                    borderTopColor: '#020617',
+                    display: 'inline-block',
+                    animation: 'spin 1s linear infinite',
+                  }}
+                />
                 <span>Guardando...</span>
               </>
             ) : (
               <>
-                <Check size={16} />
                 <span>Guardar Cambios</span>
+                <span style={{ fontSize: '13px' }}>→</span>
               </>
             )}
           </button>
