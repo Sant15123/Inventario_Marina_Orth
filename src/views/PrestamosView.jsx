@@ -513,6 +513,11 @@ export default function PrestamosView({
     currentLoanPage * LOANS_PER_PAGE
   );
 
+  // Resetear a la página 1 cuando cambia el filtro de estado o la sección
+  useEffect(() => {
+    setCurrentLoanPage(1);
+  }, [filterEstadoPrestamo, activeSection]);
+
   // Modales de acciones para préstamos
   const [detailLoan, setDetailLoan] = useState(null);
   const [editingLoan, setEditingLoan] = useState(null);
@@ -920,61 +925,123 @@ export default function PrestamosView({
           ========================================================================= */}
       {(activeSection === 'all' || activeSection === 'prestamos') && (
         <section>
-          <div className="section-header">
-            <h2>
-              <span>Préstamos de Equipos en Campo (Retornables)</span>
-              {filterEstadoPrestamo !== 'todos' ? (
-                <button
-                  type="button"
-                  className={`pill ${filterEstadoPrestamo === 'Vencido' ? 'vencido' : 'prestado'}`}
-                  style={{
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    padding: '2.5px 8px',
-                    marginLeft: '8px',
-                    border: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontWeight: 700,
-                  }}
-                  onClick={() => setFilterEstadoPrestamo('todos')}
-                  title="Clic para remover filtro y mostrar todos los préstamos"
-                >
-                  {filterEstadoPrestamo === 'Vencido' ? '⏰ Filtro: Vencidos' : '🔄 Filtro: Activos en plazo'} ({activeLoans.length}) ✕
-                </button>
-              ) : (
-                <span className="pill prestado" style={{ marginLeft: '8px' }}>
-                  {activeLoans.length} préstamos activos
+          <div
+            className="section-header"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              marginBottom: '14px',
+            }}
+          >
+            <div>
+              <h2 style={{ margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span>Préstamos de Equipos en Campo (Retornables)</span>
+                <span className="pill prestado" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                  {rawActiveLoans.length} total en campo
                 </span>
-              )}
+              </h2>
+              <span className="section-subtitle">
+                Equipos de cómputo, tablets y proyectores asignados temporalmente a custodios en municipios
+              </span>
+            </div>
 
-              {/* Acceso rápido para activar filtro de vencidos cuando está en 'todos' y hay vencidos */}
-              {filterEstadoPrestamo === 'todos' && vencidosCount > 0 && (
+            {/* 2 BOTONES PARA VER PRÉSTAMOS ACTIVOS Y VENCIDOS */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={`tab-btn ${filterEstadoPrestamo === 'Activo' ? 'active' : ''}`}
+                onClick={() => setFilterEstadoPrestamo(filterEstadoPrestamo === 'Activo' ? 'todos' : 'Activo')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: filterEstadoPrestamo === 'Activo' ? '2px solid #84CC16' : '1px solid var(--line)',
+                  background: filterEstadoPrestamo === 'Activo' ? 'rgba(132, 204, 22, 0.16)' : 'var(--surface-1)',
+                  color: filterEstadoPrestamo === 'Activo' ? 'var(--text-h)' : 'var(--text)',
+                  transition: 'all 0.15s ease',
+                }}
+                title={filterEstadoPrestamo === 'Activo' ? 'Filtro activo. Clic para ver todos' : 'Ver únicamente préstamos activos en plazo'}
+              >
+                <span>🟢</span>
+                <span>Préstamos Activos</span>
+                <span
+                  className="tab-badge"
+                  style={{
+                    marginLeft: '4px',
+                    background: filterEstadoPrestamo === 'Activo' ? '#84CC16' : 'var(--surface-2)',
+                    color: filterEstadoPrestamo === 'Activo' ? '#0B132B' : 'var(--text)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {alDiaCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className={`tab-btn ${filterEstadoPrestamo === 'Vencido' ? 'active' : ''}`}
+                onClick={() => setFilterEstadoPrestamo(filterEstadoPrestamo === 'Vencido' ? 'todos' : 'Vencido')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: filterEstadoPrestamo === 'Vencido' ? '2px solid #ef4444' : '1px solid var(--line)',
+                  background: filterEstadoPrestamo === 'Vencido' ? 'rgba(239, 68, 68, 0.16)' : 'var(--surface-1)',
+                  color: filterEstadoPrestamo === 'Vencido' ? '#ef4444' : 'var(--text)',
+                  transition: 'all 0.15s ease',
+                }}
+                title={filterEstadoPrestamo === 'Vencido' ? 'Filtro activo. Clic para ver todos' : 'Ver únicamente préstamos con fecha vencida'}
+              >
+                <span>⚠️</span>
+                <span>Préstamos Vencidos</span>
+                <span
+                  className="tab-badge"
+                  style={{
+                    marginLeft: '4px',
+                    background: vencidosCount > 0 ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface-2)',
+                    color: vencidosCount > 0 ? '#ef4444' : 'var(--text-dim)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {vencidosCount}
+                </span>
+              </button>
+
+              {filterEstadoPrestamo !== 'todos' && (
                 <button
                   type="button"
-                  className="pill vencido"
+                  onClick={() => setFilterEstadoPrestamo('todos')}
                   style={{
+                    fontSize: '12px',
+                    padding: '7px 10px',
+                    borderRadius: '8px',
+                    border: '1px dashed var(--line)',
+                    background: 'transparent',
+                    color: 'var(--text-dim)',
                     cursor: 'pointer',
-                    fontSize: '11px',
-                    padding: '2.5px 8px',
-                    marginLeft: '8px',
-                    border: 'none',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
-                    fontWeight: 700,
                   }}
-                  onClick={() => setFilterEstadoPrestamo('Vencido')}
-                  title="Clic para filtrar únicamente los préstamos vencidos"
+                  title="Restablecer y ver todos los préstamos"
                 >
-                  ⏰ {vencidosCount} vencidos
+                  ✕ Ver todos
                 </button>
               )}
-            </h2>
-            <span className="section-subtitle">
-              Equipos de cómputo, tablets y proyectores asignados temporalmente a custodios en municipios
-            </span>
+            </div>
           </div>
 
           {loading ? (
