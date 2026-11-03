@@ -10,6 +10,7 @@ import ModalNuevaSede from '../components/modals/ModalNuevaSede';
 import ModalConfirmarRetorno from '../components/modals/ModalConfirmarRetorno';
 import ModalActaPrestamo from '../components/modals/ModalActaPrestamo';
 import ModalGestionSolicitud from '../components/modals/ModalGestionSolicitud';
+import EditarPrestamoModal from '../components/modals/EditarPrestamoModal';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
 import { Building2, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -217,9 +218,23 @@ export default function PrestamosView({
 
   // Filtrados de movimientos
   const rawActiveLoans = useMemo(
-    () => movements.filter((m) => m.type === 'prestamo' && m.status === 'activo'),
+    () =>
+      movements.filter((m) => {
+        const isPrestamo = (m.type || '').toLowerCase() === 'prestamo';
+        const isActivo =
+          (m.status || '').toLowerCase() === 'activo' ||
+          (m.estado || '').toLowerCase() === 'activo';
+        const isNotReturned =
+          !m.returnedDate &&
+          !m.fecha_devolucion_real &&
+          (m.estado || '').toLowerCase() !== 'devuelto';
+        return isPrestamo && isActivo && isNotReturned;
+      }),
     [movements]
   );
+
+  const vencidosCount = useMemo(() => rawActiveLoans.filter(isOverdue).length, [rawActiveLoans]);
+  const alDiaCount = useMemo(() => rawActiveLoans.filter((m) => !isOverdue(m)).length, [rawActiveLoans]);
 
   const activeLoans = useMemo(() => {
     if (filterEstadoPrestamo === 'Vencido') {
@@ -494,10 +509,6 @@ export default function PrestamosView({
   // Modales de acciones para préstamos
   const [detailLoan, setDetailLoan] = useState(null);
   const [editingLoan, setEditingLoan] = useState(null);
-  const [editExpectedDate, setEditExpectedDate] = useState('');
-  const [editPerson, setEditPerson] = useState('');
-  const [editSede, setEditSede] = useState('Medellín');
-  const [editMotive, setEditMotive] = useState('');
   const [qrLoanItem, setQrLoanItem] = useState(null);
   const [remisionParaImprimir, setRemisionParaImprimir] = useState(null);
   const [prestamoParaActa, setPrestamoParaActa] = useState(null);
@@ -684,23 +695,61 @@ export default function PrestamosView({
 
   const handleOpenEditLoan = (loan) => {
     setEditingLoan(loan);
-    setEditExpectedDate(loan.expectedReturn || '');
-    setEditPerson(loan.person || '');
-    setEditSede(loan.sede || 'Medellín');
-    setEditMotive(loan.motive || '');
   };
 
-  const handleSaveEditLoan = async (e) => {
-    e.preventDefault();
-    if (!editingLoan) return;
+  const handleActualizarPrestamo = async (prestamoId, data) => {
+    const loanObj = movements.find((m) => m.id === prestamoId) || editingLoan;
+    const targetDbId =
+      loanObj?.dbId ||
+      (String(prestamoId).startsWith('mov-db-')
+        ? String(prestamoId).replace('mov-db-', '')
+        : prestamoId);
 
-    // Actualizar movimiento localmente y refrescar
-    editingLoan.expectedReturn = editExpectedDate;
-    editingLoan.person = editPerson;
-    editingLoan.sede = editSede;
-    editingLoan.motive = editMotive;
+    // 1. Actualizar en Supabase si está disponible
+    try {
+      if (supabase && targetDbId && !isNaN(Number(targetDbId))) {
+        await supabase
+          .from('prestamos')
+          .update({
+            fecha_devolucion_esperada: data.fecha_devolucion_esperada,
+            motivo: data.observaciones !== undefined ? data.observaciones : loanObj?.motive,
+          })
+          .eq('id', Number(targetDbId));
+      }
+    } catch (sbErr) {
+      console.warn('Actualización directa Supabase prestamo:', sbErr.message);
+    }
 
-    setEditingLoan(null);
+    // 2. Actualizar vía inventoryApi
+    try {
+      if (inventoryApi.updatePrestamo) {
+        await inventoryApi.updatePrestamo(targetDbId, data);
+      }
+    } catch (apiErr) {
+      console.warn('Actualización API prestamo:', apiErr.message);
+    }
+
+    // 3. Actualizar fecha de devolución del activo asociado si aplica
+    try {
+      const placa = loanObj?.unitCodes?.[0] || loanObj?.itemId || loanObj?.placa;
+      if (placa && inventoryApi.updateActivo) {
+        await inventoryApi.updateActivo(placa, {
+          fecha_devolucion: data.fecha_devolucion_esperada,
+        });
+      }
+    } catch (_) {}
+
+    // 4. Actualizar el objeto reactivo en memoria
+    if (loanObj) {
+      loanObj.expectedReturn = data.fecha_devolucion_esperada;
+      loanObj.fecha_devolucion_esperada = data.fecha_devolucion_esperada;
+      if (data.observaciones) {
+        loanObj.motive = data.observaciones;
+        loanObj.motivo = data.observaciones;
+      }
+    }
+
+    showSuccess('Préstamo actualizado', 'Se guardaron los cambios de fecha de devolución pactada.');
     if (onRetry) await onRetry();
   };
 
@@ -853,21 +902,60 @@ export default function PrestamosView({
       {(activeSection === 'all' || activeSection === 'prestamos') && (
         <section>
           <div className="section-header">
-            <h2>
-              <span>Préstamos de Equipos en Campo (Retornables)</span>
-              {filterEstadoPrestamo !== 'todos' ? (
-                <span
-                  className={`pill ${filterEstadoPrestamo === 'Vencido' ? 'vencido' : 'prestado'}`}
-                  style={{ cursor: 'pointer', fontSize: '11px', padding: '2px 8px' }}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <h2 style={{ margin: 0 }}>
+                <span>Préstamos de Equipos en Campo (Retornables)</span>
+              </h2>
+
+              {/* Filtro interactivo de Vencidos y En Plazo */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`pill ${filterEstadoPrestamo === 'todos' ? 'prestado' : ''}`}
+                  style={{
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    padding: '3px 9px',
+                    fontWeight: filterEstadoPrestamo === 'todos' ? 700 : 500,
+                    opacity: filterEstadoPrestamo === 'todos' ? 1 : 0.7,
+                  }}
                   onClick={() => setFilterEstadoPrestamo('todos')}
-                  title="Clic para mostrar todos los préstamos"
+                  title="Ver todos los préstamos activos"
                 >
-                  {filterEstadoPrestamo === 'Vencido' ? '⏰ Filtro: Vencidos' : '🔄 Filtro: Activos en plazo'} ({activeLoans.length}) ✕
-                </span>
-              ) : (
-                <span className="pill prestado">{activeLoans.length} préstamos activos</span>
-              )}
-            </h2>
+                  Todos ({rawActiveLoans.length})
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${filterEstadoPrestamo === 'Activo' ? 'prestado' : ''}`}
+                  style={{
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    padding: '3px 9px',
+                    fontWeight: filterEstadoPrestamo === 'Activo' ? 700 : 500,
+                    opacity: filterEstadoPrestamo === 'Activo' ? 1 : 0.7,
+                  }}
+                  onClick={() => setFilterEstadoPrestamo('Activo')}
+                  title="Ver solo préstamos vigentes dentro del plazo"
+                >
+                  ● En plazo ({alDiaCount})
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${filterEstadoPrestamo === 'Vencido' || vencidosCount > 0 ? 'vencido' : ''}`}
+                  style={{
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    padding: '3px 9px',
+                    fontWeight: filterEstadoPrestamo === 'Vencido' ? 700 : 500,
+                    opacity: filterEstadoPrestamo === 'Vencido' ? 1 : vencidosCount > 0 ? 0.8 : 0.5,
+                  }}
+                  onClick={() => setFilterEstadoPrestamo(filterEstadoPrestamo === 'Vencido' ? 'todos' : 'Vencido')}
+                  title="Filtrar préstamos vencidos con fecha de devolución superada"
+                >
+                  ⚠️ Vencidos ({vencidosCount})
+                </button>
+              </div>
+            </div>
             <span className="section-subtitle">
               Equipos de cómputo, tablets y proyectores asignados temporalmente a custodios en municipios
             </span>
@@ -2499,70 +2587,12 @@ export default function PrestamosView({
       {/* =========================================================================
           MODAL: EDITAR PRÉSTAMO
           ========================================================================= */}
-      {editingLoan && (
-        <div className="modal-backdrop" onClick={() => setEditingLoan(null)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-            <div className="modal-header">
-              <h3>Editar Préstamo</h3>
-              <button type="button" className="close-btn" onClick={() => setEditingLoan(null)}>✕</button>
-            </div>
-            <form onSubmit={handleSaveEditLoan}>
-              <div className="modal-body form-grid">
-                <div className="form-group full">
-                  <label>Equipo</label>
-                  <input type="text" disabled value={editingLoan.itemName} style={{ opacity: 0.7 }} />
-                </div>
-                <div className="form-group full" style={{ marginBottom: '4px' }}>
-                  <SearchableUserSelect
-                    usuarios={usuarios}
-                    value={editPerson}
-                    label="Custodio / Responsable *"
-                    placeholder="Buscar por nombre completo, cédula o rol..."
-                    onSelectUser={(u) => {
-                      setEditPerson(u.nombre || u.nombre_completo || '');
-                      if (u.sede) setEditSede(u.sede);
-                    }}
-                    onOpenNewUserModal={() => {
-                      setTargetModalForUser('editLoan');
-                      setShowNewUserModal(true);
-                    }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Sede / Municipio *</label>
-                  <select value={editSede} onChange={(e) => setEditSede(e.target.value)}>
-                    {sedesList.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group full">
-                  <label>Fecha de Devolución Pactada *</label>
-                  <input
-                    required
-                    type="date"
-                    value={editExpectedDate}
-                    onChange={(e) => setEditExpectedDate(e.target.value)}
-                  />
-                </div>
-                <div className="form-group full">
-                  <label>Motivo u Observaciones</label>
-                  <input
-                    maxLength={350}
-                    value={editMotive}
-                    onChange={(e) => setEditMotive(e.target.value)}
-                    placeholder="Observaciones del préstamo..."
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn ghost" onClick={() => setEditingLoan(null)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Guardar Cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EditarPrestamoModal
+        prestamo={editingLoan}
+        isOpen={Boolean(editingLoan)}
+        onClose={() => setEditingLoan(null)}
+        onActualizar={handleActualizarPrestamo}
+      />
 
       {/* =========================================================================
           MODAL: CÓDIGO QR / ACTA DEL PRÉSTAMO

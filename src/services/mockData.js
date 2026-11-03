@@ -779,12 +779,38 @@ export function available(item) {
  * Verifica si un préstamo está en mora / vencido
  */
 export function isOverdue(m) {
-  return (
-    m.type === 'prestamo' &&
-    m.status === 'activo' &&
-    Boolean(m.expectedReturn) &&
-    m.expectedReturn < today()
-  );
+  if (!m) return false;
+  // Si ya fue devuelto o cerrado, nunca está vencido
+  if (
+    m.status === 'cerrado' ||
+    m.status === 'devuelto' ||
+    (m.estado && m.estado.toLowerCase() === 'devuelto') ||
+    m.returnedDate ||
+    m.fecha_devolucion_real
+  ) {
+    return false;
+  }
+
+  const isTypePrestamo = !m.type || m.type.toLowerCase() === 'prestamo';
+  const isStatusActivo =
+    (m.status || '').toLowerCase() === 'activo' ||
+    (m.estado || '').toLowerCase() === 'activo';
+
+  if (!isTypePrestamo || !isStatusActivo) return false;
+
+  const rawDate =
+    m.fecha_devolucion_esperada ||
+    m.expectedReturn ||
+    m.fecha_devolucion ||
+    m.fecha_retorno ||
+    m.fecha_limite;
+
+  if (!rawDate) return false;
+
+  const dateStr = String(rawDate).split('T')[0];
+  const hoyStr = new Date().toISOString().split('T')[0];
+
+  return dateStr < hoyStr;
 }
 
 /**

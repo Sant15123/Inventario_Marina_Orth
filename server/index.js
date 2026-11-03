@@ -451,6 +451,54 @@ app.put('/api/prestamos/:id/devolver', async (req, res) => {
   }
 });
 
+// 6.1 PUT /api/prestamos/:id - Actualiza fecha pactada y observaciones del préstamo
+app.put('/api/prestamos/:id', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const { fecha_devolucion_esperada, observaciones, motivo } = req.body;
+
+    await client.query('BEGIN');
+
+    const prestamoRes = await client.query('SELECT * FROM prestamos WHERE id = $1 FOR UPDATE', [id]);
+    if (prestamoRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Préstamo no encontrado' });
+    }
+
+    const nuevoMotivo = observaciones !== undefined ? observaciones : (motivo !== undefined ? motivo : prestamoRes.rows[0].motivo);
+    const nuevaFecha = fecha_devolucion_esperada || prestamoRes.rows[0].fecha_devolucion_esperada;
+
+    const updatedRes = await client.query(
+      `UPDATE prestamos
+       SET fecha_devolucion_esperada = $1,
+           motivo = $2
+       WHERE id = $3
+       RETURNING *`,
+      [nuevaFecha, nuevoMotivo, id]
+    );
+
+    // Actualizar fecha_devolucion en activos si aplica
+    if (prestamoRes.rows[0].placa_activo && nuevaFecha) {
+      await client.query(
+        `UPDATE activos
+         SET fecha_devolucion = $1
+         WHERE LOWER(placa) = LOWER($2)`,
+        [nuevaFecha, prestamoRes.rows[0].placa_activo]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Préstamo actualizado exitosamente', data: updatedRes.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error al actualizar préstamo:', err);
+    res.status(500).json({ success: false, error: 'Error al actualizar préstamo en base de datos' });
+  } finally {
+    client.release();
+  }
+});
+
 // 7. GET /api/consumibles/remisiones - Lista las remisiones agrupadas de consumibles
 app.get('/api/consumibles/remisiones', async (req, res) => {
   try {

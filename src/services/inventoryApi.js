@@ -284,6 +284,35 @@ export const inventoryApi = {
     return json?.data !== undefined ? json.data : json;
   },
 
+  updatePrestamo: async (id, data) => {
+    // 1. Intentar actualización directa en Supabase
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase && id) {
+        const patch = {};
+        if (data.fecha_devolucion_esperada) patch.fecha_devolucion_esperada = data.fecha_devolucion_esperada;
+        if (data.observaciones !== undefined) patch.motivo = data.observaciones;
+        if (data.motivo !== undefined) patch.motivo = data.motivo;
+
+        const { data: res, error } = await supabase
+          .from('prestamos')
+          .update(patch)
+          .eq('id', id)
+          .select()
+          .maybeSingle();
+
+        if (!error && res) return res;
+      }
+    } catch (_) {}
+
+    // 2. Fallback a endpoint REST
+    const json = await request(`/prestamos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return json?.data !== undefined ? json.data : json;
+  },
+
   devolverPrestamo: async (id) => {
     const json = await request(`/prestamos/${id}/devolver`, {
       method: 'PUT',
