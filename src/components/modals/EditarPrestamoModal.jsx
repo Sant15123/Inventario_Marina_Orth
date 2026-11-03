@@ -105,7 +105,7 @@ export const EditarPrestamoModal = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px',
+        padding: '24px 16px',
         backgroundColor: 'rgba(15, 23, 42, 0.7)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
@@ -113,11 +113,11 @@ export const EditarPrestamoModal = ({
       onClick={() => !cargando && onClose()}
     >
       <div
-        className="relative w-full max-w-lg md:max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="relative w-full max-w-lg md:max-w-xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         style={{
-          maxWidth: '36rem',
+          maxWidth: '38rem',
           width: '100%',
-          maxHeight: '90vh',
+          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: 'var(--surface, #ffffff)',
@@ -130,13 +130,13 @@ export const EditarPrestamoModal = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ENCABEZADO INSTITUCIONAL FIJO (Idéntico a ModalEditarActivo) */}
+        {/* ENCABEZADO INSTITUCIONAL FIJO */}
         <div
           className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
           style={{
             backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
             borderBottom: '1px solid var(--line, #e2e8f0)',
-            padding: '16px 20px',
+            padding: '18px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -151,20 +151,21 @@ export const EditarPrestamoModal = ({
                 fontSize: '12px',
                 fontWeight: 600,
                 display: 'block',
-                marginBottom: '2px',
+                marginBottom: '4px',
+                letterSpacing: '0.05em',
               }}
             >
               {serialEquipo ? `PLACA: ${serialEquipo}` : 'GESTIÓN DE PRÉSTAMOS'}
             </span>
             <h3
-              className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0"
-              style={{ margin: 0, fontSize: '15px' }}
+              className="text-base sm:text-lg font-bold text-slate-900 dark:text-white m-0"
+              style={{ margin: 0, fontSize: '17px', lineHeight: 1.3 }}
             >
               Editar Préstamo
             </h3>
             <p
-              className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0"
-              style={{ margin: '2px 0 0 0', fontSize: '12px' }}
+              className="text-xs text-slate-500 dark:text-slate-400 m-0"
+              style={{ margin: '4px 0 0 0', fontSize: '12px' }}
             >
               Modifica los datos del préstamo activo y sus especificaciones
             </p>
@@ -180,16 +181,19 @@ export const EditarPrestamoModal = ({
           </button>
         </div>
 
-        {/* CONTENIDO DESPLAZABLE (Scroll si la pantalla es reducida) */}
+        {/* CONTENIDO DESPLAZABLE CON ESPACIADO CÓMODO Y AIREADO */}
         <div
-          className="p-5 overflow-y-auto flex-1 space-y-4"
+          className="p-6 overflow-y-auto flex-1 space-y-6"
           style={{
-            padding: '20px',
+            padding: '24px 28px',
             overflowY: 'auto',
           }}
         >
           {/* Subtítulo de Sección */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div
+            className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800"
+            style={{ marginBottom: '18px' }}
+          >
             <h4
               className="text-xs font-bold uppercase tracking-wider"
               style={{ color: 'var(--color-primary, #84CC16)', margin: 0 }}
@@ -199,25 +203,25 @@ export const EditarPrestamoModal = ({
             <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
           </div>
 
-          <form id="form-editar-prestamo" onSubmit={handleSubmit} className="space-y-3.5">
+          <form id="form-editar-prestamo" onSubmit={handleSubmit} className="space-y-5" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             {/* Campo 1: Equipo Asignado (Solo lectura) */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
-                <Laptop size={13} className="text-slate-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                <Laptop size={14} className="text-slate-400" />
                 Equipo Asignado
               </label>
               <input
                 type="text"
                 readOnly
                 value={`${nombreEquipo}${serialEquipo ? ` - [Placa: ${serialEquipo}]` : ''}`}
-                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
+                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
               />
             </div>
 
             {/* Campo 2: Custodio / Responsable */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
-                <User size={13} className="text-slate-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                <User size={14} className="text-slate-400" />
                 Custodio / Responsable *
               </label>
               {usuarios.length > 0 ? (
@@ -225,7 +229,7 @@ export const EditarPrestamoModal = ({
                   value={custodioId}
                   onChange={(e) => setCustodioId(e.target.value)}
                   required
-                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                 >
                   <option value="">Seleccione un custodio...</option>
                   {usuarios.map((u) => {
@@ -243,23 +247,23 @@ export const EditarPrestamoModal = ({
                   type="text"
                   readOnly
                   value={prestamo.responsable || prestamo.custodian || prestamo.solicitante || 'Custodio no especificado'}
-                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
                 />
               )}
             </div>
 
             {/* Fila 2 columnas: Sede y Proyecto STEAM */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
-                  <Building2 size={13} className="text-slate-400" />
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                  <Building2 size={14} className="text-slate-400" />
                   Sede / Destino *
                 </label>
                 <select
                   value={sede}
                   onChange={(e) => setSede(e.target.value)}
                   required
-                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                 >
                   <option value="">Seleccione una sede...</option>
                   {sedesOpciones.map((s) => (
@@ -271,8 +275,8 @@ export const EditarPrestamoModal = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-slate-400" />
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-slate-400" />
                   Proyecto STEAM
                 </label>
                 <input
@@ -280,15 +284,15 @@ export const EditarPrestamoModal = ({
                   value={proyectoSteam}
                   onChange={(e) => setProyectoSteam(e.target.value)}
                   placeholder="Ej. Robótica, STEAM..."
-                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                 />
               </div>
             </div>
 
             {/* Campo: Fecha Devolución Pactada */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
-                <Calendar size={13} className="text-slate-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                <Calendar size={14} className="text-slate-400" />
                 Fecha Devolución Pactada *
               </label>
               <input
@@ -297,39 +301,39 @@ export const EditarPrestamoModal = ({
                 value={fechaDevolucion}
                 onChange={(e) => setFechaDevolucion(e.target.value)}
                 required
-                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
               />
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-400 mt-1.5">
                 No es posible seleccionar fechas anteriores al día de hoy.
               </p>
             </div>
 
             {/* Campo: Observaciones */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
-                <FileText size={13} className="text-slate-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                <FileText size={14} className="text-slate-400" />
                 Motivo u Observaciones
               </label>
               <textarea
-                rows={2}
+                rows={3}
                 maxLength={250}
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
                 placeholder="Notas u observaciones sobre el préstamo..."
-                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
+                className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
               />
-              <div className="flex justify-end text-[10px] text-slate-400 mt-0.5">
+              <div className="flex justify-end text-[10px] text-slate-400 mt-1">
                 {observaciones.length} / 250 caracteres
               </div>
             </div>
           </form>
         </div>
 
-        {/* FOOTER FIJO CON BOTONES INSTITUCIONALES (Idéntico a ModalEditarActivo y botones de la página) */}
+        {/* FOOTER FIJO CON BOTONES INSTITUCIONALES */}
         <div
           className="p-4 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80"
           style={{
-            padding: '12px 20px',
+            padding: '16px 24px',
             borderTop: '1px solid var(--line, #334155)',
             backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.95))',
             display: 'flex',
@@ -345,7 +349,7 @@ export const EditarPrestamoModal = ({
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
             style={{
-              padding: '8px 16px',
+              padding: '9px 18px',
               borderRadius: '8px',
               backgroundColor: 'transparent',
               border: '1px solid var(--line, #334155)',
@@ -366,7 +370,7 @@ export const EditarPrestamoModal = ({
             disabled={cargando}
             className="px-5 py-2 rounded-lg text-xs font-semibold transition-all shadow-md cursor-pointer"
             style={{
-              padding: '8px 20px',
+              padding: '9px 22px',
               borderRadius: '8px',
               backgroundColor: '#84CC16',
               border: '1px solid #65A30D',
