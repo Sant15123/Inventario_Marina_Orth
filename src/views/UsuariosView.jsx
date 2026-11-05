@@ -10,11 +10,13 @@ import {
   UserCheck,
   Package,
   User,
+  Eye,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ModalNuevoUsuario from '../components/modals/ModalNuevoUsuario';
 import ModalEditarUsuario from '../components/modals/ModalEditarUsuario';
+import DetalleUsuarioModal from '../components/modals/DetalleUsuarioModal';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
 
@@ -70,6 +72,15 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
     fetchSedes();
     return () => { isMounted = false; };
   }, []);
+
+  // Estado para modal de Detalle de Usuario
+  const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
+  const [usuarioDetalle, setUsuarioDetalle] = useState(null);
+
+  const handleOpenDetalle = (u) => {
+    setUsuarioDetalle(u);
+    setModalDetalleOpen(true);
+  };
 
   // Estado para modal de Nuevo Usuario
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
@@ -458,12 +469,12 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
             <thead>
               <tr>
                 <th style={{ width: isAdmin ? '12%' : '14%', padding: '10px 8px', textAlign: 'center' }}>DOCUMENTO</th>
-                <th style={{ width: isAdmin ? '25%' : '27%', padding: '10px 10px', textAlign: 'left' }}>USUARIO & CARGO</th>
+                <th style={{ width: isAdmin ? '24%' : '27%', padding: '10px 10px', textAlign: 'left' }}>USUARIO & CARGO</th>
                 <th style={{ width: isAdmin ? '13%' : '15%', padding: '10px 8px', textAlign: 'left' }}>TELÉFONO</th>
-                <th style={{ width: isAdmin ? '21%' : '23%', padding: '10px 8px', textAlign: 'left' }}>CORREO ELECTRÓNICO</th>
+                <th style={{ width: isAdmin ? '20%' : '23%', padding: '10px 8px', textAlign: 'left' }}>CORREO ELECTRÓNICO</th>
                 <th style={{ width: isAdmin ? '11%' : '11%', padding: '10px 6px', textAlign: 'center' }}>SEDE</th>
                 <th style={{ width: isAdmin ? '10%' : '10%', padding: '10px 6px', textAlign: 'center' }}>ROL</th>
-                {isAdmin && <th style={{ width: '8%', padding: '10px 8px', textAlign: 'center' }}>ACCIONES</th>}
+                {isAdmin && <th style={{ width: '10%', padding: '10px 8px', textAlign: 'center' }}>ACCIONES</th>}
               </tr>
             </thead>
             <tbody>
@@ -620,6 +631,29 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
                           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                             <button
                               type="button"
+                              onClick={() => handleOpenDetalle(u)}
+                              className="btn-icon-crud shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors border border-slate-100 shadow-sm"
+                              style={{
+                                width: '26px',
+                                height: '26px',
+                                flexShrink: 0,
+                                background: 'rgba(16, 185, 129, 0.12)',
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#10b981',
+                                transition: 'all 0.15s ease',
+                              }}
+                              title="Consultar ficha completa del usuario"
+                            >
+                              <Eye style={{ width: '13px', height: '13px' }} />
+                            </button>
+
+                            <button
+                              type="button"
                               onClick={() => handleOpenEditar(u)}
                               className="btn-icon-crud shrink-0"
                               style={{
@@ -747,6 +781,14 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
       {/* =========================================================================
           MODAL INSTITUCIONAL: EDITAR USUARIO
           ========================================================================= */}
+      <DetalleUsuarioModal
+        isOpen={modalDetalleOpen}
+        onClose={() => setModalDetalleOpen(false)}
+        usuario={usuarioDetalle}
+        onEditar={handleOpenEditar}
+        isAdmin={isAdmin}
+      />
+
       <ModalEditarUsuario
         isOpen={modalEditarOpen}
         onClose={() => setModalEditarOpen(false)}
