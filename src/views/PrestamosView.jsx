@@ -1245,16 +1245,14 @@ export default function PrestamosView({
                         {/* 4. SEDE / MUNICIPIO (CENTRADO CON TOOLTIP NATIVO) */}
                         <td className="px-2 py-3 text-center whitespace-nowrap overflow-hidden max-w-[130px]" style={{ padding: '0 6px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', maxWidth: '130px', overflow: 'hidden' }}>
                           <span
-                            className="inline-block max-w-[115px] truncate align-middle text-xs font-semibold px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 cursor-help"
-                            title={m.sede || 'Medellín'}
+                            className="sede-badge municipal truncate"
+                            title={`Sede: ${m.sede || 'Medellín'}`}
                             style={{
                               fontSize: '11px',
-                              padding: '2px 8px',
+                              padding: '2px 7px',
                               display: 'inline-block',
-                              maxWidth: '115px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
+                              maxWidth: '100%',
+                              lineHeight: '1.25',
                               verticalAlign: 'middle',
                             }}
                           >
