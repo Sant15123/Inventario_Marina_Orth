@@ -212,25 +212,7 @@ export default function Header({
         </div>
 
         {/* BOTÓN SINCRONIZAR SUPABASE (Oculto para rol 'usuario') */}
-        {onSync && !isUsuario && (
-          <button
-            type="button"
-            onClick={onSync}
-            className="btn small ghost"
-            style={{
-              borderColor: 'var(--border)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.82rem',
-              fontWeight: '500',
-            }}
-            title="Sincronizar en tiempo real con Supabase y purgar datos locales obsoletos"
-          >
-            <span>🔄</span>
-            <span>Sincronizar</span>
-          </button>
-        )}
+
 
         {/* SELECTOR DE TEMA CLARO / OSCURO */}
         {onToggleTheme && (
