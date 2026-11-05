@@ -25,10 +25,29 @@ export default function Header({
   const isDark = theme === 'dark';
   const navigate = useNavigate();
   const { showInfo } = useToast();
-  const { currentUser, logout, isUsuario, isSupervisor } = useAuth();
+  const { currentUser, usuarios, logout, isUsuario, isSupervisor } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Resolver foto de perfil activa considerando tanto currentUser como el catálogo reactivo de usuarios
+  const userAvatarUrl =
+    currentUser?.avatar_url ||
+    currentUser?.avatarUrl ||
+    currentUser?.foto_perfil ||
+    usuarios?.find(
+      (u) =>
+        (currentUser?.id && String(u.id) === String(currentUser.id)) ||
+        (currentUser?.documento && String(u.documento) === String(currentUser.documento)) ||
+        (currentUser?.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
+    )?.avatar_url ||
+    usuarios?.find(
+      (u) =>
+        (currentUser?.id && String(u.id) === String(currentUser.id)) ||
+        (currentUser?.documento && String(u.documento) === String(currentUser.documento)) ||
+        (currentUser?.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
+    )?.avatarUrl ||
+    null;
 
   const handleLogout = () => {
     setUserDropdownOpen(false);
@@ -103,7 +122,7 @@ export default function Header({
           >
             <UserAvatar
               nombre={currentUser?.nombre}
-              avatarUrl={currentUser?.avatar_url || currentUser?.avatarUrl || currentUser?.foto_perfil}
+              avatarUrl={userAvatarUrl}
               size="w-7 h-7 min-w-[28px] min-h-[28px] max-w-[28px] max-h-[28px]"
               textSize="text-[11px]"
             />
@@ -132,7 +151,7 @@ export default function Header({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <UserAvatar
                     nombre={currentUser?.nombre}
-                    avatarUrl={currentUser?.avatar_url || currentUser?.avatarUrl || currentUser?.foto_perfil}
+                    avatarUrl={userAvatarUrl}
                     size="w-11 h-11 min-w-[44px] min-h-[44px] max-w-[44px] max-h-[44px]"
                     textSize="text-base"
                   />

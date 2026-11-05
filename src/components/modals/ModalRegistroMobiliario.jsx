@@ -234,8 +234,7 @@ export default function ModalRegistroMobiliario({
         condicion: formData.condicion_fisica,
         condicion_fisica: formData.condicion_fisica,
         estado_conservacion: formData.condicion_fisica,
-        area: formData.area_proceso.trim(),
-        area_proceso: formData.area_proceso.trim(),
+        espacio_asignado: formData.ubicacion.trim() || formData.sede,
         responsable: formData.responsable.trim(),
         custodio: formData.responsable.trim(),
         estado_operativo: formData.estado_operativo,
@@ -254,6 +253,10 @@ export default function ModalRegistroMobiliario({
           .join(' | '),
       };
 
+      // Salvaguarda explícita contra columnas no existentes en la tabla mobiliario de Supabase
+      delete payload.area;
+      delete payload.area_proceso;
+
       if (isEditing) {
         // === MODO EDICIÓN (UPDATE) ===
         const updatePayload = {
@@ -270,6 +273,7 @@ export default function ModalRegistroMobiliario({
           ubicacion_especifica: formData.ubicacion.trim(),
           ubicacion_estante: formData.ubicacion.trim() || 'Área General',
           espacio: formData.ubicacion.trim(),
+          espacio_asignado: formData.ubicacion.trim() || formData.sede,
           material: formData.material,
           material_fabricacion: formData.material,
           color: formData.color.trim(),
@@ -281,8 +285,6 @@ export default function ModalRegistroMobiliario({
           cantidad: cantFinal,
           disponible: cantFinal,
           stock: cantFinal,
-          area: formData.area_proceso.trim(),
-          area_proceso: formData.area_proceso.trim(),
           responsable: formData.responsable.trim(),
           custodio: formData.responsable.trim(),
           estado_operativo: formData.estado_operativo,
@@ -303,6 +305,10 @@ export default function ModalRegistroMobiliario({
           updated_at: new Date().toISOString(),
         };
 
+        // Salvaguarda explícita contra columnas no existentes en la tabla mobiliario de Supabase
+        delete updatePayload.area;
+        delete updatePayload.area_proceso;
+
         let updatedResult = null;
         try {
           if (supabase) {
@@ -316,15 +322,18 @@ export default function ModalRegistroMobiliario({
               query.eq('placa', codigoFinal);
             }
 
-            const { data: supaUpdated, error: supaUpErr } = await query.select().single();
-            if (!supaUpErr && supaUpdated) {
-              updatedResult = supaUpdated;
-            } else if (supaUpErr) {
-              console.warn('Supabase update advertencia:', supaUpErr.message);
+            const { data: supaUpdated, error: supaUpErr } = await query.select();
+            if (supaUpErr) {
+              console.error('Error al actualizar mobiliario en Supabase:', supaUpErr);
+              throw supaUpErr;
+            }
+            if (supaUpdated && supaUpdated.length > 0) {
+              updatedResult = supaUpdated[0];
             }
           }
         } catch (sUpErr) {
-          console.warn('Fallo update directo en Supabase:', sUpErr.message);
+          console.error('Fallo update directo en Supabase:', sUpErr);
+          throw sUpErr;
         }
 
         if (!updatedResult) {

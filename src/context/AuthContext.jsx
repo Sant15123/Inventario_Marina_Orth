@@ -472,6 +472,27 @@ export function AuthProvider({ children }) {
     refetchUsuarios();
   }, [refetchUsuarios]);
 
+  // Sincronizar reactivamente el avatar_url del usuario en sesión activa con el catálogo de usuarios
+  useEffect(() => {
+    if (!currentUser || !Array.isArray(usuarios) || usuarios.length === 0) return;
+    const match = usuarios.find((u) =>
+      (currentUser.id && String(u.id) === String(currentUser.id)) ||
+      (currentUser.documento && String(u.documento) === String(currentUser.documento)) ||
+      (currentUser.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
+    );
+    const matchAvatar = match?.avatar_url || match?.avatarUrl || match?.foto_perfil;
+    if (matchAvatar && matchAvatar !== currentUser.avatar_url) {
+      setCurrentUser((curr) => {
+        if (!curr) return curr;
+        const updated = { ...curr, avatar_url: matchAvatar };
+        try {
+          localStorage.setItem('siga_current_user', JSON.stringify(updated));
+        } catch (_) {}
+        return updated;
+      });
+    }
+  }, [usuarios, currentUser?.email, currentUser?.documento, currentUser?.id]);
+
   // Verificar validez del token en cambios y caducidad al montar / cambiar
   useEffect(() => {
     if (token) {
