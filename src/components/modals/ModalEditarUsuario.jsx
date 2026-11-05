@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Pencil, X, Loader2, Eye, EyeOff, Check } from 'lucide-react';
+import { Pencil, X, Loader2, Eye, EyeOff, Check, Camera, Upload } from 'lucide-react';
+import UserAvatar from '../common/UserAvatar';
 import { supabase } from '../../services/supabase';
 import inventoryApi from '../../services/inventoryApi';
 
@@ -23,6 +24,71 @@ export default function ModalEditarUsuario({
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
   const [confirmarPassword, setConfirmarPassword] = useState('');
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+
+  // Manejador para carga de foto de perfil con fallback local / Supabase Storage
+  const handleFotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido (PNG, JPG o WEBP).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('La imagen no debe superar los 2 MB de tamaño.');
+      return;
+    }
+
+    try {
+      setSubiendoFoto(true);
+
+      // Intentar subir a Supabase Storage si está configurado el bucket 'avatars'
+      let publicUrl = null;
+      if (supabase) {
+        try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `user-${usuario?.id || Date.now()}-${Date.now()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, file, { upsert: true });
+
+          if (!uploadError && uploadData) {
+            const { data: urlData } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(filePath);
+            if (urlData?.publicUrl) {
+              publicUrl = urlData.publicUrl;
+            }
+          }
+        } catch (storageErr) {
+          console.warn('Supabase storage fallback:', storageErr.message);
+        }
+      }
+
+      // Si no hay Supabase Storage disponible, usar Data URL (Base64) como fallback infalible
+      if (!publicUrl) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const base64Url = evt.target.result;
+          onChangeFormData({ ...formData, avatar_url: base64Url });
+          setSubiendoFoto(false);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      onChangeFormData({ ...formData, avatar_url: publicUrl });
+    } catch (err) {
+      console.error('Error al procesar foto de perfil:', err);
+      alert('No se pudo cargar la imagen seleccionada.');
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
 
   // Evaluaciones de complejidad de contraseña (solo aplican si el usuario escribió algo)
   const passwordVal = formData?.password || '';
@@ -253,6 +319,101 @@ export default function ModalEditarUsuario({
               minHeight: 0,
             }}
           >
+            {/* Foto de Perfil Institucional con Vista Previa */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--line, #334155)',
+              }}
+            >
+              <div style={{ position: 'relative' }}>
+                <UserAvatar
+                  nombre={formData.nombre || usuario?.nombre || 'Usuario'}
+                  avatarUrl={formData.avatar_url || usuario?.avatar_url || usuario?.avatarUrl}
+                  size="w-14 h-14"
+                  textSize="text-lg"
+                  className="shadow-sm"
+                />
+                {subiendoFoto && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                    }}
+                  >
+                    <Loader2 size={18} className="animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'var(--text, #f8fafc)',
+                    display: 'block',
+                    marginBottom: '2px',
+                  }}
+                >
+                  Fotografía de Perfil
+                </span>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-dim, #94a3b8)',
+                    display: 'block',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Formatos permitidos: JPG, PNG o WEBP (máx. 2 MB)
+                </span>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: 'rgba(132, 204, 22, 0.15)',
+                      border: '1px solid rgba(132, 204, 22, 0.35)',
+                      color: '#84CC16',
+                    }}
+                  >
+                    <Camera size={13} />
+                    <span>{formData.avatar_url ? 'Cambiar foto' : 'Subir foto'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFotoChange}
+                      disabled={subiendoFoto}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  {formData.avatar_url && (
+                    <button
+                      type="button"
+                      onClick={() => onChangeFormData({ ...formData, avatar_url: null })}
+                      className="text-xs text-rose-500 hover:text-rose-600 transition-colors"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">

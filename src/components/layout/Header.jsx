@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import UserAvatar from '../common/UserAvatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -100,9 +101,12 @@ export default function Header({
             className="user-profile-btn"
             title="Cambiar usuario o alternar rol para pruebas"
           >
-            <div className="user-avatar-circle">
-              {currentUser?.nombre?.charAt(0) || 'U'}
-            </div>
+            <UserAvatar
+              nombre={currentUser?.nombre}
+              avatarUrl={currentUser?.avatar_url || currentUser?.avatarUrl || currentUser?.foto_perfil}
+              size="w-[26px] h-[26px]"
+              textSize="text-[11px]"
+            />
             <div className="user-profile-info">
               <span className="user-profile-name">
                 {currentUser?.nombre}

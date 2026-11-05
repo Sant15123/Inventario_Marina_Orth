@@ -1,4 +1,5 @@
 import React from 'react';
+import UserAvatar from '../common/UserAvatar';
 import { X, User, Mail, Phone, MapPin, Briefcase, ShieldCheck, FileText, Calendar, Edit3, Shield, UserCheck, Package } from 'lucide-react';
 
 export default function DetalleUsuarioModal({
@@ -242,26 +243,13 @@ export default function DetalleUsuarioModal({
               border: '1px solid var(--line, #1e293b)',
             }}
           >
-            <div
-              style={{
-                width: '54px',
-                height: '54px',
-                minWidth: '54px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #84CC16 0%, #65A30D 100%)',
-                color: '#0f172a',
-                fontSize: '18px',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(132, 204, 22, 0.3)',
-                letterSpacing: '0.02em',
-                flexShrink: 0,
-              }}
-            >
-              {iniciales}
-            </div>
+            <UserAvatar
+              nombre={usuario.nombre}
+              avatarUrl={usuario.avatar_url || usuario.avatarUrl || usuario.foto_perfil}
+              size="w-[54px] h-[54px]"
+              textSize="text-lg"
+              className="shadow-md"
+            />
 
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
@@ -589,3 +577,4 @@ export default function DetalleUsuarioModal({
     </div>
   );
 }
+

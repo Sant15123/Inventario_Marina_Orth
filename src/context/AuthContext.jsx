@@ -426,6 +426,7 @@ export function AuthProvider({ children }) {
             cargo: u.cargo || 'Funcionario FMO',
             sede: u.sede || 'Medellín',
             activo: u.activo !== false,
+            avatar_url: u.avatar_url || u.avatarUrl || u.foto_perfil || null,
           }));
 
           setUsuarios((prev) => {
@@ -728,6 +729,7 @@ export function AuthProvider({ children }) {
           sede: datosActualizados.sede,
           cargo: datosActualizados.cargo,
           activo: datosActualizados.activo !== undefined ? datosActualizados.activo : true,
+          avatar_url: datosActualizados.avatar_url !== undefined ? datosActualizados.avatar_url : (datosActualizados.avatarUrl || undefined),
         };
 
         if (datosActualizados.password && typeof datosActualizados.password === 'string' && datosActualizados.password.trim().length > 0) {
@@ -752,6 +754,7 @@ export function AuthProvider({ children }) {
       const emailFinal = usuarioGuardado?.email || datosActualizados.email;
       const telefonoFinal = usuarioGuardado?.telefono || datosActualizados.telefono;
       const docFinal = usuarioGuardado?.documento || datosActualizados.documento;
+      const avatarFinal = usuarioGuardado?.avatar_url || datosActualizados.avatar_url || datosActualizados.avatarUrl;
 
       // 2. Actualizar estado reactivo de usuarios de forma inmediata y garantizada
       setUsuarios((prev) => {
@@ -772,6 +775,7 @@ export function AuthProvider({ children }) {
               rol: rolFinal || u.rol,
               cargo: cargoFinal || u.cargo,
               sede: sedeFinal || u.sede,
+              avatar_url: avatarFinal !== undefined ? avatarFinal : u.avatar_url,
             };
           }
           return u;
@@ -804,6 +808,7 @@ export function AuthProvider({ children }) {
           rol: rolFinal || currentUser.rol,
           cargo: cargoFinal || currentUser.cargo,
           sede: sedeFinal || currentUser.sede,
+          avatar_url: avatarFinal !== undefined ? avatarFinal : currentUser.avatar_url,
         };
         const newToken = generateToken(updatedUser);
         localStorage.setItem('siga_token', newToken);

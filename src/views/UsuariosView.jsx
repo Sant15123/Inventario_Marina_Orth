@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ModalNuevoUsuario from '../components/modals/ModalNuevoUsuario';
 import ModalEditarUsuario from '../components/modals/ModalEditarUsuario';
+import UserAvatar from '../components/common/UserAvatar';
 import DetalleUsuarioModal from '../components/modals/DetalleUsuarioModal';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
@@ -175,6 +176,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
       rol: u.rol || 'usuario',
       cargo: u.cargo || '',
       sede: u.sede || 'Medellín',
+      avatar_url: u.avatar_url || u.avatarUrl || u.foto_perfil || '',
     });
     setModalEditarOpen(true);
   };
@@ -501,23 +503,12 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
                       {/* 2. USUARIO & CARGO (Avatar + Texto con elipsis limpia) */}
                       <td style={{ padding: '9px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
-                          <div
-                            className="user-avatar-circle"
-                            style={{
-                              width: '28px',
-                              height: '28px',
-                              minWidth: '28px',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              borderRadius: '50%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                            }}
-                          >
-                            {u.nombre?.charAt(0) || 'U'}
-                          </div>
+                          <UserAvatar
+                            nombre={u.nombre}
+                            avatarUrl={u.avatar_url || u.avatarUrl || u.foto_perfil}
+                            size="w-7 h-7"
+                            textSize="text-[11px]"
+                          />
                           <div style={{ minWidth: 0, overflow: 'hidden', flex: 1 }}>
                             <div
                               style={{
