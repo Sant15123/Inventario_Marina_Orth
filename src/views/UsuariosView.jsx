@@ -506,8 +506,8 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
                           <UserAvatar
                             nombre={u.nombre}
                             avatarUrl={u.avatar_url || u.avatarUrl || u.foto_perfil}
-                            size="w-7 h-7"
-                            textSize="text-[11px]"
+                            size="w-9 h-9 min-w-[36px] min-h-[36px] aspect-square"
+                            textSize="text-xs"
                           />
                           <div style={{ minWidth: 0, overflow: 'hidden', flex: 1 }}>
                             <div

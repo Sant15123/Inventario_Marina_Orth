@@ -130,12 +130,18 @@ export default function Header({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <div
-                    className="user-avatar-circle"
-                    style={{ width: '28px', height: '28px', fontSize: '12px' }}
-                  >
-                    {currentUser?.nombre?.charAt(0) || 'U'}
-                  </div>
+                  {currentUser?.avatar_url || currentUser?.avatarUrl || currentUser?.foto_perfil ? (
+                    <img
+                      src={currentUser.avatar_url || currentUser.avatarUrl || currentUser.foto_perfil}
+                      alt={currentUser.nombre || 'Perfil'}
+                      className="w-11 h-11 rounded-full object-cover border border-emerald-200 shadow-sm shrink-0"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-emerald-500 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-sm">
+                      {(currentUser?.nombre || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div style={{ overflow: 'hidden' }}>
                     <div style={{ fontWeight: 700, fontSize: '12.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                       {currentUser?.nombre}
