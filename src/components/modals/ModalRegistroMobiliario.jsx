@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
-  Armchair,
-  MapPin,
-  Tag,
-  Layers,
-  Palette,
-  Maximize2,
-  Calendar,
-  Truck,
-  FileText,
   Loader2,
-  CheckCircle2,
-  User,
-  Activity,
-  Briefcase,
 } from 'lucide-react';
 import { inventoryApi } from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
@@ -41,8 +28,8 @@ const MATERIALES_OPCIONES = [
 ];
 
 const CONDICIONES_FISICAS = [
-  'Excelente / Nuevo',
   'Bueno',
+  'Excelente / Nuevo',
   'Regular',
   'Requiere Reparación',
 ];
@@ -175,20 +162,20 @@ export default function ModalRegistroMobiliario({
 
   const handleValidarPaso1 = () => {
     if (!formData.nombre?.trim()) {
-      showError('Campo Requerido', 'Ingresa el nombre del mueble o enser (ej: "Mesa de Trabajo Robótica").');
+      showError('Validación', 'El Nombre del mueble es obligatorio.');
       return false;
     }
     const codigoActual = formData.codigo || formData.placa;
     if (!codigoActual?.trim()) {
-      showError('Campo Requerido', 'El código o placa institucional (ej: MOB-0001) es obligatorio.');
+      showError('Validación', 'El Código o Placa del mobiliario es obligatorio.');
       return false;
     }
     if (!formData.categoria) {
-      showError('Campo Requerido', 'Selecciona una categoría de mobiliario.');
+      showError('Validación', 'La Categoría es obligatoria.');
       return false;
     }
     if (!formData.sede) {
-      showError('Campo Requerido', 'Selecciona la sede institucional.');
+      showError('Validación', 'La Sede institucional es obligatoria.');
       return false;
     }
     return true;
@@ -421,105 +408,254 @@ export default function ModalRegistroMobiliario({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+      }}
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="bg-white dark:bg-[#0b1320] rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]"
+        className="relative w-full max-w-lg md:max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+        style={{
+          backgroundColor: 'var(--surface, #0b1320)',
+          border: '1px solid var(--line, #1e293b)',
+          borderRadius: '16px',
+          maxWidth: '36rem',
+          width: '100%',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          boxSizing: 'border-box',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Cabecera Institucional */}
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-[#0b1320]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/60 shadow-sm">
-              <Armchair size={20} />
-            </div>
-            <div>
-              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60 mb-1">
-                {codigoHeader}
-              </span>
-              <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white leading-tight m-0">
-                {isEditing ? 'Editar Mobiliario' : 'Nuevo Mobiliario'}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 m-0 mt-0.5">
-                {isEditing
-                  ? 'Modifica los datos del mobiliario y sus especificaciones físicas'
-                  : 'Mesas, sillería, estantes y enseres para espacios formativos'}
-              </p>
-            </div>
+        {/* Header Fijo */}
+        <div
+          className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
+          style={{
+            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
+            borderBottom: '1px solid var(--line, #1e293b)',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexShrink: 0,
+          }}
+        >
+          <div>
+            <span
+              style={{
+                fontFamily: 'var(--mono)',
+                color: 'var(--text-dim, #94a3b8)',
+                fontSize: '12px',
+                fontWeight: 600,
+                display: 'block',
+                marginBottom: '2px',
+              }}
+            >
+              {codigoHeader}
+            </span>
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0" style={{ margin: 0, fontSize: '15px' }}>
+              {isEditing ? 'Editar Mobiliario' : 'Nuevo Mobiliario'}
+            </h3>
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0" style={{ margin: '2px 0 0 0', fontSize: '12px' }}>
+              {isEditing
+                ? 'Modifica los datos del mobiliario y sus especificaciones físicas'
+                : 'Mesas, sillería, estantes y enseres para espacios formativos'}
+            </p>
           </div>
           <button
             type="button"
             disabled={submitting}
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-0 outline-none"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
             title="Cerrar ventana"
           >
-            <X size={20} />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navegador de Pestañas (Píldoras Superiores) */}
-        <div className="px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0f172a]/50 shrink-0">
-          <div className="flex items-center gap-2">
+        {/* Stepper Fijo bajo el Header: Pastillas Redondeadas */}
+        <div
+          className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0f172a]/50 shrink-0"
+          style={{
+            padding: '10px 20px',
+            borderBottom: '1px solid var(--line, #1e293b)',
+            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
+            flexShrink: 0,
+          }}
+        >
+          <div
+            className="flex items-center justify-between gap-2 max-w-xl mx-auto"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              width: '100%',
+            }}
+          >
             {[
-              { paso: 1, label: '1. Identificación' },
-              { paso: 2, label: '2. Ficha Técnica' },
-              { paso: 3, label: '3. Asignación / Estado' },
-            ].map((tab) => {
-              const isActive = paso === tab.paso;
+              { paso: 1, label: 'Identificación', icono: '1' },
+              { paso: 2, label: 'Ficha Técnica', icono: '2' },
+              { paso: 3, label: 'Asignación / Estado', icono: '3' },
+            ].map((item) => {
+              const isActive = paso === item.paso;
+              const isDone = paso > item.paso;
               return (
                 <button
-                  key={tab.paso}
+                  key={item.paso}
                   type="button"
                   onClick={() => {
-                    if (tab.paso === 1 || handleValidarPaso1()) {
-                      setPaso(tab.paso);
+                    if (item.paso === 1 || handleValidarPaso1()) {
+                      setPaso(item.paso);
                     }
                   }}
-                  className={`flex-1 transition-all cursor-pointer text-center ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-emerald-500 text-white font-semibold rounded-lg px-3 py-1.5 shadow-sm text-xs'
-                      : 'bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium rounded-lg px-3 py-1.5 text-xs hover:bg-slate-400 dark:hover:bg-slate-700'
+                      ? 'bg-lime-400 hover:bg-lime-300 text-slate-950 border-lime-400 shadow-sm'
+                      : isDone
+                        ? 'bg-lime-950/40 text-lime-400 border-lime-500/40 hover:bg-lime-900/40'
+                        : 'bg-slate-200 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700/60 hover:bg-slate-300 dark:hover:bg-slate-800'
                   }`}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    backgroundColor: isActive
+                      ? '#84CC16'
+                      : isDone
+                        ? 'rgba(132, 204, 22, 0.12)'
+                        : 'rgba(30, 41, 59, 0.4)',
+                    color: isActive
+                      ? '#0f172a'
+                      : isDone
+                        ? '#84CC16'
+                        : 'var(--text-dim, #94a3b8)',
+                    border: isActive
+                      ? '1px solid #84CC16'
+                      : isDone
+                        ? '1px solid rgba(132, 204, 22, 0.35)'
+                        : '1px solid var(--line, #334155)',
+                    boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
+                  }}
                 >
-                  {tab.label}
+                  <span
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                      isActive
+                        ? 'bg-slate-950/20 text-slate-950 font-extrabold'
+                        : isDone
+                          ? 'text-lime-400 font-bold'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold'
+                    }`}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '10px',
+                      backgroundColor: isActive
+                        ? 'rgba(15, 23, 42, 0.2)'
+                        : isDone
+                          ? 'transparent'
+                          : 'rgba(148, 163, 184, 0.2)',
+                      color: isActive
+                        ? '#0f172a'
+                        : isDone
+                          ? '#84CC16'
+                          : 'var(--text-dim, #94a3b8)',
+                    }}
+                  >
+                    {isDone ? '✓' : item.icono}
+                  </span>
+                  <span className="truncate">{item.label}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Formulario con Scroll Interno */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
-          <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-4">
+        {/* Formulario Estructurado con Flex y Scroll interno */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-1 overflow-hidden"
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+        >
+          {/* Cuerpo del Formulario con scroll vertical */}
+          <div
+            className="p-5 text-sm overflow-y-auto flex-1"
+            style={{
+              padding: '16px 20px',
+              backgroundColor: 'var(--surface, #0b1320)',
+              overflowY: 'auto',
+              flex: 1,
+              minHeight: 0,
+            }}
+          >
             {/* PESTAÑA 1: IDENTIFICACIÓN */}
             {paso === 1 && (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {/* Código / Placa y Nombre del Mueble */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <h4
+                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
+                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                  >
+                    Identificación y Ubicación
+                  </h4>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
+                </div>
+
+                {/* Fila 1: Código / Placa y Nombre del Mueble en 2 Columnas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Código / Placa *
                     </label>
                     <div className="relative">
                       <input
+                        required
                         type="text"
                         name="codigo"
                         maxLength={25}
                         value={formData.codigo}
                         onChange={handleChange}
-                        placeholder="Ej. MOB-001"
-                        required
+                        placeholder="Ej: MOB-001"
                         disabled={isEditing}
-                        className={`w-full rounded-xl px-3.5 py-2 text-sm font-mono font-bold uppercase border focus:outline-none transition-all ${
+                        className={`w-full font-mono rounded-lg px-3 py-1.5 text-sm border focus:outline-none transition-colors ${
                           isEditing
-                            ? 'opacity-80 cursor-not-allowed bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
+                            ? 'opacity-80 cursor-not-allowed text-slate-400'
+                            : 'focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400'
                         }`}
+                        style={{
+                          backgroundColor: 'var(--bg, #0f172a)',
+                          color: isEditing ? 'var(--text-dim, #94a3b8)' : 'var(--text, #f8fafc)',
+                          borderColor: 'var(--line, #334155)',
+                        }}
                       />
                       {loadingPlaca && (
-                        <div className="absolute right-3 top-2.5 flex items-center gap-1 text-[11px] text-emerald-600">
+                        <div className="absolute right-3 top-2 flex items-center gap-1 text-[11px] text-lime-400">
                           <Loader2 size={12} className="animate-spin" />
                         </div>
                       )}
@@ -528,23 +664,28 @@ export default function ModalRegistroMobiliario({
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Nombre del Mueble *
+                      Nombre Del Mueble *
                     </label>
                     <input
+                      required
                       type="text"
                       name="nombre"
                       maxLength={90}
                       value={formData.nombre}
                       onChange={handleChange}
                       placeholder="Ej. Mesa de Trabajo Robótica STEAM"
-                      required
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
                 </div>
 
-                {/* Categoría y Condición Física */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Fila 2: Categoría y Condición Física en 2 Columnas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Categoría *
@@ -554,7 +695,12 @@ export default function ModalRegistroMobiliario({
                       value={formData.categoria}
                       onChange={handleChange}
                       required
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     >
                       {CATEGORIAS_MOBILIARIO.map((cat) => (
                         <option key={cat} value={cat}>
@@ -572,7 +718,12 @@ export default function ModalRegistroMobiliario({
                       name="condicion_fisica"
                       value={formData.condicion_fisica}
                       onChange={handleChange}
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     >
                       {CONDICIONES_FISICAS.map((est) => (
                         <option key={est} value={est}>
@@ -583,8 +734,8 @@ export default function ModalRegistroMobiliario({
                   </div>
                 </div>
 
-                {/* Sede / Ubicación Física */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Fila 3: Sede Institucional y Espacio / Ubicación en 2 Columnas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Sede Institucional *
@@ -594,7 +745,12 @@ export default function ModalRegistroMobiliario({
                       value={formData.sede}
                       onChange={handleChange}
                       required
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     >
                       {sedes.map((s) => (
                         <option key={s} value={s}>
@@ -615,7 +771,12 @@ export default function ModalRegistroMobiliario({
                       value={formData.ubicacion}
                       onChange={handleChange}
                       placeholder="Ej. Sala Robótica, Oficina 2, Bodega"
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
                 </div>
@@ -624,9 +785,19 @@ export default function ModalRegistroMobiliario({
 
             {/* PESTAÑA 2: FICHA TÉCNICA */}
             {paso === 2 && (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {/* Material de Fabricación y Color */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <h4
+                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
+                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                  >
+                    Especificaciones Físicas y Dimensiones
+                  </h4>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
+                </div>
+
+                {/* Fila 1: Material de Fabricación y Color en 2 Columnas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Material de Fabricación
@@ -635,7 +806,12 @@ export default function ModalRegistroMobiliario({
                       name="material"
                       value={formData.material}
                       onChange={handleChange}
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     >
                       {MATERIALES_OPCIONES.map((mat) => (
                         <option key={mat} value={mat}>
@@ -656,13 +832,18 @@ export default function ModalRegistroMobiliario({
                       value={formData.color}
                       onChange={handleChange}
                       placeholder="Ej. Blanco / Gris / Madera clara"
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
                 </div>
 
-                {/* Dimensiones y Cantidad */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Fila 2: Dimensiones y Cantidad en 2 Columnas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Dimensiones (Alto x Ancho x Profundidad)
@@ -674,42 +855,54 @@ export default function ModalRegistroMobiliario({
                       value={formData.dimensiones}
                       onChange={handleChange}
                       placeholder="Ej. 75cm x 160cm x 80cm"
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Cantidad / Unidades
+                      Cantidad / Unidades *
                     </label>
                     <input
+                      required
                       type="number"
                       name="disponible"
                       min={1}
                       max={9999}
                       value={formData.disponible}
                       onChange={handleChange}
-                      required
-                      className="w-full rounded-xl px-3.5 py-2 text-sm font-mono font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
-                </div>
-
-                {/* Banner Informativo */}
-                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2.5">
-                  <Armchair size={18} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
-                  <span>
-                    Ficha para <strong>mobiliario y enseres físicos</strong>. Diseñada para trazabilidad de puestos de trabajo y dotación institucional.
-                  </span>
                 </div>
               </div>
             )}
 
             {/* PESTAÑA 3: ASIGNACIÓN / ESTADO */}
             {paso === 3 && (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {/* Área / Proceso y Responsable */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <h4
+                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
+                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                  >
+                    Asignación, Estado y Observaciones
+                  </h4>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
+                </div>
+
+                {/* Fila 1: Área / Proceso y Responsable en 2 Columnas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Área / Proceso
@@ -720,14 +913,19 @@ export default function ModalRegistroMobiliario({
                       maxLength={60}
                       value={formData.area_proceso}
                       onChange={handleChange}
-                      placeholder="Ej. Innovación STEAM, Administrativa"
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      placeholder="Ej. Innovación STEAM, Administrativa..."
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Responsable / Custodio Asignado
+                      Responsable / Asignado
                     </label>
                     <input
                       type="text"
@@ -735,14 +933,19 @@ export default function ModalRegistroMobiliario({
                       maxLength={80}
                       value={formData.responsable}
                       onChange={handleChange}
-                      placeholder="Ej. Santiago Galeano o Bodega Central"
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      placeholder="Ej. Bodega Central o Custodio"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
                 </div>
 
-                {/* Estado Operativo y Fecha de Adquisición */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Fila 2: Estado Operativo y Fecha de Adquisición en 2 Columnas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Estado Operativo
@@ -751,7 +954,12 @@ export default function ModalRegistroMobiliario({
                       name="estado_operativo"
                       value={formData.estado_operativo}
                       onChange={handleChange}
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     >
                       {ESTADOS_OPERATIVOS.map((eo) => (
                         <option key={eo} value={eo}>
@@ -770,50 +978,98 @@ export default function ModalRegistroMobiliario({
                       name="fecha_adquisicion"
                       value={formData.fecha_adquisicion}
                       onChange={handleChange}
-                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      style={{
+                        backgroundColor: 'var(--bg, #0f172a)',
+                        color: 'var(--text, #f8fafc)',
+                        borderColor: 'var(--line, #334155)',
+                      }}
                     />
                   </div>
                 </div>
 
-                {/* Observaciones */}
+                {/* Fila 3: Observaciones */}
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Observaciones Físicas o Notas
                   </label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     name="observaciones"
                     maxLength={350}
                     value={formData.observaciones}
                     onChange={handleChange}
                     placeholder="Detalles físicos específicos: ruedas con freno de seguridad, llave incluida, etc."
-                    className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Pie de Modal */}
-          <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0f172a] flex items-center justify-between shrink-0">
+          {/* Footer Fijo Abajo */}
+          <div
+            className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] flex items-center justify-between shrink-0"
+            style={{
+              backgroundColor: 'var(--surface-2, #0f172a)',
+              borderTop: '1px solid var(--line, #1e293b)',
+              padding: '14px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexShrink: 0,
+            }}
+          >
+            {/* Botón Cancelar (Izquierda) */}
             <button
               type="button"
               disabled={submitting}
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--line, #334155)',
+                color: 'var(--text-dim, #94a3b8)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
             >
               Cancelar
             </button>
 
-            <div className="flex items-center gap-2.5">
+            {/* Botones de Navegación del Asistente (Derecha) */}
+            <div
+              className="flex items-center gap-2.5"
+              style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+            >
               {paso > 1 && (
                 <button
                   type="button"
                   disabled={submitting}
                   onClick={handleAnterior}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--surface, #1e293b)',
+                    border: '1px solid var(--line, #334155)',
+                    color: 'var(--text, #f8fafc)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
-                  Anterior
+                  ← Anterior
                 </button>
               )}
 
@@ -821,15 +1077,47 @@ export default function ModalRegistroMobiliario({
                 <button
                   type="button"
                   onClick={handleSiguiente}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2 rounded-xl shadow-md text-xs transition-colors cursor-pointer"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md text-slate-950"
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    backgroundColor: '#84CC16',
+                    border: '1px solid #65A30D',
+                    color: '#0f172a',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 10px rgba(163, 230, 53, 0.3)',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
-                  Siguiente →
+                  <span>Siguiente</span>
+                  <span>→</span>
                 </button>
               ) : (
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2 rounded-xl shadow-md text-xs transition-colors cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md bg-[#84CC16] hover:bg-[#65A30D] text-slate-950"
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    backgroundColor: '#84CC16',
+                    border: '1px solid #65A30D',
+                    color: '#0f172a',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
+                    transition: 'all 0.15s ease',
+                    opacity: submitting ? 0.7 : 1,
+                  }}
                 >
                   {submitting ? (
                     <>
@@ -837,7 +1125,10 @@ export default function ModalRegistroMobiliario({
                       <span>{isEditing ? 'Guardando...' : 'Registrando...'}</span>
                     </>
                   ) : (
-                    <span>Guardar Cambios →</span>
+                    <>
+                      <span>Guardar Cambios</span>
+                      <span>→</span>
+                    </>
                   )}
                 </button>
               )}
