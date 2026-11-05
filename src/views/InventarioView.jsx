@@ -1262,7 +1262,27 @@ export default function InventarioView({
   // Manejador apertura edición
   const handleOpenEdit = (item) => {
     if (!item) return;
-    const esEquipo = Boolean(item.isEquipo || item.itemType === 'equipo' || item.serial || item.placa || item.marca || item.units);
+
+    // Prioridad por pestaña activa o tipo de ítem
+    if (activeTab === 'mobiliario' || item.itemType === 'mobiliario') {
+      handleOpenEditMobiliario(item);
+      return;
+    }
+
+    if (
+      activeTab === 'consumibles' ||
+      activeTab === 'papeleria' ||
+      item.itemType === 'consumible' ||
+      item.categoria === 'Robótica' ||
+      item.categoria === 'Papelería' ||
+      String(item.id || item.codigo || item.placa || '').toLowerCase().startsWith('rob') ||
+      String(item.id || item.codigo || item.placa || '').toLowerCase().startsWith('pape')
+    ) {
+      handleOpenEditarConsumible(item);
+      return;
+    }
+
+    const esEquipo = Boolean(item.isEquipo || item.itemType === 'equipo' || item.serial || item.units);
     if (esEquipo) {
       handleOpenEditarEquipo(item);
       return;
@@ -1459,7 +1479,7 @@ export default function InventarioView({
     setPasoActual(1);
     const esPapeleria = activeTab === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || item.subtipo === 'papeleria' || String(item.id || '').toLowerCase().startsWith('pape');
     setFormDataEditar({
-      id: item.id || item.placa || item.codigo || '',
+      id: item.codigo || item.id_referencia || item.placa || item.id || '',
       material: item.material || item.name || '',
       categoria: esPapeleria ? 'Papelería' : (item.categoria || item.category || 'Robótica'),
       subtipo: esPapeleria ? 'papeleria' : (item.subtipo || 'robotica'),
@@ -4470,14 +4490,7 @@ export default function InventarioView({
           onEdit={(it) => {
             setModalDetalleOpen(false);
             setItemSeleccionado(null);
-            const esEquipo = Boolean(
-              it.isEquipo || it.serial || it.placa || it.marca || it.area || it.itemType === "equipo"
-            );
-            if (esEquipo) {
-              handleAbrirEditarEquipo(it);
-            } else {
-              handleOpenEdit(it);
-            }
+            handleOpenEdit(it);
           }}
           onOpenQR={(it) => {
             // Cerrar de inmediato el modal de detalle y transferir el activo al modal de QR
@@ -4553,7 +4566,7 @@ export default function InventarioView({
                 <span
                   className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-mono font-semibold text-xs px-2.5 py-1 rounded-md"
                 >
-                  {formDataEditar.id || itemParaEditar.id}
+                  {formDataEditar.id || formDataEditar.codigo || itemParaEditar.codigo || itemParaEditar.id_referencia || itemParaEditar.placa || itemParaEditar.id || ''}
                 </span>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0">

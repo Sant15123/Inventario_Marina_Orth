@@ -217,7 +217,7 @@ export default function ModalEditarActivo({
                 marginBottom: '2px',
               }}
             >
-              {formData.placa || itemActivo.placa || 'ACT-FMO-001'}
+              {formData.placa || formData.codigo || itemActivo.placa || itemActivo.codigo || itemActivo.id_referencia || itemActivo.code || itemActivo.id || ''}
             </span>
             <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0" style={{ margin: 0, fontSize: '15px' }}>
               Editar Equipo Tecnológico

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
-export const UserAvatar = ({ 
-  nombre = 'Usuario', 
-  avatarUrl = null, 
-  size = 'w-8 h-8', 
+export const UserAvatar = ({
+  nombre = 'Usuario',
+  avatarUrl = null,
+  size = 'w-8 h-8',
   textSize = 'text-xs',
-  className = '' 
+  className = ''
 }) => {
   const [errorCarga, setErrorCarga] = useState(false);
   const inicial = (nombre || 'U').trim().charAt(0).toUpperCase();
