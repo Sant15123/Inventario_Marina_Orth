@@ -1303,65 +1303,97 @@ export default function InventarioView({
 
       const equipoFresco = (data && data.data) ? data.data : (data || equipo);
 
+      // Priorizar datos de la fila de inventario si vino seleccionada
+      const itemCombinado = { ...equipo, ...equipoFresco };
+      const sedeReal = itemCombinado.sede || itemCombinado.ubicacion || itemCombinado.ubicacion_fisica || 'Medellín';
+      const condicionReal = itemCombinado.condicion_fisica || itemCombinado.condicion || itemCombinado.estado_fisico || itemCombinado.estado || 'Bueno';
+
       // Sincronizar el estado del formulario con los datos en tiempo real
       setFormDataEditarEquipo({
-        ...equipoFresco,
-        placa: equipoFresco.placa || equipoFresco.codigo || idOPlaca || '',
-        nombre: equipoFresco.nombre || equipoFresco.equipo || equipoFresco.material || equipoFresco.name || '',
-        categoria: equipoFresco.categoria || equipoFresco.category || 'Portátiles',
-        condicion: equipoFresco.condicion || equipoFresco.estado_fisico || equipoFresco.estado || 'Bueno',
-        area: equipoFresco.area || 'Tecnología',
-        ubicacion: equipoFresco.ubicacion || equipoFresco.sede || equipoFresco.location || 'Oficina Medellín',
-        ubicacion_estante: equipoFresco.ubicacion_estante || '',
+        id: itemCombinado.id,
+        placa: itemCombinado.placa || itemCombinado.codigo || idOPlaca || '',
+        nombre: itemCombinado.nombre || itemCombinado.elemento || itemCombinado.equipo || itemCombinado.material || itemCombinado.name || '',
+        modelo: itemCombinado.modelo || itemCombinado.model || '',
+        serial: itemCombinado.serial || '',
+        categoria: itemCombinado.categoria || itemCombinado.category || 'Portátiles',
+        condicion: condicionReal,
+        condicion_fisica: condicionReal,
+        area: itemCombinado.area_proceso || itemCombinado.area || 'Tecnología',
+        area_proceso: itemCombinado.area_proceso || itemCombinado.area || 'Tecnología',
+        sede: sedeReal,
+        ubicacion: itemCombinado.ubicacion || sedeReal,
+        ubicacion_estante: itemCombinado.ubicacion_estante || '',
         cantidad: 1, // Fijo en 1
-        descripcion: (equipoFresco.descripcion && equipoFresco.descripcion !== 'Sin descripción general registrada.')
-          ? equipoFresco.descripcion
+        descripcion: (itemCombinado.descripcion_general || itemCombinado.descripcion) && (itemCombinado.descripcion_general || itemCombinado.descripcion) !== 'Sin descripción general registrada.'
+          ? (itemCombinado.descripcion_general || itemCombinado.descripcion)
           : '',
-        marca: equipoFresco.marca || '',
-        modelo: equipoFresco.modelo || equipoFresco.model || '',
-        serial: equipoFresco.serial || '',
-        caracteristica_1: equipoFresco.caracteristica_1 || '',
-        caracteristica_2: equipoFresco.caracteristica_2 || '',
-        caracteristica_3: equipoFresco.caracteristica_3 || '',
-        responsable: equipoFresco.responsable || equipoFresco.custodio || 'Bodega Central',
-        proveedor: equipoFresco.proveedor || '',
-        valor_compra: equipoFresco.valor_compra !== '' && equipoFresco.valor_compra != null ? equipoFresco.valor_compra : '',
-        valor_total: equipoFresco.valor_total !== '' && equipoFresco.valor_total != null ? equipoFresco.valor_total : '',
-        fecha_compra: equipoFresco.fecha_compra ? equipoFresco.fecha_compra.split('T')[0] : '',
-        fecha_vencimiento_garantia: equipoFresco.fecha_vencimiento_garantia ? equipoFresco.fecha_vencimiento_garantia.split('T')[0] : (equipoFresco.garantia ? equipoFresco.garantia.split('T')[0] : ''),
-        claves_otros: equipoFresco.claves_otros || '',
-        observaciones: equipoFresco.observaciones || equipoFresco.notas || equipoFresco.notes || '',
+        descripcion_general: (itemCombinado.descripcion_general || itemCombinado.descripcion) && (itemCombinado.descripcion_general || itemCombinado.descripcion) !== 'Sin descripción general registrada.'
+          ? (itemCombinado.descripcion_general || itemCombinado.descripcion)
+          : '',
+        marca: itemCombinado.marca || '',
+        procesador: itemCombinado.procesador || itemCombinado.caracteristica_1 || '',
+        memoria_ram: itemCombinado.memoria_ram || itemCombinado.caracteristica_2 || '',
+        almacenamiento: itemCombinado.almacenamiento || itemCombinado.caracteristica_3 || '',
+        caracteristica_1: itemCombinado.caracteristica_1 || itemCombinado.procesador || '',
+        caracteristica_2: itemCombinado.caracteristica_2 || itemCombinado.memoria_ram || '',
+        caracteristica_3: itemCombinado.caracteristica_3 || itemCombinado.almacenamiento || '',
+        responsable: itemCombinado.responsable || itemCombinado.custodio || 'Bodega Central',
+        proveedor: itemCombinado.proveedor || '',
+        fecha_adquisicion: itemCombinado.fecha_adquisicion || (itemCombinado.fecha_compra ? itemCombinado.fecha_compra.split('T')[0] : ''),
+        fecha_compra: itemCombinado.fecha_compra ? itemCombinado.fecha_compra.split('T')[0] : (itemCombinado.fecha_adquisicion || ''),
+        valor_comercial: itemCombinado.valor_comercial || itemCombinado.valor_compra || '',
+        valor_compra: itemCombinado.valor_compra !== '' && itemCombinado.valor_compra != null ? itemCombinado.valor_compra : (itemCombinado.valor_comercial || ''),
+        valor_total: itemCombinado.valor_total !== '' && itemCombinado.valor_total != null ? itemCombinado.valor_total : '',
+        estado_operativo: itemCombinado.estado_operativo || itemCombinado.estado || 'Disponible',
+        fecha_vencimiento_garantia: itemCombinado.fecha_vencimiento_garantia ? itemCombinado.fecha_vencimiento_garantia.split('T')[0] : (itemCombinado.garantia ? itemCombinado.garantia.split('T')[0] : ''),
+        claves_otros: itemCombinado.claves_otros || '',
+        observaciones: itemCombinado.observaciones || itemCombinado.notas || itemCombinado.notes || '',
       });
 
-      setEquipoParaEditar(equipoFresco);
+      setEquipoParaEditar(itemCombinado);
       setModalEditarEquipoOpen(true);
     } catch (error) {
       console.error('Error al consultar datos en tiempo real del equipo:', error);
+      const sedeReal = equipo.sede || equipo.ubicacion || equipo.ubicacion_fisica || 'Medellín';
+      const condicionReal = equipo.condicion_fisica || equipo.condicion || equipo.estado_fisico || equipo.estado || 'Bueno';
+
       // Fallback al objeto actual si falla la red
       setFormDataEditarEquipo({
-        ...equipo,
+        id: equipo.id,
         placa: equipo.placa || equipo.codigo || equipo.code || equipo.id || '',
-        nombre: equipo.nombre || equipo.equipo || equipo.material || equipo.name || '',
-        categoria: equipo.categoria || equipo.category || 'Portátiles',
-        condicion: equipo.condicion || equipo.estado_fisico || equipo.estado || 'Bueno',
-        area: equipo.area || 'Tecnología',
-        ubicacion: equipo.ubicacion || equipo.location || 'Oficina Medellín',
-        ubicacion_estante: equipo.ubicacion_estante || '',
-        cantidad: 1,
-        descripcion: (equipo.descripcion && equipo.descripcion !== 'Sin descripción general registrada.')
-          ? equipo.descripcion
-          : '',
-        marca: equipo.marca || '',
+        nombre: equipo.nombre || equipo.elemento || equipo.equipo || equipo.material || equipo.name || '',
         modelo: equipo.modelo || equipo.model || '',
         serial: equipo.serial || '',
-        caracteristica_1: equipo.caracteristica_1 || '',
-        caracteristica_2: equipo.caracteristica_2 || '',
-        caracteristica_3: equipo.caracteristica_3 || '',
+        categoria: equipo.categoria || equipo.category || 'Portátiles',
+        condicion: condicionReal,
+        condicion_fisica: condicionReal,
+        area: equipo.area_proceso || equipo.area || 'Tecnología',
+        area_proceso: equipo.area_proceso || equipo.area || 'Tecnología',
+        sede: sedeReal,
+        ubicacion: equipo.ubicacion || sedeReal,
+        ubicacion_estante: equipo.ubicacion_estante || '',
+        cantidad: 1,
+        descripcion: (equipo.descripcion_general || equipo.descripcion) && (equipo.descripcion_general || equipo.descripcion) !== 'Sin descripción general registrada.'
+          ? (equipo.descripcion_general || equipo.descripcion)
+          : '',
+        descripcion_general: (equipo.descripcion_general || equipo.descripcion) && (equipo.descripcion_general || equipo.descripcion) !== 'Sin descripción general registrada.'
+          ? (equipo.descripcion_general || equipo.descripcion)
+          : '',
+        marca: equipo.marca || '',
+        procesador: equipo.procesador || equipo.caracteristica_1 || '',
+        memoria_ram: equipo.memoria_ram || equipo.caracteristica_2 || '',
+        almacenamiento: equipo.almacenamiento || equipo.caracteristica_3 || '',
+        caracteristica_1: equipo.caracteristica_1 || equipo.procesador || '',
+        caracteristica_2: equipo.caracteristica_2 || equipo.memoria_ram || '',
+        caracteristica_3: equipo.caracteristica_3 || equipo.almacenamiento || '',
         responsable: equipo.responsable || equipo.custodio || 'Bodega Central',
         proveedor: equipo.proveedor || '',
-        valor_compra: equipo.valor_compra || '',
+        fecha_adquisicion: equipo.fecha_adquisicion || (equipo.fecha_compra ? equipo.fecha_compra.split('T')[0] : ''),
+        fecha_compra: equipo.fecha_compra ? equipo.fecha_compra.split('T')[0] : (equipo.fecha_adquisicion || ''),
+        valor_comercial: equipo.valor_comercial || equipo.valor_compra || '',
+        valor_compra: equipo.valor_compra || equipo.valor_comercial || '',
         valor_total: equipo.valor_total || '',
-        fecha_compra: equipo.fecha_compra || '',
+        estado_operativo: equipo.estado_operativo || equipo.estado || 'Disponible',
         fecha_vencimiento_garantia: equipo.fecha_vencimiento_garantia || '',
         claves_otros: equipo.claves_otros || '',
         observaciones: equipo.observaciones || '',
@@ -1458,6 +1490,68 @@ export default function InventarioView({
         setItemSeleccionado(equipoActualizado);
       }
 
+      // Actualizar inmediatamente el estado local de React sin requerir F5
+      setLocalItems((prev) => {
+        const base = Array.isArray(prev) && prev.length > 0 ? prev : (Array.isArray(items) ? items : []);
+        return base.map((eq) => {
+          const matchId = String(eq.id || '').replace(/^eq-/, '');
+          const matchTarget = String(equipoParaEditar.id || '').replace(/^eq-/, '');
+          const matchPlaca = String(eq.placa || eq.code || '');
+          const isTarget = matchId === matchTarget || matchPlaca.toUpperCase() === placaIdentificador.toUpperCase();
+
+          if (!isTarget) return eq;
+
+          const updatedUnits = (eq.units && eq.units.length > 0)
+            ? eq.units.map((u) => {
+                const uPlaca = String(u.placa || u.code || '');
+                if (uPlaca.toUpperCase() === placaIdentificador.toUpperCase() || uPlaca.toUpperCase() === placaNueva.toUpperCase()) {
+                  return {
+                    ...u,
+                    placa: placaNueva,
+                    code: placaNueva,
+                    model: payload.modelo,
+                    serial: payload.serial,
+                    sede: payload.sede,
+                    baseLocation: payload.ubicacion,
+                    ubicacion: payload.ubicacion,
+                    ubicacion_estante: payload.ubicacion_estante,
+                    responsable: payload.responsable,
+                    custodio: payload.custodio,
+                    status: payload.estado === 'En campo' ? 'prestado' : payload.estado.toLowerCase(),
+                  };
+                }
+                return u;
+              })
+            : [
+                {
+                  placa: placaNueva,
+                  code: placaNueva,
+                  model: payload.modelo,
+                  serial: payload.serial,
+                  sede: payload.sede,
+                  baseLocation: payload.ubicacion,
+                  ubicacion: payload.ubicacion,
+                  ubicacion_estante: payload.ubicacion_estante,
+                  responsable: payload.responsable,
+                  custodio: payload.custodio,
+                  status: payload.estado === 'En campo' ? 'prestado' : payload.estado.toLowerCase(),
+                },
+              ];
+
+          return {
+            ...eq,
+            ...payload,
+            id: eq.id || `eq-${placaNueva}`,
+            placa: placaNueva,
+            code: placaNueva,
+            nombre: payload.nombre,
+            name: payload.nombre,
+            categoria: payload.categoria,
+            category: payload.categoria,
+            units: updatedUnits,
+          };
+        });
+      });
 
       // Refrescar inventario
       await cargarConsumibles();
@@ -2529,12 +2623,13 @@ export default function InventarioView({
                                 title="Editar equipo"
                                 onClick={() => {
                                   const parent = equipos.find(e => e.id === u.parentItemId);
-                                  if (parent) {
-                                    handleOpenEdit({
-                                      ...parent,
-                                      placa,
-                                    });
-                                  }
+                                  handleOpenEdit({
+                                    ...(parent || {}),
+                                    ...u,
+                                    id: u.parentItemId || u.id,
+                                    placa: placa,
+                                    codigo: placa,
+                                  });
                                 }}
                                 style={{
                                   width: '28px',

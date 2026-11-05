@@ -4,18 +4,17 @@ import {
   Armchair,
   MapPin,
   Tag,
-  Building2,
-  Hash,
   Layers,
   Palette,
   Maximize2,
-  ShieldCheck,
   Calendar,
   Truck,
   FileText,
-  AlertCircle,
   Loader2,
   CheckCircle2,
+  User,
+  Activity,
+  Briefcase,
 } from 'lucide-react';
 import { inventoryApi } from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
@@ -41,11 +40,18 @@ const MATERIALES_OPCIONES = [
   'Otro',
 ];
 
-const ESTADOS_CONSERVACION = [
+const CONDICIONES_FISICAS = [
   'Excelente / Nuevo',
   'Bueno',
   'Regular',
   'Requiere Reparación',
+];
+
+const ESTADOS_OPERATIVOS = [
+  'Disponible',
+  'En Uso',
+  'Mantenimiento',
+  'De Baja',
 ];
 
 export default function ModalRegistroMobiliario({
@@ -66,21 +72,22 @@ export default function ModalRegistroMobiliario({
 
   // Form State
   const initialForm = {
-    // Paso 1: Identificación y Ubicación
-    nombre: '',
+    id: '',
+    codigo: '',
     placa: '',
+    nombre: '',
     categoria: 'Mesas y Escritorios',
+    condicion_fisica: 'Bueno',
     sede: sedes[0] || 'Medellín',
     ubicacion: '',
-    cantidad: 1,
-
-    // Paso 2: Atributos Físicos
     material: 'Madera / MDF',
     color: '',
     dimensiones: '',
-    estado: 'Bueno',
-
-    // Paso 3: Adquisición y Observaciones
+    disponible: 1,
+    cantidad: 1,
+    area_proceso: 'General',
+    responsable: '',
+    estado_operativo: 'Disponible',
     fecha_adquisicion: new Date().toISOString().split('T')[0],
     proveedor: '',
     observaciones: '',
@@ -98,17 +105,25 @@ export default function ModalRegistroMobiliario({
 
     if (muebleAEditar) {
       setPaso(1);
+      const codigoReal = muebleAEditar.codigo || muebleAEditar.placa || muebleAEditar.id_referencia || muebleAEditar.code || '';
+      const cantReal = Number(muebleAEditar.disponible ?? muebleAEditar.stock ?? muebleAEditar.cantidad ?? 1);
       setFormData({
-        nombre: muebleAEditar.nombre || muebleAEditar.name || muebleAEditar.material || '',
-        placa: muebleAEditar.placa || muebleAEditar.code || '',
-        categoria: muebleAEditar.categoria || muebleAEditar.subcategoria || muebleAEditar.category || 'Mesas y Escritorios',
-        sede: muebleAEditar.sede || muebleAEditar.ubicacion || sedes[0] || 'Medellín',
-        ubicacion: muebleAEditar.ubicacion_especifica || muebleAEditar.ubicacion_estante || muebleAEditar.espacio || '',
-        cantidad: Number(muebleAEditar.cantidad ?? muebleAEditar.disponible ?? 1),
-        material: muebleAEditar.material || 'Madera / MDF',
+        id: muebleAEditar.id || '',
+        codigo: codigoReal,
+        placa: codigoReal,
+        nombre: muebleAEditar.nombre || muebleAEditar.elemento || muebleAEditar.material || muebleAEditar.name || '',
+        categoria: muebleAEditar.categoria || muebleAEditar.subcategoria || muebleAEditar.category || 'Mobiliario',
+        material: muebleAEditar.material_fabricacion || muebleAEditar.material || 'Madera / MDF',
         color: muebleAEditar.color || '',
         dimensiones: muebleAEditar.dimensiones || '',
-        estado: muebleAEditar.estado_conservacion || muebleAEditar.estado || muebleAEditar.condicion || 'Bueno',
+        sede: muebleAEditar.sede || muebleAEditar.ubicacion_fisica || muebleAEditar.ubicacion || sedes[0] || 'Medellín',
+        ubicacion: muebleAEditar.ubicacion_especifica || muebleAEditar.ubicacion_estante || muebleAEditar.espacio || '',
+        condicion_fisica: muebleAEditar.condicion_fisica || muebleAEditar.estado_conservacion || muebleAEditar.estado || muebleAEditar.condicion || 'Bueno',
+        disponible: cantReal,
+        cantidad: cantReal,
+        area_proceso: muebleAEditar.area_proceso || muebleAEditar.area || 'General',
+        responsable: muebleAEditar.responsable || muebleAEditar.custodio || '',
+        estado_operativo: muebleAEditar.estado_operativo || (muebleAEditar.estado === 'En Uso' || muebleAEditar.estado === 'Mantenimiento' ? muebleAEditar.estado : 'Disponible'),
         fecha_adquisicion: muebleAEditar.fecha_adquisicion ? String(muebleAEditar.fecha_adquisicion).split('T')[0] : new Date().toISOString().split('T')[0],
         proveedor: muebleAEditar.proveedor_origen || muebleAEditar.proveedor || muebleAEditar.origen || '',
         observaciones: muebleAEditar.observaciones || muebleAEditar.notas || '',
@@ -122,11 +137,15 @@ export default function ModalRegistroMobiliario({
       setLoadingPlaca(true);
       try {
         const res = await inventoryApi.getSiguientePlacaMobiliario();
-        if (isMounted && res?.placa) {
-          setFormData((prev) => ({ ...prev, placa: res.placa }));
+        if (isMounted && res && res.placa) {
+          setFormData((prev) => ({
+            ...prev,
+            codigo: res.placa,
+            placa: res.placa,
+          }));
         }
       } catch (err) {
-        console.warn('No se pudo autogenerar placa desde API:', err);
+        console.warn('Fallo consulta automática de consecutivo:', err);
       } finally {
         if (isMounted) setLoadingPlaca(false);
       }
@@ -143,19 +162,25 @@ export default function ModalRegistroMobiliario({
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'number' ? (value === '' ? '' : Math.max(1, Math.min(9999, Number(value)))) : value,
-    }));
+    setFormData((prev) => {
+      const val = type === 'number' ? (value === '' ? '' : Math.max(1, Math.min(9999, Number(value)))) : value;
+      const updated = { ...prev, [name]: val };
+      if (name === 'disponible') updated.cantidad = val;
+      if (name === 'cantidad') updated.disponible = val;
+      if (name === 'codigo') updated.placa = val;
+      if (name === 'placa') updated.codigo = val;
+      return updated;
+    });
   };
 
   const handleValidarPaso1 = () => {
-    if (!formData.nombre.trim()) {
+    if (!formData.nombre?.trim()) {
       showError('Campo Requerido', 'Ingresa el nombre del mueble o enser (ej: "Mesa de Trabajo Robótica").');
       return false;
     }
-    if (!formData.placa.trim()) {
-      showError('Campo Requerido', 'La placa o código institucional (ej: MOB-0001) es obligatoria.');
+    const codigoActual = formData.codigo || formData.placa;
+    if (!codigoActual?.trim()) {
+      showError('Campo Requerido', 'El código o placa institucional (ej: MOB-0001) es obligatorio.');
       return false;
     }
     if (!formData.categoria) {
@@ -193,24 +218,40 @@ export default function ModalRegistroMobiliario({
 
     setSubmitting(true);
     try {
+      const codigoFinal = (formData.codigo || formData.placa || '').trim().toUpperCase();
+      const cantFinal = Number(formData.disponible ?? formData.cantidad ?? 1) || 1;
+
       const payload = {
-        placa: formData.placa.trim().toUpperCase(),
+        codigo: codigoFinal,
+        placa: codigoFinal,
+        id_referencia: codigoFinal,
         nombre: formData.nombre.trim(),
+        elemento: formData.nombre.trim(),
         categoria: 'Mobiliario',
         subcategoria: formData.categoria,
         category: 'Mobiliario',
         itemType: 'mobiliario',
         sede: formData.sede,
         ubicacion: formData.sede,
+        ubicacion_fisica: formData.sede,
         ubicacion_estante: formData.ubicacion.trim() || 'Área General',
         espacio: formData.ubicacion.trim(),
-        cantidad: Number(formData.cantidad) || 1,
-        disponible: Number(formData.cantidad) || 1,
+        cantidad: cantFinal,
+        disponible: cantFinal,
+        stock: cantFinal,
         material: formData.material,
+        material_fabricacion: formData.material,
         color: formData.color.trim(),
         dimensiones: formData.dimensiones.trim(),
-        estado: formData.estado,
-        condicion: formData.estado,
+        estado: formData.condicion_fisica,
+        condicion: formData.condicion_fisica,
+        condicion_fisica: formData.condicion_fisica,
+        estado_conservacion: formData.condicion_fisica,
+        area: formData.area_proceso.trim(),
+        area_proceso: formData.area_proceso.trim(),
+        responsable: formData.responsable.trim(),
+        custodio: formData.responsable.trim(),
+        estado_operativo: formData.estado_operativo,
         fecha_adquisicion: formData.fecha_adquisicion || null,
         proveedor: formData.proveedor.trim(),
         origen: formData.proveedor.trim(),
@@ -230,21 +271,34 @@ export default function ModalRegistroMobiliario({
         // === MODO EDICIÓN (UPDATE) ===
         const updatePayload = {
           nombre: formData.nombre.trim(),
+          elemento: formData.nombre.trim(),
+          codigo: codigoFinal,
+          placa: codigoFinal,
+          id_referencia: codigoFinal,
           categoria: formData.categoria,
           subcategoria: formData.categoria,
           sede: formData.sede,
           ubicacion: formData.sede,
+          ubicacion_fisica: formData.sede,
           ubicacion_especifica: formData.ubicacion.trim(),
           ubicacion_estante: formData.ubicacion.trim() || 'Área General',
           espacio: formData.ubicacion.trim(),
           material: formData.material,
+          material_fabricacion: formData.material,
           color: formData.color.trim(),
           dimensiones: formData.dimensiones.trim(),
-          estado_conservacion: formData.estado,
-          estado: formData.estado,
-          condicion: formData.estado,
-          cantidad: Number(formData.cantidad) || 1,
-          disponible: Number(formData.cantidad) || 1,
+          estado_conservacion: formData.condicion_fisica,
+          condicion_fisica: formData.condicion_fisica,
+          estado: formData.condicion_fisica,
+          condicion: formData.condicion_fisica,
+          cantidad: cantFinal,
+          disponible: cantFinal,
+          stock: cantFinal,
+          area: formData.area_proceso.trim(),
+          area_proceso: formData.area_proceso.trim(),
+          responsable: formData.responsable.trim(),
+          custodio: formData.responsable.trim(),
+          estado_operativo: formData.estado_operativo,
           fecha_adquisicion: formData.fecha_adquisicion || null,
           proveedor_origen: formData.proveedor.trim(),
           proveedor: formData.proveedor.trim(),
@@ -272,7 +326,7 @@ export default function ModalRegistroMobiliario({
             if (muebleAEditar.id) {
               query.eq('id', muebleAEditar.id);
             } else {
-              query.eq('placa', formData.placa.trim().toUpperCase());
+              query.eq('placa', codigoFinal);
             }
 
             const { data: supaUpdated, error: supaUpErr } = await query.select().single();
@@ -288,14 +342,14 @@ export default function ModalRegistroMobiliario({
 
         if (!updatedResult) {
           try {
-            updatedResult = await inventoryApi.update(muebleAEditar.id || formData.placa, updatePayload);
+            updatedResult = await inventoryApi.update(muebleAEditar.id || codigoFinal, updatePayload);
           } catch (apiUpErr) {
             console.warn('API update advertencia, usando payload local:', apiUpErr.message);
-            updatedResult = { ...muebleAEditar, ...updatePayload, id: muebleAEditar.id || formData.placa, placa: formData.placa };
+            updatedResult = { ...muebleAEditar, ...updatePayload, id: muebleAEditar.id || codigoFinal, placa: codigoFinal, codigo: codigoFinal };
           }
         }
 
-        const finalItem = updatedResult || { ...muebleAEditar, ...updatePayload, id: muebleAEditar.id || formData.placa, placa: formData.placa };
+        const finalItem = updatedResult || { ...muebleAEditar, ...updatePayload, id: muebleAEditar.id || codigoFinal, placa: codigoFinal, codigo: codigoFinal };
 
         if (onMobiliarioSaved) {
           onMobiliarioSaved(finalItem);
@@ -305,7 +359,7 @@ export default function ModalRegistroMobiliario({
 
         showEditSuccess({
           nombre: formData.nombre,
-          codigo: formData.placa,
+          codigo: codigoFinal,
           tipo: 'Mobiliario',
         });
 
@@ -314,7 +368,6 @@ export default function ModalRegistroMobiliario({
       }
 
       // === MODO CREACIÓN (INSERT) ===
-      // 1. Despachar a Supabase y/o backend REST API
       let result = null;
       try {
         if (supabase) {
@@ -343,21 +396,18 @@ export default function ModalRegistroMobiliario({
         }
       }
 
-      // 2. Notificar al componente padre
       if (onMobiliarioSaved) {
         onMobiliarioSaved(result || payload);
       } else if (onMobiliarioCreated) {
         onMobiliarioCreated(result || payload);
       }
 
-      // 3. Emitir Toast
       showNewItemSuccess({
         nombre: formData.nombre,
         codigo: payload.placa,
         sedeOUbicacion: `${formData.sede}${formData.ubicacion ? ` (${formData.ubicacion})` : ''}`,
       });
 
-      // 4. Cerrar modal y reiniciar
       onClose();
     } catch (err) {
       console.error('Error al procesar mobiliario:', err);
@@ -367,93 +417,33 @@ export default function ModalRegistroMobiliario({
     }
   };
 
+  const codigoHeader = formData.codigo || formData.placa || (muebleAEditar && (muebleAEditar.codigo || muebleAEditar.placa || muebleAEditar.id_referencia || muebleAEditar.id)) || 'MOB-001';
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        backgroundColor: 'rgba(15, 23, 42, 0.75)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="relative w-full max-w-lg md:max-w-xl max-h-[92vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden"
-        style={{
-          backgroundColor: 'var(--surface, #0f172a)',
-          border: '1px solid var(--line-strong, #1e293b)',
-          borderRadius: '18px',
-          maxWidth: '38rem',
-          width: '100%',
-          maxHeight: '92vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.65)',
-          boxSizing: 'border-box',
-          position: 'relative',
-        }}
+        className="bg-white dark:bg-[#0b1320] rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Fijo */}
-        <div
-          className="p-5 shrink-0 flex items-center justify-between"
-          style={{
-            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.95))',
-            borderBottom: '1px solid var(--line, #1e293b)',
-            padding: '16px 22px',
-          }}
-        >
+        {/* Cabecera Institucional */}
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-[#0b1320]">
           <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-              style={{
-                backgroundColor: 'rgba(132, 204, 22, 0.15)',
-                border: '1px solid rgba(132, 204, 22, 0.35)',
-                color: '#84CC16',
-              }}
-            >
-              <Armchair size={22} />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/60 shadow-sm">
+              <Armchair size={20} />
             </div>
             <div>
-              <span
-                style={{
-                  fontFamily: 'var(--mono, monospace)',
-                  color: '#84CC16',
-                  fontSize: '11.5px',
-                  fontWeight: 700,
-                  display: 'block',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                {formData.placa || 'MOB-XXXX'} • DOTACIÓN FMO
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60 mb-1">
+                {codigoHeader}
               </span>
-              <h3
-                className="font-bold text-slate-900 dark:text-white m-0"
-                style={{
-                  margin: 0,
-                  fontSize: '16px',
-                  color: 'var(--text-h, #ffffff)',
-                }}
-              >
-                {isEditing ? 'Editar Mobiliario / Enser' : 'Registro de Nuevo Mobiliario'}
+              <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white leading-tight m-0">
+                {isEditing ? 'Editar Mobiliario' : 'Nuevo Mobiliario'}
               </h3>
-              <p
-                className="m-0"
-                style={{
-                  margin: '2px 0 0 0',
-                  fontSize: '12px',
-                  color: 'var(--text-dim, #94a3b8)',
-                }}
-              >
+              <p className="text-xs text-slate-500 dark:text-slate-400 m-0 mt-0.5">
                 {isEditing
-                  ? 'Modifica las características físicas, ubicación o estado del mueble'
+                  ? 'Modifica los datos del mobiliario y sus especificaciones físicas'
                   : 'Mesas, sillería, estantes y enseres para espacios formativos'}
               </p>
             </div>
@@ -462,183 +452,109 @@ export default function ModalRegistroMobiliario({
             type="button"
             disabled={submitting}
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white bg-transparent hover:bg-slate-800 transition-all cursor-pointer border-0 outline-none"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-0 outline-none"
             title="Cerrar ventana"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Stepper Wizard (3 Pasos) */}
-        <div
-          className="px-5 py-3 shrink-0"
-          style={{
-            padding: '10px 22px',
-            borderBottom: '1px solid var(--line, #1e293b)',
-            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.75))',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              width: '100%',
-            }}
-          >
+        {/* Navegador de Pestañas (Píldoras Superiores) */}
+        <div className="px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0f172a]/50 shrink-0">
+          <div className="flex items-center gap-2">
             {[
-              { paso: 1, label: '1. Identificación', desc: 'Nombre y Sede' },
-              { paso: 2, label: '2. Atributos Físicos', desc: 'Material y Estado' },
-              { paso: 3, label: '3. Adquisición', desc: 'Fecha y Proveedor' },
-            ].map((item) => {
-              const isActive = paso === item.paso;
-              const isDone = paso > item.paso;
+              { paso: 1, label: '1. Identificación' },
+              { paso: 2, label: '2. Ficha Técnica' },
+              { paso: 3, label: '3. Asignación / Estado' },
+            ].map((tab) => {
+              const isActive = paso === tab.paso;
               return (
                 <button
-                  key={item.paso}
+                  key={tab.paso}
                   type="button"
                   onClick={() => {
-                    if (item.paso === 1 || handleValidarPaso1()) {
-                      setPaso(item.paso);
+                    if (tab.paso === 1 || handleValidarPaso1()) {
+                      setPaso(tab.paso);
                     }
                   }}
-                  className="rounded-xl border transition-all cursor-pointer text-left"
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    backgroundColor: isActive
-                      ? '#84CC16'
-                      : isDone
-                      ? 'rgba(132, 204, 22, 0.12)'
-                      : 'rgba(30, 41, 59, 0.4)',
-                    borderColor: isActive
-                      ? '#84CC16'
-                      : isDone
-                      ? 'rgba(132, 204, 22, 0.35)'
-                      : 'var(--line, #334155)',
-                    color: isActive
-                      ? '#020617'
-                      : isDone
-                      ? '#84CC16'
-                      : 'var(--text-dim, #94a3b8)',
-                  }}
+                  className={`flex-1 transition-all cursor-pointer text-center ${
+                    isActive
+                      ? 'bg-emerald-500 text-white font-semibold rounded-lg px-3 py-1.5 shadow-sm text-xs'
+                      : 'bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium rounded-lg px-3 py-1.5 text-xs hover:bg-slate-400 dark:hover:bg-slate-700'
+                  }`}
                 >
-                  <div style={{ fontSize: '12px', fontWeight: 800 }}>{item.label}</div>
-                  <div
-                    style={{
-                      fontSize: '10.5px',
-                      opacity: isActive ? 0.85 : 0.7,
-                      marginTop: '1px',
-                    }}
-                  >
-                    {item.desc}
-                  </div>
+                  {tab.label}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Formulario Scrolleable */}
-        <form onSubmit={paso === 3 ? handleSubmit : handleSiguiente} className="flex-1 flex flex-col overflow-hidden">
-          <div
-            className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4"
-            style={{
-              padding: '20px 22px',
-              maxHeight: 'calc(92vh - 210px)',
-              overflowY: 'auto',
-            }}
-          >
-            {/* PASO 1: Identificación y Ubicación */}
+        {/* Formulario con Scroll Interno */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-4">
+            {/* PESTAÑA 1: IDENTIFICACIÓN */}
             {paso === 1 && (
-              <div className="flex flex-col gap-4 animate-fade-in">
-                {/* Nombre del Mueble / Enser */}
-                <div>
-                  <label
-                    className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                    style={{ color: 'var(--text-dim, #94a3b8)' }}
-                  >
-                    <Armchair size={14} style={{ color: '#84CC16' }} />
-                    <span>Nombre del Mueble / Enser</span>
-                    <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    maxLength={90}
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    placeholder="Ej. Mesa de Trabajo Robótica STEAM 6 Puestos"
-                    required
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                    style={{
-                      backgroundColor: 'var(--bg, #0b1120)',
-                      borderColor: 'var(--line, #334155)',
-                      color: 'var(--text, #f8fafc)',
-                    }}
-                  />
-                </div>
-
-                {/* Código / Placa y Categoría */}
+              <div className="space-y-4 animate-in fade-in duration-200">
+                {/* Código / Placa y Nombre del Mueble */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center justify-between mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Tag size={14} style={{ color: '#84CC16' }} />
-                        Código / Placa Institucional <span className="text-rose-400">*</span>
-                      </span>
-                      {loadingPlaca && (
-                        <span className="flex items-center gap-1 text-[11px] text-lime-400 font-normal">
-                          <Loader2 size={11} className="animate-spin" /> asignando...
-                        </span>
-                      )}
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Código / Placa *
                     </label>
-                    <input
-                      type="text"
-                      name="placa"
-                      maxLength={25}
-                      value={formData.placa}
-                      onChange={handleChange}
-                      placeholder="MOB-0001"
-                      required
-                      disabled={isEditing}
-                      className={`w-full rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold uppercase border focus:outline-none transition-all ${
-                        isEditing
-                          ? 'opacity-70 cursor-not-allowed bg-slate-800/40 text-slate-300 border-slate-700'
-                          : 'focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16]'
-                      }`}
-                      style={{
-                        backgroundColor: isEditing ? 'rgba(15, 23, 42, 0.6)' : 'var(--bg, #0b1120)',
-                        borderColor: isEditing ? 'var(--line, #334155)' : 'var(--line, #334155)',
-                        color: isEditing ? '#94a3b8' : '#84CC16',
-                      }}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="codigo"
+                        maxLength={25}
+                        value={formData.codigo}
+                        onChange={handleChange}
+                        placeholder="Ej. MOB-001"
+                        required
+                        disabled={isEditing}
+                        className={`w-full rounded-xl px-3.5 py-2 text-sm font-mono font-bold uppercase border focus:outline-none transition-all ${
+                          isEditing
+                            ? 'opacity-80 cursor-not-allowed bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
+                        }`}
+                      />
+                      {loadingPlaca && (
+                        <div className="absolute right-3 top-2.5 flex items-center gap-1 text-[11px] text-emerald-600">
+                          <Loader2 size={12} className="animate-spin" />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <Layers size={14} style={{ color: '#84CC16' }} />
-                      <span>Categoría</span>
-                      <span className="text-rose-400">*</span>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Nombre del Mueble *
+                    </label>
+                    <input
+                      type="text"
+                      name="nombre"
+                      maxLength={90}
+                      value={formData.nombre}
+                      onChange={handleChange}
+                      placeholder="Ej. Mesa de Trabajo Robótica STEAM"
+                      required
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Categoría y Condición Física */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Categoría *
                     </label>
                     <select
                       name="categoria"
                       value={formData.categoria}
                       onChange={handleChange}
                       required
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     >
                       {CATEGORIAS_MOBILIARIO.map((cat) => (
                         <option key={cat} value={cat}>
@@ -647,30 +563,38 @@ export default function ModalRegistroMobiliario({
                       ))}
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Condición Física
+                    </label>
+                    <select
+                      name="condicion_fisica"
+                      value={formData.condicion_fisica}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    >
+                      {CONDICIONES_FISICAS.map((est) => (
+                        <option key={est} value={est}>
+                          {est}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                {/* Sede Institucional y Cantidad */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  <div className="sm:col-span-2">
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <Building2 size={14} style={{ color: '#84CC16' }} />
-                      <span>Sede Institucional</span>
-                      <span className="text-rose-400">*</span>
+                {/* Sede / Ubicación Física */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Sede Institucional *
                     </label>
                     <select
                       name="sede"
                       value={formData.sede}
                       onChange={handleChange}
                       required
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     >
                       {sedes.map((s) => (
                         <option key={s} value={s}>
@@ -681,95 +605,37 @@ export default function ModalRegistroMobiliario({
                   </div>
 
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <Hash size={14} style={{ color: '#84CC16' }} />
-                      <span>Cantidad</span>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Espacio / Área Específica
                     </label>
                     <input
-                      type="number"
-                      name="cantidad"
-                      min="1"
-                      max="9999"
-                      value={formData.cantidad}
+                      type="text"
+                      name="ubicacion"
+                      maxLength={70}
+                      value={formData.ubicacion}
                       onChange={handleChange}
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all text-center font-bold"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
+                      placeholder="Ej. Sala Robótica, Oficina 2, Bodega"
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
-                </div>
-
-                {/* Ubicación Específica */}
-                <div>
-                  <label
-                    className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                    style={{ color: 'var(--text-dim, #94a3b8)' }}
-                  >
-                    <MapPin size={14} style={{ color: '#84CC16' }} />
-                    <span>Ubicación Específica / Aula / Laboratorio</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="ubicacion"
-                    maxLength={80}
-                    value={formData.ubicacion}
-                    onChange={handleChange}
-                    placeholder="Ej. Laboratorio STEAM 1, Sala de Reuniones Principal"
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                    style={{
-                      backgroundColor: 'var(--bg, #0b1120)',
-                      borderColor: 'var(--line, #334155)',
-                      color: 'var(--text, #f8fafc)',
-                    }}
-                  />
                 </div>
               </div>
             )}
 
-            {/* PASO 2: Atributos Físicos (NO Hardware) */}
+            {/* PESTAÑA 2: FICHA TÉCNICA */}
             {paso === 2 && (
-              <div className="flex flex-col gap-4 animate-fade-in">
-                <div
-                  className="p-3 rounded-xl border flex items-center gap-2.5"
-                  style={{
-                    backgroundColor: 'rgba(132, 204, 22, 0.08)',
-                    borderColor: 'rgba(132, 204, 22, 0.25)',
-                    color: 'var(--text, #f8fafc)',
-                    fontSize: '12.5px',
-                  }}
-                >
-                  <ShieldCheck size={18} style={{ color: '#84CC16', flexShrink: 0 }} />
-                  <span>
-                    Este registro es exclusivo para <strong>muebles y enseres físicos</strong>. No requiere RAM, procesador ni ficha técnica de cómputo.
-                  </span>
-                </div>
-
-                {/* Material Principal y Color Predominante */}
+              <div className="space-y-4 animate-in fade-in duration-200">
+                {/* Material de Fabricación y Color */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <Layers size={14} style={{ color: '#84CC16' }} />
-                      <span>Material Principal</span>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Material de Fabricación
                     </label>
                     <select
                       name="material"
                       value={formData.material}
                       onChange={handleChange}
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     >
                       {MATERIALES_OPCIONES.map((mat) => (
                         <option key={mat} value={mat}>
@@ -780,12 +646,8 @@ export default function ModalRegistroMobiliario({
                   </div>
 
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <Palette size={14} style={{ color: '#84CC16' }} />
-                      <span>Color Predominante</span>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Color
                     </label>
                     <input
                       type="text"
@@ -793,26 +655,17 @@ export default function ModalRegistroMobiliario({
                       maxLength={40}
                       value={formData.color}
                       onChange={handleChange}
-                      placeholder="Ej. Gris Grafito / Negro"
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
+                      placeholder="Ej. Blanco / Gris / Madera clara"
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
                 </div>
 
-                {/* Dimensiones aproximadas y Estado de Conservación */}
+                {/* Dimensiones y Cantidad */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <Maximize2 size={14} style={{ color: '#84CC16' }} />
-                      <span>Dimensiones Aproximadas</span>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Dimensiones (Alto x Ancho x Profundidad)
                     </label>
                     <input
                       type="text"
@@ -820,213 +673,147 @@ export default function ModalRegistroMobiliario({
                       maxLength={50}
                       value={formData.dimensiones}
                       onChange={handleChange}
-                      placeholder="Largo x Ancho x Alto cm (ej: 140 x 70 x 75 cm)"
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
+                      placeholder="Ej. 75cm x 160cm x 80cm"
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
 
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <ShieldCheck size={14} style={{ color: '#84CC16' }} />
-                      <span>Estado de Conservación</span>
-                      <span className="text-rose-400">*</span>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Cantidad / Unidades
                     </label>
-                    <select
-                      name="estado"
-                      value={formData.estado}
+                    <input
+                      type="number"
+                      name="disponible"
+                      min={1}
+                      max={9999}
+                      value={formData.disponible}
                       onChange={handleChange}
                       required
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
-                    >
-                      {ESTADOS_CONSERVACION.map((est) => (
-                        <option key={est} value={est}>
-                          {est}
-                        </option>
-                      ))}
-                    </select>
+                      className="w-full rounded-xl px-3.5 py-2 text-sm font-mono font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
                   </div>
+                </div>
+
+                {/* Banner Informativo */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2.5">
+                  <Armchair size={18} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span>
+                    Ficha para <strong>mobiliario y enseres físicos</strong>. Diseñada para trazabilidad de puestos de trabajo y dotación institucional.
+                  </span>
                 </div>
               </div>
             )}
 
-            {/* PASO 3: Adquisición y Observaciones */}
+            {/* PESTAÑA 3: ASIGNACIÓN / ESTADO */}
             {paso === 3 && (
-              <div className="flex flex-col gap-4 animate-fade-in">
-                {/* Fecha de Adquisición y Origen / Proveedor */}
+              <div className="space-y-4 animate-in fade-in duration-200">
+                {/* Área / Proceso y Responsable */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Área / Proceso
+                    </label>
+                    <input
+                      type="text"
+                      name="area_proceso"
+                      maxLength={60}
+                      value={formData.area_proceso}
+                      onChange={handleChange}
+                      placeholder="Ej. Innovación STEAM, Administrativa"
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Responsable / Custodio Asignado
+                    </label>
+                    <input
+                      type="text"
+                      name="responsable"
+                      maxLength={80}
+                      value={formData.responsable}
+                      onChange={handleChange}
+                      placeholder="Ej. Santiago Galeano o Bodega Central"
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Estado Operativo y Fecha de Adquisición */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Estado Operativo
+                    </label>
+                    <select
+                      name="estado_operativo"
+                      value={formData.estado_operativo}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     >
-                      <Calendar size={14} style={{ color: '#84CC16' }} />
-                      <span>Fecha de Adquisición / Registro</span>
+                      {ESTADOS_OPERATIVOS.map((eo) => (
+                        <option key={eo} value={eo}>
+                          {eo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                      Fecha de Adquisición / Registro
                     </label>
                     <input
                       type="date"
                       name="fecha_adquisicion"
                       value={formData.fecha_adquisicion}
                       onChange={handleChange}
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                      style={{ color: 'var(--text-dim, #94a3b8)' }}
-                    >
-                      <Truck size={14} style={{ color: '#84CC16' }} />
-                      <span>Origen / Donante / Proveedor</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="proveedor"
-                      maxLength={90}
-                      value={formData.proveedor}
-                      onChange={handleChange}
-                      placeholder="Ej. Donación Fundación / Compra Dotación"
-                      className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                      style={{
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        borderColor: 'var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                      }}
+                      className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     />
                   </div>
                 </div>
 
-                {/* Observaciones adicionales */}
+                {/* Observaciones */}
                 <div>
-                  <label
-                    className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5"
-                    style={{ color: 'var(--text-dim, #94a3b8)' }}
-                  >
-                    <FileText size={14} style={{ color: '#84CC16' }} />
-                    <span>Observaciones Adicionales</span>
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Observaciones Físicas o Notas
                   </label>
                   <textarea
-                    rows={4}
+                    rows={3}
                     name="observaciones"
                     maxLength={350}
                     value={formData.observaciones}
                     onChange={handleChange}
-                    placeholder="Detalles físicos específicos: ruedas con freno de seguridad, gaveta con cerradura y llave, rayón leve en costado izquierdo, etc."
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                    style={{
-                      backgroundColor: 'var(--bg, #0b1120)',
-                      borderColor: 'var(--line, #334155)',
-                      color: 'var(--text, #f8fafc)',
-                    }}
+                    placeholder="Detalles físicos específicos: ruedas con freno de seguridad, llave incluida, etc."
+                    className="w-full rounded-xl px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
                   />
-                </div>
-
-                {/* Resumen Final de Registro */}
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2 mt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-700 uppercase tracking-wide text-[11px]">
-                      Resumen previo a guardar:
-                    </span>
-                    <span className="bg-emerald-100 text-emerald-800 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">
-                      {formData.placa || 'MOB-XXXX'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                    <div className="flex flex-col">
-                      <span className="text-slate-400 text-[10px] font-semibold uppercase">Mueble</span>
-                      <strong className="text-slate-800 font-bold truncate" title={formData.nombre || '—'}>
-                        {formData.nombre || '—'}
-                      </strong>
-                    </div>
-
-                    <div className="flex flex-col">
-                      <span className="text-slate-400 text-[10px] font-semibold uppercase">Sede</span>
-                      <span className="text-slate-800 font-medium truncate">
-                        {formData.sede || '—'}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col">
-                      <span className="text-slate-400 text-[10px] font-semibold uppercase">Cantidad</span>
-                      <span className="text-slate-800 font-medium">
-                        {formData.cantidad || 1} und
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col">
-                      <span className="text-slate-400 text-[10px] font-semibold uppercase mb-0.5">Estado</span>
-                      <div>
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-lime-100 text-lime-800 border border-lime-300">
-                          {formData.estado || 'Bueno'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Footer Fijo con Navegación */}
-          <div
-            className="p-4 border-t flex items-center justify-between shrink-0"
-            style={{
-              borderTop: '1px solid var(--line, #1e293b)',
-              backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.95))',
-              padding: '14px 22px',
-            }}
-          >
+          {/* Pie de Modal */}
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0f172a] flex items-center justify-between shrink-0">
             <button
               type="button"
               disabled={submitting}
               onClick={onClose}
-              className="btn ghost"
-              style={{
-                padding: '8px 18px',
-                borderRadius: '10px',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
             >
               Cancelar
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="flex items-center gap-2.5">
               {paso > 1 && (
                 <button
                   type="button"
                   disabled={submitting}
                   onClick={handleAnterior}
-                  className="btn ghost"
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '10px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                 >
-                  ← Anterior
+                  Anterior
                 </button>
               )}
 
@@ -1034,18 +821,7 @@ export default function ModalRegistroMobiliario({
                 <button
                   type="button"
                   onClick={handleSiguiente}
-                  className="btn btn-primary"
-                  style={{
-                    padding: '9px 20px',
-                    borderRadius: '10px',
-                    fontSize: '13.5px',
-                    fontWeight: 800,
-                    backgroundColor: '#84CC16',
-                    borderColor: '#84CC16',
-                    color: '#020617',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(132, 204, 22, 0.25)',
-                  }}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2 rounded-xl shadow-md text-xs transition-colors cursor-pointer"
                 >
                   Siguiente →
                 </button>
@@ -1053,33 +829,15 @@ export default function ModalRegistroMobiliario({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="btn btn-primary"
-                  style={{
-                    padding: '9px 22px',
-                    borderRadius: '10px',
-                    fontSize: '13.5px',
-                    fontWeight: 800,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    backgroundColor: '#84CC16',
-                    borderColor: '#84CC16',
-                    color: '#020617',
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    opacity: submitting ? 0.6 : 1,
-                    boxShadow: '0 4px 12px rgba(132, 204, 22, 0.25)',
-                  }}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2 rounded-xl shadow-md text-xs transition-colors cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>{isEditing ? 'Actualizando...' : 'Guardando...'}</span>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>{isEditing ? 'Guardando...' : 'Registrando...'}</span>
                     </>
                   ) : (
-                    <>
-                      <CheckCircle2 size={16} />
-                      <span>{isEditing ? 'Actualizar Mobiliario' : 'Guardar Mobiliario'}</span>
-                    </>
+                    <span>Guardar Cambios →</span>
                   )}
                 </button>
               )}
