@@ -439,6 +439,23 @@ export function AuthProvider({ children }) {
               const existing = map.get(key) || {};
               map.set(key, { ...existing, ...usr });
             });
+
+            // Sincronizar reactivamente el avatar_url del usuario en sesión activa
+            setCurrentUser((curr) => {
+              if (!curr) return curr;
+              const match = apiUsers.find((u) => 
+                (curr.id && String(u.id) === String(curr.id)) ||
+                (curr.documento && String(u.documento) === String(curr.documento)) ||
+                (curr.email && String(u.email).toLowerCase() === String(curr.email).toLowerCase())
+              );
+              if (match && match.avatar_url !== curr.avatar_url) {
+                const updated = { ...curr, avatar_url: match.avatar_url };
+                localStorage.setItem('siga_current_user', JSON.stringify(updated));
+                return updated;
+              }
+              return curr;
+            });
+
             return Array.from(map.values());
           });
           return apiUsers;
@@ -485,6 +502,7 @@ export function AuthProvider({ children }) {
       rol: usr.rol || 'administrador',
       sede: usr.sede || 'Oficina Medellín',
       cargo: usr.cargo || 'Funcionario FMO',
+      avatar_url: usr.avatar_url || usr.avatarUrl || usr.foto_perfil || null,
     };
 
     const newToken = generateToken(payload);
@@ -539,6 +557,7 @@ export function AuthProvider({ children }) {
               rol: rawUser.rol || 'usuario',
               sede: rawUser.sede || 'Medellín',
               cargo: rawUser.cargo || 'Funcionario FMO',
+              avatar_url: rawUser.avatar_url || rawUser.avatarUrl || rawUser.foto_perfil || null,
             };
 
             const sessionToken = json.token || generateToken(tokenPayload);
@@ -631,6 +650,7 @@ export function AuthProvider({ children }) {
           rol: user.rol,
           sede: user.sede,
           cargo: user.cargo || 'Funcionario FMO',
+          avatar_url: user.avatar_url || user.avatarUrl || user.foto_perfil || null,
         };
 
         const newToken = generateToken(tokenPayload);

@@ -104,7 +104,7 @@ export default function Header({
             <UserAvatar
               nombre={currentUser?.nombre}
               avatarUrl={currentUser?.avatar_url || currentUser?.avatarUrl || currentUser?.foto_perfil}
-              size="w-[26px] h-[26px]"
+              size="w-7 h-7 min-w-[28px] min-h-[28px] max-w-[28px] max-h-[28px]"
               textSize="text-[11px]"
             />
             <div className="user-profile-info">
@@ -130,18 +130,12 @@ export default function Header({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  {currentUser?.avatar_url || currentUser?.avatarUrl || currentUser?.foto_perfil ? (
-                    <img
-                      src={currentUser.avatar_url || currentUser.avatarUrl || currentUser.foto_perfil}
-                      alt={currentUser.nombre || 'Perfil'}
-                      className="w-11 h-11 rounded-full object-cover border border-emerald-200 shadow-sm shrink-0"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                    />
-                  ) : (
-                    <div className="w-11 h-11 rounded-full bg-emerald-500 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-sm">
-                      {(currentUser?.nombre || 'U').charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <UserAvatar
+                    nombre={currentUser?.nombre}
+                    avatarUrl={currentUser?.avatar_url || currentUser?.avatarUrl || currentUser?.foto_perfil}
+                    size="w-11 h-11 min-w-[44px] min-h-[44px] max-w-[44px] max-h-[44px]"
+                    textSize="text-base"
+                  />
                   <div style={{ overflow: 'hidden' }}>
                     <div style={{ fontWeight: 700, fontSize: '12.5px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                       {currentUser?.nombre}
