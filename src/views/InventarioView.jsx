@@ -148,9 +148,50 @@ export default function InventarioView({
   initialStockFilter = 'todos',
   sedes: propSedes,
 }) {
-  // Sedes dinámicas
-  const sedesList = useMemo(() => {
-    return Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES;
+  // Sedes dinámicas obtenidas de props o base de datos / catálogo
+  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES));
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSedesInventario = async () => {
+      try {
+        let lista = [];
+        try {
+          if (supabase) {
+            const { data, error } = await supabase
+              .from('sedes')
+              .select('id, nombre, activo')
+              .order('nombre', { ascending: true });
+            if (!error && Array.isArray(data) && data.length > 0) {
+              lista = data.filter((s) => s.activo !== false).map((s) => s.nombre || s.nombre_sede || s);
+            }
+          }
+        } catch (sErr) {
+          console.warn('Consulta directa Supabase sedes:', sErr.message);
+        }
+
+        if (lista.length === 0) {
+          try {
+            const apiRes = await inventoryApi.getSedes();
+            if (Array.isArray(apiRes) && apiRes.length > 0) {
+              lista = apiRes.map((s) => s.nombre || s.nombre_sede || s);
+            }
+          } catch (apiErr) {
+            console.warn('Fallback API sedes:', apiErr.message);
+          }
+        }
+
+        const base = Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES;
+        const combinadas = Array.from(new Set([...base, ...lista]));
+        if (isMounted) {
+          setSedesList(combinadas);
+        }
+      } catch (err) {
+        console.warn('Error al cargar sedes en InventarioView:', err.message);
+      }
+    };
+    fetchSedesInventario();
+    return () => { isMounted = false; };
   }, [propSedes]);
 
   // Pestaña activa: 'equipos' | 'consumibles'
@@ -4918,20 +4959,26 @@ export default function InventarioView({
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                           Sede / Ubicación Física
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="ubicacion"
-                          maxLength={70}
-                          value={formDataEditar.ubicacion || ''}
-                          onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion: e.target.value })}
-                          placeholder="Ej. Oficina FMO"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          value={formDataEditar.ubicacion || formDataEditar.sede || sedesList[0] || 'Medellín'}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion: e.target.value, sede: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
                             borderColor: 'var(--line, #334155)',
                           }}
-                        />
+                        >
+                          {formDataEditar.ubicacion && !sedesList.includes(formDataEditar.ubicacion) && (
+                            <option value={formDataEditar.ubicacion}>{formDataEditar.ubicacion}</option>
+                          )}
+                          {sedesList.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
@@ -5357,6 +5404,7 @@ export default function InventarioView({
           setPasoActual={setPasoActualEditarEquipo}
           onSubmit={handleSubmitEditarEquipo}
           submitting={editEquipoSubmitting}
+          sedes={sedesList}
         />
       )}
 
@@ -5680,20 +5728,26 @@ export default function InventarioView({
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                           Sede / Ubicación Física
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="ubicacion"
-                          maxLength={70}
-                          value={formDataNuevo.ubicacion || ''}
-                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion: e.target.value })}
-                          placeholder="Ej. Oficina FMO"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          value={formDataNuevo.ubicacion || formDataNuevo.sede || sedesList[0] || 'Medellín'}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion: e.target.value, sede: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
                             borderColor: 'var(--line, #334155)',
                           }}
-                        />
+                        >
+                          {formDataNuevo.ubicacion && !sedesList.includes(formDataNuevo.ubicacion) && (
+                            <option value={formDataNuevo.ubicacion}>{formDataNuevo.ubicacion}</option>
+                          )}
+                          {sedesList.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
@@ -6652,20 +6706,26 @@ export default function InventarioView({
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                           Sede / Ubicación Física
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="ubicacion"
-                          maxLength={90}
-                          value={formDataNuevoEquipo.ubicacion || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion: e.target.value })}
-                          placeholder="Ej. Oficina Medellín"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          value={formDataNuevoEquipo.ubicacion || formDataNuevoEquipo.sede || sedesList[0] || 'Medellín'}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion: e.target.value, sede: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
                             borderColor: 'var(--line, #334155)',
                           }}
-                        />
+                        >
+                          {formDataNuevoEquipo.ubicacion && !sedesList.includes(formDataNuevoEquipo.ubicacion) && (
+                            <option value={formDataNuevoEquipo.ubicacion}>{formDataNuevoEquipo.ubicacion}</option>
+                          )}
+                          {sedesList.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>

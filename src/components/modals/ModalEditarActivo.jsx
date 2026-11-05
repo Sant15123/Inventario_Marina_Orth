@@ -30,9 +30,19 @@ export default function ModalEditarActivo({
   setPasoActual: externalSetPasoActual,
   onSubmit: externalOnSubmit,
   submitting: externalSubmitting,
+  sedes: propSedes,
 }) {
   const { showEditSuccess, showError } = useToast();
   const itemActivo = activo || equipo;
+
+  // Sedes dinámicas obtenidas de props o base de datos / catálogo
+  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Nacional']));
+
+  useEffect(() => {
+    if (Array.isArray(propSedes) && propSedes.length > 0) {
+      setSedesList(propSedes);
+    }
+  }, [propSedes]);
 
   // Estado interno para uso autónomo
   const [internalPasoActual, setInternalPasoActual] = useState(1);
@@ -504,20 +514,26 @@ export default function ModalEditarActivo({
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Sede / Ubicación Física
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="ubicacion"
-                      maxLength={90}
-                      value={formData.ubicacion || ''}
-                      onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
-                      placeholder="Ej. Sede Medellín, Sala de Cómputo"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      value={formData.ubicacion || formData.sede || sedesList[0] || 'Medellín'}
+                      onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value, sede: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
                         borderColor: 'var(--line, #334155)',
                       }}
-                    />
+                    >
+                      {formData.ubicacion && !sedesList.includes(formData.ubicacion) && (
+                        <option value={formData.ubicacion}>{formData.ubicacion}</option>
+                      )}
+                      {sedesList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -692,20 +708,26 @@ export default function ModalEditarActivo({
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                       Sede / Ubicación Física
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="ubicacion"
-                      maxLength={90}
-                      value={formData.ubicacion || ''}
-                      onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
-                      placeholder="Ej. Oficina Medellín"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      value={formData.ubicacion || formData.sede || sedesList[0] || 'Medellín'}
+                      onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value, sede: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
                         borderColor: 'var(--line, #334155)',
                       }}
-                    />
+                    >
+                      {formData.ubicacion && !sedesList.includes(formData.ubicacion) && (
+                        <option value={formData.ubicacion}>{formData.ubicacion}</option>
+                      )}
+                      {sedesList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
