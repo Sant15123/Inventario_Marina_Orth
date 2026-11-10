@@ -758,7 +758,57 @@ export function AuthProvider({ children }) {
       let usuarioGuardado = null;
       let idPersistido = id;
 
-      // 1. Intentar persistencia en API backend / PostgreSQL
+      // 1. Intentar persistencia directa en Supabase (tabla física 'perfiles' o vista 'usuarios')
+      try {
+        const { supabase } = await import('../services/supabase');
+        if (supabase) {
+          const payloadSupabase = {
+            documento: datosActualizados.documento,
+            nombre_completo: datosActualizados.nombre || datosActualizados.nombre_completo,
+            telefono: datosActualizados.telefono,
+            sede: datosActualizados.sede,
+            email: datosActualizados.email ? datosActualizados.email.trim().toLowerCase() : undefined,
+            rol: datosActualizados.rol,
+            cargo: datosActualizados.cargo,
+            activo: datosActualizados.activo !== undefined ? datosActualizados.activo : true,
+            avatar_url: datosActualizados.avatar_url !== undefined ? datosActualizados.avatar_url : (datosActualizados.avatarUrl || undefined),
+          };
+
+          if (datosActualizados.password && typeof datosActualizados.password === 'string' && datosActualizados.password.trim().length > 0) {
+            payloadSupabase.password = datosActualizados.password.trim();
+          }
+
+          // Intentar primero sobre la tabla física 'perfiles'
+          let { data: supaData, error: supaError } = await supabase
+            .from('perfiles')
+            .update(payloadSupabase)
+            .eq('id', id)
+            .select();
+
+          // Si falla o la tabla 'perfiles' no responde, intentar en la vista 'usuarios' (con trigger INSTEAD OF)
+          if (supaError) {
+            const { data: supaVistaData, error: supaVistaError } = await supabase
+              .from('usuarios')
+              .update(payloadSupabase)
+              .eq('id', id)
+              .select();
+
+            if (!supaVistaError && supaVistaData && supaVistaData.length > 0) {
+              usuarioGuardado = supaVistaData[0];
+            }
+          } else if (supaData && supaData.length > 0) {
+            usuarioGuardado = supaData[0];
+          }
+
+          if (usuarioGuardado?.id) {
+            idPersistido = usuarioGuardado.id;
+          }
+        }
+      } catch (errSupabase) {
+        console.warn('Supabase updateUsuario error o no disponible:', errSupabase.message);
+      }
+
+      // 2. Intentar persistencia complementaria en API backend / PostgreSQL
       try {
         const payloadApi = {
           documento: datosActualizados.documento,
@@ -779,9 +829,12 @@ export function AuthProvider({ children }) {
 
         const response = await inventoryApi.updateUsuario(id, payloadApi);
         if (response && response.success !== false) {
-          usuarioGuardado = response.data || {};
-          if (usuarioGuardado.id) {
-            idPersistido = usuarioGuardado.id;
+          const respData = response.data || {};
+          if (respData.id) {
+            idPersistido = respData.id;
+          }
+          if (!usuarioGuardado) {
+            usuarioGuardado = respData;
           }
         }
       } catch (err) {
