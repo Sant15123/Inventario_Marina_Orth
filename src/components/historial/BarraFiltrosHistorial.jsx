@@ -27,21 +27,21 @@ export const BarraFiltrosHistorial = ({
           Tipo De Movimiento:
         </span>
         <select
-          value={filtroTipo}
-          onChange={(e) => setFiltroTipo(e.target.value)}
+          value={filtroTipo ? filtroTipo.toLowerCase() : 'todos'}
+          onChange={(e) => setFiltroTipo(e.target.value === 'todos' ? 'TODOS' : e.target.value)}
           className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer"
         >
-          <option value="TODOS">Todos los tipos {totalCount !== undefined ? `(${totalCount})` : ''}</option>
-          <option value="Prestamo">{isUsuario ? 'Mis Préstamos' : 'Préstamos'} {countPrestamos !== undefined ? `(${countPrestamos})` : ''}</option>
-          <option value="Entrega">{isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} {countEntregas !== undefined ? `(${countEntregas})` : ''}</option>
-          <option value="Devolucion">{isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} {countDevoluciones !== undefined ? `(${countDevoluciones})` : ''}</option>
+          <option value="todos">Todos los tipos {totalCount !== undefined ? `(${totalCount})` : ''}</option>
+          <option value="prestamo">{isUsuario ? 'Mis Préstamos' : 'Préstamos'} {countPrestamos !== undefined ? `(${countPrestamos})` : ''}</option>
+          <option value="entrega">{isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} {countEntregas !== undefined ? `(${countEntregas})` : ''}</option>
+          <option value="devolucion">{isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} {countDevoluciones !== undefined ? `(${countDevoluciones})` : ''}</option>
           {!isUsuario && (
             <>
-              <option value="Ingreso">Ingresos {countIngresos !== undefined ? `(${countIngresos})` : ''}</option>
-              <option value="Actualizacion">Actualizaciones {countActualizaciones !== undefined ? `(${countActualizaciones})` : ''}</option>
-              <option value="Baja">Bajas {countBajas !== undefined ? `(${countBajas})` : ''}</option>
+              <option value="ingreso">Ingresos {countIngresos !== undefined ? `(${countIngresos})` : ''}</option>
+              <option value="actualizacion">Actualizaciones {countActualizaciones !== undefined ? `(${countActualizaciones})` : ''}</option>
+              <option value="baja">Bajas {countBajas !== undefined ? `(${countBajas})` : ''}</option>
               {countEliminaciones > 0 && (
-                <option value="Eliminacion">Eliminaciones ({countEliminaciones})</option>
+                <option value="eliminacion">Eliminaciones ({countEliminaciones})</option>
               )}
             </>
           )}

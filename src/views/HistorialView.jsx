@@ -3,6 +3,18 @@ import { useState, useMemo, useEffect } from 'react';
 import { fmtDate, isOverdue } from '../data/initialData';
 import { useAuth } from '../context/AuthContext';
 import BarraFiltrosHistorial from '../components/historial/BarraFiltrosHistorial';
+import {
+  Eye,
+  X,
+  History,
+  User,
+  MapPin,
+  Package,
+  FileText,
+  Clock,
+  ArrowRight,
+  ShieldCheck,
+} from 'lucide-react';
 
 export { BarraFiltrosHistorial };
 
@@ -13,6 +25,7 @@ export default function HistorialView({ movements = [] }) {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const ITEMS_PER_PAGE = 5;
 
   const typeLabel = {
@@ -35,20 +48,74 @@ export default function HistorialView({ movements = [] }) {
     eliminacion: 'low',
   };
 
+  // Helper de badge y estilos de auditoría según el tipo de movimiento
+  const getTypeBadge = (norm) => {
+    switch (norm) {
+      case 'ingreso':
+        return {
+          label: 'Ingreso',
+          icon: '📥',
+          badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/60',
+        };
+      case 'actualizacion':
+        return {
+          label: 'Actualización',
+          icon: '✏️',
+          badgeClass: 'bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300 border-sky-300 dark:border-sky-700/60',
+        };
+      case 'baja':
+        return {
+          label: 'Baja',
+          icon: '⚠️',
+          badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border-rose-300 dark:border-rose-700/60',
+        };
+      case 'eliminacion':
+        return {
+          label: 'Eliminación',
+          icon: '🗑️',
+          badgeClass: 'bg-red-100 text-red-800 dark:bg-red-950/70 dark:text-red-300 border-red-300 dark:border-red-700/60',
+        };
+      case 'prestamo':
+        return {
+          label: 'Préstamo',
+          icon: '🔄',
+          badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-700/60',
+        };
+      case 'entrega':
+        return {
+          label: 'Entrega / Salida',
+          icon: '📦',
+          badgeClass: 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-300 dark:border-purple-700/60',
+        };
+      case 'devolucion':
+        return {
+          label: 'Devolución',
+          icon: '↩️',
+          badgeClass: 'bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border-teal-300 dark:border-teal-700/60',
+        };
+      default:
+        return {
+          label: 'Movimiento',
+          icon: '📋',
+          badgeClass: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700',
+        };
+    }
+  };
+
   // Normalizador de tipo para filtros y etiquetas unificadas
   const normalizeType = (m) => {
-    const raw = String(m.type || m.tipo || '')
+    const raw = String(m?.type || m?.tipo || '')
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
-    if (raw.includes('devolu')) return 'devolucion';
-    if (raw.includes('actualiz') || raw.includes('edit')) return 'actualizacion';
-    if (raw.includes('presta')) return 'prestamo';
-    if (raw.includes('entreg') || raw.includes('salida')) return 'entrega';
-    if (raw.includes('baja')) return 'baja';
-    if (raw.includes('ingreso') || raw.includes('alta') || raw.includes('creac')) return 'ingreso';
-    if (raw.includes('elimin') || raw.includes('borr')) return 'eliminacion';
+    if (raw.includes('devolu') || raw.includes('retorn')) return 'devolucion';
+    if (raw.includes('actualiz') || raw.includes('edit') || raw.includes('modific') || raw.includes('cambio') || raw.includes('update')) return 'actualizacion';
+    if (raw.includes('presta') || raw.includes('prst') || raw.includes('loan')) return 'prestamo';
+    if (raw.includes('entreg') || raw.includes('salida') || raw.includes('despacho')) return 'entrega';
+    if (raw.includes('baja') || raw.includes('descarte') || raw.includes('retiro')) return 'baja';
+    if (raw.includes('ingres') || raw.includes('alta') || raw.includes('creac') || raw.includes('nuevo')) return 'ingreso';
+    if (raw.includes('elimin') || raw.includes('borr') || raw.includes('delete')) return 'eliminacion';
     return raw;
   };
 
@@ -320,14 +387,15 @@ export default function HistorialView({ movements = [] }) {
             <table className="historial-compact-table" style={{ width: '100%', tableLayout: 'auto' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '120px', minWidth: '110px' }}>Fecha</th>
+                  <th style={{ width: '110px', minWidth: '100px' }}>Fecha</th>
                   <th style={{ width: '110px' }}>Tipo</th>
                   <th style={{ minWidth: '220px' }}>Elemento / Material</th>
                   <th style={{ width: '110px', textAlign: 'center' }}>Cant. / Placas</th>
-                  {!isUsuario && <th style={{ width: '180px', minWidth: '150px' }}>Responsable / Custodio</th>}
+                  {!isUsuario && <th style={{ width: '170px', minWidth: '140px' }}>Responsable / Custodio</th>}
                   <th style={{ width: '120px' }}>Sede</th>
                   <th style={{ minWidth: '150px' }}>Motivo / Proyecto</th>
-                  <th style={{ width: '120px' }}>Estado</th>
+                  <th style={{ width: '110px' }}>Estado</th>
+                  <th style={{ width: '70px', textAlign: 'center' }}>Detalle</th>
                 </tr>
               </thead>
               <tbody>
@@ -360,8 +428,15 @@ export default function HistorialView({ movements = [] }) {
                       ? m.unitCodes.join(', ')
                       : `${m.qty || m.cantidad || 1} und`;
 
+                  const displayMotivo = m.motivo || m.motive || m.detalles;
+
                   return (
-                    <tr key={m.id} style={{ height: '48px' }}>
+                    <tr
+                      key={m.id}
+                      style={{ height: '48px', cursor: 'pointer' }}
+                      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                      onClick={() => setMovimientoSeleccionado(m)}
+                    >
                       <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '8px 12px' }}>
                         {fmtDate(m.date)}
                       </td>
@@ -379,6 +454,15 @@ export default function HistorialView({ movements = [] }) {
                           {m.itemId && (
                             <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'monospace' }}>
                               ID: {m.itemId}
+                            </span>
+                          )}
+                          {displayMotivo && (
+                            <span
+                              className="block text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5"
+                              style={{ maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              title={displayMotivo}
+                            >
+                              📝 {displayMotivo}
                             </span>
                           )}
                         </div>
@@ -400,13 +484,36 @@ export default function HistorialView({ movements = [] }) {
                           {m.sede || 'Medellín'}
                         </span>
                       </td>
-                      <td className="wrap" title={m.motive || m.motivo || m.detalles} style={{ padding: '8px 12px', fontSize: '12.5px' }}>
-                        {m.motive || m.motivo || m.detalles || '—'}
+                      <td className="wrap" title={displayMotivo} style={{ padding: '8px 12px', fontSize: '12.5px' }}>
+                        {displayMotivo || '—'}
                       </td>
                       <td style={{ padding: '8px 12px' }}>
                         <span className={`pill ${statusClass}`} style={{ padding: '2px 8px', fontSize: '11.5px' }}>
                           {statusText}
                         </span>
+                      </td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="btn-icon-crud shrink-0"
+                          title="Ver detalle de auditoría"
+                          onClick={() => setMovimientoSeleccionado(m)}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            background: 'rgba(59, 130, 246, 0.08)',
+                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                            color: '#3b82f6',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <Eye size={15} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -471,6 +578,226 @@ export default function HistorialView({ movements = [] }) {
           )}
         </div>
       </section>
+
+      {/* =========================================================================
+          MODAL DE DETALLE DEL MOVIMIENTO Y AUDITORÍA (OJO / VER)
+          ========================================================================= */}
+      {movimientoSeleccionado && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+          }}
+          onClick={() => setMovimientoSeleccionado(null)}
+        >
+          <div
+            className="relative w-full max-w-lg md:max-w-xl bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-scale-in"
+            style={{
+              backgroundColor: 'var(--surface, #0b1320)',
+              border: '1px solid var(--line, #1e293b)',
+              color: 'var(--text, #ffffff)',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Modal */}
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60"
+              style={{
+                borderBottom: '1px solid var(--line, #1e293b)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-lime-600 dark:text-lime-400">
+                  <History size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white" style={{ margin: 0 }}>
+                    Detalle del Movimiento y Auditoría
+                  </h3>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    Registro #{movimientoSeleccionado.id || 'N/A'} • {fmtDate(movimientoSeleccionado.date)}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMovimientoSeleccionado(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Cerrar modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body Modal */}
+            <div className="p-6 overflow-y-auto space-y-4" style={{ flex: 1 }}>
+              {/* Tipo de movimiento y estado */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Tipo de Movimiento:
+                </span>
+                {(() => {
+                  const norm = normalizeType(movimientoSeleccionado);
+                  const badge = getTypeBadge(norm);
+                  return (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badge.badgeClass}`}>
+                      <span>{badge.icon}</span>
+                      <span>{badge.label}</span>
+                    </span>
+                  );
+                })()}
+              </div>
+
+              {/* Grid de Metadatos: Elemento, Placa, Responsable, Sede, Cantidad */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {/* Elemento / Material */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                  <span className="text-[11px] font-semibold text-slate-400 block mb-1">
+                    Elemento / Material
+                  </span>
+                  <strong className="text-sm text-slate-900 dark:text-white block font-bold leading-tight">
+                    {movimientoSeleccionado.itemName || '—'}
+                  </strong>
+                  {movimientoSeleccionado.itemId && (
+                    <span className="inline-block mt-1.5 px-2 py-0.5 font-mono text-[11px] bg-slate-200/60 dark:bg-slate-800 rounded text-slate-700 dark:text-slate-300 font-bold border border-slate-300/40 dark:border-slate-700/60">
+                      Placa / ID: {movimientoSeleccionado.itemId}
+                    </span>
+                  )}
+                </div>
+
+                {/* Responsable / Custodio */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                  <span className="text-[11px] font-semibold text-slate-400 block mb-1">
+                    Responsable / Custodio
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <User size={15} className="text-slate-400 shrink-0" />
+                    <strong className="text-xs text-slate-800 dark:text-slate-200 font-semibold truncate">
+                      {movimientoSeleccionado.person || movimientoSeleccionado.responsable || 'Administrador'}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Sede Asignada / Afectada */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                  <span className="text-[11px] font-semibold text-slate-400 block mb-1">
+                    Sede Institucional
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MapPin size={15} className="text-slate-400 shrink-0" />
+                    <span className="sede-badge municipal px-2.5 py-0.5 text-xs font-semibold">
+                      {movimientoSeleccionado.sede || 'Medellín'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Cantidad / Unidades */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                  <span className="text-[11px] font-semibold text-slate-400 block mb-1">
+                    Cantidad / Unidades
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Package size={15} className="text-slate-400 shrink-0" />
+                    <span className="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
+                      {movimientoSeleccionado.unitCodes && movimientoSeleccionado.unitCodes.length > 0 && !movimientoSeleccionado.unitCodes.includes(movimientoSeleccionado.itemId)
+                        ? movimientoSeleccionado.unitCodes.join(', ')
+                        : `${movimientoSeleccionado.qty || movimientoSeleccionado.cantidad || 1} unidad(es)`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detalle de Campos Modificados / Motivo de Auditoría */}
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <FileText size={14} className="text-lime-600 dark:text-lime-400" />
+                    Detalle de Campos Modificados / Motivo de Auditoría
+                  </span>
+                </div>
+
+                {/* Renderizado de cambios o motivo completo */}
+                {(() => {
+                  const rawMotivo = movimientoSeleccionado.motivo || movimientoSeleccionado.motive || movimientoSeleccionado.detalles || '';
+                  const hasArrow = rawMotivo.includes('➔') || rawMotivo.includes('->');
+
+                  if (hasArrow) {
+                    // Desglosar campos modificados separados por '|' o ','
+                    const parts = rawMotivo.split(/[|,\n]+/).map((p) => p.trim()).filter(Boolean);
+                    return (
+                      <div className="space-y-2 mt-2">
+                        {parts.map((p, idx) => {
+                          const arrowMatch = p.match(/^(.*?):\s*(.*?)\s*(?:➔|->)\s*(.*)$/);
+                          if (arrowMatch) {
+                            const [, field, oldVal, newVal] = arrowMatch;
+                            return (
+                              <div
+                                key={idx}
+                                className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs font-mono"
+                              >
+                                <span className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                                  {field.replace(/_/g, ' ')}:
+                                </span>
+                                <span className="line-through text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
+                                  {oldVal}
+                                </span>
+                                <span className="text-slate-400 font-bold">➔</span>
+                                <span className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/50">
+                                  {newVal}
+                                </span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div
+                              key={idx}
+                              className="p-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-mono"
+                            >
+                              {p}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                      {rawMotivo || 'Sin observaciones o motivo registrado.'}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Footer Modal */}
+            <div
+              className="px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 flex justify-end bg-slate-50/50 dark:bg-slate-900/30"
+              style={{ borderTop: '1px solid var(--line, #1e293b)' }}
+            >
+              <button
+                type="button"
+                onClick={() => setMovimientoSeleccionado(null)}
+                className="btn small btn-primary"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
