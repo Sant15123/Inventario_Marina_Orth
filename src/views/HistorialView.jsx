@@ -456,14 +456,14 @@ export default function HistorialView({ movements = [] }) {
                               ID: {m.itemId}
                             </span>
                           )}
-                          {displayMotivo && (
-                            <span
-                              className="block text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5"
-                              style={{ maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              title={displayMotivo}
+                          {(m.motivo || m.motive || m.detalles) && (
+                            <p
+                              className="text-[11px] text-slate-500 font-normal truncate max-w-sm mt-0.5"
+                              style={{ maxWidth: '320px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              title={m.motivo || m.motive || m.detalles}
                             >
-                              📝 {displayMotivo}
-                            </span>
+                              {m.motivo || m.motive || m.detalles}
+                            </p>
                           )}
                         </div>
                       </td>
@@ -719,16 +719,16 @@ export default function HistorialView({ movements = [] }) {
                 </div>
               </div>
 
-              {/* Detalle de Campos Modificados / Motivo de Auditoría */}
+              {/* Detalle del Cambio / Motivo */}
               <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <FileText size={14} className="text-lime-600 dark:text-lime-400" />
-                    Detalle de Campos Modificados / Motivo de Auditoría
+                    Detalle del Cambio / Motivo
                   </span>
                 </div>
 
-                {/* Renderizado de cambios o motivo completo */}
+                {/* Renderizado completo sin truncar de motivo y auditoría */}
                 {(() => {
                   const rawMotivo = movimientoSeleccionado.motivo || movimientoSeleccionado.motive || movimientoSeleccionado.detalles || '';
                   const hasArrow = rawMotivo.includes('➔') || rawMotivo.includes('->');
