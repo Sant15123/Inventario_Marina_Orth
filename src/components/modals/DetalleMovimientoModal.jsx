@@ -20,10 +20,19 @@ function getItemIcon(item, tipo) {
 export default function DetalleMovimientoModal({ movimiento: rawMovimiento, onClose }) {
   if (!rawMovimiento) return null;
 
+  const rawUnitCodes = Array.isArray(rawMovimiento.unitCodes) ? rawMovimiento.unitCodes : [];
+  const refId = rawMovimiento.itemId || rawMovimiento.id_referencia || rawMovimiento.codigo || rawMovimiento.placa || rawMovimiento.placa_o_id || '';
+  const finalRef = (refId && refId !== 'N/A' && refId !== '—') ? String(refId).trim() : '';
+
+  const unitCodes = rawUnitCodes.length > 0
+    ? rawUnitCodes
+    : (finalRef ? [finalRef] : []);
+
   const movimiento = {
     ...rawMovimiento,
     elemento: rawMovimiento.itemName || rawMovimiento.elemento || rawMovimiento.elemento_nombre || rawMovimiento.material || 'Sin nombre',
-    id_referencia: rawMovimiento.itemId || rawMovimiento.id_referencia || rawMovimiento.codigo || rawMovimiento.placa || rawMovimiento.placa_o_id || 'N/A',
+    id_referencia: finalRef || 'N/A',
+    unitCodes,
     responsable: rawMovimiento.person || rawMovimiento.responsable || 'Bodega Central',
     sede: rawMovimiento.sede || 'Medellín',
     cantidad: rawMovimiento.qty ?? rawMovimiento.cantidad ?? 1,
@@ -58,7 +67,7 @@ export default function DetalleMovimientoModal({ movimiento: rawMovimiento, onCl
         {/* Cuerpo del Modal */}
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {/* Elemento / Activo Hero */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '1.8rem' }}>{itemIcon}</span>
             <div>
               <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-h)', fontWeight: 700 }}>
@@ -83,7 +92,7 @@ export default function DetalleMovimientoModal({ movimiento: rawMovimiento, onCl
           >
             <div>
               <label style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Custodio / Responsable
+                Custodio
               </label>
               <p style={{ margin: '2px 0 0', fontWeight: 600, color: 'var(--text-h)' }}>
                 {movimiento.responsable}
@@ -110,7 +119,7 @@ export default function DetalleMovimientoModal({ movimiento: rawMovimiento, onCl
 
             <div>
               <label style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Tipo de Transacción
+                Tipo de Movimiento
               </label>
               <p style={{ margin: '2px 0 0', fontWeight: 700, color: 'var(--green, #84CC16)' }}>
                 {movimiento.tipo}
@@ -133,65 +142,72 @@ export default function DetalleMovimientoModal({ movimiento: rawMovimiento, onCl
               Placas / Unidades
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-              {movimiento.id_referencia && movimiento.id_referencia !== 'N/A' ? (
-                <span
-                  className="mono-num"
-                  style={{
-                    background: 'var(--surface-2)',
-                    border: '1px solid var(--line)',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    color: '#38bdf8',
-                  }}
-                >
-                  {movimiento.id_referencia}
-                </span>
+              {movimiento.unitCodes.length > 0 ? (
+                movimiento.unitCodes.map((code) => (
+                  <span
+                    key={code}
+                    className="mono-num"
+                    style={{
+                      background: 'var(--surface-2)',
+                      border: '1px solid var(--line)',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#38bdf8',
+                    }}
+                  >
+                    {code}
+                  </span>
+                ))
               ) : (
-                <span className="mono-num" style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-                  Sin placa / ID
+                <span className="mono-num" style={{ background: 'var(--surface-2)', border: '1px solid var(--line)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', color: 'var(--text-dim)' }}>
+                  {movimiento.cantidad || 1} und
                 </span>
               )}
-              <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-                ({movimiento.cantidad} {movimiento.cantidad === 1 ? 'unidad' : 'unidades'})
-              </span>
+              {movimiento.unitCodes.length > 0 && (
+                <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                  ({movimiento.cantidad || 1} {movimiento.cantidad === 1 ? 'unidad' : 'unidades'})
+                </span>
+              )}
             </div>
           </div>
 
           {/* Motivo / Observaciones */}
-          <div>
-            <label
-              style={{
-                fontSize: '11px',
-                color: 'var(--text-dim)',
-                textTransform: 'uppercase',
-                display: 'block',
-                marginBottom: '4px',
-                letterSpacing: '0.4px',
-              }}
-            >
-              Motivo / Observaciones
-            </label>
-            <p
-              style={{
-                margin: 0,
-                fontSize: '13px',
-                color: 'var(--text)',
-                background: 'var(--surface-1)',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                border: '1px solid var(--line)',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                maxHeight: '110px',
-                overflowY: 'auto',
-                lineHeight: '1.4',
-              }}
-            >
-              {movimiento.motivo || 'Actualización general registrada en el sistema.'}
-            </p>
-          </div>
+          {movimiento.motivo && (
+            <div>
+              <label
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-dim)',
+                  textTransform: 'uppercase',
+                  display: 'block',
+                  marginBottom: '2px',
+                  letterSpacing: '0.4px',
+                }}
+              >
+                Motivo / Observaciones
+              </label>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '13px',
+                  color: 'var(--text)',
+                  background: 'var(--surface-1)',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--line)',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  maxHeight: '120px',
+                  overflowY: 'auto',
+                  lineHeight: '1.4',
+                }}
+              >
+                {movimiento.motivo}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer del Modal */}

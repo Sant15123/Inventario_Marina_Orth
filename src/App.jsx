@@ -489,6 +489,85 @@ function App() {
   useEffect(() => {
     purgeLocalCache();
     refreshFromApi();
+
+    // Suscripción Realtime global a historial_movimientos
+    let canal = null;
+    (async () => {
+      try {
+        const { supabase } = await import('./services/supabase');
+        if (supabase) {
+          canal = supabase
+            .channel('app-historial-movimientos-realtime')
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'historial_movimientos',
+              },
+              (payload) => {
+                const h = payload?.new;
+                if (!h) return;
+
+                const finalId = String(h.id_referencia || h.codigo || h.placa || h.placa_o_id || '').trim();
+                const finalName = h.elemento || h.elemento_nombre || (finalId ? `Activo (${finalId})` : 'Material / Equipo');
+                const finalMotivo = h.motivo || h.detalles || 'Movimiento registrado';
+                const dateStr = h.fecha ? h.fecha.split('T')[0] : (h.created_at ? h.created_at.split('T')[0] : today());
+
+                const rawTipo = String(h.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+                let mappedType = rawTipo;
+                if (rawTipo.includes('devolu')) mappedType = 'devolucion';
+                else if (rawTipo.includes('presta')) mappedType = 'prestamo';
+                else if (rawTipo.includes('entreg') || rawTipo.includes('salida')) mappedType = 'entrega';
+                else if (rawTipo.includes('baja')) mappedType = 'baja';
+                else if (rawTipo.includes('actualiz') || rawTipo.includes('modific') || rawTipo.includes('edit')) mappedType = 'actualizacion';
+                else if (rawTipo.includes('ingres') || rawTipo.includes('alta') || rawTipo.includes('creac')) mappedType = 'ingreso';
+                else if (rawTipo.includes('elimin') || rawTipo.includes('borr')) mappedType = 'eliminacion';
+
+                const nuevoMov = {
+                  id: `mov-hist-${h.id || Date.now()}`,
+                  dbId: 500000 + Number(h.id || 0),
+                  type: mappedType,
+                  tipo: h.tipo || mappedType,
+                  itemId: finalId,
+                  id_referencia: finalId,
+                  itemName: finalName,
+                  elemento: finalName,
+                  qty: Number(h.cantidad) || 1,
+                  cantidad: Number(h.cantidad) || 1,
+                  unitCodes: finalId ? [finalId] : [],
+                  person: h.responsable || 'Administrador',
+                  responsable: h.responsable || 'Administrador',
+                  sede: h.sede || 'Medellín',
+                  motivo: finalMotivo,
+                  motive: finalMotivo,
+                  detalles: finalMotivo,
+                  date: dateStr,
+                  fullDate: h.fecha || h.created_at || new Date().toISOString(),
+                  status: 'cerrado',
+                };
+
+                setMovements((prev) => {
+                  const exists = prev.some((m) => String(m.id) === String(nuevoMov.id) || String(m.dbId) === String(nuevoMov.dbId));
+                  if (exists) return prev;
+                  return [nuevoMov, ...prev];
+                });
+              }
+            )
+            .subscribe();
+        }
+      } catch (err) {
+        console.warn('Aviso suscripción Realtime en App:', err);
+      }
+    })();
+
+    return () => {
+      if (canal) {
+        import('./services/supabase').then(({ supabase }) => {
+          if (supabase && canal) supabase.removeChannel(canal);
+        });
+      }
+    };
   }, []);
 
   const handleSyncAndPurge = async () => {

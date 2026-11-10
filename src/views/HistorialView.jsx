@@ -4,6 +4,8 @@ import { fmtDate, isOverdue } from '../data/initialData';
 import { useAuth } from '../context/AuthContext';
 import BarraFiltrosHistorial from '../components/historial/BarraFiltrosHistorial';
 import DetalleMovimientoModal from '../components/modals/DetalleMovimientoModal';
+import { supabase } from '../services/supabase';
+import inventoryApi from '../services/inventoryApi';
 import {
   Eye,
   X,
@@ -19,6 +21,53 @@ import {
 
 export { BarraFiltrosHistorial };
 
+function formatHistorialItem(h) {
+  if (!h) return null;
+  const rawTipo = String(h.type || h.tipo || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  let mappedType = rawTipo;
+  if (rawTipo.includes('devolu') || rawTipo.includes('retorn')) mappedType = 'devolucion';
+  else if (rawTipo.includes('presta') || rawTipo.includes('prst') || rawTipo.includes('loan')) mappedType = 'prestamo';
+  else if (rawTipo.includes('entreg') || rawTipo.includes('salida') || rawTipo.includes('despacho')) mappedType = 'entrega';
+  else if (rawTipo.includes('baja') || rawTipo.includes('descarte') || rawTipo.includes('retiro')) mappedType = 'baja';
+  else if (rawTipo.includes('actualiz') || rawTipo.includes('modific') || rawTipo.includes('edit') || rawTipo.includes('cambio') || rawTipo.includes('update')) mappedType = 'actualizacion';
+  else if (rawTipo.includes('ingres') || rawTipo.includes('alta') || rawTipo.includes('creac') || rawTipo.includes('nuevo')) mappedType = 'ingreso';
+  else if (rawTipo.includes('elimin') || rawTipo.includes('borr') || rawTipo.includes('delete')) mappedType = 'eliminacion';
+
+  const finalId = String(h.id_referencia || h.itemId || h.codigo || h.placa || h.placa_o_id || '').trim();
+  const finalName = h.elemento || h.itemName || h.elemento_nombre || (finalId ? `Activo (${finalId})` : 'Material / Registro');
+  const finalMotivo = h.motivo || h.motive || h.detalles || 'Movimiento registrado';
+  const rawFecha = h.fecha || h.fullDate || h.date || h.created_at || new Date().toISOString();
+  const dateStr = typeof rawFecha === 'string' && rawFecha.includes('T') ? rawFecha.split('T')[0] : (h.date || new Date().toISOString().split('T')[0]);
+
+  return {
+    id: h.id ? (String(h.id).startsWith('mov-hist-') ? h.id : `mov-hist-${h.id}`) : `mov-hist-${Date.now()}`,
+    dbId: Number(h.dbId || h.id) || Date.now(),
+    type: mappedType,
+    tipo: h.tipo || mappedType,
+    itemId: finalId,
+    id_referencia: finalId,
+    itemName: finalName,
+    elemento: finalName,
+    qty: Number(h.qty ?? h.cantidad ?? 1),
+    cantidad: Number(h.qty ?? h.cantidad ?? 1),
+    unitCodes: finalId ? [finalId] : (h.unitCodes || []),
+    person: h.person || h.responsable || 'Administrador',
+    responsable: h.responsable || h.person || 'Administrador',
+    sede: h.sede || 'Medellín',
+    motivo: finalMotivo,
+    motive: finalMotivo,
+    detalles: finalMotivo,
+    date: dateStr,
+    fecha: rawFecha,
+    fullDate: rawFecha,
+    status: h.status || 'cerrado',
+  };
+}
+
 export default function HistorialView({ movements = [] }) {
   const { currentUser, isUsuario, isOperador, isSupervisor } = useAuth();
   const [filterType, setFiltroTipo] = useState('TODOS');
@@ -28,6 +77,87 @@ export default function HistorialView({ movements = [] }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const ITEMS_PER_PAGE = 5;
+
+  const [historial, setHistorial] = useState(() => (Array.isArray(movements) ? movements : []));
+
+  useEffect(() => {
+    if (Array.isArray(movements) && movements.length > 0) {
+      setHistorial((prev) => {
+        const propKeys = new Set(movements.map((m) => String(m.id || m.dbId)));
+        const localesNuevos = prev.filter((p) => !propKeys.has(String(p.id || p.dbId)));
+        return [...localesNuevos, ...movements];
+      });
+    }
+  }, [movements]);
+
+  const fetchHistorial = async () => {
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('historial_movimientos')
+          .select('*')
+          .order('fecha', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          setHistorial(data.map(formatHistorialItem));
+          return;
+        }
+      }
+      const apiData = await inventoryApi.getHistorial();
+      if (Array.isArray(apiData) && apiData.length > 0) {
+        setHistorial(apiData.map(formatHistorialItem));
+      }
+    } catch (err) {
+      console.warn('Aviso al cargar historial:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    // Carga inicial
+    fetchHistorial();
+
+    // Suscripción en vivo por WebSocket a historial_movimientos
+    let canalHistorial = null;
+    try {
+      if (supabase) {
+        canalHistorial = supabase
+          .channel('cambios-historial-realtime')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'historial_movimientos',
+            },
+            (payload) => {
+              const nuevo = payload.new;
+              if (nuevo) {
+                const nuevoMovimiento = formatHistorialItem(nuevo);
+                // Insertar al inicio de la lista de estado para que aparezca arriba de inmediato
+                setHistorial((prev) => {
+                  const exists = prev.some(
+                    (m) =>
+                      String(m.id) === String(nuevoMovimiento.id) ||
+                      (m.dbId && String(m.dbId) === String(nuevoMovimiento.dbId))
+                  );
+                  if (exists) return prev;
+                  return [nuevoMovimiento, ...prev];
+                });
+              }
+            }
+          )
+          .subscribe();
+      }
+    } catch (err) {
+      console.warn('Error configurando canal Realtime en HistorialView:', err);
+    }
+
+    // Limpieza al desmontar el componente
+    return () => {
+      if (canalHistorial && supabase) {
+        supabase.removeChannel(canalHistorial);
+      }
+    };
+  }, []);
 
   const typeLabel = {
     ingreso: 'Ingreso',
@@ -124,7 +254,7 @@ export default function HistorialView({ movements = [] }) {
   const userMovements = useMemo(() => {
     // Supervisor y Admin tienen auditoría cronológica global de todas las sedes
     if (!isUsuario && !isOperador) {
-      return movements;
+      return historial;
     }
 
     const nombreNorm = (currentUser?.nombre || currentUser?.nombre_completo || '')
@@ -141,7 +271,7 @@ export default function HistorialView({ movements = [] }) {
 
     // Rol Operador: movimientos correspondientes a su sede o a sus custodias operativas
     if (isOperador) {
-      return movements.filter((m) => {
+      return historial.filter((m) => {
         const mSede = String(m.sede || m.ubicacion || '')
           .toLowerCase()
           .normalize('NFD')
@@ -162,7 +292,7 @@ export default function HistorialView({ movements = [] }) {
     }
 
     // Rol Usuario regular: solo sus propios movimientos personales
-    return movements.filter((m) => {
+    return historial.filter((m) => {
       const normT = normalizeType(m);
       if (normT === 'ingreso' || normT === 'actualizacion') return false;
 
@@ -177,7 +307,7 @@ export default function HistorialView({ movements = [] }) {
 
       return matchName || matchDoc;
     });
-  }, [movements, isUsuario, isOperador, currentUser]);
+  }, [historial, isUsuario, isOperador, currentUser]);
 
   // Conteos dinámicos por tipo basados en los movimientos visibles del usuario
   const countPrestamos = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'prestamo').length, [userMovements]);
@@ -280,7 +410,7 @@ export default function HistorialView({ movements = [] }) {
             <div>
               <h2>
                 <span>Historial Completo de Movimientos</span>
-                <span className="pill default">{movements.length} transacciones registradas</span>
+                <span className="pill default">{userMovements.length} transacciones registradas</span>
               </h2>
               <span className="section-subtitle">
                 Auditoría cronológica global de préstamos de equipos, salidas de consumibles y cambios de estado en todas las sedes
