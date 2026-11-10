@@ -582,193 +582,119 @@ export default function HistorialView({ movements = [] }) {
       {/* =========================================================================
           MODAL DE DETALLE DEL MOVIMIENTO Y AUDITORÍA (OJO / VER)
           ========================================================================= */}
-      {movimientoSeleccionado && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in"
-          onClick={() => setMovimientoSeleccionado(null)}
-        >
-          <div
-            className="bg-white dark:bg-[#0b1320] rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden p-6 animate-scale-in flex flex-col"
-            style={{ maxHeight: '90vh' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Cabecera Institucional */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center shrink-0">
-                  <History size={20} />
+      {movimientoSeleccionado && (() => {
+        const movimiento = {
+          ...movimientoSeleccionado,
+          elemento: movimientoSeleccionado.itemName || movimientoSeleccionado.elemento || movimientoSeleccionado.material || 'Sin nombre',
+          id_referencia: movimientoSeleccionado.itemId || movimientoSeleccionado.id_referencia || movimientoSeleccionado.codigo || movimientoSeleccionado.placa || 'N/A',
+          responsable: movimientoSeleccionado.person || movimientoSeleccionado.responsable || 'Bodega Central',
+          sede: movimientoSeleccionado.sede || 'OFICINA FMO',
+          cantidad: movimientoSeleccionado.qty ?? movimientoSeleccionado.cantidad ?? 1,
+          tipo: typeLabel[normalizeType(movimientoSeleccionado)] || movimientoSeleccionado.tipo || movimientoSeleccionado.type || 'Actualización',
+          fecha: movimientoSeleccionado.date || movimientoSeleccionado.fecha,
+          motivo: movimientoSeleccionado.motivo || movimientoSeleccionado.motive || movimientoSeleccionado.detalles || 'Actualización general registrada en el sistema.',
+        };
+
+        const cerrarModal = () => setMovimientoSeleccionado(null);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
+              
+              {/* Cabecera */}
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-lg">
+                    📋
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-base" style={{ margin: 0 }}>Detalle del Movimiento</h3>
+                    <p className="text-xs text-slate-400 font-medium" style={{ margin: 0, marginTop: '2px' }}>
+                      Registro #{movimiento.id || 'N/A'} • {movimiento.fecha ? new Date(movimiento.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Fecha N/A'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-lg leading-tight m-0">
-                    Detalle del Movimiento
-                  </h3>
-                  <span className="text-xs text-slate-400 font-medium block mt-0.5">
-                    Registro #{movimientoSeleccionado.id || 'N/A'} • {fmtDate(movimientoSeleccionado.date)}
+                <button
+                  onClick={cerrarModal}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Tipo de Transacción Banner */}
+              <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl mb-4">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tipo de Transacción</span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  ✏️ {movimiento.tipo || 'Actualización'}
+                </span>
+              </div>
+
+              {/* Rejilla de Datos de Auditoría */}
+              <div className="grid grid-cols-2 gap-2.5 mb-4">
+                {/* Elemento y Código (Ancho completo) */}
+                <div className="col-span-2 p-3 bg-slate-50/70 border border-slate-100 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Elemento / Material</span>
+                    <p className="font-bold text-slate-800 text-sm" style={{ margin: 0 }}>{movimiento.elemento || 'Sin nombre'}</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                    {movimiento.id_referencia || 'N/A'}
+                  </span>
+                </div>
+
+                {/* Responsable */}
+                <div className="p-3 bg-slate-50/70 border border-slate-100 rounded-2xl">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Responsable / Custodio</span>
+                  <p className="font-semibold text-slate-700 text-xs flex items-center gap-1.5 truncate" style={{ margin: 0 }}>
+                    👤 {movimiento.responsable || 'Bodega Central'}
+                  </p>
+                </div>
+
+                {/* Sede */}
+                <div className="p-3 bg-slate-50/70 border border-slate-100 rounded-2xl">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Sede Institucional</span>
+                  <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-purple-100 text-purple-700">
+                    {movimiento.sede || 'OFICINA FMO'}
+                  </span>
+                </div>
+
+                {/* Cantidad Afectada (Ancho completo) */}
+                <div className="col-span-2 p-3 bg-slate-50/70 border border-slate-100 rounded-2xl flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cantidad Afectada</span>
+                  <span className="font-bold text-slate-800 text-xs bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                    📦 {movimiento.cantidad ?? 1} unidad(es)
                   </span>
                 </div>
               </div>
+
+              {/* Detalle del Motivo / Cambios Granulares */}
+              <div className="p-3.5 bg-emerald-50/50 border border-emerald-100/80 rounded-2xl mb-5">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="text-emerald-700 text-xs">📝</span>
+                  <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
+                    Detalle del Cambio / Motivo de Auditoría
+                  </span>
+                </div>
+                <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100 min-h-[50px] max-h-[120px] overflow-y-auto">
+                  <p className="text-xs text-slate-700 leading-relaxed font-mono whitespace-pre-wrap break-words" style={{ margin: 0 }}>
+                    {movimiento.motivo || 'Actualización general registrada en el sistema.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Botón de Cierre Institucional */}
               <button
-                type="button"
-                onClick={() => setMovimientoSeleccionado(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                title="Cerrar modal"
+                onClick={cerrarModal}
+                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.99] cursor-pointer"
               >
-                <X size={18} />
+                Cerrar Detalle
               </button>
-            </div>
 
-            {/* Contenido / Body Modal */}
-            <div className="py-4 overflow-y-auto space-y-4" style={{ flex: 1 }}>
-              {/* Banner Tipo de Transacción */}
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-2xl">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Tipo de Transacción
-                </span>
-                {(() => {
-                  const norm = normalizeType(movimientoSeleccionado);
-                  const badge = getTypeBadge(norm);
-                  return (
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badge.badgeClass}`}>
-                      <span>{badge.icon}</span>
-                      <span>{badge.label}</span>
-                    </span>
-                  );
-                })()}
-              </div>
-
-              {/* Tarjeta Destacada de Elemento y Placa (Sin solapamiento) */}
-              <div className="p-4 bg-slate-50/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Elemento / Material
-                </span>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <h4 className="text-base font-bold text-slate-900 dark:text-white leading-snug m-0">
-                    {movimientoSeleccionado.itemName || '—'}
-                  </h4>
-                  {movimientoSeleccionado.itemId && (
-                    <span className="inline-flex items-center self-start sm:self-auto px-2.5 py-1 font-mono text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs shrink-0">
-                      Placa / ID: {movimientoSeleccionado.itemId}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Rejilla de Metadatos Organizada */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Responsable / Custodio */}
-                <div className="p-3.5 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                    Responsable / Custodio
-                  </span>
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <User size={15} className="text-slate-400 shrink-0" />
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                      {movimientoSeleccionado.person || movimientoSeleccionado.responsable || 'Administrador'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Sede Institucional */}
-                <div className="p-3.5 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                    Sede Institucional
-                  </span>
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <MapPin size={15} className="text-slate-400 shrink-0" />
-                    <span className="sede-badge municipal px-2.5 py-0.5 text-xs font-semibold">
-                      {movimientoSeleccionado.sede || 'Medellín'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Cantidad / Unidades */}
-                <div className="p-3.5 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1 sm:col-span-2">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                    Cantidad / Unidades Afectadas
-                  </span>
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <Package size={15} className="text-slate-400 shrink-0" />
-                    <span className="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
-                      {movimientoSeleccionado.unitCodes && movimientoSeleccionado.unitCodes.length > 0 && !movimientoSeleccionado.unitCodes.includes(movimientoSeleccionado.itemId)
-                        ? movimientoSeleccionado.unitCodes.join(', ')
-                        : `${movimientoSeleccionado.qty || movimientoSeleccionado.cantidad || 1} unidad(es)`}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Detalle del Cambio / Motivo */}
-              <div className="pt-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-2">
-                  <FileText size={14} className="text-emerald-600 dark:text-emerald-400" />
-                  Detalle del Cambio / Motivo de Auditoría
-                </span>
-
-                {(() => {
-                  const rawMotivo = movimientoSeleccionado.motivo || movimientoSeleccionado.motive || movimientoSeleccionado.detalles || '';
-                  const hasArrow = rawMotivo.includes('➔') || rawMotivo.includes('->');
-
-                  if (hasArrow) {
-                    const parts = rawMotivo.split(/[|,\n]+/).map((p) => p.trim()).filter(Boolean);
-                    return (
-                      <div className="space-y-2">
-                        {parts.map((p, idx) => {
-                          const arrowMatch = p.match(/^(.*?):\s*(.*?)\s*(?:➔|->)\s*(.*)$/);
-                          if (arrowMatch) {
-                            const [, field, oldVal, newVal] = arrowMatch;
-                            return (
-                              <div
-                                key={idx}
-                                className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs font-mono"
-                              >
-                                <span className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
-                                  {field.replace(/_/g, ' ')}:
-                                </span>
-                                <span className="line-through text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
-                                  {oldVal}
-                                </span>
-                                <span className="text-slate-400 font-bold">➔</span>
-                                <span className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/50">
-                                  {newVal}
-                                </span>
-                              </div>
-                            );
-                          }
-                          return (
-                            <div
-                              key={idx}
-                              className="p-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-mono"
-                            >
-                              {p}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                      {rawMotivo || 'Sin observaciones o motivo registrado.'}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Footer con Botón Alineado a la Derecha */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setMovimientoSeleccionado(null)}
-                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer"
-              >
-                Cerrar
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
