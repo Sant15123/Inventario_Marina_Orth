@@ -609,7 +609,7 @@ export default function InventarioView({
         };
 
         let { error: errorHistorial } = await supabase
-          .from('historial')
+          .from('historial_movimientos')
           .insert([payloadHistorial]);
 
         if (errorHistorial) {
@@ -618,7 +618,7 @@ export default function InventarioView({
           if (errorHistorial.code === 'PGRST204' && String(errorHistorial.message || '').includes('id_referencia')) {
             const retryPayload = { ...payloadHistorial, codigo: payloadHistorial.id_referencia };
             delete retryPayload.id_referencia;
-            const { error: retryError } = await supabase.from('historial').insert([retryPayload]);
+            const { error: retryError } = await supabase.from('historial_movimientos').insert([retryPayload]);
             if (retryError) {
               console.error('Error en reintento con columna codigo:', retryError);
             }

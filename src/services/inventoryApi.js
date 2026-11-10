@@ -387,12 +387,12 @@ export const inventoryApi = {
       list = extraerArreglo(json);
     } catch (_) {}
 
-    // Complementar directamente con registros de Supabase
+    // Complementar directamente con registros de Supabase (historial_movimientos)
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
         const { data: supaHist, error: errH } = await supabase
-          .from('historial')
+          .from('historial_movimientos')
           .select('*')
           .order('fecha', { ascending: false });
 
@@ -401,7 +401,7 @@ export const inventoryApi = {
             list.map((m) => String(m.id || `${m.tipo}-${m.id_referencia || m.placa_o_id}-${m.fecha}`))
           );
           supaHist.forEach((sh) => {
-            const key = String(sh.id || `${sh.tipo}-${sh.id_referencia || sh.codigo}-${sh.fecha}`);
+            const key = String(sh.id || `${sh.tipo}-${sh.id_referencia || sh.codigo || sh.placa_o_id}-${sh.fecha}`);
             if (!existingKeys.has(key)) {
               list.push({
                 ...sh,
@@ -409,8 +409,8 @@ export const inventoryApi = {
                 tipo: sh.tipo,
                 elemento: sh.elemento || sh.elemento_nombre,
                 elemento_nombre: sh.elemento || sh.elemento_nombre,
-                id_referencia: sh.id_referencia || sh.codigo,
-                placa_o_id: sh.id_referencia || sh.codigo,
+                id_referencia: sh.id_referencia || sh.codigo || sh.placa_o_id,
+                placa_o_id: sh.id_referencia || sh.codigo || sh.placa_o_id,
                 motivo: sh.motivo || sh.detalles,
                 detalles: sh.motivo || sh.detalles,
                 fecha: sh.fecha || sh.created_at,
