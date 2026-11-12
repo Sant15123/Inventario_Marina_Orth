@@ -19,6 +19,20 @@ export default function ModalDetalleActivo({
     item.isEquipo || item.serial || item.placa || item.marca || item.area || item.itemType === 'equipo'
   );
 
+  const esActivo = Boolean(
+    item.isEquipo || item.serial || item.itemType === 'equipo' || (item.placa && String(item.placa).toUpperCase().startsWith('ACT-'))
+  );
+  const esMobiliario = Boolean(
+    item.itemType === 'mobiliario' ||
+    item.categoria === 'Mobiliario' ||
+    item.category === 'Mobiliario' ||
+    (item.placa && String(item.placa).toUpperCase().startsWith('MOB-')) ||
+    (item.codigo && String(item.codigo).toUpperCase().startsWith('MOB-')) ||
+    Boolean(item.material_fabricacion) ||
+    Boolean(item.dimensiones)
+  );
+  const esActivoOMobiliario = esActivo || esMobiliario;
+
   // Estado operativo inferido o explícito
   const rawEstado = (item.estado || item.status || item.condicion || '').toLowerCase();
   const esPrestado = rawEstado.includes('prest') || Boolean(item.custodio && item.custodio !== 'Bodega Central');
@@ -416,6 +430,26 @@ export default function ModalDetalleActivo({
                 </p>
               </div>
             </div>
+
+            {/* Estado Contable (Exclusivo Activos y Mobiliario) */}
+            {esActivoOMobiliario && (
+              <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800/60">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    Estado en Contabilidad
+                  </span>
+                  {item.en_contabilidad ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60">
+                      ✅ En Contabilidad
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-700/60">
+                      ⏳ Pendiente / No registrado
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

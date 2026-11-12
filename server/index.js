@@ -114,7 +114,8 @@ app.post('/api/activos', async (req, res) => {
       ubicacion_estante = null,
       estado = 'Disponible',
       custodio = null,
-      fecha_devolucion = null
+      fecha_devolucion = null,
+      en_contabilidad = false,
     } = req.body;
 
     if (!placa || !nombre) {
@@ -122,8 +123,8 @@ app.post('/api/activos', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO activos (placa, nombre, marca, modelo, serial, sede, estado, custodio, fecha_devolucion, ubicacion_estante)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO activos (placa, nombre, marca, modelo, serial, sede, estado, custodio, fecha_devolucion, ubicacion_estante, en_contabilidad)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
         placa.trim(),
@@ -135,7 +136,8 @@ app.post('/api/activos', async (req, res) => {
         estado,
         custodio,
         fecha_devolucion,
-        ubicacion_estante ? ubicacion_estante.trim() : null
+        ubicacion_estante ? ubicacion_estante.trim() : null,
+        Boolean(en_contabilidad),
       ]
     );
 
@@ -162,7 +164,8 @@ app.put('/api/activos/:placa', async (req, res) => {
       ubicacion_estante,
       estado,
       custodio,
-      fecha_devolucion
+      fecha_devolucion,
+      en_contabilidad,
     } = req.body;
 
     const result = await pool.query(
@@ -175,8 +178,9 @@ app.put('/api/activos/:placa', async (req, res) => {
            ubicacion_estante = COALESCE($6, ubicacion_estante),
            estado = COALESCE($7, estado),
            custodio = COALESCE($8, custodio),
-           fecha_devolucion = COALESCE($9, fecha_devolucion)
-       WHERE LOWER(placa) = LOWER($10)
+           fecha_devolucion = COALESCE($9, fecha_devolucion),
+           en_contabilidad = CASE WHEN $10 IS NOT NULL THEN $10::boolean ELSE en_contabilidad END
+       WHERE LOWER(placa) = LOWER($11)
        RETURNING *`,
       [
         nombre,
@@ -188,6 +192,7 @@ app.put('/api/activos/:placa', async (req, res) => {
         estado,
         custodio,
         fecha_devolucion,
+        en_contabilidad !== undefined ? Boolean(en_contabilidad) : null,
         placa.trim()
       ]
     );

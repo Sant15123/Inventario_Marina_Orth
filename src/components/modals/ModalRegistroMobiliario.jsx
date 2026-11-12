@@ -78,6 +78,7 @@ export default function ModalRegistroMobiliario({
     fecha_adquisicion: new Date().toISOString().split('T')[0],
     proveedor: '',
     observaciones: '',
+    en_contabilidad: false,
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -114,6 +115,7 @@ export default function ModalRegistroMobiliario({
         fecha_adquisicion: muebleAEditar.fecha_adquisicion ? String(muebleAEditar.fecha_adquisicion).split('T')[0] : new Date().toISOString().split('T')[0],
         proveedor: muebleAEditar.proveedor_origen || muebleAEditar.proveedor || muebleAEditar.origen || '',
         observaciones: muebleAEditar.observaciones || muebleAEditar.notas || '',
+        en_contabilidad: Boolean(muebleAEditar.en_contabilidad),
       });
       return;
     }
@@ -251,6 +253,7 @@ export default function ModalRegistroMobiliario({
         ]
           .filter(Boolean)
           .join(' | '),
+        en_contabilidad: Boolean(formData.en_contabilidad),
       };
 
       // Salvaguarda explícita contra columnas no existentes en la tabla mobiliario de Supabase
@@ -303,6 +306,7 @@ export default function ModalRegistroMobiliario({
             .filter(Boolean)
             .join(' | '),
           updated_at: new Date().toISOString(),
+          en_contabilidad: Boolean(formData.en_contabilidad),
         };
 
         // Salvaguarda explícita contra columnas no existentes en la tabla mobiliario de Supabase
@@ -1017,6 +1021,25 @@ export default function ModalRegistroMobiliario({
                     }}
                   />
                 </div>
+
+                {/* Control de Seguimiento Contable (Exclusivo Activos y Mobiliario) */}
+                <label className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors">
+                  <input
+                    type="checkbox"
+                    name="en_contabilidad"
+                    checked={Boolean(formData.en_contabilidad)}
+                    onChange={(e) => setFormData({ ...formData, en_contabilidad: e.target.checked })}
+                    className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <div>
+                    <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Registrado en Contabilidad
+                    </span>
+                    <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+                      Marcar si este bien ya cuenta con registro y soporte en el área contable
+                    </span>
+                  </div>
+                </label>
               </div>
             )}
           </div>

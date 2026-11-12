@@ -481,7 +481,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     properties: { tabColor: { argb: COLORS.limePrimary } },
   });
 
-  wsActivos.mergeCells('A1:K1');
+  wsActivos.mergeCells('A1:L1');
   const aT1 = wsActivos.getCell('A1');
   aT1.value = 'FUNDACIÓN MARINA ORTH - REPORTE DE ACTIVOS TECNOLÓGICOS';
   aT1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: COLORS.titleDark } };
@@ -489,7 +489,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   aT1.alignment = { horizontal: 'center', vertical: 'middle' };
   wsActivos.getRow(1).height = 28;
 
-  wsActivos.mergeCells('A2:K2');
+  wsActivos.mergeCells('A2:L2');
   const aT2 = wsActivos.getCell('A2');
   aT2.value = `Catálogo Maestro de Equipos y Cómputo - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${activos.length} activos`;
   aT2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: COLORS.white } };
@@ -497,7 +497,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   aT2.alignment = { horizontal: 'center', vertical: 'middle' };
   wsActivos.getRow(2).height = 20;
 
-  wsActivos.mergeCells('A3:K3');
+  wsActivos.mergeCells('A3:L3');
   const aT3 = wsActivos.getCell('A3');
   aT3.value = '';
   aT3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeLight } };
@@ -516,6 +516,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     { key: 'estado', header: 'Estado Físico', align: 'center' },
     { key: 'condicion', header: 'Condición', align: 'center' },
     { key: 'valor', header: 'Valor Comercial', align: 'right' },
+    { key: 'en_contabilidad', header: 'En Contabilidad', align: 'center' },
   ];
 
   const headerActRow = wsActivos.getRow(5);
@@ -540,6 +541,8 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const condicion = sanitizarCelda(a.condicion, 'Buen Estado');
     const valor = Number(a.valor_unitario ?? a.valor_compra ?? a.precio ?? 0);
 
+    const enContabilidad = a.en_contabilidad ? 'Sí' : 'No';
+
     const row = wsActivos.addRow([
       placa,
       nombre,
@@ -552,6 +555,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
       estado,
       condicion,
       valor,
+      enContabilidad,
     ]);
 
     row.height = 22;
@@ -616,7 +620,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   });
 
   if (rAIdx > 6) {
-    wsActivos.autoFilter = `A5:K${rAIdx - 1}`;
+    wsActivos.autoFilter = `A5:L${rAIdx - 1}`;
   }
   autoFitColumns(wsActivos, 1, 5, 4);
 
@@ -762,7 +766,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     properties: { tabColor: { argb: COLORS.limePrimary } },
   });
 
-  wsMobiliario.mergeCells('A1:M1');
+  wsMobiliario.mergeCells('A1:N1');
   const mT1 = wsMobiliario.getCell('A1');
   mT1.value = 'FUNDACIÓN MARINA ORTH - INVENTARIO DE MOBILIARIO Y ENSERES';
   mT1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: COLORS.titleDark } };
@@ -770,7 +774,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   mT1.alignment = { horizontal: 'center', vertical: 'middle' };
   wsMobiliario.getRow(1).height = 28;
 
-  wsMobiliario.mergeCells('A2:M2');
+  wsMobiliario.mergeCells('A2:N2');
   const mT2 = wsMobiliario.getCell('A2');
   mT2.value = `Dotación, Mesas de Robótica y Sillería - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${mobiliario.length} muebles`;
   mT2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: COLORS.white } };
@@ -778,7 +782,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   mT2.alignment = { horizontal: 'center', vertical: 'middle' };
   wsMobiliario.getRow(2).height = 20;
 
-  wsMobiliario.mergeCells('A3:M3');
+  wsMobiliario.mergeCells('A3:N3');
   const mT3 = wsMobiliario.getCell('A3');
   mT3.value = '';
   mT3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeLight } };
@@ -799,6 +803,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     { key: 'fecha_adquisicion', header: 'Fecha Adquisición', align: 'center' },
     { key: 'proveedor_origen', header: 'Proveedor / Origen', align: 'left' },
     { key: 'observaciones', header: 'Observaciones', align: 'left' },
+    { key: 'en_contabilidad', header: 'En Contabilidad', align: 'center' },
   ];
 
   const headerMobRow = wsMobiliario.getRow(5);
@@ -825,6 +830,8 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const proveedor = sanitizarCelda(m.proveedor_origen || m.proveedor || m.origen, '—');
     const obs = sanitizarCelda(m.observaciones || m.descripcion, '—');
 
+    const enContabilidad = m.en_contabilidad ? 'Sí' : 'No';
+
     const row = wsMobiliario.addRow([
       placa,
       nombre,
@@ -839,6 +846,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
       fechaAdq,
       proveedor,
       obs,
+      enContabilidad,
     ]);
 
     row.height = 22;
@@ -898,7 +906,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   });
 
   if (rMIdx > 6) {
-    wsMobiliario.autoFilter = `A5:M${rMIdx - 1}`;
+    wsMobiliario.autoFilter = `A5:N${rMIdx - 1}`;
   }
   autoFitColumns(wsMobiliario, 1, 5, 4);
 

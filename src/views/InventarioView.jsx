@@ -92,6 +92,7 @@ const mapEquipoItem = (a) => {
     minimo: 1,
     itemType: 'equipo',
     isEquipo: true,
+    en_contabilidad: Boolean(a.en_contabilidad),
     // Ficha técnica
     marca: a.marca || 'Estándar',
     modelo: modelo,
@@ -862,6 +863,7 @@ export default function InventarioView({
     fecha_compra: '',
     fecha_vencimiento_garantia: '',
     observaciones: '',
+    en_contabilidad: false,
   };
   const [formDataNuevo, setFormDataNuevo] = useState(initialFormNuevo);
   const [pasoActualNuevo, setPasoActualNuevo] = useState(1);
@@ -945,6 +947,7 @@ export default function InventarioView({
         fecha_vencimiento_garantia: equipoParaEditar.fecha_vencimiento_garantia || equipoParaEditar.garantia ? (equipoParaEditar.fecha_vencimiento_garantia || equipoParaEditar.garantia).split('T')[0] : '',
         claves_otros: equipoParaEditar.claves_otros || '',
         observaciones: equipoParaEditar.observaciones || equipoParaEditar.notas || equipoParaEditar.notes || '',
+        en_contabilidad: Boolean(equipoParaEditar.en_contabilidad),
       });
     }
   }, [equipoParaEditar, modalEditarEquipoOpen]);
@@ -1267,6 +1270,7 @@ export default function InventarioView({
         claves_otros,
         observaciones,
         fecha_devolucion: null,
+        en_contabilidad: Boolean(formDataNuevoEquipo.en_contabilidad),
       };
 
       const response = await fetch(`${API_BASE_URL}/api/activos`, {
@@ -1555,6 +1559,7 @@ export default function InventarioView({
         fecha_vencimiento_garantia: formDataEditarEquipo.fecha_vencimiento_garantia || null,
         claves_otros: formDataEditarEquipo.claves_otros?.trim() || '',
         observaciones: formDataEditarEquipo.observaciones?.trim() || '',
+        en_contabilidad: Boolean(formDataEditarEquipo.en_contabilidad),
       };
 
       // Intentar actualizar vía PUT /api/activos/:placa o /api/equipos/:id
@@ -5100,6 +5105,25 @@ export default function InventarioView({
                         />
                       </div>
                     </div>
+
+                    {/* Control de Seguimiento Contable (Exclusivo Activos y Mobiliario) */}
+                    <label className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors">
+                      <input
+                        type="checkbox"
+                        name="en_contabilidad"
+                        checked={Boolean(formDataNuevoEquipo.en_contabilidad)}
+                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, en_contabilidad: e.target.checked })}
+                        className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                          Registrado en Contabilidad
+                        </span>
+                        <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+                          Marcar si este bien ya cuenta con registro y soporte en el área contable
+                        </span>
+                      </div>
+                    </label>
                   </div>
                 )}
 

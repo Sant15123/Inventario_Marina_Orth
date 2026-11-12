@@ -71,6 +71,7 @@ export default function ModalEditarActivo({
     fecha_vencimiento_garantia: '',
     claves_otros: '',
     observaciones: '',
+    en_contabilidad: false,
   });
 
   const pasoActual = externalPasoActual !== undefined ? externalPasoActual : internalPasoActual;
@@ -119,6 +120,7 @@ export default function ModalEditarActivo({
             : '',
         claves_otros: itemActivo.claves_otros || '',
         observaciones: itemActivo.observaciones || itemActivo.notas || itemActivo.notes || '',
+        en_contabilidad: Boolean(itemActivo.en_contabilidad),
       });
       setInternalPasoActual(1);
     }
@@ -953,6 +955,25 @@ export default function ModalEditarActivo({
                     />
                   </div>
                 </div>
+
+                {/* Control de Seguimiento Contable (Exclusivo Activos y Mobiliario) */}
+                <label className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors">
+                  <input
+                    type="checkbox"
+                    name="en_contabilidad"
+                    checked={Boolean(formData.en_contabilidad)}
+                    onChange={(e) => setFormData({ ...formData, en_contabilidad: e.target.checked })}
+                    className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <div>
+                    <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Registrado en Contabilidad
+                    </span>
+                    <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+                      Marcar si este bien ya cuenta con registro y soporte en el área contable
+                    </span>
+                  </div>
+                </label>
               </div>
             )}
           </div>
