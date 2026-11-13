@@ -649,6 +649,7 @@ app.get('/api/solicitudes', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT s.*, 
+             s.tipo_solicitud AS tipo,
              COALESCE(
                json_agg(
                  json_build_object(
@@ -666,7 +667,25 @@ app.get('/api/solicitudes', async (req, res) => {
                  )
                ) FILTER (WHERE i.id IS NOT NULL), 
                '[]'::json
-             ) AS items
+             ) AS items,
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', i.id,
+                   'solicitud_id', i.solicitud_id,
+                   'tipo_item', i.tipo_item,
+                   'item_id', i.item_id,
+                   'nombre_item', i.nombre_item,
+                   'cantidad', i.cantidad,
+                   'nombre_sugerido', i.nombre_sugerido,
+                   'categoria_sugerida', i.categoria_sugerida,
+                   'url_compra', i.url_compra,
+                   'precio_estimado', i.precio_estimado,
+                   'ingresado_inventario', i.ingresado_inventario
+                 )
+               ) FILTER (WHERE i.id IS NOT NULL), 
+               '[]'::json
+             ) AS items_solicitud
       FROM solicitudes_inventario s
       LEFT JOIN items_solicitud i ON s.id = i.solicitud_id
       GROUP BY s.id

@@ -238,6 +238,7 @@ export default function ModalSolicitudMaterial({
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
         sede: sede || 'Medellín',
+        tipo: tipoSol,
         tipo_solicitud: tipoSol,
         proyecto_steam_id: proyectoId || null,
         motivo: motivo.trim(),
@@ -248,6 +249,7 @@ export default function ModalSolicitudMaterial({
         fecha_limite: fechaDevolucionVal,
         estado: 'PENDIENTE',
         items: itemsSolicitud,
+        items_solicitud: itemsSolicitud,
         created_at: new Date().toISOString(),
         fecha_radicado: today(),
       };
@@ -412,7 +414,7 @@ export default function ModalSolicitudMaterial({
               </div>
             )}
 
-            {/* 3. Tipo de Solicitud (Segmented Control / Tabs de 3 columnas) */}
+            {/* 3. Tipo de Solicitud (Segmented Control / Tabs de 3 columnas fijas en una fila) */}
             <div>
               <label
                 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
@@ -421,18 +423,34 @@ export default function ModalSolicitudMaterial({
                 Tipo de Solicitud
               </label>
               <div
-                className="grid grid-cols-3 gap-2 p-1.5 rounded-xl border"
+                className="rounded-xl border"
                 style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: '8px',
+                  padding: '6px',
                   backgroundColor: 'var(--bg-alt, #0b1120)',
                   borderColor: 'var(--line, #1e293b)',
+                  width: '100%',
+                  boxSizing: 'border-box',
                 }}
               >
                 <button
                   type="button"
                   onClick={() => handleChangeTipo('PRESTAMO_EQUIPO')}
-                  className="rounded-lg py-2.5 px-2 flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-all cursor-pointer"
-                  style={
-                    tipoSol === 'PRESTAMO_EQUIPO'
+                  className="rounded-lg transition-all cursor-pointer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '10px 8px',
+                    fontSize: '13px',
+                    minWidth: 0,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    whiteSpace: 'nowrap',
+                    ...(tipoSol === 'PRESTAMO_EQUIPO'
                       ? {
                           backgroundColor: '#84CC16',
                           color: '#020617',
@@ -445,8 +463,8 @@ export default function ModalSolicitudMaterial({
                           color: 'var(--text-dim, #94a3b8)',
                           fontWeight: 500,
                           border: '1px solid transparent',
-                        }
-                  }
+                        }),
+                  }}
                   onMouseEnter={(e) => {
                     if (tipoSol !== 'PRESTAMO_EQUIPO') {
                       e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.05))';
@@ -467,9 +485,19 @@ export default function ModalSolicitudMaterial({
                 <button
                   type="button"
                   onClick={() => handleChangeTipo('CONSUMIBLES')}
-                  className="rounded-lg py-2.5 px-2 flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-all cursor-pointer"
-                  style={
-                    tipoSol === 'CONSUMIBLES'
+                  className="rounded-lg transition-all cursor-pointer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '10px 8px',
+                    fontSize: '13px',
+                    minWidth: 0,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    whiteSpace: 'nowrap',
+                    ...(tipoSol === 'CONSUMIBLES'
                       ? {
                           backgroundColor: '#84CC16',
                           color: '#020617',
@@ -482,8 +510,8 @@ export default function ModalSolicitudMaterial({
                           color: 'var(--text-dim, #94a3b8)',
                           fontWeight: 500,
                           border: '1px solid transparent',
-                        }
-                  }
+                        }),
+                  }}
                   onMouseEnter={(e) => {
                     if (tipoSol !== 'CONSUMIBLES') {
                       e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.05))';
@@ -504,9 +532,19 @@ export default function ModalSolicitudMaterial({
                 <button
                   type="button"
                   onClick={() => handleChangeTipo('compra')}
-                  className="rounded-lg py-2.5 px-2 flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-all cursor-pointer"
-                  style={
-                    tipoSol === 'compra'
+                  className="rounded-lg transition-all cursor-pointer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '10px 8px',
+                    fontSize: '13px',
+                    minWidth: 0,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    whiteSpace: 'nowrap',
+                    ...(tipoSol === 'compra'
                       ? {
                           backgroundColor: '#6366f1',
                           color: '#ffffff',
@@ -519,8 +557,8 @@ export default function ModalSolicitudMaterial({
                           color: 'var(--text-dim, #94a3b8)',
                           fontWeight: 500,
                           border: '1px solid transparent',
-                        }
-                  }
+                        }),
+                  }}
                   onMouseEnter={(e) => {
                     if (tipoSol !== 'compra') {
                       e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.05))';
@@ -535,7 +573,7 @@ export default function ModalSolicitudMaterial({
                   }}
                 >
                   <ShoppingCart size={16} />
-                  <span>🛒 Sugerencia de Compra</span>
+                  <span>Sugerencia Compra</span>
                 </button>
               </div>
             </div>

@@ -456,13 +456,21 @@ export const inventoryApi = {
       if (res.ok) {
         const json = await res.json().catch(() => null);
         const arrayResult = extraerArreglo(json) || [];
-        return arrayResult.map((s) => ({
-          ...s,
-          items: Array.isArray(s.items) ? s.items : [],
-          motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || s.nota_rechazo || null,
-          nota_rechazo: s.nota_rechazo || s.observaciones_admin || s.motivo_rechazo || null,
-          observaciones_admin: s.observaciones_admin || s.motivo_rechazo || s.nota_rechazo || null,
-        }));
+        return arrayResult.map((s) => {
+          const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
+            ? s.items_solicitud
+            : (Array.isArray(s.items) ? s.items : []);
+          return {
+            ...s,
+            items: items,
+            items_solicitud: items,
+            tipo: s.tipo || s.tipo_solicitud || '',
+            tipo_solicitud: s.tipo_solicitud || s.tipo || '',
+            motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || s.nota_rechazo || null,
+            nota_rechazo: s.nota_rechazo || s.observaciones_admin || s.motivo_rechazo || null,
+            observaciones_admin: s.observaciones_admin || s.motivo_rechazo || s.nota_rechazo || null,
+          };
+        });
       }
     } catch (err) {
       console.warn('Endpoint /api/solicitudes no disponible en backend, intentando fallback:', err.message);
@@ -472,11 +480,20 @@ export const inventoryApi = {
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        // Intentar consulta con join de items
+        // Intentar consulta con join de items_solicitud
         let { data, error } = await supabase
           .from('solicitudes_inventario')
-          .select('*, items:items_solicitud(*)')
+          .select('*, items_solicitud(*)')
           .order('creado_en', { ascending: false });
+
+        if (error) {
+          const resAlias = await supabase
+            .from('solicitudes_inventario')
+            .select('*, items:items_solicitud(*)')
+            .order('creado_en', { ascending: false });
+          data = resAlias.data;
+          error = resAlias.error;
+        }
 
         if (error) {
           // Fallback a select plano y consulta secundaria de items
@@ -495,22 +512,34 @@ export const inventoryApi = {
               .in('solicitud_id', solIds);
 
             if (Array.isArray(allItems)) {
-              data = data.map((s) => ({
-                ...s,
-                items: allItems.filter((it) => String(it.solicitud_id) === String(s.id)),
-              }));
+              data = data.map((s) => {
+                const its = allItems.filter((it) => String(it.solicitud_id) === String(s.id));
+                return {
+                  ...s,
+                  items: its,
+                  items_solicitud: its,
+                };
+              });
             }
           }
         }
 
         if (!error && Array.isArray(data)) {
-          return data.map((s) => ({
-            ...s,
-            items: Array.isArray(s.items) ? s.items : [],
-            motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || null,
-            nota_rechazo: s.nota_rechazo || s.observaciones_admin || null,
-            observaciones_admin: s.observaciones_admin || s.motivo_rechazo || null,
-          }));
+          return data.map((s) => {
+            const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
+              ? s.items_solicitud
+              : (Array.isArray(s.items) ? s.items : []);
+            return {
+              ...s,
+              items: items,
+              items_solicitud: items,
+              tipo: s.tipo || s.tipo_solicitud || '',
+              tipo_solicitud: s.tipo_solicitud || s.tipo || '',
+              motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || null,
+              nota_rechazo: s.nota_rechazo || s.observaciones_admin || null,
+              observaciones_admin: s.observaciones_admin || s.motivo_rechazo || null,
+            };
+          });
         }
       }
     } catch (e) {
