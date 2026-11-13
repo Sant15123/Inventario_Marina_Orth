@@ -1181,3 +1181,232 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
 
 // Mantener compatibilidad con llamadas anteriores
 export const exportarReporteExcelFMO = exportarLibroMaestroExcelFMO;
+
+/**
+ * =========================================================================
+ * 6. EXPORTACIÓN ESPECÍFICA: BANDEJA DE COMPRAS Y ADQUISICIONES STEAM
+ * Genera un archivo Excel (.xlsx) estructurado con trazabilidad por solicitante,
+ * enlaces de compra y cálculo de presupuesto estimado en COP.
+ * =========================================================================
+ */
+export async function exportarComprasExcelFMO(compras = [], usuarioFiltro = null) {
+  let itemsAExportar = Array.isArray(compras) ? compras : [];
+
+  // Si no se pasaron elementos o viene vacío, intentar cargar directamente de solicitudes_compra
+  if (itemsAExportar.length === 0) {
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('solicitudes_compra')
+          .select('*')
+          .order('creado_en', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          itemsAExportar = data;
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Filtrar por usuario específico si está definido y no es "TODOS"
+  if (usuarioFiltro && usuarioFiltro !== 'TODOS') {
+    const uNorm = String(usuarioFiltro).toLowerCase().trim();
+    itemsAExportar = itemsAExportar.filter((s) => {
+      const nom = String(s.usuario_nombre || s.items?.[0]?.usuario_nombre || '').toLowerCase().trim();
+      return nom === uNorm || nom.includes(uNorm);
+    });
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Fundación Marina Orth - SIGA FMO';
+  workbook.created = new Date();
+
+  const ws = workbook.addWorksheet('Compras y Adquisiciones', {
+    views: [{ showGridLines: true }],
+  });
+
+  // 1. BANNER INSTITUCIONAL (Filas 1 y 2)
+  ws.mergeCells('A1:L1');
+  const titleCell = ws.getCell('A1');
+  titleCell.value = 'FUNDACIÓN MARINA ORTH — SISTEMA DE GESTIÓN Y ADQUISICIONES STEAM (SIGA)';
+  titleCell.font = { name: 'Calibri', size: 12.5, bold: true, color: { argb: COLORS.white } };
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerGreenDark } };
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(1).height = 28;
+
+  ws.mergeCells('A2:L2');
+  const subtitleCell = ws.getCell('A2');
+  const ahora = new Date();
+  const fechaStr = ahora.toLocaleDateString('es-CO');
+  const horaStr = ahora.toLocaleTimeString('es-CO');
+  const filtroTexto = usuarioFiltro && usuarioFiltro !== 'TODOS'
+    ? ` · Filtrado para el solicitante: ${usuarioFiltro}`
+    : ' · Consolidado General de Todas las Solicitudes';
+  subtitleCell.value = `REPORTE OFICIAL DE SUGERENCIAS DE COMPRA${filtroTexto} · Generado el ${fechaStr} a las ${horaStr}`;
+  subtitleCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: COLORS.textPrimary } };
+  subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.zebraOdd } };
+  subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(2).height = 20;
+
+  // Espaciador
+  ws.getRow(3).height = 8;
+
+  // 2. CABECERAS DE COLUMNAS (Fila 4)
+  const headers = [
+    'Solicitante (Usuario)',
+    'Sede Destino',
+    'Categoría',
+    'Producto Sugerido',
+    'Cantidad',
+    'Precio Estimado Unitario (COP)',
+    'Subtotal COP',
+    'Enlace de Compra (URL)',
+    'Fecha Radicado',
+    'Fecha Requerida',
+    'Estado Actual',
+    'Justificación / Motivo',
+  ];
+
+  const headerRow = ws.getRow(4);
+  headerRow.height = 26;
+  headers.forEach((h, idx) => {
+    const cell = headerRow.getCell(idx + 1);
+    cell.value = h;
+    styleHeaderCell(cell);
+  });
+
+  // 3. REGISTROS DE COMPRA (Fila 5 en adelante)
+  let rIdx = 5;
+  let totalPresupuestoGeneral = 0;
+  let totalUnidadesGeneral = 0;
+
+  itemsAExportar.forEach((sol) => {
+    // Si la solicitud contiene array de ítems o es registro plano
+    const itemsList = (Array.isArray(sol.items) && sol.items.length > 0)
+      ? sol.items
+      : (Array.isArray(sol.items_solicitud) && sol.items_solicitud.length > 0 ? sol.items_solicitud : [sol]);
+
+    itemsList.forEach((it) => {
+      const row = ws.getRow(rIdx);
+      row.height = 22;
+
+      const userName = sol.usuario_nombre || it.usuario_nombre || 'Docente / Custodio';
+      const sede = sol.sede || it.sede || 'Medellín';
+      const catDestino = String(it.categoria_destino || it.categoria_sugerida || it.categoria || sol.categoria_destino || 'consumibles').toLowerCase();
+      const categoria = catDestino.includes('papel') ? 'Papelería General' : 'Consumibles y Robótica';
+      const producto = it.nombre_producto || it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido';
+      const cantidad = Number(it.cantidad) || Number(sol.cantidad) || 1;
+      const precioUnit = Number(it.precio_estimado) || Number(sol.precio_estimado) || 0;
+      const subtotal = cantidad * precioUnit;
+      const urlCompra = String(it.url_compra || it.url || sol.url_compra || '').trim();
+      const fRad = sol.creado_en || sol.fecha_radicado || sol.created_at || '';
+      const fReq = sol.fecha_requerida || sol.fecha_devolucion_estimada || '';
+      const estado = sol.estado || it.estado || 'PENDIENTE';
+      const justificacion = sol.justificacion || sol.motivo || it.justificacion || '';
+
+      totalUnidadesGeneral += cantidad;
+      totalPresupuestoGeneral += subtotal;
+
+      const isEven = rIdx % 2 === 0;
+      const bgArgb = isEven ? COLORS.zebraEven : COLORS.zebraOdd;
+
+      // Valores en celdas
+      row.getCell(1).value = sanitizarCelda(userName);
+      row.getCell(2).value = sanitizarCelda(sede);
+      row.getCell(3).value = sanitizarCelda(categoria);
+      row.getCell(4).value = sanitizarCelda(producto);
+      row.getCell(5).value = cantidad;
+      row.getCell(6).value = precioUnit;
+      row.getCell(7).value = subtotal;
+
+      if (urlCompra) {
+        row.getCell(8).value = {
+          text: urlCompra.length > 42 ? `${urlCompra.slice(0, 39)}...` : urlCompra,
+          hyperlink: urlCompra.startsWith('http') ? urlCompra : `https://${urlCompra}`,
+        };
+      } else {
+        row.getCell(8).value = '—';
+      }
+
+      row.getCell(9).value = fRad ? String(fRad).slice(0, 10) : '—';
+      row.getCell(10).value = fReq ? String(fReq).slice(0, 10) : '—';
+      row.getCell(11).value = sanitizarCelda(estado);
+      row.getCell(12).value = sanitizarCelda(justificacion);
+
+      // Aplicar estilos base a cada celda
+      for (let c = 1; c <= 12; c++) {
+        const cell = row.getCell(c);
+        cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textPrimary } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: COLORS.borderLight } },
+          bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
+          left: { style: 'thin', color: { argb: COLORS.borderLight } },
+          right: { style: 'thin', color: { argb: COLORS.borderLight } },
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      }
+
+      // Alineación y tipado específico
+      row.getCell(1).font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.textPrimary } };
+      row.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(5).numFmt = '#,##0';
+      row.getCell(6).alignment = { vertical: 'middle', horizontal: 'right' };
+      row.getCell(6).numFmt = '"$"#,##0';
+      row.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+      row.getCell(7).numFmt = '"$"#,##0';
+      row.getCell(8).font = { name: 'Calibri', size: 9.5, color: { argb: 'FF15803D' }, underline: true };
+      row.getCell(9).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(10).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(11).alignment = { vertical: 'middle', horizontal: 'center' };
+
+      rIdx++;
+    });
+  });
+
+  // 4. FILA DE TOTALES GENERALES
+  const totalRow = ws.getRow(rIdx);
+  totalRow.height = 26;
+  totalRow.getCell(4).value = 'TOTALES GENERALES:';
+  totalRow.getCell(4).font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: COLORS.headerGreenDark } };
+  totalRow.getCell(4).alignment = { vertical: 'middle', horizontal: 'right' };
+
+  totalRow.getCell(5).value = totalUnidadesGeneral;
+  totalRow.getCell(5).font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: COLORS.headerGreenDark } };
+  totalRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+  totalRow.getCell(5).numFmt = '#,##0';
+
+  totalRow.getCell(7).value = totalPresupuestoGeneral;
+  totalRow.getCell(7).font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: COLORS.headerGreenDark } };
+  totalRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'right' };
+  totalRow.getCell(7).numFmt = '"$"#,##0';
+
+  for (let c = 1; c <= 12; c++) {
+    const cell = totalRow.getCell(c);
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.zebraOdd } };
+    cell.border = {
+      top: { style: 'medium', color: { argb: COLORS.limePrimary } },
+      bottom: { style: 'double', color: { argb: COLORS.limePrimary } },
+    };
+  }
+
+  // 5. AUTOFILTROS Y AUTO-AJUSTE DE ANCHOS
+  if (rIdx > 5) {
+    ws.autoFilter = `A4:L${rIdx - 1}`;
+  }
+  autoFitColumns(ws, 1, 4, 3);
+
+  // 6. GENERAR Y DESCARGAR BUFFER
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  const fechaArch = new Date().toISOString().slice(0, 10);
+  const userSuffix = usuarioFiltro && usuarioFiltro !== 'TODOS'
+    ? `_${String(usuarioFiltro).replace(/\s+/g, '_')}`
+    : '_Consolidado';
+  const nombreArchivo = `Compras_Adquisiciones_SIGA_FMO${userSuffix}_${fechaArch}.xlsx`;
+  saveAs(blob, nombreArchivo);
+}
+
