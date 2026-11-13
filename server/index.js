@@ -762,7 +762,10 @@ app.post('/api/solicitudes', async (req, res) => {
     if (items.length > 0) {
       for (const it of items) {
         const nomSugerido = it.nombre_sugerido || (esCompraReq ? (it.nombre_item || it.nombre || 'Artículo sugerido') : null);
-        const catSugerida = it.categoria_sugerida || (esCompraReq ? 'consumibles' : null);
+        const catDestino = String(it.categoria_sugerida || it.categoria || '').toLowerCase().trim();
+        const catSugerida = esCompraReq
+          ? (catDestino === 'papeleria' ? 'papeleria' : 'consumibles')
+          : null;
         const urlComp = it.url_compra || it.url || it.link_compra || null;
         const precioEst = Number(it.precio_estimado) || Number(it.precio) || 0;
         const tipoItemFinal = esCompraReq

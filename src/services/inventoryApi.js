@@ -618,15 +618,21 @@ export const inventoryApi = {
       tipo_solicitud: tipoSolicitudFinal,
       tipo: tipoSolicitudFinal,
       tipoSolicitud: tipoSolicitudFinal,
-      items: itemsList.map((it) => ({
-        ...it,
-        tipo_item: esCompraReq ? 'compra' : (it.tipo_item || (esConsumibleReq ? 'consumible' : 'equipo')),
-        nombre_item: it.nombre_item || it.nombre_sugerido || it.nombre || 'Artículo',
-        nombre_sugerido: it.nombre_sugerido || (esCompraReq ? (it.nombre_item || it.nombre) : null),
-        categoria_sugerida: it.categoria_sugerida || (esCompraReq ? 'consumibles' : null),
-        url_compra: it.url_compra || it.url || it.link_compra || null,
-        precio_estimado: Number(it.precio_estimado) || Number(it.precio) || 0,
-      })),
+      items: itemsList.map((it) => {
+        const catDestino = String(it.categoria_sugerida || it.categoria || it.categoria_destino || '').toLowerCase().trim();
+        const categoriaFinal = esCompraReq
+          ? (catDestino === 'papeleria' ? 'papeleria' : 'consumibles')
+          : null;
+        return {
+          ...it,
+          tipo_item: esCompraReq ? 'compra' : (it.tipo_item || (esConsumibleReq ? 'consumible' : 'equipo')),
+          nombre_item: it.nombre_item || it.nombre_sugerido || it.nombre || 'Artículo',
+          nombre_sugerido: it.nombre_sugerido || (esCompraReq ? (it.nombre_item || it.nombre) : null),
+          categoria_sugerida: categoriaFinal,
+          url_compra: it.url_compra || it.url || it.link_compra || null,
+          precio_estimado: Number(it.precio_estimado) || Number(it.precio) || 0,
+        };
+      }),
     };
 
     // 1. Intentar endpoint backend REST si está disponible

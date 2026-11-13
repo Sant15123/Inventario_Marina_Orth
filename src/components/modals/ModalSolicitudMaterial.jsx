@@ -262,15 +262,21 @@ export default function ModalSolicitudMaterial({
           : 'PRESTAMO_EQUIPO';
       const fechaDevolucionVal = (tipoSol === 'PRESTAMO_EQUIPO' || esCompraFinal) ? fechaEstimada : null;
 
-      const itemsNormalizados = itemsParaEnviar.map((it) => ({
-        ...it,
-        tipo_item: esCompraFinal ? 'compra' : (it.tipo_item || (tipoSolParaGuardar === 'CONSUMIBLES' ? 'consumible' : 'equipo')),
-        nombre_item: it.nombre_item || it.nombre_sugerido || 'Artículo',
-        nombre_sugerido: it.nombre_sugerido || (esCompraFinal ? (it.nombre_item || 'Artículo sugerido') : null),
-        categoria_sugerida: it.categoria_sugerida || (esCompraFinal ? 'consumibles' : null),
-        url_compra: it.url_compra || null,
-        precio_estimado: Number(it.precio_estimado) || 0,
-      }));
+      const itemsNormalizados = itemsParaEnviar.map((it) => {
+        const catDestino = String(it.categoria_sugerida || it.categoria || compraForm.categoria || '').toLowerCase().trim();
+        const categoriaFinal = esCompraFinal
+          ? (catDestino === 'papeleria' ? 'papeleria' : 'consumibles')
+          : null;
+        return {
+          ...it,
+          tipo_item: esCompraFinal ? 'compra' : (it.tipo_item || (tipoSolParaGuardar === 'CONSUMIBLES' ? 'consumible' : 'equipo')),
+          nombre_item: it.nombre_item || it.nombre_sugerido || 'Artículo',
+          nombre_sugerido: it.nombre_sugerido || (esCompraFinal ? (it.nombre_item || 'Artículo sugerido') : null),
+          categoria_sugerida: categoriaFinal,
+          url_compra: it.url_compra || it.url || null,
+          precio_estimado: Number(it.precio_estimado) || 0,
+        };
+      });
 
       const payload = {
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
