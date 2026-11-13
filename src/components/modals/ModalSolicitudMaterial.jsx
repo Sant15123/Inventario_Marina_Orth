@@ -233,17 +233,21 @@ export default function ModalSolicitudMaterial({
       setSubmitting(true);
       setValidationError('');
 
-      const esCompraFinal = tipoSol === 'SUGERENCIA_COMPRA' || tipoSol === 'compra';
-      const tipoSolParaGuardar = esCompraFinal
-        ? 'SUGERENCIA_COMPRA'
-        : (tipoSol.includes('CONSUMIB') ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+      const esCompraFinal = tipoSol === 'SUGERENCIA_COMPRA' || tipoSol === 'compra' || esCompra;
+      const tipoSolParaGuardar =
+        (tipoSol === 'compra' || tipoSol === 'SUGERENCIA_COMPRA' || esCompra)
+          ? 'SUGERENCIA_COMPRA'
+          : (tipoSol === 'consumible' || tipoSol === 'CONSUMIBLES' || tipoSol.includes('CONSUMIB'))
+          ? 'CONSUMIBLES'
+          : 'PRESTAMO_EQUIPO';
       const fechaDevolucionVal = (tipoSol === 'PRESTAMO_EQUIPO' || esCompraFinal) ? fechaEstimada : null;
       const payload = {
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
         sede: sede || 'Medellín',
-        tipo: tipoSolParaGuardar,
         tipo_solicitud: tipoSolParaGuardar,
+        tipo: tipoSolParaGuardar,
+        tipoSolicitud: tipoSolParaGuardar,
         proyecto_steam_id: proyectoId || null,
         motivo: motivo.trim(),
         justificacion: motivo.trim(),

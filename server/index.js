@@ -718,6 +718,16 @@ app.post('/api/solicitudes', async (req, res) => {
       items = [],
     } = req.body;
 
+    const rawTipoReq = String(tipo_solicitud || req.body.tipo || req.body.tipoSolicitud || '').toUpperCase().trim();
+    const esCompraReq =
+      rawTipoReq === 'SUGERENCIA_COMPRA' ||
+      rawTipoReq.includes('COMPRA') ||
+      (Array.isArray(items) && items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido));
+    const esConsumibleReq = !esCompraReq && rawTipoReq.includes('CONSUMIB');
+    const tipoSolicitudFinal = esCompraReq
+      ? 'SUGERENCIA_COMPRA'
+      : (esConsumibleReq ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+
     const fechaDev = fecha_devolucion_estimada || fecha_devolucion || null;
     const motivoFinal = motivo || justificacion || 'Sin motivo especificado';
 
@@ -758,7 +768,7 @@ app.post('/api/solicitudes', async (req, res) => {
           RETURNING *`,
           [
             nuevaSolicitud.id,
-            it.tipo_item || (tipo_solicitud === 'compra' ? 'compra' : 'equipo'),
+            it.tipo_item || (esCompraReq ? 'compra' : (esConsumibleReq ? 'consumible' : 'equipo')),
             it.item_id || null,
             it.nombre_item || it.nombre_sugerido || 'Artículo',
             it.cantidad || 1,

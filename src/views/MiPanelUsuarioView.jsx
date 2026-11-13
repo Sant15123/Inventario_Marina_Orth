@@ -52,14 +52,21 @@ const formatFechaCompacta = (d) => {
 };
 
 const renderTipoSolicitud = (solicitud) => {
-  const tipo = (solicitud.tipo_solicitud || solicitud.tipo || '').toUpperCase();
+  const tipo = String(solicitud.tipo_solicitud || solicitud.tipo || solicitud.tipoSolicitud || '').toUpperCase();
   const items = (Array.isArray(solicitud.items_solicitud) && solicitud.items_solicitud.length > 0)
     ? solicitud.items_solicitud
-    : (Array.isArray(solicitud.items) ? solicitud.items : []);
+    : (Array.isArray(solicitud.items) && solicitud.items.length > 0 ? solicitud.items : []);
+
+  // Detección exhaustiva de solicitud de compra: por tipo, por campos de ítems o por texto del motivo
   const esCompra =
     tipo === 'SUGERENCIA_COMPRA' ||
     tipo.includes('COMPRA') ||
-    items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido);
+    items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || i.tipo_item === 'compra') ||
+    (solicitud.motivo && (
+      solicitud.motivo.toLowerCase().includes('compra') ||
+      solicitud.motivo.toLowerCase().includes('batería') ||
+      solicitud.motivo.toLowerCase().includes('bateria')
+    ));
 
   if (esCompra) {
     const categorias = [
@@ -79,6 +86,15 @@ const renderTipoSolicitud = (solicitud) => {
       }
     } else if (categorias.length > 1) {
       etiqueta = 'Compra: Robótica y Papelería';
+    } else {
+      // Inferencia contextual si los ítems vinieron sin categoría explícita
+      const textoItems = items.map((it) => (it.nombre_item || it.nombre_sugerido || '')).join(' ').toLowerCase();
+      const textoCompleto = (textoItems + ' ' + (solicitud.motivo || '')).toLowerCase();
+      if (textoCompleto.includes('bater') || textoCompleto.includes('robot') || textoCompleto.includes('lipo') || textoCompleto.includes('li-po')) {
+        etiqueta = 'Compra: Robótica / Cons.';
+      } else if (textoCompleto.includes('papel') || textoCompleto.includes('resma') || textoCompleto.includes('cuaderno') || textoCompleto.includes('cartulina')) {
+        etiqueta = 'Compra: Papelería';
+      }
     }
 
     return (
@@ -102,6 +118,7 @@ const renderTipoSolicitud = (solicitud) => {
     </span>
   );
 };
+
 
 
 export default function MiPanelUsuarioView({

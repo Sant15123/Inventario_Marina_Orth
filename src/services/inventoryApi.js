@@ -603,11 +603,21 @@ export const inventoryApi = {
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
+        const rawTipo = String(data.tipo_solicitud || data.tipo || data.tipoSolicitud || '').toUpperCase().trim();
+        const esCompraReq =
+          rawTipo === 'SUGERENCIA_COMPRA' ||
+          rawTipo.includes('COMPRA') ||
+          (Array.isArray(data.items) && data.items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido));
+        const esConsumibleReq = !esCompraReq && rawTipo.includes('CONSUMIB');
+        const tipoSolicitudFinal = esCompraReq
+          ? 'SUGERENCIA_COMPRA'
+          : (esConsumibleReq ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+
         const solPayload = {
           usuario_id: data.usuario_id || null,
           usuario_nombre: data.usuario_nombre || 'Docente / Custodio',
           sede: data.sede || 'Medellín',
-          tipo_solicitud: data.tipo_solicitud || 'PRESTAMO_EQUIPO',
+          tipo_solicitud: tipoSolicitudFinal,
           proyecto_steam_id: data.proyecto_steam_id || null,
           motivo: data.motivo || data.justificacion || 'Sin motivo',
           justificacion: data.justificacion || data.motivo || null,
@@ -629,12 +639,12 @@ export const inventoryApi = {
         if (Array.isArray(data.items) && data.items.length > 0) {
           const itemsPayload = data.items.map((it) => ({
             solicitud_id: solCreated.id,
-            tipo_item: it.tipo_item || (data.tipo_solicitud === 'compra' ? 'compra' : 'equipo'),
+            tipo_item: it.tipo_item || (esCompraReq ? 'compra' : (esConsumibleReq ? 'consumible' : 'equipo')),
             item_id: it.item_id || null,
             nombre_item: it.nombre_item || it.nombre_sugerido || 'Artículo',
             cantidad: it.cantidad || 1,
-            nombre_sugerido: it.nombre_sugerido || null,
-            categoria_sugerida: it.categoria_sugerida || null,
+            nombre_sugerido: it.nombre_sugerido || it.nombre_item || null,
+            categoria_sugerida: it.categoria_sugerida || (esCompraReq ? 'consumibles' : null),
             url_compra: it.url_compra || null,
             precio_estimado: it.precio_estimado || 0,
             ingresado_inventario: Boolean(it.ingresado_inventario),
