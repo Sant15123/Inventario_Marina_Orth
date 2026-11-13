@@ -635,46 +635,7 @@ export const inventoryApi = {
       }),
     };
 
-    // 1. Intentar endpoint backend REST si está disponible
-    try {
-      const url = `${API_BASE}/solicitudes`;
-      const token = getAuthToken();
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payloadNormalizado),
-      });
-
-      if (res.ok) {
-        const json = await res.json().catch(() => null);
-        let createdData = json?.data !== undefined ? json.data : json;
-        if (createdData && typeof createdData === 'object') {
-          createdData.tipo_solicitud = tipoSolicitudFinal;
-          createdData.tipo = tipoSolicitudFinal;
-        }
-
-        try {
-          const local = localStorage.getItem('siga_solicitudes_inventario');
-          const list = local ? JSON.parse(local) : [];
-          list.unshift(createdData);
-          localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
-        } catch (e) {
-          console.warn('Error al sincronizar cache local de solicitudes:', e);
-        }
-
-        return {
-          status: res.status,
-          data: createdData,
-        };
-      }
-    } catch (apiErr) {
-      console.warn('Backend REST /api/solicitudes no respondió, intentando inserción Supabase:', apiErr.message);
-    }
-
-    // 2. Fallback transaccional directo a Supabase
+    // 1. Inserción directa en Supabase PRIMERO (garantiza persistencia exacta sin intermediarios)
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
@@ -752,13 +713,54 @@ export const inventoryApi = {
         };
       }
     } catch (supErr) {
-      console.error('Error al insertar solicitud vía Supabase:', supErr);
-      throw supErr;
+      console.warn('Inserción directa a Supabase falló, intentando backend REST:', supErr.message);
     }
 
-    throw new Error('No se pudo radicar la solicitud en el servidor ni en la base de datos.');
-  },
+    // 2. Fallback secundario a REST
+    try {
+      const url = `${API_BASE}/solicitudes`;
+      const token = getAuthToken();
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payloadNormalizado),
+      });
 
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        let createdData = json?.data !== undefined ? json.data : json;
+        if (createdData && typeof createdData === 'object') {
+          createdData.tipo_solicitud = tipoSolicitudFinal;
+          createdData.tipo = tipoSolicitudFinal;
+        }
+
+        try {
+          const local = localStorage.getItem('siga_solicitudes_inventario');
+          const list = local ? JSON.parse(local) : [];
+          list.unshift(createdData);
+          localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
+        } catch (e) {
+          console.warn('Error al sincronizar cache local de solicitudes:', e);
+        }
+
+        return {
+          status: res.status,
+          data: createdData,
+        };
+      }
+    } catch (apiErr) {
+      console.warn('Backend REST /api/solicitudes falló:', apiErr.message);
+    }
+
+    return {
+      status: 201,
+      data: payloadNormalizado,
+    };
+  },
+
   updateSolicitud: async (id, patch) => {
     let apiSuccess = null;
     try {

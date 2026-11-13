@@ -77,23 +77,25 @@ const renderTipoSolicitud = (solicitud) => {
       ),
     ];
 
-    let etiqueta = 'Compra: Insumos';
+    let etiqueta = 'Sugerencia Compra: Insumos';
     if (categorias.length === 1) {
       if (categorias[0].includes('consumible') || categorias[0].includes('robotica')) {
-        etiqueta = 'Compra: Robótica / Cons.';
+        etiqueta = 'Sugerencia Compra: Robótica / Cons.';
       } else if (categorias[0].includes('papeleria')) {
-        etiqueta = 'Compra: Papelería';
+        etiqueta = 'Sugerencia Compra: Papelería';
       }
     } else if (categorias.length > 1) {
-      etiqueta = 'Compra: Robótica y Papelería';
+      etiqueta = 'Sugerencia Compra: Mixto';
     } else {
       // Inferencia contextual si los ítems vinieron sin categoría explícita
       const textoItems = items.map((it) => (it.nombre_item || it.nombre_sugerido || '')).join(' ').toLowerCase();
       const textoCompleto = (textoItems + ' ' + (solicitud.motivo || '')).toLowerCase();
       if (textoCompleto.includes('bater') || textoCompleto.includes('robot') || textoCompleto.includes('lipo') || textoCompleto.includes('li-po')) {
-        etiqueta = 'Compra: Robótica / Cons.';
+        etiqueta = 'Sugerencia Compra: Robótica / Cons.';
       } else if (textoCompleto.includes('papel') || textoCompleto.includes('resma') || textoCompleto.includes('cuaderno') || textoCompleto.includes('cartulina')) {
-        etiqueta = 'Compra: Papelería';
+        etiqueta = 'Sugerencia Compra: Papelería';
+      } else {
+        etiqueta = 'Sugerencia Compra';
       }
     }
 
@@ -874,7 +876,13 @@ export default function MiPanelUsuarioView({
                       const esCompra =
                         rawTipo === 'SUGERENCIA_COMPRA' ||
                         rawTipo.includes('COMPRA') ||
-                        solItems.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido);
+                        solItems.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || String(i.tipo_item || '').toLowerCase() === 'compra') ||
+                        (sol.motivo && (
+                          sol.motivo.toLowerCase().includes('compra') ||
+                          sol.motivo.toLowerCase().includes('batería') ||
+                          sol.motivo.toLowerCase().includes('bateria') ||
+                          sol.motivo.toLowerCase().includes('lipo')
+                        ));
                       const esConsumible = !esCompra && rawTipo.includes('CONSUMIB');
                       const esPrestamo = !esCompra && !esConsumible;
                       const fechaRad = sol.creado_en || sol.fecha_radicado || sol.created_at || '';
