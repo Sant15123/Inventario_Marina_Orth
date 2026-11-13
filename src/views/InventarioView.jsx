@@ -5105,25 +5105,6 @@ export default function InventarioView({
                         />
                       </div>
                     </div>
-
-                    {/* Control de Seguimiento Contable (Exclusivo Activos y Mobiliario) */}
-                    <label className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-xl cursor-pointer hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors">
-                      <input
-                        type="checkbox"
-                        name="en_contabilidad"
-                        checked={Boolean(formDataNuevoEquipo.en_contabilidad)}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, en_contabilidad: e.target.checked })}
-                        className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                      />
-                      <div>
-                        <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-                          Registrado en Contabilidad
-                        </span>
-                        <span className="block text-[11px] text-slate-500 dark:text-slate-400">
-                          Marcar si este bien ya cuenta con registro y soporte en el área contable
-                        </span>
-                      </div>
-                    </label>
                   </div>
                 )}
 
@@ -7027,6 +7008,161 @@ export default function InventarioView({
                         }}
                       />
                     </div>
+
+                {/* Control de Seguimiento Contable Institucional (Exclusivo Activos y Mobiliario) */}
+                <label
+                  className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: formDataNuevoEquipo.en_contabilidad
+                      ? 'rgba(132, 204, 22, 0.08)'
+                      : 'var(--surface-2, #f8fafc)',
+                    borderColor: formDataNuevoEquipo.en_contabilidad
+                      ? '#84CC16'
+                      : 'var(--line, #cbd5e1)',
+                    boxShadow: formDataNuevoEquipo.en_contabilidad
+                      ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
+                      : 'none',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    name="en_contabilidad"
+                    checked={Boolean(formDataNuevoEquipo.en_contabilidad)}
+                    onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, en_contabilidad: e.target.checked })}
+                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                    {/* Icono temático de Contabilidad / FMO */}
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        backgroundColor: formDataNuevoEquipo.en_contabilidad
+                          ? 'rgba(132, 204, 22, 0.22)'
+                          : 'rgba(148, 163, 184, 0.15)',
+                        border: formDataNuevoEquipo.en_contabilidad
+                          ? '1px solid rgba(132, 204, 22, 0.45)'
+                          : '1px solid var(--line, #e2e8f0)',
+                        color: formDataNuevoEquipo.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      🏛️
+                    </div>
+
+                    {/* Textos estructurados con jerarquía estricta (sin colapso) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            color: 'var(--text-h, #0f172a)',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          Registrado en Contabilidad
+                        </span>
+                        {formDataNuevoEquipo.en_contabilidad ? (
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '1.5px 7px',
+                              borderRadius: '9999px',
+                              backgroundColor: '#84CC16',
+                              color: '#0f172a',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            Activo
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              padding: '1.5px 7px',
+                              borderRadius: '9999px',
+                              backgroundColor: 'rgba(148, 163, 184, 0.2)',
+                              color: 'var(--text-dim, #64748b)',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            Pendiente
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '11.5px',
+                          color: 'var(--text-dim, #64748b)',
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        Marcar si este bien ya cuenta con registro y soporte en el área contable
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Switch Toggle Animado Verde Lima */}
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: '44px',
+                      height: '24px',
+                      borderRadius: '9999px',
+                      backgroundColor: formDataNuevoEquipo.en_contabilidad ? '#84CC16' : '#cbd5e1',
+                      position: 'relative',
+                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                      flexShrink: 0,
+                      boxShadow: formDataNuevoEquipo.en_contabilidad
+                        ? '0 0 10px rgba(132, 204, 22, 0.4)'
+                        : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        backgroundColor: '#ffffff',
+                        position: 'absolute',
+                        top: '3px',
+                        left: formDataNuevoEquipo.en_contabilidad ? '23px' : '3px',
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {formDataNuevoEquipo.en_contabilidad && (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </label>
                   </div>
                 )}
               </div>
