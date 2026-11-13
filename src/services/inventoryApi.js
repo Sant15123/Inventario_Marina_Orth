@@ -692,6 +692,7 @@ export const inventoryApi = {
           creado_en: data.creado_en || new Date().toISOString(),
         };
 
+        console.log('PAYLOAD ENVIADO:', solPayload, payloadNormalizado.items);
         const { data: solCreated, error: solErr } = await supabase
           .from('solicitudes_inventario')
           .insert(solPayload)

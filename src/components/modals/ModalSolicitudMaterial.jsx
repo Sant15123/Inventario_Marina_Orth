@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { today } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
+import { supabase } from '../../services/supabase';
 
 export default function ModalSolicitudMaterial({
   isOpen,
@@ -31,7 +32,7 @@ export default function ModalSolicitudMaterial({
   showError,
 }) {
   // 1. Estados principales del formulario (declarados al inicio)
-  const [tipoSol, setTipoSol] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
+  const [tipoSolicitud, setTipoSolicitud] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
   const [sede, setSede] = useState(() => currentUser?.sede || sedes[0] || 'Medellín');
   const [proyectoId, setProyectoId] = useState('');
   const [fechaEstimada, setFechaEstimada] = useState('');
@@ -50,19 +51,19 @@ export default function ModalSolicitudMaterial({
   });
 
   // 2. Variables derivadas (evaluadas tras declarar todos los estados)
-  const esCompra = tipoSol === 'SUGERENCIA_COMPRA' || tipoSol === 'compra';
-  const esPrestamo = tipoSol === 'PRESTAMO_EQUIPO';
-  const esConsumibles = tipoSol === 'CONSUMIBLES' || tipoSol.includes('CONSUMIB');
+  const esCompra = tipoSolicitud === 'SUGERENCIA_COMPRA' || tipoSolicitud === 'compra';
+  const esPrestamo = tipoSolicitud === 'PRESTAMO_EQUIPO';
+  const esConsumibles = tipoSolicitud === 'CONSUMIBLES' || tipoSolicitud.includes('CONSUMIB');
 
   // Catálogo disponible filtrado por tipo de solicitud
   const catalogoDisponible = useMemo(() => {
-    if (tipoSol === 'PRESTAMO_EQUIPO') {
+    if (tipoSolicitud === 'PRESTAMO_EQUIPO') {
       // Activos de cómputo / equipos retornables
       return (items || []).filter((it) => it.itemType === 'equipo');
     }
     // Consumibles / insumos de robótica / papelería
     return (items || []).filter((it) => it.itemType === 'consumible');
-  }, [items, tipoSol]);
+  }, [items, tipoSolicitud]);
 
   // Ítem actualmente seleccionado en el selector
   const currentItemInfo = useMemo(() => {
@@ -73,20 +74,20 @@ export default function ModalSolicitudMaterial({
   // Stock disponible del ítem seleccionado
   const stockDisponibleItem = useMemo(() => {
     if (!currentItemInfo) return 0;
-    if (tipoSol === 'PRESTAMO_EQUIPO') {
+    if (tipoSolicitud === 'PRESTAMO_EQUIPO') {
       const unitsDisponibles = (currentItemInfo.units || []).filter((u) => u.status === 'disponible').length;
       return unitsDisponibles > 0 ? unitsDisponibles : 1;
     }
     const q = Number(currentItemInfo.quantity ?? currentItemInfo.disponible ?? 0);
     return isNaN(q) ? 1 : Math.max(0, q);
-  }, [currentItemInfo, tipoSol]);
+  }, [currentItemInfo, tipoSolicitud]);
 
   if (!isOpen) return null;
 
   // Cambiar tipo de solicitud (reinicia ítems seleccionados)
   const handleChangeTipo = (nuevoTipo) => {
-    if (nuevoTipo === tipoSol) return;
-    setTipoSol(nuevoTipo);
+    if (nuevoTipo === tipoSolicitud) return;
+    setTipoSolicitud(nuevoTipo);
     setItemsSolicitud([]);
     setSelectedItemId('');
     setCantidadInput(1);
@@ -122,7 +123,7 @@ export default function ModalSolicitudMaterial({
     }
 
     const nuevoItem = {
-      tipo_item: tipoSol === 'PRESTAMO_EQUIPO' ? 'equipo' : 'consumible',
+      tipo_item: tipoSolicitud === 'PRESTAMO_EQUIPO' ? 'equipo' : 'consumible',
       item_id: currentItemInfo.id,
       nombre_item: currentItemInfo.name || currentItemInfo.material || 'Artículo',
       cantidad: qty,
@@ -152,12 +153,14 @@ export default function ModalSolicitudMaterial({
       return;
     }
 
+    const catDestino = compraForm.categoria === 'papeleria' ? 'papeleria' : 'consumibles';
+
     const nuevoItem = {
       tipo_item: 'compra',
       item_id: null,
       nombre_item: compraForm.nombre.trim(),
       nombre_sugerido: compraForm.nombre.trim(),
-      categoria_sugerida: compraForm.categoria || 'consumibles',
+      categoria_sugerida: catDestino, // 'consumibles' | 'papeleria'
       url_compra: compraForm.url.trim() || null,
       precio_estimado: precioNum || 0,
       cantidad: qty,
@@ -173,8 +176,8 @@ export default function ModalSolicitudMaterial({
       cantidad: 1,
       precio: '',
     }));
-  };
-
+  };
+
   // Probar enlace de compra en pestaña nueva
   const handleTestUrl = () => {
     if (!compraForm.url.trim()) return;
@@ -200,12 +203,13 @@ export default function ModalSolicitudMaterial({
       if (esCompra && compraForm.nombre.trim()) {
         const qty = parseInt(compraForm.cantidad, 10) || 1;
         const precioNum = compraForm.precio ? parseFloat(compraForm.precio) : 0;
+        const catDestino = compraForm.categoria === 'papeleria' ? 'papeleria' : 'consumibles';
         const nuevoItem = {
           tipo_item: 'compra',
           item_id: null,
           nombre_item: compraForm.nombre.trim(),
           nombre_sugerido: compraForm.nombre.trim(),
-          categoria_sugerida: compraForm.categoria || 'consumibles',
+          categoria_sugerida: catDestino,
           url_compra: compraForm.url.trim() || null,
           precio_estimado: precioNum || 0,
           cantidad: qty,
@@ -229,7 +233,7 @@ export default function ModalSolicitudMaterial({
       return;
     }
 
-    if (tipoSol === 'PRESTAMO_EQUIPO' || esCompra) {
+    if (tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) {
       if (!fechaEstimada) {
         setValidationError(
           esCompra
@@ -253,86 +257,151 @@ export default function ModalSolicitudMaterial({
       setSubmitting(true);
       setValidationError('');
 
-      const esCompraFinal = tipoSol === 'SUGERENCIA_COMPRA' || tipoSol === 'compra' || esCompra;
-      const tipoSolParaGuardar =
-        esCompraFinal
-          ? 'SUGERENCIA_COMPRA'
-          : (tipoSol === 'consumible' || tipoSol === 'CONSUMIBLES' || tipoSol.includes('CONSUMIB'))
-          ? 'CONSUMIBLES'
-          : 'PRESTAMO_EQUIPO';
-      const fechaDevolucionVal = (tipoSol === 'PRESTAMO_EQUIPO' || esCompraFinal) ? fechaEstimada : null;
+      const fechaDevolucionVal = (tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) ? fechaEstimada : null;
 
-      const itemsNormalizados = itemsParaEnviar.map((it) => {
-        const catDestino = String(it.categoria_sugerida || it.categoria || compraForm.categoria || '').toLowerCase().trim();
-        const categoriaFinal = esCompraFinal
-          ? (catDestino === 'papeleria' ? 'papeleria' : 'consumibles')
-          : null;
-        return {
-          ...it,
-          tipo_item: esCompraFinal ? 'compra' : (it.tipo_item || (tipoSolParaGuardar === 'CONSUMIBLES' ? 'consumible' : 'equipo')),
-          nombre_item: it.nombre_item || it.nombre_sugerido || 'Artículo',
-          nombre_sugerido: it.nombre_sugerido || (esCompraFinal ? (it.nombre_item || 'Artículo sugerido') : null),
-          categoria_sugerida: categoriaFinal,
-          url_compra: it.url_compra || it.url || null,
-          precio_estimado: Number(it.precio_estimado) || 0,
-        };
-      });
-
-      const payload = {
-        usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
+      // 1. Cabecera con tipo_solicitud literal de BD: 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
+      const payloadSolicitud = {
+        usuario_id: currentUser?.id || currentUser?.documento || null,
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
         sede: sede || 'Medellín',
-        tipo_solicitud: tipoSolParaGuardar,
-        tipo: tipoSolParaGuardar,
-        tipoSolicitud: tipoSolParaGuardar,
+        tipo_solicitud: tipoSolicitud,
         proyecto_steam_id: proyectoId || null,
         motivo: motivo.trim(),
         justificacion: motivo.trim(),
-        fecha_devolucion: fechaDevolucionVal,
         fecha_devolucion_estimada: fechaDevolucionVal,
-        fecha_retorno: fechaDevolucionVal,
-        fecha_limite: fechaDevolucionVal,
         estado: 'PENDIENTE',
-        items: itemsNormalizados,
-        items_solicitud: itemsNormalizados,
         creado_en: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        fecha_radicado: today(),
       };
 
-      const res = await inventoryApi.createSolicitud(payload);
-
-      // Validación estricta del status HTTP
-      if (res && (res.status === 200 || res.status === 201)) {
-        if (showSuccess) {
-          showSuccess(
-            'Solicitud enviada exitosamente',
-            esCompra
-              ? 'Tu sugerencia de compra ha sido radicada para revisión y presupuesto administrativo.'
-              : 'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
-          );
+      // 2. Normalizar ítems a insertar
+      const itemsParaInsertar = itemsParaEnviar.map((item) => {
+        if (tipoSolicitud === 'SUGERENCIA_COMPRA') {
+          const cat = (item.categoria_sugerida || item.categoria) === 'papeleria' ? 'papeleria' : 'consumibles';
+          return {
+            tipo_item: 'compra',
+            item_id: null,
+            nombre_item: item.nombre_sugerido || item.nombre_item || 'Artículo sugerido',
+            cantidad: Number(item.cantidad) || 1,
+            nombre_sugerido: item.nombre_sugerido || item.nombre_item || 'Artículo sugerido',
+            categoria_sugerida: cat, // 'consumibles' o 'papeleria'
+            url_compra: item.url_compra || null,
+            precio_estimado: Number(item.precio_estimado) || 0,
+            ingresado_inventario: false,
+          };
+        } else {
+          return {
+            tipo_item: tipoSolicitud === 'CONSUMIBLES' ? 'consumible' : 'equipo',
+            item_id: item.item_id || null,
+            nombre_item: item.nombre_item || 'Artículo',
+            cantidad: Number(item.cantidad) || 1,
+            nombre_sugerido: null,
+            categoria_sugerida: null,
+            url_compra: null,
+            precio_estimado: 0,
+            ingresado_inventario: false,
+          };
         }
+      });
 
-        const solicitudCreada = res.data || payload;
+      console.log('PAYLOAD ENVIADO:', payloadSolicitud, itemsParaInsertar);
 
-        if (onSolicitudCreated) {
-          onSolicitudCreated(solicitudCreada);
+      let solicitudCreada = null;
+      let errorInsercion = null;
+
+      // 3. Inserción directa en Supabase
+      try {
+        if (supabase) {
+          const { data: solData, error: solErr } = await supabase
+            .from('solicitudes_inventario')
+            .insert(payloadSolicitud)
+            .select()
+            .single();
+
+          if (solErr) throw solErr;
+
+          let itemsFinales = [];
+          if (itemsParaInsertar.length > 0) {
+            const itemsConId = itemsParaInsertar.map((it) => ({
+              ...it,
+              solicitud_id: solData.id,
+            }));
+
+            const { data: itemsData, error: itemsErr } = await supabase
+              .from('items_solicitud')
+              .insert(itemsConId)
+              .select();
+
+            if (itemsErr) {
+              console.error('Error insertando en items_solicitud:', itemsErr);
+              itemsFinales = itemsConId;
+            } else {
+              itemsFinales = itemsData || itemsConId;
+            }
+          }
+
+          solicitudCreada = {
+            ...solData,
+            tipo: tipoSolicitud,
+            tipo_solicitud: tipoSolicitud,
+            items: itemsFinales,
+            items_solicitud: itemsFinales,
+          };
+
+          try {
+            const local = localStorage.getItem('siga_solicitudes_inventario');
+            const list = local ? JSON.parse(local) : [];
+            list.unshift(solicitudCreada);
+            localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
+          } catch (e) {
+            console.warn('Sync cache local error:', e);
+          }
         }
-
-        // Emitir evento reactivo local para actualizar de inmediato el badge de la campanita y listas
-        try {
-          window.dispatchEvent(
-            new CustomEvent('siga:solicitud_creada', { detail: solicitudCreada })
-          );
-        } catch (e) {
-          console.warn('Error emitiendo evento de solicitud creada:', e);
-        }
-
-        // Cerrar modal únicamente tras respuesta exitosa
-        onClose();
-      } else {
-        throw new Error(res?.data?.message || 'No se pudo radicar la solicitud');
+      } catch (errSupabase) {
+        console.warn('Inserción directa a Supabase falló, recurriendo a inventoryApi:', errSupabase);
+        errorInsercion = errSupabase;
       }
+
+      // 4. Fallback a inventoryApi si la conexión directa no fue posible
+      if (!solicitudCreada) {
+        const payloadApi = {
+          ...payloadSolicitud,
+          tipo: tipoSolicitud,
+          tipoSolicitud: tipoSolicitud,
+          items: itemsParaInsertar,
+          items_solicitud: itemsParaInsertar,
+        };
+        const res = await inventoryApi.createSolicitud(payloadApi);
+        if (res && (res.status === 200 || res.status === 201)) {
+          solicitudCreada = res.data || payloadApi;
+        } else {
+          throw errorInsercion || new Error('No se pudo radicar la solicitud');
+        }
+      }
+
+      if (showSuccess) {
+        showSuccess(
+          'Solicitud enviada exitosamente',
+          esCompra
+            ? 'Tu sugerencia de compra ha sido radicada para revisión y presupuesto administrativo.'
+            : 'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
+        );
+      }
+
+      if (onSolicitudCreated) {
+        onSolicitudCreated(solicitudCreada);
+      }
+
+      // Emitir evento reactivo local para actualizar de inmediato el badge de la campanita y listas
+      try {
+        window.dispatchEvent(
+          new CustomEvent('siga:solicitud_creada', { detail: solicitudCreada })
+        );
+      } catch (e) {
+        console.warn('Error emitiendo evento de solicitud creada:', e);
+      }
+
+      // Cerrar modal
+      onClose();
     } catch (error) {
       console.error('Error al enviar solicitud:', error);
       const mensaje =
@@ -348,8 +417,8 @@ export default function ModalSolicitudMaterial({
     } finally {
       setSubmitting(false);
     }
-  };
-
+  };
+
   return (
     <div
       className="modal-backdrop"
@@ -496,7 +565,7 @@ export default function ModalSolicitudMaterial({
                     width: '100%',
                     boxSizing: 'border-box',
                     whiteSpace: 'nowrap',
-                    ...(tipoSol === 'PRESTAMO_EQUIPO'
+                    ...(tipoSolicitud === 'PRESTAMO_EQUIPO'
                       ? {
                           backgroundColor: '#84CC16',
                           color: '#020617',
@@ -512,13 +581,13 @@ export default function ModalSolicitudMaterial({
                         }),
                   }}
                   onMouseEnter={(e) => {
-                    if (tipoSol !== 'PRESTAMO_EQUIPO') {
+                    if (tipoSolicitud !== 'PRESTAMO_EQUIPO') {
                       e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.05))';
                       e.currentTarget.style.color = 'var(--text, #f8fafc)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (tipoSol !== 'PRESTAMO_EQUIPO') {
+                    if (tipoSolicitud !== 'PRESTAMO_EQUIPO') {
                       e.currentTarget.style.backgroundColor = 'transparent';
                       e.currentTarget.style.color = 'var(--text-dim, #94a3b8)';
                     }
@@ -543,7 +612,7 @@ export default function ModalSolicitudMaterial({
                     width: '100%',
                     boxSizing: 'border-box',
                     whiteSpace: 'nowrap',
-                    ...(tipoSol === 'CONSUMIBLES'
+                    ...(tipoSolicitud === 'CONSUMIBLES'
                       ? {
                           backgroundColor: '#84CC16',
                           color: '#020617',
@@ -559,13 +628,13 @@ export default function ModalSolicitudMaterial({
                         }),
                   }}
                   onMouseEnter={(e) => {
-                    if (tipoSol !== 'CONSUMIBLES') {
+                    if (tipoSolicitud !== 'CONSUMIBLES') {
                       e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.05))';
                       e.currentTarget.style.color = 'var(--text, #f8fafc)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (tipoSol !== 'CONSUMIBLES') {
+                    if (tipoSolicitud !== 'CONSUMIBLES') {
                       e.currentTarget.style.backgroundColor = 'transparent';
                       e.currentTarget.style.color = 'var(--text-dim, #94a3b8)';
                     }
@@ -922,7 +991,7 @@ export default function ModalSolicitudMaterial({
                     }}
                   >
                     <option value="">
-                      {tipoSol === 'PRESTAMO_EQUIPO'
+                      {tipoSolicitud === 'PRESTAMO_EQUIPO'
                         ? '-- Seleccionar equipo tecnológico --'
                         : '-- Seleccionar material o insumo --'}
                     </option>
@@ -936,7 +1005,7 @@ export default function ModalSolicitudMaterial({
                   <input
                     type="number"
                     min="1"
-                    max={tipoSol === 'CONSUMIBLES' && stockDisponibleItem > 0 ? stockDisponibleItem : 99}
+                    max={tipoSolicitud === 'CONSUMIBLES' && stockDisponibleItem > 0 ? stockDisponibleItem : 99}
                     value={cantidadInput}
                     onChange={(e) => setCantidadInput(e.target.value)}
                     placeholder="Cant."
@@ -1047,7 +1116,7 @@ export default function ModalSolicitudMaterial({
 
             {/* 5. Campos de Formulario y Tipografía */}
             {/* Fecha de Devolución Estimada (Para préstamos) o Fecha Ideal Requerida (Para sugerencias de compra) */}
-            {(tipoSol === 'PRESTAMO_EQUIPO' || esCompra) && (
+            {(tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) && (
               <div>
                 <label
                   className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
