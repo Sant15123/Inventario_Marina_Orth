@@ -598,6 +598,37 @@ export const inventoryApi = {
   },
 
   createSolicitud: async (data) => {
+    const rawItems = data.items || data.items_solicitud || [];
+    const itemsList = Array.isArray(rawItems) ? rawItems : [];
+    const rawTipo = String(data.tipo_solicitud || data.tipo || data.tipoSolicitud || '').toUpperCase().trim();
+    const esCompraReq =
+      rawTipo === 'SUGERENCIA_COMPRA' ||
+      rawTipo === 'COMPRA' ||
+      rawTipo.includes('COMPRA') ||
+      itemsList.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || String(i.tipo_item || '').toLowerCase() === 'compra') ||
+      (String(data.motivo || data.justificacion || '').toLowerCase().includes('compra'));
+    const esConsumibleReq = !esCompraReq && rawTipo.includes('CONSUMIB');
+    const tipoSolicitudFinal = esCompraReq
+      ? 'SUGERENCIA_COMPRA'
+      : (esConsumibleReq ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+
+    // Normalizar payload antes de enviar por cualquier canal
+    const payloadNormalizado = {
+      ...data,
+      tipo_solicitud: tipoSolicitudFinal,
+      tipo: tipoSolicitudFinal,
+      tipoSolicitud: tipoSolicitudFinal,
+      items: itemsList.map((it) => ({
+        ...it,
+        tipo_item: esCompraReq ? 'compra' : (it.tipo_item || (esConsumibleReq ? 'consumible' : 'equipo')),
+        nombre_item: it.nombre_item || it.nombre_sugerido || it.nombre || 'Artículo',
+        nombre_sugerido: it.nombre_sugerido || (esCompraReq ? (it.nombre_item || it.nombre) : null),
+        categoria_sugerida: it.categoria_sugerida || (esCompraReq ? 'consumibles' : null),
+        url_compra: it.url_compra || it.url || it.link_compra || null,
+        precio_estimado: Number(it.precio_estimado) || Number(it.precio) || 0,
+      })),
+    };
+
     // 1. Intentar endpoint backend REST si está disponible
     try {
       const url = `${API_BASE}/solicitudes`;
@@ -608,12 +639,16 @@ export const inventoryApi = {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payloadNormalizado),
       });
 
       if (res.ok) {
         const json = await res.json().catch(() => null);
-        const createdData = json?.data !== undefined ? json.data : json;
+        let createdData = json?.data !== undefined ? json.data : json;
+        if (createdData && typeof createdData === 'object') {
+          createdData.tipo_solicitud = tipoSolicitudFinal;
+          createdData.tipo = tipoSolicitudFinal;
+        }
 
         try {
           const local = localStorage.getItem('siga_solicitudes_inventario');
@@ -637,16 +672,6 @@ export const inventoryApi = {
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        const rawTipo = String(data.tipo_solicitud || data.tipo || data.tipoSolicitud || '').toUpperCase().trim();
-        const esCompraReq =
-          rawTipo === 'SUGERENCIA_COMPRA' ||
-          rawTipo.includes('COMPRA') ||
-          (Array.isArray(data.items) && data.items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido));
-        const esConsumibleReq = !esCompraReq && rawTipo.includes('CONSUMIB');
-        const tipoSolicitudFinal = esCompraReq
-          ? 'SUGERENCIA_COMPRA'
-          : (esConsumibleReq ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
-
         const solPayload = {
           usuario_id: data.usuario_id || null,
           usuario_nombre: data.usuario_nombre || 'Docente / Custodio',
@@ -670,17 +695,17 @@ export const inventoryApi = {
         if (solErr) throw solErr;
 
         let itemsFinal = [];
-        if (Array.isArray(data.items) && data.items.length > 0) {
-          const itemsPayload = data.items.map((it) => ({
+        if (payloadNormalizado.items.length > 0) {
+          const itemsPayload = payloadNormalizado.items.map((it) => ({
             solicitud_id: solCreated.id,
-            tipo_item: it.tipo_item || (esCompraReq ? 'compra' : (esConsumibleReq ? 'consumible' : 'equipo')),
+            tipo_item: it.tipo_item,
             item_id: it.item_id || null,
-            nombre_item: it.nombre_item || it.nombre_sugerido || 'Artículo',
-            cantidad: it.cantidad || 1,
-            nombre_sugerido: it.nombre_sugerido || it.nombre_item || null,
-            categoria_sugerida: it.categoria_sugerida || (esCompraReq ? 'consumibles' : null),
-            url_compra: it.url_compra || null,
-            precio_estimado: it.precio_estimado || 0,
+            nombre_item: it.nombre_item,
+            cantidad: parseInt(it.cantidad, 10) || 1,
+            nombre_sugerido: it.nombre_sugerido,
+            categoria_sugerida: it.categoria_sugerida,
+            url_compra: it.url_compra,
+            precio_estimado: it.precio_estimado,
             ingresado_inventario: Boolean(it.ingresado_inventario),
           }));
 
@@ -692,13 +717,17 @@ export const inventoryApi = {
           if (!itemsErr && itemsCreated) {
             itemsFinal = itemsCreated;
           } else {
-            itemsFinal = data.items;
+            console.error('Error insertando items_solicitud en Supabase:', itemsErr);
+            itemsFinal = itemsPayload;
           }
         }
 
         const solicitudCompleta = {
           ...solCreated,
+          tipo: tipoSolicitudFinal,
+          tipo_solicitud: tipoSolicitudFinal,
           items: itemsFinal,
+          items_solicitud: itemsFinal,
         };
 
         try {

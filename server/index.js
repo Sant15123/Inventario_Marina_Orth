@@ -707,7 +707,6 @@ app.post('/api/solicitudes', async (req, res) => {
       usuario_id,
       usuario_nombre = 'Docente / Custodio',
       sede = 'Medellín',
-      tipo_solicitud = 'PRESTAMO_EQUIPO',
       proyecto_steam_id = null,
       motivo = '',
       justificacion = '',
@@ -715,14 +714,18 @@ app.post('/api/solicitudes', async (req, res) => {
       fecha_devolucion = null,
       estado = 'PENDIENTE',
       observaciones_admin = null,
-      items = [],
     } = req.body;
 
-    const rawTipoReq = String(tipo_solicitud || req.body.tipo || req.body.tipoSolicitud || '').toUpperCase().trim();
+    const rawItems = req.body.items || req.body.items_solicitud || [];
+    const items = Array.isArray(rawItems) ? rawItems : [];
+
+    const rawTipoReq = String(req.body.tipo_solicitud || req.body.tipo || req.body.tipoSolicitud || '').toUpperCase().trim();
     const esCompraReq =
       rawTipoReq === 'SUGERENCIA_COMPRA' ||
+      rawTipoReq === 'COMPRA' ||
       rawTipoReq.includes('COMPRA') ||
-      (Array.isArray(items) && items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido));
+      items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || String(i.tipo_item || '').toLowerCase() === 'compra') ||
+      (String(motivo || justificacion || '').toLowerCase().includes('compra'));
     const esConsumibleReq = !esCompraReq && rawTipoReq.includes('CONSUMIB');
     const tipoSolicitudFinal = esCompraReq
       ? 'SUGERENCIA_COMPRA'
@@ -743,7 +746,7 @@ app.post('/api/solicitudes', async (req, res) => {
         usuario_id || null,
         usuario_nombre,
         sede,
-        tipo_solicitud,
+        tipoSolicitudFinal,
         proyecto_steam_id,
         motivoFinal,
         justificacion || motivoFinal,
@@ -756,8 +759,16 @@ app.post('/api/solicitudes', async (req, res) => {
     const nuevaSolicitud = solRes.rows[0];
     const itemsCreados = [];
 
-    if (Array.isArray(items) && items.length > 0) {
+    if (items.length > 0) {
       for (const it of items) {
+        const nomSugerido = it.nombre_sugerido || (esCompraReq ? (it.nombre_item || it.nombre || 'Artículo sugerido') : null);
+        const catSugerida = it.categoria_sugerida || (esCompraReq ? 'consumibles' : null);
+        const urlComp = it.url_compra || it.url || it.link_compra || null;
+        const precioEst = Number(it.precio_estimado) || Number(it.precio) || 0;
+        const tipoItemFinal = esCompraReq
+          ? 'compra'
+          : (it.tipo_item || (esConsumibleReq ? 'consumible' : 'equipo'));
+
         const itemRes = await client.query(
           `INSERT INTO items_solicitud (
             solicitud_id, tipo_item, item_id, nombre_item, cantidad,
@@ -768,14 +779,14 @@ app.post('/api/solicitudes', async (req, res) => {
           RETURNING *`,
           [
             nuevaSolicitud.id,
-            it.tipo_item || (esCompraReq ? 'compra' : (esConsumibleReq ? 'consumible' : 'equipo')),
+            tipoItemFinal,
             it.item_id || null,
-            it.nombre_item || it.nombre_sugerido || 'Artículo',
-            it.cantidad || 1,
-            it.nombre_sugerido || null,
-            it.categoria_sugerida || null,
-            it.url_compra || null,
-            it.precio_estimado || 0,
+            it.nombre_item || nomSugerido || 'Artículo',
+            parseInt(it.cantidad, 10) || 1,
+            nomSugerido,
+            catSugerida,
+            urlComp,
+            precioEst,
             Boolean(it.ingresado_inventario),
           ]
         );
@@ -785,6 +796,9 @@ app.post('/api/solicitudes', async (req, res) => {
 
     await client.query('COMMIT');
     nuevaSolicitud.items = itemsCreados;
+    nuevaSolicitud.items_solicitud = itemsCreados;
+    nuevaSolicitud.tipo_solicitud = tipoSolicitudFinal;
+    nuevaSolicitud.tipo = tipoSolicitudFinal;
     res.status(201).json({ success: true, data: nuevaSolicitud });
   } catch (err) {
     await client.query('ROLLBACK');

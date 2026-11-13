@@ -195,9 +195,29 @@ export default function ModalSolicitudMaterial({
     e.preventDefault();
     setValidationError('');
 
-    if (itemsSolicitud.length === 0) {
-      setValidationError('Debes agregar al menos un artículo a la solicitud.');
-      return;
+    let itemsParaEnviar = [...itemsSolicitud];
+    if (itemsParaEnviar.length === 0) {
+      if (esCompra && compraForm.nombre.trim()) {
+        const qty = parseInt(compraForm.cantidad, 10) || 1;
+        const precioNum = compraForm.precio ? parseFloat(compraForm.precio) : 0;
+        const nuevoItem = {
+          tipo_item: 'compra',
+          item_id: null,
+          nombre_item: compraForm.nombre.trim(),
+          nombre_sugerido: compraForm.nombre.trim(),
+          categoria_sugerida: compraForm.categoria || 'consumibles',
+          url_compra: compraForm.url.trim() || null,
+          precio_estimado: precioNum || 0,
+          cantidad: qty,
+          unidad: 'und',
+          ingresado_inventario: false,
+        };
+        itemsParaEnviar = [nuevoItem];
+        setItemsSolicitud(itemsParaEnviar);
+      } else {
+        setValidationError('Debes agregar al menos un artículo a la solicitud.');
+        return;
+      }
     }
 
     if (!motivo.trim()) {
@@ -235,12 +255,23 @@ export default function ModalSolicitudMaterial({
 
       const esCompraFinal = tipoSol === 'SUGERENCIA_COMPRA' || tipoSol === 'compra' || esCompra;
       const tipoSolParaGuardar =
-        (tipoSol === 'compra' || tipoSol === 'SUGERENCIA_COMPRA' || esCompra)
+        esCompraFinal
           ? 'SUGERENCIA_COMPRA'
           : (tipoSol === 'consumible' || tipoSol === 'CONSUMIBLES' || tipoSol.includes('CONSUMIB'))
           ? 'CONSUMIBLES'
           : 'PRESTAMO_EQUIPO';
       const fechaDevolucionVal = (tipoSol === 'PRESTAMO_EQUIPO' || esCompraFinal) ? fechaEstimada : null;
+
+      const itemsNormalizados = itemsParaEnviar.map((it) => ({
+        ...it,
+        tipo_item: esCompraFinal ? 'compra' : (it.tipo_item || (tipoSolParaGuardar === 'CONSUMIBLES' ? 'consumible' : 'equipo')),
+        nombre_item: it.nombre_item || it.nombre_sugerido || 'Artículo',
+        nombre_sugerido: it.nombre_sugerido || (esCompraFinal ? (it.nombre_item || 'Artículo sugerido') : null),
+        categoria_sugerida: it.categoria_sugerida || (esCompraFinal ? 'consumibles' : null),
+        url_compra: it.url_compra || null,
+        precio_estimado: Number(it.precio_estimado) || 0,
+      }));
+
       const payload = {
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
@@ -256,8 +287,8 @@ export default function ModalSolicitudMaterial({
         fecha_retorno: fechaDevolucionVal,
         fecha_limite: fechaDevolucionVal,
         estado: 'PENDIENTE',
-        items: itemsSolicitud,
-        items_solicitud: itemsSolicitud,
+        items: itemsNormalizados,
+        items_solicitud: itemsNormalizados,
         creado_en: new Date().toISOString(),
         created_at: new Date().toISOString(),
         fecha_radicado: today(),

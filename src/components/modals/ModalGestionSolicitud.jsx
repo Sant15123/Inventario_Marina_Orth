@@ -181,15 +181,22 @@ export default function ModalGestionSolicitud({
   const esPrestamo = !isCompra && !esConsumible;
 
   // Ítems detallados vinculados a la solicitud
-  const [itemsDetalle, setItemsDetalle] = useState(() =>
-    Array.isArray(solicitud?.items) ? solicitud.items : []
-  );
+  const [itemsDetalle, setItemsDetalle] = useState(() => {
+    if (Array.isArray(solicitud?.items_solicitud) && solicitud.items_solicitud.length > 0) {
+      return solicitud.items_solicitud;
+    }
+    return Array.isArray(solicitud?.items) ? solicitud.items : [];
+  });
 
   useEffect(() => {
     let isMounted = true;
     if (solicitud?.id) {
-      if (Array.isArray(solicitud.items) && solicitud.items.length > 0) {
-        setItemsDetalle(solicitud.items);
+      const existing = (Array.isArray(solicitud.items_solicitud) && solicitud.items_solicitud.length > 0)
+        ? solicitud.items_solicitud
+        : (Array.isArray(solicitud.items) && solicitud.items.length > 0 ? solicitud.items : null);
+
+      if (existing) {
+        setItemsDetalle(existing);
       } else {
         (async () => {
           try {
