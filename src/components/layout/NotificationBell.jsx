@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Bell, Laptop, Box, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Bell, Laptop, Box, ShoppingCart, ArrowRight, CheckCircle2 } from 'lucide-react';
 import supabase from '../../services/supabase';
 import inventoryApi from '../../services/inventoryApi';
 
@@ -335,10 +335,14 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
               </div>
             ) : (
               pendientes.slice(0, 6).map((sol) => {
-                const esPrestamo =
-                  sol.tipo_solicitud === 'PRESTAMO_EQUIPO' ||
-                  sol.tipo_solicitud === 'equipo' ||
-                  Boolean(sol.placa);
+                const rawTipo = String(sol.tipo_solicitud || sol.tipo || '').toLowerCase().trim();
+                const esCompra = rawTipo === 'compra' || rawTipo === 'sugerencia_compra' || rawTipo.includes('compra');
+                const esPrestamo = !esCompra && (
+                  rawTipo === 'prestamo_equipo' ||
+                  rawTipo === 'equipo' ||
+                  rawTipo === 'prestamo' ||
+                  Boolean(sol.placa)
+                );
 
                 return (
                   <div
@@ -348,13 +352,15 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
                     role="button"
                     tabIndex={0}
                   >
-                    {/* Icono Equipo / Consumible */}
+                    {/* Icono Equipo / Consumible / Compra */}
                     <div
                       className={`notification-item-icon ${
-                        esPrestamo ? 'equipo' : 'consumible'
+                        esCompra ? 'compra' : esPrestamo ? 'equipo' : 'consumible'
                       }`}
                     >
-                      {esPrestamo ? (
+                      {esCompra ? (
+                        <ShoppingCart size={18} />
+                      ) : esPrestamo ? (
                         <Laptop size={18} />
                       ) : (
                         <Box size={18} />

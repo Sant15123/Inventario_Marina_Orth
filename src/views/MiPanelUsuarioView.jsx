@@ -51,6 +51,32 @@ const formatFechaCompacta = (d) => {
   return d;
 };
 
+const renderBadgeTipo = (tipo) => {
+  const tipoNormalizado = String(tipo || '').toLowerCase().trim();
+
+  if (tipoNormalizado === 'compra' || tipoNormalizado === 'sugerencia_compra' || tipoNormalizado.includes('compra')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-700">
+        🛒 Sugerencia Compra
+      </span>
+    );
+  }
+
+  if (tipoNormalizado === 'consumible' || tipoNormalizado === 'consumibles' || tipoNormalizado.includes('consumib')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700">
+        📦 Consumibles
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700">
+      💻 Préstamo
+    </span>
+  );
+};
+
 export default function MiPanelUsuarioView({
   items = [],
   movements = [],
@@ -797,8 +823,10 @@ export default function MiPanelUsuarioView({
                     .slice((solicitudesPage - 1) * SOLICITUDES_PER_PAGE, solicitudesPage * SOLICITUDES_PER_PAGE)
                     .map((sol) => {
                       const estadoUpper = String(sol.estado || 'PENDIENTE').toUpperCase();
-                      const esCompra = sol.tipo_solicitud === 'compra' || sol.tipo_solicitud === 'COMPRA' || sol.tipo === 'compra';
-                      const esPrestamo = sol.tipo_solicitud === 'PRESTAMO_EQUIPO';
+                      const rawTipo = String(sol.tipo_solicitud || sol.tipo || '').toLowerCase().trim();
+                      const esCompra = rawTipo === 'compra' || rawTipo === 'sugerencia_compra' || rawTipo.includes('compra');
+                      const esConsumible = rawTipo === 'consumible' || rawTipo === 'consumibles' || rawTipo.includes('consumib');
+                      const esPrestamo = !esCompra && !esConsumible;
 
                       return (
                         <tr key={sol.id} style={{ height: '52px' }}>
@@ -806,22 +834,7 @@ export default function MiPanelUsuarioView({
                             {fmtDate(sol.fecha_radicado || (sol.created_at ? sol.created_at.slice(0, 10) : ''))}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
-                            {esCompra ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-700" style={{ color: '#818cf8' }}>
-                                <ShoppingCart size={13} />
-                                <span>Sugerencia Compra</span>
-                              </span>
-                            ) : esPrestamo ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700/80" style={{ color: 'var(--sky-color, #38bdf8)' }}>
-                                <Laptop size={13} />
-                                <span>Préstamo</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-lime-950/60 dark:text-lime-300 dark:border-lime-700/80" style={{ color: 'var(--lime-color, #bef264)' }}>
-                                <Box size={13} />
-                                <span>Consumibles</span>
-                              </span>
-                            )}
+                            {renderBadgeTipo(sol.tipo_solicitud || sol.tipo)}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -843,6 +856,14 @@ export default function MiPanelUsuarioView({
                               {(() => {
                                 const fDev = sol.fecha_devolucion_estimada || sol.fecha_devolucion_esperada || sol.fecha_devolucion || sol.fecha_retorno || sol.fecha_limite;
                                 if (!fDev) return null;
+                                if (esCompra) {
+                                  return (
+                                    <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
+                                      Fecha ideal requerida: <strong className="mono-num" style={{ color: '#818cf8' }}>{formatearFechaSegura(fDev)}</strong>
+                                    </span>
+                                  );
+                                }
+                                if (esConsumible) return null;
                                 return (
                                   <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
                                     Retorno pactado: <strong className="mono-num" style={{ color: 'var(--text, #f8fafc)' }}>{formatearFechaSegura(fDev)}</strong>
