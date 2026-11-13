@@ -30,7 +30,7 @@ export default function ModalSolicitudMaterial({
   showSuccess,
   showError,
 }) {
-  const [tipoSol, setTipoSol] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'compra'
+  const [tipoSol, setTipoSol] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
   const [sede, setSede] = useState(() => currentUser?.sede || sedes[0] || 'Medellín');
   const [proyectoId, setProyectoId] = useState('');
   const [fechaEstimada, setFechaEstimada] = useState('');
@@ -39,13 +39,16 @@ export default function ModalSolicitudMaterial({
   const [validationError, setValidationError] = useState('');
 
   // Ítems acumulados en la solicitud: [{ tipo_item, item_id, nombre_item, cantidad, unidad, ... }]
+  const esCompra = tipoSol === 'SUGERENCIA_COMPRA' || esCompra;
+  const esPrestamo = tipoSol === 'PRESTAMO_EQUIPO';
+  const esConsumibles = tipoSol === 'CONSUMIBLES';
   const [itemsSolicitud, setItemsSolicitud] = useState([]);
 
   // Selector temporal para agregar ítem a la lista desde catálogo
   const [selectedItemId, setSelectedItemId] = useState('');
   const [cantidadInput, setCantidadInput] = useState(1);
 
-  // Formulario temporal para sugerencia de compra (cuando tipoSol === 'compra')
+  // Formulario temporal para sugerencia de compra (cuando esCompra)
   const [compraForm, setCompraForm] = useState({
     categoria: 'consumibles', // 'consumibles' | 'papeleria'
     nombre: '',
@@ -202,17 +205,17 @@ export default function ModalSolicitudMaterial({
 
     if (!motivo.trim()) {
       setValidationError(
-        tipoSol === 'compra'
+        esCompra
           ? 'La justificación pedagógica / actividad es obligatoria.'
           : 'El motivo o justificación pedagógica es obligatorio.'
       );
       return;
     }
 
-    if (tipoSol === 'PRESTAMO_EQUIPO' || tipoSol === 'compra') {
+    if (tipoSol === 'PRESTAMO_EQUIPO' || esCompra) {
       if (!fechaEstimada) {
         setValidationError(
-          tipoSol === 'compra'
+          esCompra
             ? 'La fecha ideal requerida es obligatoria para la sugerencia de compra.'
             : 'La fecha estimada de devolución es obligatoria para préstamos de equipo.'
         );
@@ -221,7 +224,7 @@ export default function ModalSolicitudMaterial({
       const fechaActual = today();
       if (fechaEstimada < fechaActual) {
         setValidationError(
-          tipoSol === 'compra'
+          esCompra
             ? 'La fecha ideal requerida no puede ser una fecha pasada.'
             : 'La fecha estimada de devolución no puede ser una fecha pasada.'
         );
@@ -233,13 +236,17 @@ export default function ModalSolicitudMaterial({
       setSubmitting(true);
       setValidationError('');
 
-      const fechaDevolucionVal = (tipoSol === 'PRESTAMO_EQUIPO' || tipoSol === 'compra') ? fechaEstimada : null;
+      const esCompraFinal = tipoSol === 'SUGERENCIA_COMPRA' || esCompra;
+      const tipoSolParaGuardar = esCompraFinal
+        ? 'SUGERENCIA_COMPRA'
+        : (tipoSol.includes('CONSUMIB') ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+      const fechaDevolucionVal = (tipoSol === 'PRESTAMO_EQUIPO' || esCompraFinal) ? fechaEstimada : null;
       const payload = {
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
         sede: sede || 'Medellín',
-        tipo: tipoSol,
-        tipo_solicitud: tipoSol,
+        tipo: tipoSolParaGuardar,
+        tipo_solicitud: tipoSolParaGuardar,
         proyecto_steam_id: proyectoId || null,
         motivo: motivo.trim(),
         justificacion: motivo.trim(),
@@ -250,6 +257,7 @@ export default function ModalSolicitudMaterial({
         estado: 'PENDIENTE',
         items: itemsSolicitud,
         items_solicitud: itemsSolicitud,
+        creado_en: new Date().toISOString(),
         created_at: new Date().toISOString(),
         fecha_radicado: today(),
       };
@@ -261,7 +269,7 @@ export default function ModalSolicitudMaterial({
         if (showSuccess) {
           showSuccess(
             'Solicitud enviada exitosamente',
-            tipoSol === 'compra'
+            esCompra
               ? 'Tu sugerencia de compra ha sido radicada para revisión y presupuesto administrativo.'
               : 'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
           );
@@ -531,7 +539,7 @@ export default function ModalSolicitudMaterial({
 
                 <button
                   type="button"
-                  onClick={() => handleChangeTipo('compra')}
+                  onClick={() => handleChangeTipo('SUGERENCIA_COMPRA')}
                   className="rounded-lg transition-all cursor-pointer"
                   style={{
                     display: 'flex',
@@ -544,7 +552,7 @@ export default function ModalSolicitudMaterial({
                     width: '100%',
                     boxSizing: 'border-box',
                     whiteSpace: 'nowrap',
-                    ...(tipoSol === 'compra'
+                    ...(esCompra
                       ? {
                           backgroundColor: '#6366f1',
                           color: '#ffffff',
@@ -560,13 +568,13 @@ export default function ModalSolicitudMaterial({
                         }),
                   }}
                   onMouseEnter={(e) => {
-                    if (tipoSol !== 'compra') {
+                    if (!esCompra) {
                       e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.05))';
                       e.currentTarget.style.color = 'var(--text, #f8fafc)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (tipoSol !== 'compra') {
+                    if (!esCompra) {
                       e.currentTarget.style.backgroundColor = 'transparent';
                       e.currentTarget.style.color = 'var(--text-dim, #94a3b8)';
                     }
@@ -579,7 +587,7 @@ export default function ModalSolicitudMaterial({
             </div>
 
             {/* 4. Tarjeta de Selección / Formulario de Sugerencia */}
-            {tipoSol === 'compra' ? (
+            {esCompra ? (
               <div
                 className="rounded-xl p-4 space-y-4 border"
                 style={{
@@ -1001,15 +1009,15 @@ export default function ModalSolicitudMaterial({
 
             {/* 5. Campos de Formulario y Tipografía */}
             {/* Fecha de Devolución Estimada (Para préstamos) o Fecha Ideal Requerida (Para sugerencias de compra) */}
-            {(tipoSol === 'PRESTAMO_EQUIPO' || tipoSol === 'compra') && (
+            {(tipoSol === 'PRESTAMO_EQUIPO' || esCompra) && (
               <div>
                 <label
                   className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
                   style={{ color: 'var(--text-dim, #94a3b8)' }}
                 >
-                  <Calendar size={14} style={{ color: tipoSol === 'compra' ? '#818cf8' : '#84CC16' }} />
+                  <Calendar size={14} style={{ color: esCompra ? '#818cf8' : '#84CC16' }} />
                   <span>
-                    {tipoSol === 'compra' ? 'Fecha Ideal Requerida' : 'Fecha de Devolución Estimada'}
+                    {esCompra ? 'Fecha Ideal Requerida' : 'Fecha de Devolución Estimada'}
                   </span>
                   <span className="text-rose-400">*</span>
                 </label>
@@ -1030,7 +1038,7 @@ export default function ModalSolicitudMaterial({
                   className="text-[11px] mt-1 block"
                   style={{ color: 'var(--text-muted, #64748b)' }}
                 >
-                  {tipoSol === 'compra'
+                  {esCompra
                     ? 'Fecha estimada en la que se necesita disponer de los materiales para las clases o actividades.'
                     : 'Fecha límite pactada para retornar los equipos a la bodega o sede central.'}
                 </span>
@@ -1105,9 +1113,9 @@ export default function ModalSolicitudMaterial({
                 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
                 style={{ color: 'var(--text-dim, #94a3b8)' }}
               >
-                <FileText size={14} style={{ color: tipoSol === 'compra' ? '#818cf8' : '#84CC16' }} />
+                <FileText size={14} style={{ color: esCompra ? '#818cf8' : '#84CC16' }} />
                 <span>
-                  {tipoSol === 'compra'
+                  {esCompra
                     ? 'Justificación Pedagógica / Actividad'
                     : 'Motivo / Justificación Pedagógica o Técnica'}
                 </span>
@@ -1118,7 +1126,7 @@ export default function ModalSolicitudMaterial({
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
                 placeholder={
-                  tipoSol === 'compra'
+                  esCompra
                     ? 'Describe detalladamente el taller, clase o actividad pedagógica que justifica esta solicitud de compra...'
                     : 'Describe detalladamente el taller, clase, evento o necesidad formativa que justifica esta solicitud...'
                 }

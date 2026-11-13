@@ -460,12 +460,16 @@ export const inventoryApi = {
           const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
             ? s.items_solicitud
             : (Array.isArray(s.items) ? s.items : []);
+          const fechaRad = s.creado_en || s.fecha_radicado || s.created_at || '';
           return {
             ...s,
             items: items,
             items_solicitud: items,
-            tipo: s.tipo || s.tipo_solicitud || '',
+            tipo: s.tipo_solicitud || s.tipo || '',
             tipo_solicitud: s.tipo_solicitud || s.tipo || '',
+            creado_en: fechaRad,
+            created_at: fechaRad,
+            fecha_radicado: fechaRad ? fechaRad.slice(0, 10) : '',
             motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || s.nota_rechazo || null,
             nota_rechazo: s.nota_rechazo || s.observaciones_admin || s.motivo_rechazo || null,
             observaciones_admin: s.observaciones_admin || s.motivo_rechazo || s.nota_rechazo || null,
@@ -529,12 +533,16 @@ export const inventoryApi = {
             const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
               ? s.items_solicitud
               : (Array.isArray(s.items) ? s.items : []);
+            const fechaRad = s.creado_en || s.fecha_radicado || s.created_at || '';
             return {
               ...s,
               items: items,
               items_solicitud: items,
-              tipo: s.tipo || s.tipo_solicitud || '',
+              tipo: s.tipo_solicitud || s.tipo || '',
               tipo_solicitud: s.tipo_solicitud || s.tipo || '',
+              creado_en: fechaRad,
+              created_at: fechaRad,
+              fecha_radicado: fechaRad ? fechaRad.slice(0, 10) : '',
               motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || null,
               nota_rechazo: s.nota_rechazo || s.observaciones_admin || null,
               observaciones_admin: s.observaciones_admin || s.motivo_rechazo || null,
@@ -606,6 +614,7 @@ export const inventoryApi = {
           fecha_devolucion_estimada: data.fecha_devolucion_estimada || data.fecha_devolucion || null,
           estado: data.estado || 'PENDIENTE',
           observaciones_admin: data.observaciones_admin || null,
+          creado_en: data.creado_en || new Date().toISOString(),
         };
 
         const { data: solCreated, error: solErr } = await supabase

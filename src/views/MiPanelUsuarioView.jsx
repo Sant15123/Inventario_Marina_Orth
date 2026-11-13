@@ -51,31 +51,58 @@ const formatFechaCompacta = (d) => {
   return d;
 };
 
-const renderBadgeTipo = (tipo) => {
-  const tipoNormalizado = String(tipo || '').toLowerCase().trim();
+const renderTipoSolicitud = (solicitud) => {
+  const tipo = (solicitud.tipo_solicitud || solicitud.tipo || '').toUpperCase();
+  const items = (Array.isArray(solicitud.items_solicitud) && solicitud.items_solicitud.length > 0)
+    ? solicitud.items_solicitud
+    : (Array.isArray(solicitud.items) ? solicitud.items : []);
+  const esCompra =
+    tipo === 'SUGERENCIA_COMPRA' ||
+    tipo.includes('COMPRA') ||
+    items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido);
 
-  if (tipoNormalizado === 'compra' || tipoNormalizado === 'sugerencia_compra' || tipoNormalizado.includes('compra')) {
+  if (esCompra) {
+    const categorias = [
+      ...new Set(
+        items
+          .map((i) => (i.categoria_sugerida || i.categoria || i.categoria_destino)?.toLowerCase())
+          .filter(Boolean)
+      ),
+    ];
+
+    let etiqueta = 'Compra: Insumos';
+    if (categorias.length === 1) {
+      if (categorias[0].includes('consumible') || categorias[0].includes('robotica')) {
+        etiqueta = 'Compra: Robótica / Cons.';
+      } else if (categorias[0].includes('papeleria')) {
+        etiqueta = 'Compra: Papelería';
+      }
+    } else if (categorias.length > 1) {
+      etiqueta = 'Compra: Robótica y Papelería';
+    }
+
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-700">
-        🛒 Sugerencia Compra
+        🛒 {etiqueta}
       </span>
     );
   }
 
-  if (tipoNormalizado === 'consumible' || tipoNormalizado === 'consumibles' || tipoNormalizado.includes('consumib')) {
+  if (tipo.includes('CONSUMIBLE')) {
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700">
-        📦 Consumibles
+        📦 Consumibles Robótica
       </span>
     );
   }
 
   return (
     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700">
-      💻 Préstamo
+      💻 Equipo Retornable
     </span>
   );
 };
+
 
 export default function MiPanelUsuarioView({
   items = [],
@@ -823,18 +850,25 @@ export default function MiPanelUsuarioView({
                     .slice((solicitudesPage - 1) * SOLICITUDES_PER_PAGE, solicitudesPage * SOLICITUDES_PER_PAGE)
                     .map((sol) => {
                       const estadoUpper = String(sol.estado || 'PENDIENTE').toUpperCase();
-                      const rawTipo = String(sol.tipo_solicitud || sol.tipo || '').toLowerCase().trim();
-                      const esCompra = rawTipo === 'compra' || rawTipo === 'sugerencia_compra' || rawTipo.includes('compra');
-                      const esConsumible = rawTipo === 'consumible' || rawTipo === 'consumibles' || rawTipo.includes('consumib');
+                      const rawTipo = (sol.tipo_solicitud || sol.tipo || '').toUpperCase();
+                      const solItems = (Array.isArray(sol.items_solicitud) && sol.items_solicitud.length > 0)
+                        ? sol.items_solicitud
+                        : (Array.isArray(sol.items) ? sol.items : []);
+                      const esCompra =
+                        rawTipo === 'SUGERENCIA_COMPRA' ||
+                        rawTipo.includes('COMPRA') ||
+                        solItems.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido);
+                      const esConsumible = !esCompra && rawTipo.includes('CONSUMIB');
                       const esPrestamo = !esCompra && !esConsumible;
+                      const fechaRad = sol.creado_en || sol.fecha_radicado || sol.created_at || '';
 
                       return (
                         <tr key={sol.id} style={{ height: '52px' }}>
                           <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '10px 12px' }}>
-                            {fmtDate(sol.fecha_radicado || (sol.created_at ? sol.created_at.slice(0, 10) : ''))}
+                            {fmtDate(fechaRad)}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
-                            {renderBadgeTipo(sol.tipo_solicitud || sol.tipo)}
+                            {renderTipoSolicitud(sol)}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
