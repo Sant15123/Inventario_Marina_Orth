@@ -163,12 +163,112 @@ export default function MiPanelUsuarioView({
   const fetchSolicitudes = async () => {
     try {
       setSolicitudesLoading(true);
-      const data = await inventoryApi.getSolicitudes();
-      if (Array.isArray(data)) {
-        // Filtrar solicitudes correspondientes a este usuario
+      let dataFinal = [];
+
+      try {
+        if (supabase) {
+          let invList = [];
+          let compList = [];
+
+          try {
+            const { data: invData, error: invErr } = await supabase
+              .from('solicitudes_inventario')
+              .select(`
+                *,
+                items_solicitud (
+                  id,
+                  cantidad,
+                  item_id,
+                  nombre_sugerido,
+                  categoria_sugerida,
+                  url_compra,
+                  precio_estimado,
+                  ingresado_inventario
+                )
+              `)
+              .order('creado_en', { ascending: false });
+
+            if (!invErr && Array.isArray(invData)) {
+              invList = invData.map((s) => ({
+                ...s,
+                items: s.items_solicitud || [],
+                tipo: s.tipo_solicitud || 'PRESTAMO_EQUIPO',
+              }));
+            }
+          } catch (_) {}
+
+          try {
+            const { data: cData, error: cErr } = await supabase
+              .from('solicitudes_compra')
+              .select('*')
+              .order('creado_en', { ascending: false });
+
+            if (!cErr && Array.isArray(cData)) {
+              compList = cData.map((sc) => {
+                const catDestino = String(sc.categoria_destino || 'consumibles').toLowerCase();
+                const singleItem = {
+                  id: sc.id,
+                  solicitud_id: sc.id,
+                  tipo_item: 'compra',
+                  item_id: sc.item_inventario_id || null,
+                  nombre_item: sc.nombre_producto || 'Producto sugerido',
+                  nombre_sugerido: sc.nombre_producto || 'Producto sugerido',
+                  categoria_sugerida: catDestino,
+                  categoria_destino: catDestino,
+                  url_compra: sc.url_compra || null,
+                  precio_estimado: Number(sc.precio_estimado) || 0,
+                  cantidad: Number(sc.cantidad) || 1,
+                  ingresado_inventario: Boolean(sc.ingresado_inventario),
+                };
+
+                return {
+                  id: sc.id,
+                  usuario_id: sc.usuario_id,
+                  usuario_nombre: sc.usuario_nombre,
+                  sede: sc.sede || 'Medellín',
+                  tipo: 'SUGERENCIA_COMPRA',
+                  tipo_solicitud: 'SUGERENCIA_COMPRA',
+                  tipoSolicitud: 'SUGERENCIA_COMPRA',
+                  categoria_destino: catDestino,
+                  fecha_requerida: sc.fecha_requerida,
+                  fecha_devolucion_estimada: sc.fecha_requerida,
+                  motivo: sc.justificacion || 'Sugerencia de compra',
+                  justificacion: sc.justificacion || 'Sugerencia de compra',
+                  estado: sc.estado || 'PENDIENTE',
+                  prioridad: sc.prioridad || 'Media',
+                  ingresado_inventario: Boolean(sc.ingresado_inventario),
+                  item_inventario_id: sc.item_inventario_id || null,
+                  observaciones_admin: sc.observaciones_admin || null,
+                  creado_en: sc.creado_en,
+                  created_at: sc.creado_en,
+                  fecha_radicado: sc.creado_en ? String(sc.creado_en).slice(0, 10) : '',
+                  is_solicitud_compra: true,
+                  items: [singleItem],
+                  items_solicitud: [singleItem],
+                };
+              });
+            }
+          } catch (_) {}
+
+          dataFinal = [...invList, ...compList].sort(
+            (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
+          );
+        }
+      } catch (errSup) {
+        console.warn('Aviso consulta directa Supabase en MiPanelUsuarioView:', errSup);
+      }
+
+      if (dataFinal.length === 0) {
+        const apiData = await inventoryApi.getSolicitudes();
+        if (Array.isArray(apiData) && apiData.length > 0) {
+          dataFinal = apiData;
+        }
+      }
+
+      if (Array.isArray(dataFinal)) {
         const userId = currentUser?.id || currentUser?.documento;
         const nombreNorm = (currentUser?.nombre || '').toLowerCase().trim();
-        const misSols = data.filter((s) => {
+        const misSols = dataFinal.filter((s) => {
           if (userId && (s.usuario_id === userId || String(s.usuario_id) === String(userId))) return true;
           const sNombre = (s.usuario_nombre || '').toLowerCase().trim();
           return sNombre && nombreNorm && (sNombre.includes(nombreNorm) || nombreNorm.includes(sNombre));

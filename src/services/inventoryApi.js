@@ -441,50 +441,10 @@ export const inventoryApi = {
 
   // 5.0 Solicitudes de Inventario (Rol Custodio / Docente / Admin)
   getSolicitudes: async (params = {}) => {
-    try {
-      const qs = new URLSearchParams(params).toString();
-      const endpoint = qs ? `/solicitudes?${qs}` : '/solicitudes';
-      const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-      const token = getAuthToken();
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (res.ok) {
-        const json = await res.json().catch(() => null);
-        const arrayResult = extraerArreglo(json) || [];
-        return arrayResult.map((s) => {
-          const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
-            ? s.items_solicitud
-            : (Array.isArray(s.items) ? s.items : []);
-          const fechaRad = s.creado_en || s.fecha_radicado || s.created_at || '';
-          return {
-            ...s,
-            items: items,
-            items_solicitud: items,
-            tipo: s.tipo_solicitud || s.tipo || '',
-            tipo_solicitud: s.tipo_solicitud || s.tipo || '',
-            creado_en: fechaRad,
-            created_at: fechaRad,
-            fecha_radicado: fechaRad ? fechaRad.slice(0, 10) : '',
-            motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || s.nota_rechazo || null,
-            nota_rechazo: s.nota_rechazo || s.observaciones_admin || s.motivo_rechazo || null,
-            observaciones_admin: s.observaciones_admin || s.motivo_rechazo || s.nota_rechazo || null,
-          };
-        });
-      }
-    } catch (err) {
-      console.warn('Endpoint /api/solicitudes no disponible en backend, intentando fallback:', err.message);
-    }
-
-    // 1. Fallback con cliente Supabase directo
+    // 1. Consulta directa con cliente Supabase (prioritaria para tiempo real y consistencia de tablas dedicadas)
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        // A. Consultar solicitudes_inventario con items_solicitud
         let dataInventario = [];
         try {
           let { data, error } = await supabase
@@ -647,7 +607,6 @@ export const inventoryApi = {
           console.warn('Aviso consulta solicitudes_compra:', errComp.message);
         }
 
-        // C. Fusionar y ordenar descendentemente por fecha de radicado
         const combinadas = [...dataInventario, ...dataCompras].sort((a, b) => {
           const tA = a.creado_en ? new Date(a.creado_en).getTime() : 0;
           const tB = b.creado_en ? new Date(b.creado_en).getTime() : 0;
@@ -659,7 +618,47 @@ export const inventoryApi = {
         }
       }
     } catch (e) {
-      console.warn('Aviso Supabase fallback solicitudes:', e.message);
+      console.warn('Aviso Supabase solicitudes principal:', e.message);
+    }
+
+    // 2. Fallback secundario a REST backend
+    try {
+      const qs = new URLSearchParams(params).toString();
+      const endpoint = qs ? `/solicitudes?${qs}` : '/solicitudes';
+      const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+      const token = getAuthToken();
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        const arrayResult = extraerArreglo(json) || [];
+        return arrayResult.map((s) => {
+          const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
+            ? s.items_solicitud
+            : (Array.isArray(s.items) ? s.items : []);
+          const fechaRad = s.creado_en || s.fecha_radicado || s.created_at || '';
+          return {
+            ...s,
+            items: items,
+            items_solicitud: items,
+            tipo: s.tipo_solicitud || s.tipo || '',
+            tipo_solicitud: s.tipo_solicitud || s.tipo || '',
+            creado_en: fechaRad,
+            created_at: fechaRad,
+            fecha_radicado: fechaRad ? fechaRad.slice(0, 10) : '',
+            motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || s.nota_rechazo || null,
+            nota_rechazo: s.nota_rechazo || s.observaciones_admin || s.motivo_rechazo || null,
+            observaciones_admin: s.observaciones_admin || s.motivo_rechazo || s.nota_rechazo || null,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn('Endpoint /api/solicitudes no disponible en backend, intentando fallback:', err.message);
     }
 
     // Fallback a almacenamiento local tolerante
@@ -875,7 +874,7 @@ export const inventoryApi = {
       data: payloadNormalizado,
     };
   },
-
+
   updateSolicitud: async (id, patch) => {
     let apiSuccess = null;
     try {
