@@ -30,6 +30,7 @@ export default function ModalSolicitudMaterial({
   showSuccess,
   showError,
 }) {
+  // 1. Estados principales del formulario (declarados al inicio)
   const [tipoSol, setTipoSol] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
   const [sede, setSede] = useState(() => currentUser?.sede || sedes[0] || 'Medellín');
   const [proyectoId, setProyectoId] = useState('');
@@ -37,18 +38,9 @@ export default function ModalSolicitudMaterial({
   const [motivo, setMotivo] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
-
-  // Ítems acumulados en la solicitud: [{ tipo_item, item_id, nombre_item, cantidad, unidad, ... }]
-  const esCompra = tipoSol === 'SUGERENCIA_COMPRA' || esCompra;
-  const esPrestamo = tipoSol === 'PRESTAMO_EQUIPO';
-  const esConsumibles = tipoSol === 'CONSUMIBLES';
   const [itemsSolicitud, setItemsSolicitud] = useState([]);
-
-  // Selector temporal para agregar ítem a la lista desde catálogo
   const [selectedItemId, setSelectedItemId] = useState('');
   const [cantidadInput, setCantidadInput] = useState(1);
-
-  // Formulario temporal para sugerencia de compra (cuando esCompra)
   const [compraForm, setCompraForm] = useState({
     categoria: 'consumibles', // 'consumibles' | 'papeleria'
     nombre: '',
@@ -56,6 +48,11 @@ export default function ModalSolicitudMaterial({
     cantidad: 1,
     precio: '',
   });
+
+  // 2. Variables derivadas (evaluadas tras declarar todos los estados)
+  const esCompra = tipoSol === 'SUGERENCIA_COMPRA' || tipoSol === 'compra';
+  const esPrestamo = tipoSol === 'PRESTAMO_EQUIPO';
+  const esConsumibles = tipoSol === 'CONSUMIBLES' || tipoSol.includes('CONSUMIB');
 
   // Catálogo disponible filtrado por tipo de solicitud
   const catalogoDisponible = useMemo(() => {
@@ -236,7 +233,7 @@ export default function ModalSolicitudMaterial({
       setSubmitting(true);
       setValidationError('');
 
-      const esCompraFinal = tipoSol === 'SUGERENCIA_COMPRA' || esCompra;
+      const esCompraFinal = tipoSol === 'SUGERENCIA_COMPRA' || tipoSol === 'compra';
       const tipoSolParaGuardar = esCompraFinal
         ? 'SUGERENCIA_COMPRA'
         : (tipoSol.includes('CONSUMIB') ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
