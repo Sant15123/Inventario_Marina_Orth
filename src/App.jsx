@@ -50,7 +50,19 @@ function App() {
   const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario } = useAuth();
 
   // Estado simple de navegación para las vistas
-  const [currentView, setCurrentView] = useState('resumen');
+  const [currentView, setCurrentView] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        const p = new URLSearchParams(window.location.search);
+        const tab = p.get('tab');
+        const solId = p.get('solicitudId');
+        if (tab === 'compras' || tab === 'entrantes' || tab === 'solicitudes' || solId) {
+          return 'prestamos';
+        }
+      }
+    } catch {}
+    return 'resumen';
+  });
 
   // Redirigir a 'mi-panel' si el rol activo es 'usuario'
   useEffect(() => {
@@ -70,7 +82,23 @@ function App() {
 
   // Parámetros de navegación inicial para transferir filtros desde Resumen
   const [inventarioParams, setInventarioParams] = useState({ tab: 'equipos', stockFilter: 'todos' });
-  const [prestamosParams, setPrestamosParams] = useState({ section: 'all', estado: 'todos' });
+  const [prestamosParams, setPrestamosParams] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        const p = new URLSearchParams(window.location.search);
+        const tab = p.get('tab');
+        const solId = p.get('solicitudId');
+        if (tab === 'compras' || tab === 'entrantes' || tab === 'solicitudes' || solId) {
+          return {
+            section: tab === 'compras' ? 'compras' : 'solicitudes',
+            estado: 'todos',
+            solicitudId: solId || null,
+          };
+        }
+      }
+    } catch {}
+    return { section: 'all', estado: 'todos' };
+  });
 
   const handleNavigateFromSummary = (view, params = {}) => {
     if (view === 'inventario') {
