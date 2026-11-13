@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
+  ShoppingCart,
   Laptop,
   Package,
   Calendar,
@@ -796,6 +797,7 @@ export default function MiPanelUsuarioView({
                     .slice((solicitudesPage - 1) * SOLICITUDES_PER_PAGE, solicitudesPage * SOLICITUDES_PER_PAGE)
                     .map((sol) => {
                       const estadoUpper = String(sol.estado || 'PENDIENTE').toUpperCase();
+                      const esCompra = sol.tipo_solicitud === 'compra' || sol.tipo_solicitud === 'COMPRA' || sol.tipo === 'compra';
                       const esPrestamo = sol.tipo_solicitud === 'PRESTAMO_EQUIPO';
 
                       return (
@@ -804,7 +806,12 @@ export default function MiPanelUsuarioView({
                             {fmtDate(sol.fecha_radicado || (sol.created_at ? sol.created_at.slice(0, 10) : ''))}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
-                            {esPrestamo ? (
+                            {esCompra ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-700" style={{ color: '#818cf8' }}>
+                                <ShoppingCart size={13} />
+                                <span>Sugerencia Compra</span>
+                              </span>
+                            ) : esPrestamo ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700/80" style={{ color: 'var(--sky-color, #38bdf8)' }}>
                                 <Laptop size={13} />
                                 <span>Préstamo</span>
@@ -825,7 +832,7 @@ export default function MiPanelUsuarioView({
                                       key={idx}
                                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11.5px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-sm"
                                     >
-                                      <span style={{ color: 'var(--text, #f8fafc)' }}>{it.nombre_item || it.nombre}</span>
+                                      <span style={{ color: 'var(--text, #f8fafc)' }}>{it.nombre_sugerido || it.nombre_item || it.nombre}</span>
                                       <strong style={{ color: '#84CC16', fontWeight: 800 }}>x{it.cantidad}</strong>
                                     </span>
                                   ))}

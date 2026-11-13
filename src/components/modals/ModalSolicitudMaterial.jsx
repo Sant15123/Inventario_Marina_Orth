@@ -13,6 +13,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  ShoppingCart,
+  ExternalLink,
 } from 'lucide-react';
 import { today } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
@@ -28,7 +30,7 @@ export default function ModalSolicitudMaterial({
   showSuccess,
   showError,
 }) {
-  const [tipoSol, setTipoSol] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES'
+  const [tipoSol, setTipoSol] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'compra'
   const [sede, setSede] = useState(() => currentUser?.sede || sedes[0] || 'Medellín');
   const [proyectoId, setProyectoId] = useState('');
   const [fechaEstimada, setFechaEstimada] = useState('');
@@ -36,12 +38,21 @@ export default function ModalSolicitudMaterial({
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  // Ítems acumulados en la solicitud: [{ tipo_item, item_id, nombre_item, cantidad, unidad }]
+  // Ítems acumulados en la solicitud: [{ tipo_item, item_id, nombre_item, cantidad, unidad, ... }]
   const [itemsSolicitud, setItemsSolicitud] = useState([]);
 
-  // Selector temporal para agregar ítem a la lista
+  // Selector temporal para agregar ítem a la lista desde catálogo
   const [selectedItemId, setSelectedItemId] = useState('');
   const [cantidadInput, setCantidadInput] = useState(1);
+
+  // Formulario temporal para sugerencia de compra (cuando tipoSol === 'compra')
+  const [compraForm, setCompraForm] = useState({
+    categoria: 'consumibles', // 'consumibles' | 'papeleria'
+    nombre: '',
+    url: '',
+    cantidad: 1,
+    precio: '',
+  });
 
   // Catálogo disponible filtrado por tipo de solicitud
   const catalogoDisponible = useMemo(() => {
@@ -79,10 +90,17 @@ export default function ModalSolicitudMaterial({
     setItemsSolicitud([]);
     setSelectedItemId('');
     setCantidadInput(1);
+    setCompraForm({
+      categoria: 'consumibles',
+      nombre: '',
+      url: '',
+      cantidad: 1,
+      precio: '',
+    });
     setValidationError('');
   };
 
-  // Agregar ítem a la lista
+  // Agregar ítem de catálogo a la lista
   const handleAddItem = () => {
     setValidationError('');
     if (!selectedItemId || !currentItemInfo) {
@@ -116,6 +134,57 @@ export default function ModalSolicitudMaterial({
     setCantidadInput(1);
   };
 
+  // Agregar ítem sugerido de compra
+  const handleAgregarCompra = () => {
+    setValidationError('');
+    if (!compraForm.nombre.trim()) {
+      setValidationError('Ingresa el nombre o especificación del producto sugerido.');
+      return;
+    }
+    const qty = parseInt(compraForm.cantidad, 10);
+    if (isNaN(qty) || qty <= 0) {
+      setValidationError('La cantidad debe ser mayor a 0.');
+      return;
+    }
+    const precioNum = compraForm.precio ? parseFloat(compraForm.precio) : 0;
+    if (compraForm.precio && (isNaN(precioNum) || precioNum < 0)) {
+      setValidationError('El precio estimado debe ser un número válido.');
+      return;
+    }
+
+    const nuevoItem = {
+      tipo_item: 'compra',
+      item_id: null,
+      nombre_item: compraForm.nombre.trim(),
+      nombre_sugerido: compraForm.nombre.trim(),
+      categoria_sugerida: compraForm.categoria || 'consumibles',
+      url_compra: compraForm.url.trim() || null,
+      precio_estimado: precioNum || 0,
+      cantidad: qty,
+      unidad: 'und',
+      ingresado_inventario: false,
+    };
+
+    setItemsSolicitud((prev) => [...prev, nuevoItem]);
+    setCompraForm((prev) => ({
+      ...prev,
+      nombre: '',
+      url: '',
+      cantidad: 1,
+      precio: '',
+    }));
+  };
+
+  // Probar enlace de compra en pestaña nueva
+  const handleTestUrl = () => {
+    if (!compraForm.url.trim()) return;
+    let url = compraForm.url.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   // Eliminar ítem de la lista
   const handleRemoveItem = (index) => {
     setItemsSolicitud((prev) => prev.filter((_, idx) => idx !== index));
@@ -132,18 +201,30 @@ export default function ModalSolicitudMaterial({
     }
 
     if (!motivo.trim()) {
-      setValidationError('El motivo o justificación pedagógica es obligatorio.');
+      setValidationError(
+        tipoSol === 'compra'
+          ? 'La justificación pedagógica / actividad es obligatoria.'
+          : 'El motivo o justificación pedagógica es obligatorio.'
+      );
       return;
     }
 
-    if (tipoSol === 'PRESTAMO_EQUIPO') {
+    if (tipoSol === 'PRESTAMO_EQUIPO' || tipoSol === 'compra') {
       if (!fechaEstimada) {
-        setValidationError('La fecha estimada de devolución es obligatoria para préstamos de equipo.');
+        setValidationError(
+          tipoSol === 'compra'
+            ? 'La fecha ideal requerida es obligatoria para la sugerencia de compra.'
+            : 'La fecha estimada de devolución es obligatoria para préstamos de equipo.'
+        );
         return;
       }
       const fechaActual = today();
       if (fechaEstimada < fechaActual) {
-        setValidationError('La fecha estimada de devolución no puede ser una fecha pasada.');
+        setValidationError(
+          tipoSol === 'compra'
+            ? 'La fecha ideal requerida no puede ser una fecha pasada.'
+            : 'La fecha estimada de devolución no puede ser una fecha pasada.'
+        );
         return;
       }
     }
@@ -152,7 +233,7 @@ export default function ModalSolicitudMaterial({
       setSubmitting(true);
       setValidationError('');
 
-      const fechaDevolucionVal = tipoSol === 'PRESTAMO_EQUIPO' ? fechaEstimada : null;
+      const fechaDevolucionVal = (tipoSol === 'PRESTAMO_EQUIPO' || tipoSol === 'compra') ? fechaEstimada : null;
       const payload = {
         usuario_id: currentUser?.id || currentUser?.documento || 'usr-temp',
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
@@ -160,6 +241,7 @@ export default function ModalSolicitudMaterial({
         tipo_solicitud: tipoSol,
         proyecto_steam_id: proyectoId || null,
         motivo: motivo.trim(),
+        justificacion: motivo.trim(),
         fecha_devolucion: fechaDevolucionVal,
         fecha_devolucion_estimada: fechaDevolucionVal,
         fecha_retorno: fechaDevolucionVal,
@@ -177,7 +259,9 @@ export default function ModalSolicitudMaterial({
         if (showSuccess) {
           showSuccess(
             'Solicitud enviada exitosamente',
-            'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
+            tipoSol === 'compra'
+              ? 'Tu sugerencia de compra ha sido radicada para revisión y presupuesto administrativo.'
+              : 'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
           );
         }
 
@@ -187,7 +271,7 @@ export default function ModalSolicitudMaterial({
           onSolicitudCreated(solicitudCreada);
         }
 
-        // Emitir evento reactivo local para actualizar de inmediato el badge de la campanita
+        // Emitir evento reactivo local para actualizar de inmediato el badge de la campanita y listas
         try {
           window.dispatchEvent(
             new CustomEvent('siga:solicitud_creada', { detail: solicitudCreada })
@@ -213,7 +297,6 @@ export default function ModalSolicitudMaterial({
       if (showError) {
         showError('Error al enviar solicitud', `Error: ${mensaje}`);
       }
-      // No cerrar modal ni limpiar formulario si la petición falla (4xx o 5xx)
     } finally {
       setSubmitting(false);
     }
@@ -329,7 +412,7 @@ export default function ModalSolicitudMaterial({
               </div>
             )}
 
-            {/* 3. Tipo de Solicitud (Segmented Control / Tabs tipo botón) */}
+            {/* 3. Tipo de Solicitud (Segmented Control / Tabs de 3 columnas) */}
             <div>
               <label
                 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
@@ -338,7 +421,7 @@ export default function ModalSolicitudMaterial({
                 Tipo de Solicitud
               </label>
               <div
-                className="grid grid-cols-2 gap-2 p-1.5 rounded-xl border"
+                className="grid grid-cols-3 gap-2 p-1.5 rounded-xl border"
                 style={{
                   backgroundColor: 'var(--bg-alt, #0b1120)',
                   borderColor: 'var(--line, #1e293b)',
@@ -347,7 +430,7 @@ export default function ModalSolicitudMaterial({
                 <button
                   type="button"
                   onClick={() => handleChangeTipo('PRESTAMO_EQUIPO')}
-                  className="rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all cursor-pointer"
+                  className="rounded-lg py-2.5 px-2 flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-all cursor-pointer"
                   style={
                     tipoSol === 'PRESTAMO_EQUIPO'
                       ? {
@@ -377,14 +460,14 @@ export default function ModalSolicitudMaterial({
                     }
                   }}
                 >
-                  <Laptop size={18} />
-                  <span>Equipo Retornable (Préstamo)</span>
+                  <Laptop size={16} />
+                  <span>Equipo Retornable</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleChangeTipo('CONSUMIBLES')}
-                  className="rounded-lg py-2.5 px-3 flex items-center justify-center gap-2 text-sm transition-all cursor-pointer"
+                  className="rounded-lg py-2.5 px-2 flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-all cursor-pointer"
                   style={
                     tipoSol === 'CONSUMIBLES'
                       ? {
@@ -414,175 +497,482 @@ export default function ModalSolicitudMaterial({
                     }
                   }}
                 >
-                  <Package size={18} />
-                  <span>Consumibles / Insumos Robótica</span>
+                  <Package size={16} />
+                  <span>Consumibles</span>
                 </button>
-              </div>
-            </div>
-
-            {/* 4. Tarjeta de Selección de Artículos */}
-            <div
-              className="rounded-xl p-4 space-y-3 border"
-              style={{
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
-                borderColor: 'var(--line, #1e293b)',
-              }}
-            >
-              <label
-                className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
-                style={{ color: 'var(--text-dim, #94a3b8)' }}
-              >
-                Seleccionar Artículos del Catálogo
-              </label>
-
-              {/* Fila de controles */}
-              <div className="flex items-center gap-3">
-                <select
-                  value={selectedItemId}
-                  onChange={(e) => {
-                    setSelectedItemId(e.target.value);
-                    setCantidadInput(1);
-                  }}
-                  className="flex-1 rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
-                  style={{
-                    backgroundColor: 'var(--bg, #0b1120)',
-                    borderColor: 'var(--line, #334155)',
-                    color: 'var(--text, #f8fafc)',
-                  }}
-                >
-                  <option value="">
-                    {tipoSol === 'PRESTAMO_EQUIPO'
-                      ? '-- Seleccionar equipo tecnológico --'
-                      : '-- Seleccionar material o insumo --'}
-                  </option>
-                  {catalogoDisponible.map((it) => (
-                    <option key={it.id} value={it.id}>
-                      {it.name || it.material} {it.category ? `(${it.category})` : ''}
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  type="number"
-                  min="1"
-                  max={tipoSol === 'CONSUMIBLES' && stockDisponibleItem > 0 ? stockDisponibleItem : 99}
-                  value={cantidadInput}
-                  onChange={(e) => setCantidadInput(e.target.value)}
-                  placeholder="Cant."
-                  className="w-20 rounded-lg px-3 py-2 text-sm text-center font-semibold border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
-                  style={{
-                    backgroundColor: 'var(--bg, #0b1120)',
-                    borderColor: 'var(--line, #334155)',
-                    color: 'var(--text, #f8fafc)',
-                  }}
-                />
 
                 <button
                   type="button"
-                  onClick={handleAddItem}
-                  className="font-bold text-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95"
-                  style={{
-                    backgroundColor: '#84CC16',
-                    color: '#020617',
-                    border: '1px solid #84CC16',
+                  onClick={() => handleChangeTipo('compra')}
+                  className="rounded-lg py-2.5 px-2 flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-all cursor-pointer"
+                  style={
+                    tipoSol === 'compra'
+                      ? {
+                          backgroundColor: '#6366f1',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.35)',
+                          border: '1px solid #6366f1',
+                        }
+                      : {
+                          backgroundColor: 'transparent',
+                          color: 'var(--text-dim, #94a3b8)',
+                          fontWeight: 500,
+                          border: '1px solid transparent',
+                        }
+                  }
+                  onMouseEnter={(e) => {
+                    if (tipoSol !== 'compra') {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover, rgba(255, 255, 255, 0.05))';
+                      e.currentTarget.style.color = 'var(--text, #f8fafc)';
+                    }
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#65A30D')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#84CC16')}
+                  onMouseLeave={(e) => {
+                    if (tipoSol !== 'compra') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-dim, #94a3b8)';
+                    }
+                  }}
                 >
-                  <Plus size={16} strokeWidth={2.5} />
-                  <span>+ Agregar</span>
+                  <ShoppingCart size={16} />
+                  <span>🛒 Sugerencia de Compra</span>
                 </button>
-              </div>
-
-              {/* Lista de Artículos Agregados */}
-              <div>
-                {itemsSolicitud.length === 0 ? (
-                  <div
-                    className="text-xs text-center py-4 rounded-lg border border-dashed"
-                    style={{
-                      backgroundColor: 'var(--bg-alt, rgba(11, 17, 32, 0.45))',
-                      borderColor: 'var(--line, #334155)',
-                      color: 'var(--text-dim, #94a3b8)',
-                    }}
-                  >
-                    Ningún artículo agregado aún a esta solicitud.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {itemsSolicitud.map((it, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between px-3.5 py-2.5 rounded-lg border text-sm shadow-sm transition-all"
-                        style={{
-                          backgroundColor: 'var(--bg, #0b1120)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <div className="flex items-center gap-2.5 overflow-hidden">
-                          <span
-                            className="p-1.5 rounded-md shrink-0 flex items-center justify-center"
-                            style={{
-                              backgroundColor: 'rgba(132, 204, 22, 0.15)',
-                              color: '#84CC16',
-                            }}
-                          >
-                            {it.tipo_item === 'equipo' ? <Laptop size={14} /> : <Package size={14} />}
-                          </span>
-                          <span
-                            className="font-medium truncate text-xs"
-                            style={{ color: 'var(--text, #f8fafc)' }}
-                          >
-                            {it.nombre_item}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span
-                            className="px-2.5 py-0.5 rounded-full text-xs font-bold"
-                            style={{
-                              backgroundColor: 'rgba(132, 204, 22, 0.18)',
-                              color: '#bef264',
-                              border: '1px solid rgba(132, 204, 22, 0.4)',
-                            }}
-                          >
-                            {it.cantidad} {it.unidad}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(idx)}
-                            className="p-1.5 rounded-lg transition-colors cursor-pointer"
-                            title="Quitar artículo"
-                            style={{
-                              backgroundColor: 'transparent',
-                              border: 'none',
-                              color: 'var(--red, #f43f5e)',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(244, 63, 94, 0.12)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
+            {/* 4. Tarjeta de Selección / Formulario de Sugerencia */}
+            {tipoSol === 'compra' ? (
+              <div
+                className="rounded-xl p-4 space-y-4 border"
+                style={{
+                  backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
+                  borderColor: 'var(--line, #1e293b)',
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <label
+                    className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2"
+                    style={{ color: '#818cf8' }}
+                  >
+                    <ShoppingCart size={15} />
+                    <span>Detalle del Producto a Sugerir para Compra</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Insumos o materiales no disponibles en bodega
+                  </span>
+                </div>
+
+                {/* Fila 1: Categoría destino y Nombre del producto */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Categoría destino *
+                    </label>
+                    <select
+                      value={compraForm.categoria}
+                      onChange={(e) => setCompraForm({ ...compraForm, categoria: e.target.value })}
+                      className="w-full rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      style={{
+                        backgroundColor: 'var(--bg, #0b1120)',
+                        borderColor: 'var(--line, #334155)',
+                        color: 'var(--text, #f8fafc)',
+                      }}
+                    >
+                      <option value="consumibles">Consumibles y Robótica</option>
+                      <option value="papeleria">Papelería</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Nombre / Especificación del producto *
+                    </label>
+                    <input
+                      type="text"
+                      value={compraForm.nombre}
+                      onChange={(e) => setCompraForm({ ...compraForm, nombre: e.target.value })}
+                      placeholder="Ej. Batería LI-PO 3.7V 45mA, Servomotor MG996R, Resma Papel..."
+                      className="w-full rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      style={{
+                        backgroundColor: 'var(--bg, #0b1120)',
+                        borderColor: 'var(--line, #334155)',
+                        color: 'var(--text, #f8fafc)',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Fila 2: Enlace de compra con botón lateral Probar */}
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    Enlace de Compra (URL de referencia)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="url"
+                        value={compraForm.url}
+                        onChange={(e) => setCompraForm({ ...compraForm, url: e.target.value })}
+                        placeholder="https://articulo.mercadolibre.com.co/... o tienda virtual"
+                        className="w-full rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        style={{
+                          backgroundColor: 'var(--bg, #0b1120)',
+                          borderColor: 'var(--line, #334155)',
+                          color: 'var(--text, #f8fafc)',
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTestUrl}
+                      disabled={!compraForm.url.trim()}
+                      title="Abrir enlace en nueva pestaña para verificar producto"
+                      className="px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border"
+                      style={{
+                        backgroundColor: compraForm.url.trim() ? 'rgba(99, 102, 241, 0.15)' : 'rgba(148, 163, 184, 0.1)',
+                        borderColor: compraForm.url.trim() ? '#6366f1' : 'var(--line, #334155)',
+                        color: compraForm.url.trim() ? '#818cf8' : 'var(--text-dim, #94a3b8)',
+                        cursor: compraForm.url.trim() ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      <ExternalLink size={14} />
+                      <span>🔗 Probar</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fila 3: Cantidad, Precio Estimado y Botón Agregar */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Cantidad requerida *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={compraForm.cantidad}
+                      onChange={(e) => setCompraForm({ ...compraForm, cantidad: e.target.value })}
+                      className="w-full rounded-lg px-3 py-2 text-sm text-center font-bold border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      style={{
+                        backgroundColor: 'var(--bg, #0b1120)',
+                        borderColor: 'var(--line, #334155)',
+                        color: 'var(--text, #f8fafc)',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Precio Estimado Unitario (COP)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        step="500"
+                        value={compraForm.precio}
+                        onChange={(e) => setCompraForm({ ...compraForm, precio: e.target.value })}
+                        placeholder="Ej. 25000"
+                        className="w-full rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        style={{
+                          backgroundColor: 'var(--bg, #0b1120)',
+                          borderColor: 'var(--line, #334155)',
+                          color: 'var(--text, #f8fafc)',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleAgregarCompra}
+                      className="w-full font-bold text-sm px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                      style={{
+                        backgroundColor: '#6366f1',
+                        color: '#ffffff',
+                        border: '1px solid #6366f1',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#4f46e5')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366f1')}
+                    >
+                      <Plus size={16} strokeWidth={2.5} />
+                      <span>+ Agregar a la lista</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista de productos sugeridos agregados */}
+                <div className="pt-2">
+                  <label className="text-[11px] font-semibold text-slate-400 block mb-2">
+                    Artículos sugeridos en esta solicitud ({itemsSolicitud.length}):
+                  </label>
+                  {itemsSolicitud.length === 0 ? (
+                    <div
+                      className="text-xs text-center py-4 rounded-lg border border-dashed"
+                      style={{
+                        backgroundColor: 'var(--bg-alt, rgba(11, 17, 32, 0.45))',
+                        borderColor: 'var(--line, #334155)',
+                        color: 'var(--text-dim, #94a3b8)',
+                      }}
+                    >
+                      Agrega al menos un artículo o insumo sugerido para compra.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-52 overflow-y-auto">
+                      {itemsSolicitud.map((it, idx) => {
+                        const subtotal = (it.precio_estimado || 0) * (it.cantidad || 1);
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 rounded-xl border text-sm shadow-sm transition-all gap-2"
+                            style={{
+                              backgroundColor: 'var(--bg, #0b1120)',
+                              borderColor: 'var(--line, #334155)',
+                            }}
+                          >
+                            <div className="flex flex-col gap-1 overflow-hidden flex-1">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide"
+                                  style={{
+                                    backgroundColor: it.categoria_sugerida === 'papeleria' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                    color: it.categoria_sugerida === 'papeleria' ? '#fbbf24' : '#a5b4fc',
+                                    border: `1px solid ${it.categoria_sugerida === 'papeleria' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
+                                  }}
+                                >
+                                  {it.categoria_sugerida === 'papeleria' ? 'Papelería' : 'Consumibles & Robótica'}
+                                </span>
+                                <strong className="text-xs truncate text-slate-100 font-semibold">
+                                  {it.nombre_sugerido || it.nombre_item}
+                                </strong>
+                              </div>
+
+                              <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                                <span>
+                                  Cant: <strong className="text-slate-200">{it.cantidad} {it.unidad || 'und'}</strong>
+                                </span>
+                                {it.precio_estimado > 0 && (
+                                  <>
+                                    <span>·</span>
+                                    <span>
+                                      Unit: <strong className="text-emerald-400">${Number(it.precio_estimado).toLocaleString('es-CO')} COP</strong>
+                                    </span>
+                                    <span>·</span>
+                                    <span>
+                                      Subtotal: <strong className="text-emerald-400 font-bold">${subtotal.toLocaleString('es-CO')} COP</strong>
+                                    </span>
+                                  </>
+                                )}
+                                {it.url_compra && (
+                                  <>
+                                    <span>·</span>
+                                    <a
+                                      href={it.url_compra}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 hover:underline"
+                                    >
+                                      <ExternalLink size={12} />
+                                      <span>Ver enlace</span>
+                                    </a>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(idx)}
+                              className="p-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                              title="Quitar artículo"
+                              style={{
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                                color: 'var(--red, #f43f5e)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(244, 63, 94, 0.12)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="rounded-xl p-4 space-y-3 border"
+                style={{
+                  backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
+                  borderColor: 'var(--line, #1e293b)',
+                }}
+              >
+                <label
+                  className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
+                  style={{ color: 'var(--text-dim, #94a3b8)' }}
+                >
+                  Seleccionar Artículos del Catálogo
+                </label>
+
+                {/* Fila de controles */}
+                <div className="flex items-center gap-3">
+                  <select
+                    value={selectedItemId}
+                    onChange={(e) => {
+                      setSelectedItemId(e.target.value);
+                      setCantidadInput(1);
+                    }}
+                    className="flex-1 rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
+                    style={{
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      borderColor: 'var(--line, #334155)',
+                      color: 'var(--text, #f8fafc)',
+                    }}
+                  >
+                    <option value="">
+                      {tipoSol === 'PRESTAMO_EQUIPO'
+                        ? '-- Seleccionar equipo tecnológico --'
+                        : '-- Seleccionar material o insumo --'}
+                    </option>
+                    {catalogoDisponible.map((it) => (
+                      <option key={it.id} value={it.id}>
+                        {it.name || it.material} {it.category ? `(${it.category})` : ''}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="number"
+                    min="1"
+                    max={tipoSol === 'CONSUMIBLES' && stockDisponibleItem > 0 ? stockDisponibleItem : 99}
+                    value={cantidadInput}
+                    onChange={(e) => setCantidadInput(e.target.value)}
+                    placeholder="Cant."
+                    className="w-20 rounded-lg px-3 py-2 text-sm text-center font-semibold border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
+                    style={{
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      borderColor: 'var(--line, #334155)',
+                      color: 'var(--text, #f8fafc)',
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    className="font-bold text-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95"
+                    style={{
+                      backgroundColor: '#84CC16',
+                      color: '#020617',
+                      border: '1px solid #84CC16',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#65A30D')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#84CC16')}
+                  >
+                    <Plus size={16} strokeWidth={2.5} />
+                    <span>+ Agregar</span>
+                  </button>
+                </div>
+
+                {/* Lista de Artículos Agregados */}
+                <div>
+                  {itemsSolicitud.length === 0 ? (
+                    <div
+                      className="text-xs text-center py-4 rounded-lg border border-dashed"
+                      style={{
+                        backgroundColor: 'var(--bg-alt, rgba(11, 17, 32, 0.45))',
+                        borderColor: 'var(--line, #334155)',
+                        color: 'var(--text-dim, #94a3b8)',
+                      }}
+                    >
+                      Ningún artículo agregado aún a esta solicitud.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {itemsSolicitud.map((it, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between px-3.5 py-2.5 rounded-lg border text-sm shadow-sm transition-all"
+                          style={{
+                            backgroundColor: 'var(--bg, #0b1120)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <span
+                              className="p-1.5 rounded-md shrink-0 flex items-center justify-center"
+                              style={{
+                                backgroundColor: 'rgba(132, 204, 22, 0.15)',
+                                color: '#84CC16',
+                              }}
+                            >
+                              {it.tipo_item === 'equipo' ? <Laptop size={14} /> : <Package size={14} />}
+                            </span>
+                            <span
+                              className="font-medium truncate text-xs"
+                              style={{ color: 'var(--text, #f8fafc)' }}
+                            >
+                              {it.nombre_item}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span
+                              className="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                              style={{
+                                backgroundColor: 'rgba(132, 204, 22, 0.18)',
+                                color: '#bef264',
+                                border: '1px solid rgba(132, 204, 22, 0.4)',
+                              }}
+                            >
+                              {it.cantidad} {it.unidad}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(idx)}
+                              className="p-1.5 rounded-lg transition-colors cursor-pointer"
+                              title="Quitar artículo"
+                              style={{
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                                color: 'var(--red, #f43f5e)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(244, 63, 94, 0.12)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* 5. Campos de Formulario y Tipografía */}
-            {/* Fecha de Devolución Estimada (Solo para equipos retornables) */}
-            {tipoSol === 'PRESTAMO_EQUIPO' && (
+            {/* Fecha de Devolución Estimada (Para préstamos) o Fecha Ideal Requerida (Para sugerencias de compra) */}
+            {(tipoSol === 'PRESTAMO_EQUIPO' || tipoSol === 'compra') && (
               <div>
                 <label
                   className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
                   style={{ color: 'var(--text-dim, #94a3b8)' }}
                 >
-                  <Calendar size={14} style={{ color: '#84CC16' }} />
-                  <span>Fecha de Devolución Estimada</span>
+                  <Calendar size={14} style={{ color: tipoSol === 'compra' ? '#818cf8' : '#84CC16' }} />
+                  <span>
+                    {tipoSol === 'compra' ? 'Fecha Ideal Requerida' : 'Fecha de Devolución Estimada'}
+                  </span>
                   <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -590,7 +980,7 @@ export default function ModalSolicitudMaterial({
                   min={today()}
                   value={fechaEstimada}
                   onChange={(e) => setFechaEstimada(e.target.value)}
-                  required={tipoSol === 'PRESTAMO_EQUIPO'}
+                  required
                   className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
                   style={{
                     backgroundColor: 'var(--bg, #0b1120)',
@@ -602,7 +992,9 @@ export default function ModalSolicitudMaterial({
                   className="text-[11px] mt-1 block"
                   style={{ color: 'var(--text-muted, #64748b)' }}
                 >
-                  Fecha límite pactada para retornar los equipos a la bodega o sede central.
+                  {tipoSol === 'compra'
+                    ? 'Fecha estimada en la que se necesita disponer de los materiales para las clases o actividades.'
+                    : 'Fecha límite pactada para retornar los equipos a la bodega o sede central.'}
                 </span>
               </div>
             )}
@@ -675,15 +1067,23 @@ export default function ModalSolicitudMaterial({
                 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
                 style={{ color: 'var(--text-dim, #94a3b8)' }}
               >
-                <FileText size={14} style={{ color: '#84CC16' }} />
-                <span>Motivo / Justificación Pedagógica o Técnica</span>
+                <FileText size={14} style={{ color: tipoSol === 'compra' ? '#818cf8' : '#84CC16' }} />
+                <span>
+                  {tipoSol === 'compra'
+                    ? 'Justificación Pedagógica / Actividad'
+                    : 'Motivo / Justificación Pedagógica o Técnica'}
+                </span>
                 <span className="text-rose-400">*</span>
               </label>
               <textarea
                 rows={3}
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Describe detalladamente el taller, clase, evento o necesidad formativa que justifica esta solicitud..."
+                placeholder={
+                  tipoSol === 'compra'
+                    ? 'Describe detalladamente el taller, clase o actividad pedagógica que justifica esta solicitud de compra...'
+                    : 'Describe detalladamente el taller, clase, evento o necesidad formativa que justifica esta solicitud...'
+                }
                 required
                 className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
                 style={{

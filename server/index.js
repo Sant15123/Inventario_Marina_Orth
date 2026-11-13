@@ -644,6 +644,307 @@ app.post('/api/consumibles/entregas', async (req, res) => {
   }
 });
 
+// 11. GET /api/solicitudes - Lista solicitudes de inventario con sus ítems entrelazados
+app.get('/api/solicitudes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT s.*, 
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', i.id,
+                   'solicitud_id', i.solicitud_id,
+                   'tipo_item', i.tipo_item,
+                   'item_id', i.item_id,
+                   'nombre_item', i.nombre_item,
+                   'cantidad', i.cantidad,
+                   'nombre_sugerido', i.nombre_sugerido,
+                   'categoria_sugerida', i.categoria_sugerida,
+                   'url_compra', i.url_compra,
+                   'precio_estimado', i.precio_estimado,
+                   'ingresado_inventario', i.ingresado_inventario
+                 )
+               ) FILTER (WHERE i.id IS NOT NULL), 
+               '[]'::json
+             ) AS items
+      FROM solicitudes_inventario s
+      LEFT JOIN items_solicitud i ON s.id = i.solicitud_id
+      GROUP BY s.id
+      ORDER BY s.creado_en DESC
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Error al listar solicitudes:', err);
+    res.status(500).json({ success: false, error: 'Error al obtener solicitudes' });
+  }
+});
+
+// 12. POST /api/solicitudes - Registra una nueva solicitud con sus ítems
+app.post('/api/solicitudes', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const {
+      usuario_id,
+      usuario_nombre = 'Docente / Custodio',
+      sede = 'Medellín',
+      tipo_solicitud = 'PRESTAMO_EQUIPO',
+      proyecto_steam_id = null,
+      motivo = '',
+      justificacion = '',
+      fecha_devolucion_estimada = null,
+      fecha_devolucion = null,
+      estado = 'PENDIENTE',
+      observaciones_admin = null,
+      items = [],
+    } = req.body;
+
+    const fechaDev = fecha_devolucion_estimada || fecha_devolucion || null;
+    const motivoFinal = motivo || justificacion || 'Sin motivo especificado';
+
+    const solRes = await client.query(
+      `INSERT INTO solicitudes_inventario (
+        usuario_id, usuario_nombre, sede, tipo_solicitud,
+        proyecto_steam_id, motivo, justificacion,
+        fecha_devolucion_estimada, estado, observaciones_admin
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *`,
+      [
+        usuario_id || null,
+        usuario_nombre,
+        sede,
+        tipo_solicitud,
+        proyecto_steam_id,
+        motivoFinal,
+        justificacion || motivoFinal,
+        fechaDev,
+        estado,
+        observaciones_admin,
+      ]
+    );
+
+    const nuevaSolicitud = solRes.rows[0];
+    const itemsCreados = [];
+
+    if (Array.isArray(items) && items.length > 0) {
+      for (const it of items) {
+        const itemRes = await client.query(
+          `INSERT INTO items_solicitud (
+            solicitud_id, tipo_item, item_id, nombre_item, cantidad,
+            nombre_sugerido, categoria_sugerida, url_compra, precio_estimado,
+            ingresado_inventario
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING *`,
+          [
+            nuevaSolicitud.id,
+            it.tipo_item || (tipo_solicitud === 'compra' ? 'compra' : 'equipo'),
+            it.item_id || null,
+            it.nombre_item || it.nombre_sugerido || 'Artículo',
+            it.cantidad || 1,
+            it.nombre_sugerido || null,
+            it.categoria_sugerida || null,
+            it.url_compra || null,
+            it.precio_estimado || 0,
+            Boolean(it.ingresado_inventario),
+          ]
+        );
+        itemsCreados.push(itemRes.rows[0]);
+      }
+    }
+
+    await client.query('COMMIT');
+    nuevaSolicitud.items = itemsCreados;
+    res.status(201).json({ success: true, data: nuevaSolicitud });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error al registrar solicitud:', err);
+    res.status(500).json({ success: false, error: err.message || 'Error al radicar solicitud' });
+  } finally {
+    client.release();
+  }
+});
+
+// 13. PATCH /api/solicitudes/:id - Actualiza estado u observaciones de una solicitud
+app.patch('/api/solicitudes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado, observaciones_admin, motivo, sede, fecha_devolucion_estimada, proyecto_steam_id } = req.body;
+
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (estado !== undefined) {
+      updates.push(`estado = $${idx++}`);
+      values.push(estado);
+    }
+    if (observaciones_admin !== undefined) {
+      updates.push(`observaciones_admin = $${idx++}`);
+      values.push(observaciones_admin);
+    }
+    if (motivo !== undefined) {
+      updates.push(`motivo = $${idx++}`);
+      values.push(motivo);
+    }
+    if (sede !== undefined) {
+      updates.push(`sede = $${idx++}`);
+      values.push(sede);
+    }
+    if (fecha_devolucion_estimada !== undefined) {
+      updates.push(`fecha_devolucion_estimada = $${idx++}`);
+      values.push(fecha_devolucion_estimada);
+    }
+    if (proyecto_steam_id !== undefined) {
+      updates.push(`proyecto_steam_id = $${idx++}`);
+      values.push(proyecto_steam_id);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No fields to update' });
+    }
+
+    values.push(id);
+    const result = await pool.query(
+      `UPDATE solicitudes_inventario
+       SET ${updates.join(', ')}
+       WHERE id = $${idx}
+       RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Solicitud no encontrada' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('Error al actualizar solicitud:', err);
+    res.status(500).json({ success: false, error: 'Error al actualizar solicitud' });
+  }
+});
+
+// 14. POST /api/solicitudes/ingreso-inventario - Ingreso directo al inventario físico de una sugerencia de compra
+app.post('/api/solicitudes/ingreso-inventario', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const {
+      solicitud_id,
+      item_solicitud_id,
+      tabla_destino = 'consumibles', // 'consumibles' | 'papeleria'
+      sku,
+      nombre,
+      cantidad = 1,
+      sede = 'Medellín',
+      stock_minimo = 5,
+      ubicacion_estante = 'Recepción',
+    } = req.body;
+
+    if (!sku || !nombre) {
+      throw new Error('El SKU y el nombre del artículo son obligatorios');
+    }
+
+    let itemInsertado = null;
+    const cantNum = parseInt(cantidad, 10) || 1;
+    const minNum = parseInt(stock_minimo, 10) || 5;
+
+    if (tabla_destino === 'consumibles') {
+      const insRes = await client.query(
+        `INSERT INTO consumibles (
+          id, material, categoria, disponible, minimo, ubicacion, ubicacion_estante,
+          estado, condicion, observaciones, area, tipo_inventario
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING *`,
+        [
+          sku,
+          nombre,
+          'Robótica y Consumibles',
+          cantNum,
+          minNum,
+          sede,
+          ubicacion_estante,
+          'Disponible',
+          'Nuevo',
+          `Ingreso automático desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
+          'Tecnología y STEAM',
+          'consumible',
+        ]
+      );
+      itemInsertado = insRes.rows[0];
+    } else {
+      const insRes = await client.query(
+        `INSERT INTO papeleria (
+          id, material, descripcion, disponible, minimo, sede, ubicacion_estante,
+          condicion, estado, observaciones, responsable
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *`,
+        [
+          sku,
+          nombre,
+          `Material ingresado desde sugerencia de compra #${solicitud_id || 'N/A'}`,
+          cantNum,
+          minNum,
+          sede,
+          ubicacion_estante,
+          'Nuevo',
+          'Disponible',
+          `Ingreso automático desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
+          'Bodega Central',
+        ]
+      );
+      itemInsertado = insRes.rows[0];
+    }
+
+    // Actualizar ítem en items_solicitud
+    if (item_solicitud_id) {
+      await client.query(
+        `UPDATE items_solicitud
+         SET ingresado_inventario = true, item_id = $1
+         WHERE id = $2`,
+        [sku, item_solicitud_id]
+      );
+    }
+
+    // Verificar si todos los ítems de esta solicitud ya fueron ingresados
+    let solicitudCompletada = false;
+    if (solicitud_id) {
+      const checkItems = await client.query(
+        `SELECT COUNT(*) as pendientes
+         FROM items_solicitud
+         WHERE solicitud_id = $1 AND ingresado_inventario = false`,
+        [solicitud_id]
+      );
+      const pendientes = parseInt(checkItems.rows[0]?.pendientes || '0', 10);
+      if (pendientes === 0) {
+        await client.query(
+          `UPDATE solicitudes_inventario
+           SET estado = 'Completada / En Inventario'
+           WHERE id = $1`,
+          [solicitud_id]
+        );
+        solicitudCompletada = true;
+      }
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({
+      success: true,
+      item: itemInsertado,
+      solicitud_completada: solicitudCompletada,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error al ingresar artículo a inventario:', err);
+    res.status(500).json({ success: false, error: err.message || 'Error al ingresar artículo al inventario' });
+  } finally {
+    client.release();
+  }
+});
+
 // Iniciar servidor tras verificar DB
 async function startServer() {
   try {

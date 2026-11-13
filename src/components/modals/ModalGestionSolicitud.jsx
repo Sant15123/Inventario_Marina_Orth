@@ -12,6 +12,11 @@ import {
   XCircle,
   Edit3,
   ExternalLink,
+  ShoppingCart,
+  PackageCheck,
+  Check,
+  PackagePlus,
+  Loader2,
 } from 'lucide-react';
 import { fmtDate, formatearFechaSegura, today, SEDES, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
@@ -157,11 +162,197 @@ export default function ModalGestionSolicitud({
   if (!isOpen || !solicitud) return null;
 
   const esPrestamo = solicitud.tipo_solicitud === 'PRESTAMO_EQUIPO';
-  const yaResuelta =
-    solicitud.estado === 'APROBADO' ||
-    solicitud.estado === 'APROBADA' ||
-    solicitud.estado === 'RECHAZADO' ||
-    solicitud.estado === 'RECHAZADA';
+  const isCompra =
+    solicitud?.tipo_solicitud === 'compra' ||
+    solicitud?.tipo_solicitud === 'COMPRA' ||
+    solicitud?.tipo === 'compra';
+
+  // Ítems detallados vinculados a la solicitud
+  const [itemsDetalle, setItemsDetalle] = useState(() =>
+    Array.isArray(solicitud?.items) ? solicitud.items : []
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    if (solicitud?.id) {
+      if (Array.isArray(solicitud.items) && solicitud.items.length > 0) {
+        setItemsDetalle(solicitud.items);
+      } else {
+        (async () => {
+          try {
+            if (supabase) {
+              const { data, error } = await supabase
+                .from('items_solicitud')
+                .select('*')
+                .eq('solicitud_id', solicitud.id);
+              if (!error && Array.isArray(data) && isMounted) {
+                setItemsDetalle(data);
+              }
+            }
+          } catch (e) {
+            console.warn('Error cargando items_solicitud:', e);
+          }
+        })();
+      }
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [solicitud]);
+
+  // Estado del ciclo de vida para sugerencias de compra
+  const [estadoCompra, setEstadoCompra] = useState(() => solicitud?.estado || 'Pendiente');
+  useEffect(() => {
+    if (solicitud) {
+      setEstadoCompra(solicitud.estado || 'Pendiente');
+    }
+  }, [solicitud]);
+
+  const ESTADOS_COMPRA = [
+    'Pendiente',
+    'Aprobado para compra',
+    'Comprado / En camino',
+    'Recibido en Oficina',
+    'Completada / En Inventario',
+    'Rechazada',
+  ];
+
+  const handleCambiarEstadoCompra = async (nuevoEstado) => {
+    try {
+      setSubmitting(true);
+      setValidationError('');
+      const patch = {
+        estado: nuevoEstado,
+        observaciones_admin: formGestion.observaciones_admin?.trim() || solicitud.observaciones_admin || null,
+      };
+      const actualizada = await inventoryApi.updateSolicitud(solicitud.id, patch);
+      setEstadoCompra(nuevoEstado);
+      if (showSuccess) {
+        showSuccess('Estado actualizado', `La sugerencia de compra ahora está en estado "${nuevoEstado}".`);
+      }
+      if (onSolicitudResolved) {
+        onSolicitudResolved({ ...solicitud, ...patch });
+      }
+      try {
+        window.dispatchEvent(
+          new CustomEvent('siga:solicitud_resuelta', { detail: { ...solicitud, ...patch } })
+        );
+      } catch (e) {
+        console.warn(e);
+      }
+    } catch (err) {
+      setValidationError(err.message || 'Error al actualizar estado');
+      if (showError) showError('Error', err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Presupuesto total estimado para compra
+  const presupuestoTotal = useMemo(() => {
+    if (!isCompra || !Array.isArray(itemsDetalle)) return 0;
+    return itemsDetalle.reduce((acc, it) => {
+      const p = Number(it.precio_estimado || 0);
+      const c = Number(it.cantidad || 1);
+      return acc + (p * c);
+    }, 0);
+  }, [isCompra, itemsDetalle]);
+
+  // Estado para mini-modal de ingreso directo al inventario
+  const [modalIngresoData, setModalIngresoData] = useState(null);
+
+  const handleAbrirIngresoModal = (item) => {
+    const isPap = (item.categoria_sugerida || '').toLowerCase() === 'papeleria';
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const suggestedSku = isPap ? `PAP-NEW-${randomSuffix}` : `ROB-NEW-${randomSuffix}`;
+
+    setModalIngresoData({
+      item,
+      tabla: isPap ? 'papeleria' : 'consumibles',
+      sku: suggestedSku,
+      nombre: item.nombre_sugerido || item.nombre_item || 'Material / Insumo',
+      cantidad: item.cantidad || 1,
+      sede: solicitud.sede || 'Medellín',
+      minimo: 5,
+      estante: 'Recepción / Bodega',
+    });
+  };
+
+  const handleConfirmarIngreso = async () => {
+    if (!modalIngresoData) return;
+    const { item, tabla, sku, nombre, cantidad, sede, minimo, estante } = modalIngresoData;
+
+    if (!sku.trim()) {
+      alert('El código o SKU es obligatorio');
+      return;
+    }
+    if (!nombre.trim()) {
+      alert('El nombre del artículo es obligatorio');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const cantNum = parseInt(cantidad, 10) || 1;
+      const minNum = parseInt(minimo, 10) || 5;
+
+      const resultado = await inventoryApi.ingresarArticuloInventario({
+        solicitud_id: solicitud.id,
+        item_solicitud_id: item.id,
+        tabla_destino: tabla,
+        sku: sku.trim(),
+        nombre: nombre.trim(),
+        cantidad: cantNum,
+        sede: sede || 'Medellín',
+        stock_minimo: minNum,
+        ubicacion_estante: estante || 'Recepción / Bodega',
+      });
+
+      // Actualizar ítem localmente en itemsDetalle
+      setItemsDetalle((prev) =>
+        prev.map((it) =>
+          it.id === item.id ? { ...it, ingresado_inventario: true, item_id: sku.trim() } : it
+        )
+      );
+
+      // Si todos los ítems fueron ingresados, marcar estado padre
+      const restantes = itemsDetalle.filter((it) => it.id !== item.id && !it.ingresado_inventario);
+      if (restantes.length === 0 || resultado?.solicitud_completada) {
+        setEstadoCompra('Completada / En Inventario');
+        if (onSolicitudResolved) {
+          onSolicitudResolved({ ...solicitud, estado: 'Completada / En Inventario' });
+        }
+      }
+
+      if (showSuccess) {
+        showSuccess(
+          '¡Material ingresado exitosamente!',
+          `"${nombre.trim()}" (${sku.trim()}) ha sido registrado en ${tabla === 'papeleria' ? 'Papelería' : 'Consumibles'} y auditado en historial.`
+        );
+      }
+
+      setModalIngresoData(null);
+
+      try {
+        window.dispatchEvent(new CustomEvent('siga:inventario_actualizado'));
+        window.dispatchEvent(new CustomEvent('siga:solicitud_resuelta', { detail: { ...solicitud } }));
+      } catch (e) {
+        console.warn(e);
+      }
+    } catch (err) {
+      console.error('Error al ingresar artículo:', err);
+      alert(`Error al ingresar artículo: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const yaResuelta = isCompra
+    ? (estadoCompra === 'Completada / En Inventario' || estadoCompra === 'Rechazada' || estadoCompra === 'RECHAZADA' || estadoCompra === 'RECHAZADO')
+    : (solicitud.estado === 'APROBADO' ||
+       solicitud.estado === 'APROBADA' ||
+       solicitud.estado === 'RECHAZADO' ||
+       solicitud.estado === 'RECHAZADA');
 
   // Manejador del cambio de placa física por dropdown
   const handleSelectPlacaDropdown = (itemId, indexUnit, placaSeleccionada) => {
@@ -448,19 +639,26 @@ export default function ModalGestionSolicitud({
         <div className="modal-header" style={{ padding: '20px 24px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
-              Gestión y Aprobación de Solicitud
+              {isCompra ? 'Gestión de Sugerencia de Compra' : 'Gestión y Aprobación de Solicitud'}
             </h3>
-            <span
-              className={`pill ${solicitud.estado === 'APROBADO' || solicitud.estado === 'APROBADA'
-                  ? 'ok'
-                  : solicitud.estado === 'RECHAZADO' || solicitud.estado === 'RECHAZADA'
-                    ? 'low'
-                    : 'prestado'
-                }`}
-              style={{ fontSize: '11px', textTransform: 'uppercase', padding: '3px 9px', letterSpacing: '0.04em' }}
-            >
-              {solicitud.estado || 'PENDIENTE'}
-            </span>
+            {isCompra ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-700 shadow-sm">
+                <ShoppingCart size={13} />
+                <span>🛒 Sugerencia de Compra</span>
+              </span>
+            ) : (
+              <span
+                className={`pill ${solicitud.estado === 'APROBADO' || solicitud.estado === 'APROBADA'
+                    ? 'ok'
+                    : solicitud.estado === 'RECHAZADO' || solicitud.estado === 'RECHAZADA'
+                      ? 'low'
+                      : 'prestado'
+                  }`}
+                style={{ fontSize: '11px', textTransform: 'uppercase', padding: '3px 9px', letterSpacing: '0.04em' }}
+              >
+                {solicitud.estado || 'PENDIENTE'}
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -476,6 +674,88 @@ export default function ModalGestionSolicitud({
 
         {/* Cuerpo del modal con el formulario y estructura nativa de la app */}
         <div className="modal-body" style={{ padding: '22px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* Banner de Presupuesto y Ciclo de Estados para Sugerencia de Compra */}
+          {isCompra && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                padding: '16px',
+                borderRadius: '14px',
+                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      padding: '8px',
+                      borderRadius: '10px',
+                      backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                      color: '#a5b4fc',
+                    }}
+                  >
+                    <ShoppingCart size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a5b4fc', display: 'block' }}>
+                      Presupuesto Total Estimado
+                    </span>
+                    <strong style={{ fontSize: '1.2rem', color: '#ffffff' }}>
+                      ${presupuestoTotal.toLocaleString('es-CO')} COP
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Ciclo de vida de compra */}
+                {esAdmin ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim, #94a3b8)' }}>
+                      Estado del Pedido:
+                    </span>
+                    <select
+                      value={estadoCompra}
+                      disabled={submitting}
+                      onChange={(e) => handleCambiarEstadoCompra(e.target.value)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(99, 102, 241, 0.4)',
+                        backgroundColor: 'var(--bg, #0b1120)',
+                        color: '#c7d2fe',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {ESTADOS_COMPRA.map((est) => (
+                        <option key={est} value={est}>
+                          {est}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                      color: '#c7d2fe',
+                      border: '1px solid rgba(99, 102, 241, 0.4)',
+                    }}
+                  >
+                    Estado: {estadoCompra}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {validationError && (
             <div
               style={{
@@ -611,15 +891,17 @@ export default function ModalGestionSolicitud({
               </div>
             </div>
 
-            {/* Tipo de Requerimiento o Fecha de Retorno */}
+            {/* Tipo de Requerimiento o Fecha de Retorno / Fecha Ideal Requerida */}
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: '22px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {esPrestamo ? <Calendar size={14} style={{ color: '#84CC16' }} /> : <Layers size={14} style={{ color: '#f59e0b' }} />}
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>{esPrestamo ? 'Fecha de Devolución Pactada' : 'Tipo de Requerimiento'}</span>
-                {esPrestamo && esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
+                {isCompra ? <ShoppingCart size={14} style={{ color: '#818cf8' }} /> : esPrestamo ? <Calendar size={14} style={{ color: '#84CC16' }} /> : <Layers size={14} style={{ color: '#f59e0b' }} />}
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>
+                  {isCompra ? 'Fecha Ideal Requerida' : esPrestamo ? 'Fecha de Devolución Pactada' : 'Tipo de Requerimiento'}
+                </span>
+                {(esPrestamo || isCompra) && esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
               </div>
               <div style={{ height: '42px', display: 'flex', alignItems: 'center' }}>
-                {esPrestamo && esAdmin && !yaResuelta ? (
+                {(esPrestamo || isCompra) && esAdmin && !yaResuelta ? (
                   <input
                     type="date"
                     value={formGestion.fecha_devolucion}
@@ -655,15 +937,20 @@ export default function ModalGestionSolicitud({
                       boxSizing: 'border-box',
                     }}
                   >
-                    {esPrestamo
-                      ? formatearFechaSegura(solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada)
-                      : 'Consumibles / Insumos Robótica'}
+                    {isCompra
+                      ? (formatearFechaSegura(solicitud.fecha_devolucion_estimada || solicitud.fecha_devolucion) || 'Lo antes posible')
+                      : esPrestamo
+                        ? formatearFechaSegura(solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada)
+                        : 'Consumibles / Insumos Robótica'}
                   </div>
                 )}
               </div>
-              {esPrestamo && (
+              {(esPrestamo || isCompra) && (
                 <small className="help-text" style={{ marginTop: '3px' }}>
-                  Fecha pactada: <strong style={{ color: '#84CC16' }}>{formGestion.fecha_devolucion ? formatearFechaSegura(formGestion.fecha_devolucion) : 'Pendiente'}</strong>
+                  {isCompra ? 'Fecha estimada de entrega:' : 'Fecha pactada:'}{' '}
+                  <strong style={{ color: isCompra ? '#818cf8' : '#84CC16' }}>
+                    {formGestion.fecha_devolucion ? formatearFechaSegura(formGestion.fecha_devolucion) : 'Pendiente'}
+                  </strong>
                 </small>
               )}
             </div>
@@ -783,7 +1070,159 @@ export default function ModalGestionSolicitud({
             </label>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {(solicitud.items || []).map((it, idx) => {
+              {isCompra ? (
+                itemsDetalle.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px dashed var(--line)',
+                      textAlign: 'center',
+                      color: 'var(--text-dim)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    No se registran ítems detallados para esta sugerencia de compra.
+                  </div>
+                ) : (
+                  itemsDetalle.map((it, idx) => {
+                    const subtotal = (Number(it.precio_estimado) || 0) * (it.cantidad || 1);
+                    const esPap = (it.categoria_sugerida || '').toLowerCase() === 'papeleria';
+                    return (
+                      <div
+                        key={it.id || idx}
+                        style={{
+                          padding: '16px',
+                          borderRadius: 'var(--radius)',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface-2)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                          <div style={{ flex: 1, minWidth: '220px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                              <span
+                                style={{
+                                  fontSize: '10.5px',
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  backgroundColor: esPap ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                                  color: esPap ? '#fbbf24' : '#a5b4fc',
+                                  border: `1px solid ${esPap ? 'rgba(245, 158, 11, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
+                                }}
+                              >
+                                {esPap ? '📄 Papelería' : '📦 Consumibles y Robótica'}
+                              </span>
+                              <strong style={{ fontSize: '14px', color: 'var(--text-h)' }}>
+                                {it.nombre_sugerido || it.nombre_item}
+                              </strong>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+                              <span>
+                                Cantidad solicitada: <strong style={{ color: 'var(--text)' }}>{it.cantidad} {it.unidad || 'und'}</strong>
+                              </span>
+                              {Number(it.precio_estimado) > 0 && (
+                                <>
+                                  <span>·</span>
+                                  <span>
+                                    Precio estimado: <strong style={{ color: '#84CC16' }}>${Number(it.precio_estimado).toLocaleString('es-CO')} COP</strong>
+                                  </span>
+                                  <span>·</span>
+                                  <span>
+                                    Subtotal: <strong style={{ color: '#84CC16' }}>${subtotal.toLocaleString('es-CO')} COP</strong>
+                                  </span>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Enlace directo a la tienda */}
+                            {it.url_compra && (
+                              <div style={{ marginTop: '8px' }}>
+                                <a
+                                  href={it.url_compra}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    color: '#818cf8',
+                                    textDecoration: 'none',
+                                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                                  }}
+                                >
+                                  <span>🔗 Ver producto en tienda</span>
+                                  <ExternalLink size={12} />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Botón de Ingreso al Inventario / Badge de Ingresado */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {it.ingresado_inventario ? (
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  color: '#16a34a',
+                                  backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                                  border: '1px solid rgba(34, 197, 94, 0.35)',
+                                  padding: '7px 14px',
+                                  borderRadius: '10px',
+                                  fontSize: '12px',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                <Check size={15} strokeWidth={2.5} />
+                                <span>✅ Ingresado al catálogo {it.item_id ? `(${it.item_id})` : ''}</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleAbrirIngresoModal(it)}
+                                disabled={submitting}
+                                className="btn btn-primary small"
+                                style={{
+                                  backgroundColor: '#84CC16',
+                                  borderColor: '#84CC16',
+                                  color: '#020617',
+                                  fontWeight: 800,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '8px 14px',
+                                  borderRadius: '10px',
+                                  fontSize: '12.5px',
+                                  boxShadow: '0 2px 8px rgba(132, 204, 22, 0.25)',
+                                  cursor: 'pointer',
+                                }}
+                                title="Ingresar directamente a la bodega física"
+                              >
+                                <PackagePlus size={15} />
+                                <span>📥 Ingresar al Inventario</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )
+              ) : (
+                (itemsDetalle.length > 0 ? itemsDetalle : (solicitud.items || [])).map((it, idx) => {
                 const invItem = inventarioMap.get(String(it.item_id));
                 const unitsDisponibles = (invItem?.units || []).filter((u) => u.status === 'disponible');
                 const stockActualConsumible = Number(invItem?.quantity ?? invItem?.disponible ?? 0);
@@ -1144,7 +1583,8 @@ export default function ModalGestionSolicitud({
                     )}
                   </div>
                 );
-              })}
+              })
+              )}
             </div>
           </div>
 
@@ -1217,19 +1657,346 @@ export default function ModalGestionSolicitud({
                 <span>Rechazar Solicitud</span>
               </button>
 
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleAprobarYDespachar}
-                disabled={submitting}
-              >
-                <CheckCircle size={15} />
-                <span>{submitting ? 'Procesando...' : 'Aprobar y Despachar'}</span>
-              </button>
+              {!isCompra && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleAprobarYDespachar}
+                  disabled={submitting}
+                >
+                  <CheckCircle size={15} />
+                  <span>{submitting ? 'Procesando...' : 'Aprobar y Despachar'}</span>
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Mini-Modal de Ingreso Rápido a Inventario Físico */}
+      {modalIngresoData && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '16px',
+          }}
+          onClick={() => !submitting && setModalIngresoData(null)}
+        >
+          <div
+            style={{
+              maxWidth: '520px',
+              width: '100%',
+              backgroundColor: 'var(--surface, #0f172a)',
+              border: '1px solid var(--line-strong, #334155)',
+              borderRadius: '20px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
+              overflow: 'hidden',
+              color: 'var(--text, #f8fafc)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del Mini-Modal */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '18px 22px',
+                borderBottom: '1px solid var(--line, #1e293b)',
+                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.8))',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    padding: '8px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(132, 204, 22, 0.15)',
+                    color: '#84CC16',
+                  }}
+                >
+                  <PackagePlus size={20} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}>
+                    Ingreso Rápido a Inventario Físico
+                  </h4>
+                  <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
+                    Confirmar recepción para dar de alta en el catálogo
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalIngresoData(null)}
+                disabled={submitting}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-dim, #94a3b8)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  fontSize: '18px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Cuerpo del Mini-Modal */}
+            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Tabla Destino */}
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '6px' }}>
+                  Módulo de Inventario Destino *
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setModalIngresoData({ ...modalIngresoData, tabla: 'consumibles' })}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s',
+                      backgroundColor: modalIngresoData.tabla === 'consumibles' ? '#84CC16' : 'var(--bg, #0b1120)',
+                      color: modalIngresoData.tabla === 'consumibles' ? '#020617' : 'var(--text-dim, #94a3b8)',
+                      border: `1px solid ${modalIngresoData.tabla === 'consumibles' ? '#84CC16' : 'var(--line, #334155)'}`,
+                    }}
+                  >
+                    📦 Consumibles y Robótica
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalIngresoData({ ...modalIngresoData, tabla: 'papeleria' })}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s',
+                      backgroundColor: modalIngresoData.tabla === 'papeleria' ? '#f59e0b' : 'var(--bg, #0b1120)',
+                      color: modalIngresoData.tabla === 'papeleria' ? '#020617' : 'var(--text-dim, #94a3b8)',
+                      border: `1px solid ${modalIngresoData.tabla === 'papeleria' ? '#f59e0b' : 'var(--line, #334155)'}`,
+                    }}
+                  >
+                    📄 Papelería Institucional
+                  </button>
+                </div>
+              </div>
+
+              {/* SKU y Nombre */}
+              <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Código / SKU *
+                  </label>
+                  <input
+                    type="text"
+                    value={modalIngresoData.sku}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, sku: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Nombre del Artículo / Material *
+                  </label>
+                  <input
+                    type="text"
+                    value={modalIngresoData.nombre}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, nombre: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Cantidad recibida y Stock Mínimo */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Cantidad Recibida *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={modalIngresoData.cantidad}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, cantidad: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Stock Mínimo (Alerta) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={modalIngresoData.minimo}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, minimo: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Sede y Ubicación en estante */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Sede Destino *
+                  </label>
+                  <select
+                    value={modalIngresoData.sede}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, sede: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {listaSedes.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Estante / Ubicación
+                  </label>
+                  <input
+                    type="text"
+                    value={modalIngresoData.estante}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, estante: e.target.value })}
+                    placeholder="Ej. B1, Recepción"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del Mini-Modal */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 22px',
+                borderTop: '1px solid var(--line, #1e293b)',
+                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.8))',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setModalIngresoData(null)}
+                disabled={submitting}
+                className="btn ghost small"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarIngreso}
+                disabled={submitting}
+                className="btn btn-primary small inline-flex items-center gap-1.5"
+                style={{
+                  backgroundColor: '#84CC16',
+                  borderColor: '#84CC16',
+                  color: '#020617',
+                  fontWeight: 800,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Ingresando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} strokeWidth={2.5} />
+                    <span>Confirmar Ingreso al Inventario</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Secundario de Consulta de Ficha Técnica Completa */}
       {itemParaModalDetalle && (

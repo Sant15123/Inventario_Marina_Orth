@@ -439,7 +439,7 @@ export const inventoryApi = {
     return json?.data !== undefined ? json.data : json;
   },
 
-  // 5.0 Solicitudes de Inventario (Rol Custodio / Docente)
+  // 5.0 Solicitudes de Inventario (Rol Custodio / Docente / Admin)
   getSolicitudes: async (params = {}) => {
     try {
       const qs = new URLSearchParams(params).toString();
@@ -458,6 +458,7 @@ export const inventoryApi = {
         const arrayResult = extraerArreglo(json) || [];
         return arrayResult.map((s) => ({
           ...s,
+          items: Array.isArray(s.items) ? s.items : [],
           motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || s.nota_rechazo || null,
           nota_rechazo: s.nota_rechazo || s.observaciones_admin || s.motivo_rechazo || null,
           observaciones_admin: s.observaciones_admin || s.motivo_rechazo || s.nota_rechazo || null,
@@ -471,13 +472,41 @@ export const inventoryApi = {
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        const { data, error } = await supabase
+        // Intentar consulta con join de items
+        let { data, error } = await supabase
           .from('solicitudes_inventario')
-          .select('*')
+          .select('*, items:items_solicitud(*)')
           .order('creado_en', { ascending: false });
+
+        if (error) {
+          // Fallback a select plano y consulta secundaria de items
+          const resPlana = await supabase
+            .from('solicitudes_inventario')
+            .select('*')
+            .order('creado_en', { ascending: false });
+          data = resPlana.data;
+          error = resPlana.error;
+
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const solIds = data.map((s) => s.id);
+            const { data: allItems } = await supabase
+              .from('items_solicitud')
+              .select('*')
+              .in('solicitud_id', solIds);
+
+            if (Array.isArray(allItems)) {
+              data = data.map((s) => ({
+                ...s,
+                items: allItems.filter((it) => String(it.solicitud_id) === String(s.id)),
+              }));
+            }
+          }
+        }
+
         if (!error && Array.isArray(data)) {
           return data.map((s) => ({
             ...s,
+            items: Array.isArray(s.items) ? s.items : [],
             motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || null,
             nota_rechazo: s.nota_rechazo || s.observaciones_admin || null,
             observaciones_admin: s.observaciones_admin || s.motivo_rechazo || null,
@@ -498,43 +527,118 @@ export const inventoryApi = {
   },
 
   createSolicitud: async (data) => {
-    const url = `${API_BASE}/solicitudes`;
-    const token = getAuthToken();
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(data),
-    });
-
-    const json = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      const errorMsg =
-        json?.message || json?.error || `Error del servidor al radicar la solicitud (HTTP ${res.status})`;
-      const error = new Error(errorMsg);
-      error.status = res.status;
-      error.response = { data: json, status: res.status };
-      throw error;
-    }
-
-    const createdData = json?.data !== undefined ? json.data : json;
-
+    // 1. Intentar endpoint backend REST si está disponible
     try {
-      const local = localStorage.getItem('siga_solicitudes_inventario');
-      const list = local ? JSON.parse(local) : [];
-      list.unshift(createdData);
-      localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
-    } catch (e) {
-      console.warn('Error al sincronizar cache local de solicitudes:', e);
+      const url = `${API_BASE}/solicitudes`;
+      const token = getAuthToken();
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        const createdData = json?.data !== undefined ? json.data : json;
+
+        try {
+          const local = localStorage.getItem('siga_solicitudes_inventario');
+          const list = local ? JSON.parse(local) : [];
+          list.unshift(createdData);
+          localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
+        } catch (e) {
+          console.warn('Error al sincronizar cache local de solicitudes:', e);
+        }
+
+        return {
+          status: res.status,
+          data: createdData,
+        };
+      }
+    } catch (apiErr) {
+      console.warn('Backend REST /api/solicitudes no respondió, intentando inserción Supabase:', apiErr.message);
     }
 
-    return {
-      status: res.status,
-      data: createdData,
-    };
+    // 2. Fallback transaccional directo a Supabase
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const solPayload = {
+          usuario_id: data.usuario_id || null,
+          usuario_nombre: data.usuario_nombre || 'Docente / Custodio',
+          sede: data.sede || 'Medellín',
+          tipo_solicitud: data.tipo_solicitud || 'PRESTAMO_EQUIPO',
+          proyecto_steam_id: data.proyecto_steam_id || null,
+          motivo: data.motivo || data.justificacion || 'Sin motivo',
+          justificacion: data.justificacion || data.motivo || null,
+          fecha_devolucion_estimada: data.fecha_devolucion_estimada || data.fecha_devolucion || null,
+          estado: data.estado || 'PENDIENTE',
+          observaciones_admin: data.observaciones_admin || null,
+        };
+
+        const { data: solCreated, error: solErr } = await supabase
+          .from('solicitudes_inventario')
+          .insert(solPayload)
+          .select()
+          .single();
+
+        if (solErr) throw solErr;
+
+        let itemsFinal = [];
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          const itemsPayload = data.items.map((it) => ({
+            solicitud_id: solCreated.id,
+            tipo_item: it.tipo_item || (data.tipo_solicitud === 'compra' ? 'compra' : 'equipo'),
+            item_id: it.item_id || null,
+            nombre_item: it.nombre_item || it.nombre_sugerido || 'Artículo',
+            cantidad: it.cantidad || 1,
+            nombre_sugerido: it.nombre_sugerido || null,
+            categoria_sugerida: it.categoria_sugerida || null,
+            url_compra: it.url_compra || null,
+            precio_estimado: it.precio_estimado || 0,
+            ingresado_inventario: Boolean(it.ingresado_inventario),
+          }));
+
+          const { data: itemsCreated, error: itemsErr } = await supabase
+            .from('items_solicitud')
+            .insert(itemsPayload)
+            .select();
+
+          if (!itemsErr && itemsCreated) {
+            itemsFinal = itemsCreated;
+          } else {
+            itemsFinal = data.items;
+          }
+        }
+
+        const solicitudCompleta = {
+          ...solCreated,
+          items: itemsFinal,
+        };
+
+        try {
+          const local = localStorage.getItem('siga_solicitudes_inventario');
+          const list = local ? JSON.parse(local) : [];
+          list.unshift(solicitudCompleta);
+          localStorage.setItem('siga_solicitudes_inventario', JSON.stringify(list));
+        } catch (e) {
+          console.warn('Error al sincronizar cache local de solicitudes:', e);
+        }
+
+        return {
+          status: 201,
+          data: solicitudCompleta,
+        };
+      }
+    } catch (supErr) {
+      console.error('Error al insertar solicitud vía Supabase:', supErr);
+      throw supErr;
+    }
+
+    throw new Error('No se pudo radicar la solicitud en el servidor ni en la base de datos.');
   },
 
   updateSolicitud: async (id, patch) => {
@@ -557,6 +661,19 @@ export const inventoryApi = {
       }
     }
 
+    // Actualizar también en Supabase si está disponible
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        await supabase
+          .from('solicitudes_inventario')
+          .update(patch)
+          .eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Aviso updateSolicitud Supabase:', e.message);
+    }
+
     try {
       const local = localStorage.getItem('siga_solicitudes_inventario');
       if (local) {
@@ -572,6 +689,121 @@ export const inventoryApi = {
       console.warn('Error al actualizar localStorage de solicitudes:', e);
     }
     return apiSuccess || { id, ...patch };
+  },
+
+  ingresarArticuloInventario: async (datos) => {
+    // 1. Intentar endpoint backend dedicado
+    try {
+      const json = await request('/solicitudes/ingreso-inventario', {
+        method: 'POST',
+        body: JSON.stringify(datos),
+      });
+      if (json?.success) {
+        return json;
+      }
+    } catch (errApi) {
+      console.warn('Endpoint /api/solicitudes/ingreso-inventario fallback a Supabase:', errApi.message);
+    }
+
+    // 2. Fallback con Supabase directo
+    const { supabase } = await import('./supabase');
+    if (!supabase) throw new Error('Cliente de base de datos no disponible');
+
+    const {
+      solicitud_id,
+      item_solicitud_id,
+      tabla_destino = 'consumibles',
+      sku,
+      nombre,
+      cantidad = 1,
+      sede = 'Medellín',
+      stock_minimo = 5,
+      ubicacion_estante = 'Recepción',
+    } = datos;
+
+    let itemInsertado = null;
+    const cantNum = parseInt(cantidad, 10) || 1;
+    const minNum = parseInt(stock_minimo, 10) || 5;
+
+    if (tabla_destino === 'consumibles') {
+      const { data, error } = await supabase
+        .from('consumibles')
+        .insert({
+          id: sku,
+          material: nombre,
+          categoria: 'Robótica y Consumibles',
+          disponible: cantNum,
+          minimo: minNum,
+          ubicacion: sede,
+          ubicacion_estante: ubicacion_estante || 'Recepción',
+          estado: 'Disponible',
+          condicion: 'Nuevo',
+          observaciones: `Ingreso automático desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
+          area: 'Tecnología y STEAM',
+          tipo_inventario: 'consumible',
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      itemInsertado = data;
+    } else {
+      const { data, error } = await supabase
+        .from('papeleria')
+        .insert({
+          id: sku,
+          material: nombre,
+          descripcion: `Material ingresado desde sugerencia de compra #${solicitud_id || 'N/A'}`,
+          disponible: cantNum,
+          minimo: minNum,
+          sede: sede,
+          ubicacion_estante: ubicacion_estante || 'Recepción',
+          condicion: 'Nuevo',
+          estado: 'Disponible',
+          observaciones: `Ingreso automático desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
+          responsable: 'Bodega Central',
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      itemInsertado = data;
+    }
+
+    // Actualizar items_solicitud
+    if (item_solicitud_id) {
+      await supabase
+        .from('items_solicitud')
+        .update({
+          ingresado_inventario: true,
+          item_id: sku,
+        })
+        .eq('id', item_solicitud_id);
+    }
+
+    // Verificar si todos los ítems fueron ingresados
+    let solicitudCompletada = false;
+    if (solicitud_id) {
+      const { data: pendientes } = await supabase
+        .from('items_solicitud')
+        .select('id')
+        .eq('solicitud_id', solicitud_id)
+        .eq('ingresado_inventario', false);
+
+      if (!pendientes || pendientes.length === 0) {
+        await supabase
+          .from('solicitudes_inventario')
+          .update({
+            estado: 'Completada / En Inventario',
+          })
+          .eq('id', solicitud_id);
+        solicitudCompletada = true;
+      }
+    }
+
+    return {
+      success: true,
+      item: itemInsertado,
+      solicitud_completada: solicitudCompletada,
+    };
   },
 
   rechazarSolicitud: async (id, motivo = 'Rechazado por administración') => {
