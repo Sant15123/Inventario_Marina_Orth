@@ -484,16 +484,40 @@ export const inventoryApi = {
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        // Intentar consulta con join de items_solicitud
+        // Intentar consulta con join explícito de items_solicitud
         let { data, error } = await supabase
           .from('solicitudes_inventario')
-          .select('*, items_solicitud(*)')
+          .select(`
+            *,
+            items_solicitud (
+              id,
+              cantidad,
+              item_id,
+              nombre_sugerido,
+              categoria_sugerida,
+              url_compra,
+              precio_estimado,
+              ingresado_inventario
+            )
+          `)
           .order('creado_en', { ascending: false });
 
         if (error) {
           const resAlias = await supabase
             .from('solicitudes_inventario')
-            .select('*, items:items_solicitud(*)')
+            .select(`
+              *,
+              items:items_solicitud (
+                id,
+                cantidad,
+                item_id,
+                nombre_sugerido,
+                categoria_sugerida,
+                url_compra,
+                precio_estimado,
+                ingresado_inventario
+              )
+            `)
             .order('creado_en', { ascending: false });
           data = resAlias.data;
           error = resAlias.error;
@@ -532,14 +556,24 @@ export const inventoryApi = {
           return data.map((s) => {
             const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
               ? s.items_solicitud
-              : (Array.isArray(s.items) ? s.items : []);
+              : (Array.isArray(s.items) && s.items.length > 0 ? s.items : []);
             const fechaRad = s.creado_en || s.fecha_radicado || s.created_at || '';
+            const rawTipo = String(s.tipo_solicitud || s.tipo || '').toUpperCase().trim();
+            const esCompraDetectada =
+              rawTipo === 'SUGERENCIA_COMPRA' ||
+              rawTipo.includes('COMPRA') ||
+              items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido) ||
+              (s.motivo && (s.motivo.toLowerCase().includes('compra') || s.motivo.toLowerCase().includes('bater') || s.motivo.toLowerCase().includes('lipo')));
+            const tipoFinalNormalizado = esCompraDetectada
+              ? 'SUGERENCIA_COMPRA'
+              : (rawTipo.includes('CONSUMIB') ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+
             return {
               ...s,
               items: items,
               items_solicitud: items,
-              tipo: s.tipo_solicitud || s.tipo || '',
-              tipo_solicitud: s.tipo_solicitud || s.tipo || '',
+              tipo: tipoFinalNormalizado,
+              tipo_solicitud: tipoFinalNormalizado,
               creado_en: fechaRad,
               created_at: fechaRad,
               fecha_radicado: fechaRad ? fechaRad.slice(0, 10) : '',

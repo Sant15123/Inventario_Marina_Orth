@@ -161,11 +161,24 @@ export default function ModalGestionSolicitud({
 
   if (!isOpen || !solicitud) return null;
 
-  const esPrestamo = solicitud.tipo_solicitud === 'PRESTAMO_EQUIPO';
+  const rawTipoGestion = String(solicitud?.tipo_solicitud || solicitud?.tipo || solicitud?.tipoSolicitud || '').toUpperCase().trim();
+  const itemsGestion = Array.isArray(solicitud?.items_solicitud) && solicitud.items_solicitud.length > 0
+    ? solicitud.items_solicitud
+    : (Array.isArray(solicitud?.items) && solicitud.items.length > 0 ? solicitud.items : []);
+
   const isCompra =
-    solicitud?.tipo_solicitud === 'compra' ||
-    solicitud?.tipo_solicitud === 'COMPRA' ||
-    solicitud?.tipo === 'compra';
+    rawTipoGestion === 'SUGERENCIA_COMPRA' ||
+    rawTipoGestion.includes('COMPRA') ||
+    itemsGestion.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || i.tipo_item === 'compra') ||
+    (solicitud?.motivo && (
+      solicitud.motivo.toLowerCase().includes('compra') ||
+      solicitud.motivo.toLowerCase().includes('batería') ||
+      solicitud.motivo.toLowerCase().includes('bateria') ||
+      solicitud.motivo.toLowerCase().includes('lipo') ||
+      solicitud.motivo.toLowerCase().includes('li-po')
+    ));
+  const esConsumible = !isCompra && rawTipoGestion.includes('CONSUMIB');
+  const esPrestamo = !isCompra && !esConsumible;
 
   // Ítems detallados vinculados a la solicitud
   const [itemsDetalle, setItemsDetalle] = useState(() =>
