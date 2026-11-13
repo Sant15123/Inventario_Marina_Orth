@@ -39,16 +39,43 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
   const cargarSolicitudes = async () => {
     try {
       setLoading(true);
-      // 1. Intentar consulta directa a Supabase
-      const { data, error } = await supabase
-        .from('solicitudes_inventario')
-        .select('*')
-        .eq('estado', 'PENDIENTE')
-        .order('creado_en', { ascending: false });
+      // 1. Intentar consulta directa a Supabase de solicitudes_inventario y solicitudes_compra
+      let inventarioList = [];
+      let comprasList = [];
 
-      if (!error && Array.isArray(data)) {
-        setSolicitudes(data);
-        setContador(data.length);
+      try {
+        const { data: invData, error: invErr } = await supabase
+          .from('solicitudes_inventario')
+          .select('*')
+          .eq('estado', 'PENDIENTE')
+          .order('creado_en', { ascending: false });
+        if (!invErr && Array.isArray(invData)) inventarioList = invData;
+      } catch (_) {}
+
+      try {
+        const { data: compData, error: compErr } = await supabase
+          .from('solicitudes_compra')
+          .select('*')
+          .eq('estado', 'PENDIENTE')
+          .order('creado_en', { ascending: false });
+        if (!compErr && Array.isArray(compData)) {
+          comprasList = compData.map((sc) => ({
+            ...sc,
+            tipo_solicitud: 'SUGERENCIA_COMPRA',
+            tipo: 'SUGERENCIA_COMPRA',
+            nombre_item: sc.nombre_producto,
+            motivo: sc.justificacion,
+            is_solicitud_compra: true,
+          }));
+        }
+      } catch (_) {}
+
+      if (inventarioList.length > 0 || comprasList.length > 0) {
+        const total = [...inventarioList, ...comprasList].sort(
+          (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
+        );
+        setSolicitudes(total);
+        setContador(total.length);
         return;
       }
 
@@ -142,6 +169,80 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
             }
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'solicitudes_compra',
+          },
+          (payload) => {
+            if (payload?.new && String(payload.new.estado).toUpperCase() === 'PENDIENTE') {
+              triggerBadgeAnimation();
+              setContador((prev) => prev + 1);
+              const formattedComp = {
+                ...payload.new,
+                tipo_solicitud: 'SUGERENCIA_COMPRA',
+                tipo: 'SUGERENCIA_COMPRA',
+                nombre_item: payload.new.nombre_producto,
+                motivo: payload.new.justificacion,
+                is_solicitud_compra: true,
+              };
+              setSolicitudes((prev) => [formattedComp, ...prev.filter((s) => s.id !== payload.new.id)]);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'solicitudes_compra',
+          },
+          (payload) => {
+            triggerBadgeAnimation();
+            const oldEstado = String(payload.old?.estado || '').toUpperCase();
+            const newEstado = String(payload.new?.estado || '').toUpperCase();
+            if (oldEstado === 'PENDIENTE' && newEstado !== 'PENDIENTE') {
+              setContador((prev) => Math.max(0, prev - 1));
+              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+            } else if (newEstado === 'PENDIENTE') {
+              const formattedComp = {
+                ...payload.new,
+                tipo_solicitud: 'SUGERENCIA_COMPRA',
+                tipo: 'SUGERENCIA_COMPRA',
+                nombre_item: payload.new.nombre_producto,
+                motivo: payload.new.justificacion,
+                is_solicitud_compra: true,
+              };
+              setSolicitudes((prev) => {
+                const exists = prev.some((s) => s.id === payload.new.id);
+                if (!exists) {
+                  setContador((c) => c + 1);
+                  return [formattedComp, ...prev];
+                }
+                return prev.map((s) => (s.id === payload.new.id ? formattedComp : s));
+              });
+            } else {
+              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'solicitudes_compra',
+          },
+          (payload) => {
+            const idEliminado = payload.old?.id;
+            if (idEliminado) {
+              setContador((prev) => Math.max(0, prev - 1));
+              setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
+            }
+          }
+        )
         .subscribe((status) => {
           console.log('Suscripción Realtime activa:', status);
           if (status === 'SUBSCRIBED') {
@@ -216,6 +317,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     const items = Array.isArray(sol.items_solicitud) && sol.items_solicitud.length > 0
       ? sol.items_solicitud
       : (Array.isArray(sol.items) ? sol.items : []);
+    if (sol.is_solicitud_compra || sol.categoria_destino) return true;
     return (
       tipo === 'SUGERENCIA_COMPRA' ||
       tipo === 'COMPRA' ||

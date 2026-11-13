@@ -691,7 +691,72 @@ app.get('/api/solicitudes', async (req, res) => {
       GROUP BY s.id
       ORDER BY s.creado_en DESC
     `);
-    res.json({ success: true, data: result.rows });
+    // También consultar solicitudes_compra
+    let comprasRows = [];
+    try {
+      const compRes = await pool.query(`
+        SELECT 
+          id,
+          usuario_id,
+          usuario_nombre,
+          sede,
+          'SUGERENCIA_COMPRA' as tipo_solicitud,
+          'SUGERENCIA_COMPRA' as tipo,
+          justificacion as motivo,
+          justificacion,
+          fecha_requerida as fecha_devolucion_estimada,
+          fecha_requerida,
+          estado,
+          prioridad,
+          observaciones_admin,
+          ingresado_inventario,
+          item_inventario_id,
+          creado_en,
+          categoria_destino,
+          json_build_array(
+            json_build_object(
+              'id', id,
+              'solicitud_id', id,
+              'tipo_item', 'compra',
+              'item_id', item_inventario_id,
+              'nombre_item', nombre_producto,
+              'nombre_sugerido', nombre_producto,
+              'categoria_sugerida', categoria_destino,
+              'categoria_destino', categoria_destino,
+              'url_compra', url_compra,
+              'cantidad', cantidad,
+              'precio_estimado', precio_estimado,
+              'ingresado_inventario', ingresado_inventario
+            )
+          ) as items,
+          json_build_array(
+            json_build_object(
+              'id', id,
+              'solicitud_id', id,
+              'tipo_item', 'compra',
+              'item_id', item_inventario_id,
+              'nombre_item', nombre_producto,
+              'nombre_sugerido', nombre_producto,
+              'categoria_sugerida', categoria_destino,
+              'categoria_destino', categoria_destino,
+              'url_compra', url_compra,
+              'cantidad', cantidad,
+              'precio_estimado', precio_estimado,
+              'ingresado_inventario', ingresado_inventario
+            )
+          ) as items_solicitud
+        FROM solicitudes_compra
+        ORDER BY creado_en DESC
+      `);
+      comprasRows = compRes.rows || [];
+    } catch (eC) {
+      console.warn('Aviso consulta solicitudes_compra en backend:', eC.message);
+    }
+
+    const todas = [...result.rows, ...comprasRows].sort(
+      (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
+    );
+    res.json({ success: true, data: todas });
   } catch (err) {
     console.error('Error al listar solicitudes:', err);
     res.status(500).json({ success: false, error: 'Error al obtener solicitudes' });
@@ -733,6 +798,55 @@ app.post('/api/solicitudes', async (req, res) => {
 
     const fechaDev = fecha_devolucion_estimada || fecha_devolucion || null;
     const motivoFinal = motivo || justificacion || 'Sin motivo especificado';
+
+    if (esCompraReq) {
+      const itemsList = items.length > 0 ? items : [{
+        nombre_producto: req.body.nombre_producto || req.body.nombre || 'Producto sugerido',
+        cantidad: req.body.cantidad || 1,
+        precio_estimado: req.body.precio_estimado || 0,
+        url_compra: req.body.url_compra || null,
+        categoria_destino: req.body.categoria_destino || 'consumibles',
+      }];
+
+      const registrosCreados = [];
+      for (const it of itemsList) {
+        const cat = (it.categoria_sugerida || it.categoria_destino || it.categoria) === 'papeleria' ? 'papeleria' : 'consumibles';
+        const ins = await client.query(`
+          INSERT INTO solicitudes_compra (
+            usuario_id, usuario_nombre, sede, categoria_destino,
+            nombre_producto, url_compra, cantidad, precio_estimado,
+            fecha_requerida, justificacion, prioridad, estado, ingresado_inventario
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, false)
+          RETURNING *
+        `, [
+          usuario_id || null,
+          usuario_nombre,
+          sede,
+          cat,
+          it.nombre_sugerido || it.nombre_producto || it.nombre_item || 'Producto sugerido',
+          it.url_compra || null,
+          parseInt(it.cantidad, 10) || 1,
+          parseFloat(it.precio_estimado) || 0,
+          fechaDev,
+          motivoFinal,
+          'Media',
+          'PENDIENTE'
+        ]);
+        registrosCreados.push(ins.rows[0]);
+      }
+      await client.query('COMMIT');
+      return res.status(201).json({
+        success: true,
+        data: {
+          ...registrosCreados[0],
+          tipo_solicitud: 'SUGERENCIA_COMPRA',
+          tipo: 'SUGERENCIA_COMPRA',
+          items: registrosCreados,
+          items_solicitud: registrosCreados
+        }
+      });
+    }
 
     const solRes = await client.query(
       `INSERT INTO solicitudes_inventario (
@@ -861,8 +975,29 @@ app.patch('/api/solicitudes/:id', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      // Intentar actualizar en solicitudes_compra
+      const scRes = await pool.query(
+        `UPDATE solicitudes_compra
+         SET ${updates.join(', ')}
+         WHERE id = ${idx}
+         RETURNING *`,
+        values
+      );
+      if (scRes.rows.length > 0) {
+        return res.json({ success: true, data: scRes.rows[0] });
+      }
       return res.status(404).json({ success: false, error: 'Solicitud no encontrada' });
     }
+
+    // Actualizar también en solicitudes_compra si existiera con el mismo id
+    try {
+      await pool.query(
+        `UPDATE solicitudes_compra
+         SET ${updates.join(', ')}
+         WHERE id = ${idx}`,
+        values
+      );
+    } catch (_) {}
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {

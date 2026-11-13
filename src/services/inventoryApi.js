@@ -480,34 +480,18 @@ export const inventoryApi = {
       console.warn('Endpoint /api/solicitudes no disponible en backend, intentando fallback:', err.message);
     }
 
-    // Fallback con cliente Supabase directo
+    // 1. Fallback con cliente Supabase directo
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        // Intentar consulta con join explícito de items_solicitud
-        let { data, error } = await supabase
-          .from('solicitudes_inventario')
-          .select(`
-            *,
-            items_solicitud (
-              id,
-              cantidad,
-              item_id,
-              nombre_sugerido,
-              categoria_sugerida,
-              url_compra,
-              precio_estimado,
-              ingresado_inventario
-            )
-          `)
-          .order('creado_en', { ascending: false });
-
-        if (error) {
-          const resAlias = await supabase
+        // A. Consultar solicitudes_inventario con items_solicitud
+        let dataInventario = [];
+        try {
+          let { data, error } = await supabase
             .from('solicitudes_inventario')
             .select(`
               *,
-              items:items_solicitud (
+              items_solicitud (
                 id,
                 cantidad,
                 item_id,
@@ -519,69 +503,159 @@ export const inventoryApi = {
               )
             `)
             .order('creado_en', { ascending: false });
-          data = resAlias.data;
-          error = resAlias.error;
-        }
 
-        if (error) {
-          // Fallback a select plano y consulta secundaria de items
-          const resPlana = await supabase
-            .from('solicitudes_inventario')
-            .select('*')
-            .order('creado_en', { ascending: false });
-          data = resPlana.data;
-          error = resPlana.error;
+          if (error) {
+            const resAlias = await supabase
+              .from('solicitudes_inventario')
+              .select(`
+                *,
+                items:items_solicitud (
+                  id,
+                  cantidad,
+                  item_id,
+                  nombre_sugerido,
+                  categoria_sugerida,
+                  url_compra,
+                  precio_estimado,
+                  ingresado_inventario
+                )
+              `)
+              .order('creado_en', { ascending: false });
+            data = resAlias.data;
+            error = resAlias.error;
+          }
 
-          if (!error && Array.isArray(data) && data.length > 0) {
-            const solIds = data.map((s) => s.id);
-            const { data: allItems } = await supabase
-              .from('items_solicitud')
+          if (error) {
+            const resPlana = await supabase
+              .from('solicitudes_inventario')
               .select('*')
-              .in('solicitud_id', solIds);
+              .order('creado_en', { ascending: false });
+            data = resPlana.data;
+            error = resPlana.error;
 
-            if (Array.isArray(allItems)) {
-              data = data.map((s) => {
-                const its = allItems.filter((it) => String(it.solicitud_id) === String(s.id));
-                return {
-                  ...s,
-                  items: its,
-                  items_solicitud: its,
-                };
-              });
+            if (!error && Array.isArray(data) && data.length > 0) {
+              const solIds = data.map((s) => s.id);
+              const { data: allItems } = await supabase
+                .from('items_solicitud')
+                .select('*')
+                .in('solicitud_id', solIds);
+
+              if (Array.isArray(allItems)) {
+                data = data.map((s) => {
+                  const its = allItems.filter((it) => String(it.solicitud_id) === String(s.id));
+                  return {
+                    ...s,
+                    items: its,
+                    items_solicitud: its,
+                  };
+                });
+              }
             }
           }
+
+          if (!error && Array.isArray(data)) {
+            dataInventario = data.map((s) => {
+              const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
+                ? s.items_solicitud
+                : (Array.isArray(s.items) && s.items.length > 0 ? s.items : []);
+              const fechaRad = s.creado_en || s.fecha_radicado || s.created_at || '';
+              const rawTipo = String(s.tipo_solicitud || s.tipo || '').toUpperCase().trim();
+              const esCompraDetectada =
+                rawTipo === 'SUGERENCIA_COMPRA' ||
+                rawTipo.includes('COMPRA') ||
+                items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido) ||
+                (s.motivo && (s.motivo.toLowerCase().includes('compra') || s.motivo.toLowerCase().includes('bater') || s.motivo.toLowerCase().includes('lipo')));
+              const tipoFinalNormalizado = esCompraDetectada
+                ? 'SUGERENCIA_COMPRA'
+                : (rawTipo.includes('CONSUMIB') ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+
+              return {
+                ...s,
+                items: items,
+                items_solicitud: items,
+                tipo: tipoFinalNormalizado,
+                tipo_solicitud: tipoFinalNormalizado,
+                creado_en: fechaRad,
+                created_at: fechaRad,
+                fecha_radicado: fechaRad ? fechaRad.slice(0, 10) : '',
+                motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || null,
+                nota_rechazo: s.nota_rechazo || s.observaciones_admin || null,
+                observaciones_admin: s.observaciones_admin || s.motivo_rechazo || null,
+              };
+            });
+          }
+        } catch (errInv) {
+          console.warn('Aviso consulta solicitudes_inventario:', errInv.message);
         }
 
-        if (!error && Array.isArray(data)) {
-          return data.map((s) => {
-            const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
-              ? s.items_solicitud
-              : (Array.isArray(s.items) && s.items.length > 0 ? s.items : []);
-            const fechaRad = s.creado_en || s.fecha_radicado || s.created_at || '';
-            const rawTipo = String(s.tipo_solicitud || s.tipo || '').toUpperCase().trim();
-            const esCompraDetectada =
-              rawTipo === 'SUGERENCIA_COMPRA' ||
-              rawTipo.includes('COMPRA') ||
-              items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido) ||
-              (s.motivo && (s.motivo.toLowerCase().includes('compra') || s.motivo.toLowerCase().includes('bater') || s.motivo.toLowerCase().includes('lipo')));
-            const tipoFinalNormalizado = esCompraDetectada
-              ? 'SUGERENCIA_COMPRA'
-              : (rawTipo.includes('CONSUMIB') ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
+        // B. Consultar tabla dedicada solicitudes_compra
+        let dataCompras = [];
+        try {
+          const { data: cData, error: cErr } = await supabase
+            .from('solicitudes_compra')
+            .select('*')
+            .order('creado_en', { ascending: false });
 
-            return {
-              ...s,
-              items: items,
-              items_solicitud: items,
-              tipo: tipoFinalNormalizado,
-              tipo_solicitud: tipoFinalNormalizado,
-              creado_en: fechaRad,
-              created_at: fechaRad,
-              fecha_radicado: fechaRad ? fechaRad.slice(0, 10) : '',
-              motivo_rechazo: s.motivo_rechazo || s.observaciones_admin || null,
-              nota_rechazo: s.nota_rechazo || s.observaciones_admin || null,
-              observaciones_admin: s.observaciones_admin || s.motivo_rechazo || null,
-            };
-          });
+          if (!cErr && Array.isArray(cData)) {
+            dataCompras = cData.map((sc) => {
+              const catDestino = String(sc.categoria_destino || 'consumibles').toLowerCase();
+              const catNormalizada = catDestino === 'papeleria' ? 'papeleria' : 'consumibles';
+              const fRad = sc.creado_en || '';
+              const singleItem = {
+                id: sc.id,
+                solicitud_id: sc.id,
+                tipo_item: 'compra',
+                item_id: sc.item_inventario_id || null,
+                nombre_item: sc.nombre_producto || 'Producto sugerido',
+                nombre_sugerido: sc.nombre_producto || 'Producto sugerido',
+                categoria_sugerida: catNormalizada,
+                categoria_destino: catNormalizada,
+                url_compra: sc.url_compra || null,
+                precio_estimado: Number(sc.precio_estimado) || 0,
+                cantidad: Number(sc.cantidad) || 1,
+                ingresado_inventario: Boolean(sc.ingresado_inventario),
+              };
+
+              return {
+                id: sc.id,
+                usuario_id: sc.usuario_id,
+                usuario_nombre: sc.usuario_nombre,
+                sede: sc.sede || 'Medellín',
+                tipo: 'SUGERENCIA_COMPRA',
+                tipo_solicitud: 'SUGERENCIA_COMPRA',
+                tipoSolicitud: 'SUGERENCIA_COMPRA',
+                categoria_destino: catNormalizada,
+                fecha_requerida: sc.fecha_requerida,
+                fecha_devolucion_estimada: sc.fecha_requerida,
+                motivo: sc.justificacion || 'Sugerencia de compra',
+                justificacion: sc.justificacion || 'Sugerencia de compra',
+                estado: sc.estado || 'PENDIENTE',
+                prioridad: sc.prioridad || 'Media',
+                ingresado_inventario: Boolean(sc.ingresado_inventario),
+                item_inventario_id: sc.item_inventario_id || null,
+                observaciones_admin: sc.observaciones_admin || null,
+                creado_en: fRad,
+                created_at: fRad,
+                fecha_radicado: fRad ? String(fRad).slice(0, 10) : '',
+                is_solicitud_compra: true,
+                items: [singleItem],
+                items_solicitud: [singleItem],
+              };
+            });
+          }
+        } catch (errComp) {
+          console.warn('Aviso consulta solicitudes_compra:', errComp.message);
+        }
+
+        // C. Fusionar y ordenar descendentemente por fecha de radicado
+        const combinadas = [...dataInventario, ...dataCompras].sort((a, b) => {
+          const tA = a.creado_en ? new Date(a.creado_en).getTime() : 0;
+          const tB = b.creado_en ? new Date(b.creado_en).getTime() : 0;
+          return tB - tA;
+        });
+
+        if (combinadas.length > 0) {
+          return combinadas;
         }
       }
     } catch (e) {
@@ -634,6 +708,47 @@ export const inventoryApi = {
         };
       }),
     };
+
+    // Si es sugerencia de compra, insertar directamente en la tabla dedicada 'solicitudes_compra'
+    if (esCompraReq) {
+      const comprasPayload = itemsList.map((it) => {
+        const catDestino = String(it.categoria_sugerida || it.categoria || it.categoria_destino || '').toLowerCase().trim();
+        return {
+          usuario_id: data.usuario_id || null,
+          usuario_nombre: data.usuario_nombre || 'Docente / Custodio',
+          sede: data.sede || 'Medellín',
+          categoria_destino: catDestino === 'papeleria' ? 'papeleria' : 'consumibles',
+          nombre_producto: it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido',
+          url_compra: it.url_compra || it.url || it.link_compra || null,
+          cantidad: Number(it.cantidad) || 1,
+          precio_estimado: Number(it.precio_estimado) || Number(it.precio) || 0,
+          fecha_requerida: data.fecha_devolucion_estimada || data.fecha_requerida || null,
+          justificacion: data.motivo || data.justificacion || 'Sugerencia de compra',
+          prioridad: data.prioridad || 'Media',
+          estado: data.estado || 'PENDIENTE',
+          ingresado_inventario: false,
+          creado_en: data.creado_en || new Date().toISOString(),
+        };
+      });
+
+      try {
+        const { supabase } = await import('./supabase');
+        if (supabase) {
+          const { data: cCreated, error: cErr } = await supabase
+            .from('solicitudes_compra')
+            .insert(comprasPayload)
+            .select();
+          if (!cErr && cCreated) {
+            return {
+              status: 201,
+              data: cCreated[0] || comprasPayload[0],
+            };
+          }
+        }
+      } catch (errC) {
+        console.warn('Error insertando en solicitudes_compra vía Supabase:', errC);
+      }
+    }
 
     // 1. Inserción directa en Supabase PRIMERO (garantiza persistencia exacta sin intermediarios)
     try {
@@ -789,6 +904,11 @@ export const inventoryApi = {
           .from('solicitudes_inventario')
           .update(patch)
           .eq('id', id);
+
+        await supabase
+          .from('solicitudes_compra')
+          .update(patch)
+          .eq('id', id);
       }
     } catch (e) {
       console.warn('Aviso updateSolicitud Supabase:', e.message);
@@ -899,6 +1019,23 @@ export const inventoryApi = {
           item_id: sku,
         })
         .eq('id', item_solicitud_id);
+    }
+
+    // Actualizar también en la tabla dedicada solicitudes_compra si coincide el item o la solicitud
+    try {
+      const matchId = item_solicitud_id || solicitud_id;
+      if (matchId) {
+        await supabase
+          .from('solicitudes_compra')
+          .update({
+            ingresado_inventario: true,
+            estado: 'RECIBIDO_INVENTARIO',
+            item_inventario_id: sku,
+          })
+          .or(`id.eq.${matchId},id.eq.${solicitud_id}`);
+      }
+    } catch (eComp) {
+      console.warn('Aviso ingreso inventario en solicitudes_compra:', eComp.message);
     }
 
     // Verificar si todos los ítems fueron ingresados
@@ -1063,6 +1200,56 @@ export const inventoryApi = {
       });
     });
     return json?.data;
+  },
+
+  // 11.1 Métodos Dedicados para solicitudes_compra
+  getSolicitudesCompra: async () => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('solicitudes_compra')
+          .select('*')
+          .order('creado_en', { ascending: false });
+        if (!error && Array.isArray(data)) return data;
+      }
+    } catch (_) {}
+    return [];
+  },
+
+  createSolicitudesCompra: async (registros) => {
+    const arr = Array.isArray(registros) ? registros : [registros];
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('solicitudes_compra')
+          .insert(arr)
+          .select();
+        if (!error && data) return data;
+        if (error) throw error;
+      }
+    } catch (e) {
+      console.warn('Error createSolicitudesCompra:', e);
+    }
+    return arr;
+  },
+
+  updateSolicitudCompra: async (id, patch) => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('solicitudes_compra')
+          .update(patch)
+          .eq('id', id)
+          .select();
+        if (!error && data) return data[0];
+      }
+    } catch (e) {
+      console.warn('Error updateSolicitudCompra:', e);
+    }
+    return { id, ...patch };
   },
 
   // 12. KPIs y Métricas Ligeras del Dashboard (< 2s, conteo en servidor)

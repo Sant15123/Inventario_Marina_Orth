@@ -77,30 +77,27 @@ const renderTipoSolicitud = (solicitud) => {
       ),
     ];
 
-    let etiqueta = 'Sugerencia Compra: Insumos';
+    let etiqueta = 'Compra: Robótica / Cons.';
     if (categorias.length === 1) {
-      if (categorias[0].includes('consumible') || categorias[0].includes('robotica')) {
-        etiqueta = 'Sugerencia Compra: Robótica / Cons.';
-      } else if (categorias[0].includes('papeleria')) {
-        etiqueta = 'Sugerencia Compra: Papelería';
+      if (categorias[0].includes('papeleria')) {
+        etiqueta = 'Compra: Papelería';
+      } else {
+        etiqueta = 'Compra: Robótica / Cons.';
       }
     } else if (categorias.length > 1) {
-      etiqueta = 'Sugerencia Compra: Mixto';
+      etiqueta = 'Compra: Robótica y Papelería';
     } else {
-      // Inferencia contextual si los ítems vinieron sin categoría explícita
       const textoItems = items.map((it) => (it.nombre_item || it.nombre_sugerido || '')).join(' ').toLowerCase();
       const textoCompleto = (textoItems + ' ' + (solicitud.motivo || '')).toLowerCase();
-      if (textoCompleto.includes('bater') || textoCompleto.includes('robot') || textoCompleto.includes('lipo') || textoCompleto.includes('li-po')) {
-        etiqueta = 'Sugerencia Compra: Robótica / Cons.';
-      } else if (textoCompleto.includes('papel') || textoCompleto.includes('resma') || textoCompleto.includes('cuaderno') || textoCompleto.includes('cartulina')) {
-        etiqueta = 'Sugerencia Compra: Papelería';
+      if (textoCompleto.includes('papel') || textoCompleto.includes('resma') || textoCompleto.includes('cuaderno') || textoCompleto.includes('cartulina')) {
+        etiqueta = 'Compra: Papelería';
       } else {
-        etiqueta = 'Sugerencia Compra';
+        etiqueta = 'Compra: Robótica / Cons.';
       }
     }
 
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-700">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700">
         🛒 {etiqueta}
       </span>
     );
@@ -243,6 +240,13 @@ export default function MiPanelUsuarioView({
               } else if (payload.eventType === 'DELETE' && payload.old) {
                 setSolicitudes((prev) => prev.filter((s) => s.id !== payload.old.id));
               }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'solicitudes_compra' },
+            (payload) => {
+              fetchSolicitudes();
             }
           )
           .subscribe();
@@ -917,8 +921,8 @@ export default function MiPanelUsuarioView({
                                 if (!fDev) return null;
                                 if (esCompra) {
                                   return (
-                                    <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
-                                      Fecha ideal requerida: <strong className="mono-num" style={{ color: '#818cf8' }}>{formatearFechaSegura(fDev)}</strong>
+                                    <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>
+                                      Requerido para: <strong className="mono-num" style={{ color: '#15803d', fontWeight: 800 }}>{formatearFechaSegura(sol.fecha_requerida || fDev)}</strong>
                                     </span>
                                   );
                                 }

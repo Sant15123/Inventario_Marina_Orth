@@ -176,8 +176,8 @@ export default function ModalSolicitudMaterial({
       cantidad: 1,
       precio: '',
     }));
-  };
-
+  };
+
   // Probar enlace de compra en pestaña nueva
   const handleTestUrl = () => {
     if (!compraForm.url.trim()) return;
@@ -257,7 +257,87 @@ export default function ModalSolicitudMaterial({
       setSubmitting(true);
       setValidationError('');
 
-      const fechaDevolucionVal = (tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) ? fechaEstimada : null;
+      // FLUJO EXCLUSIVO PARA SUGERENCIA DE COMPRA -> TABLA DEDICADA 'solicitudes_compra'
+      if (tipoSolicitud === 'SUGERENCIA_COMPRA') {
+        const registrosCompra = itemsParaEnviar.map((item) => {
+          const catDestino = (item.categoria_sugerida || item.categoria_destino || item.categoria) === 'papeleria' ? 'papeleria' : 'consumibles';
+          return {
+            usuario_id: currentUser?.id || currentUser?.documento || null,
+            usuario_nombre: currentUser?.nombre_completo || currentUser?.nombre || 'Docente / Custodio',
+            sede: sede || 'Medellín',
+            categoria_destino: catDestino,
+            nombre_producto: item.nombre_sugerido || item.nombre_producto || item.nombre_item || 'Producto sugerido',
+            url_compra: item.url_compra || null,
+            cantidad: Number(item.cantidad) || 1,
+            precio_estimado: Number(item.precio_estimado) || 0,
+            fecha_requerida: fechaEstimada || null,
+            justificacion: motivo.trim(),
+            prioridad: 'Media',
+            estado: 'PENDIENTE',
+            ingresado_inventario: false,
+            creado_en: new Date().toISOString(),
+          };
+        });
+
+        let resultadoCompra = null;
+        try {
+          if (supabase) {
+            const { data: cData, error: cErr } = await supabase
+              .from('solicitudes_compra')
+              .insert(registrosCompra)
+              .select();
+            if (!cErr && cData) {
+              resultadoCompra = cData;
+            } else if (cErr) {
+              console.warn('Error Supabase insert solicitudes_compra:', cErr);
+            }
+          }
+        } catch (errSup) {
+          console.warn('Excepción Supabase solicitudes_compra:', errSup);
+        }
+
+        if (!resultadoCompra) {
+          try {
+            resultadoCompra = await inventoryApi.createSolicitudesCompra(registrosCompra);
+          } catch (eApi) {
+            console.warn('Fallback inventoryApi createSolicitudesCompra error:', eApi);
+          }
+        }
+
+        const primerReg = registrosCompra[0] || {};
+        const solicitudCreadaCompra = (resultadoCompra && resultadoCompra[0]) || {
+          ...primerReg,
+          id: `compra-${Date.now()}`,
+          tipo_solicitud: 'SUGERENCIA_COMPRA',
+          tipo: 'SUGERENCIA_COMPRA',
+          items: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
+          items_solicitud: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
+        };
+
+        if (showSuccess) {
+          showSuccess(
+            'Sugerencia de compra radicada exitosamente',
+            'Tu requerimiento ha sido radicado y enviado a la bandeja de Compras y Adquisiciones.'
+          );
+        }
+
+        if (onSolicitudCreated) {
+          onSolicitudCreated(solicitudCreadaCompra);
+        }
+
+        try {
+          window.dispatchEvent(
+            new CustomEvent('siga:solicitud_creada', { detail: solicitudCreadaCompra })
+          );
+        } catch (e) {
+          console.warn('Error emitiendo evento de solicitud compra creada:', e);
+        }
+
+        onClose();
+        return;
+      }
+
+      const fechaDevolucionVal = tipoSolicitud === 'PRESTAMO_EQUIPO' ? fechaEstimada : null;
 
       // 1. Cabecera con tipo_solicitud literal de BD: 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
       const payloadSolicitud = {
@@ -417,8 +497,8 @@ export default function ModalSolicitudMaterial({
     } finally {
       setSubmitting(false);
     }
-  };
-
+  };
+
   return (
     <div
       className="modal-backdrop"
