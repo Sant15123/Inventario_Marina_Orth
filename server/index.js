@@ -893,25 +893,37 @@ app.post('/api/solicitudes/ingreso-inventario', async (req, res) => {
     const cantNum = parseInt(cantidad, 10) || 1;
     const minNum = parseInt(stock_minimo, 10) || 5;
 
+    const {
+      categoria = '',
+      marca = '',
+      unidad = 'und',
+      valor_compra = null,
+      observaciones = '',
+      condicion = 'Nuevo',
+      estado = 'Disponible',
+    } = req.body;
+
     if (tabla_destino === 'consumibles') {
       const insRes = await client.query(
         `INSERT INTO consumibles (
           id, material, categoria, disponible, minimo, ubicacion, ubicacion_estante,
-          estado, condicion, observaciones, area, tipo_inventario
+          estado, condicion, observaciones, valor_compra, caracteristicas, area, tipo_inventario
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *`,
         [
           sku,
           nombre,
-          'Robótica y Consumibles',
+          categoria || 'Robótica y Consumibles',
           cantNum,
           minNum,
           sede,
-          ubicacion_estante,
-          'Disponible',
-          'Nuevo',
-          `Ingreso automático desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
+          ubicacion_estante || 'Recepción / Bodega',
+          estado || 'Disponible',
+          condicion || 'Nuevo',
+          observaciones || `Ingreso desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
+          valor_compra ? String(valor_compra) : null,
+          marca ? `Marca/Ref: ${marca} · Unidad: ${unidad || 'und'}` : (unidad ? `Unidad: ${unidad}` : null),
           'Tecnología y STEAM',
           'consumible',
         ]
@@ -928,14 +940,14 @@ app.post('/api/solicitudes/ingreso-inventario', async (req, res) => {
         [
           sku,
           nombre,
-          `Material ingresado desde sugerencia de compra #${solicitud_id || 'N/A'}`,
+          marca ? `Marca/Ref: ${marca}` : `Material ingresado desde sugerencia de compra #${solicitud_id || 'N/A'}`,
           cantNum,
           minNum,
           sede,
-          ubicacion_estante,
-          'Nuevo',
-          'Disponible',
-          `Ingreso automático desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
+          ubicacion_estante || 'Recepción / Bodega',
+          condicion || 'Nuevo',
+          estado || 'Disponible',
+          observaciones || `Ingreso desde Sugerencia de Compra #${solicitud_id || 'N/A'}`,
           'Bodega Central',
         ]
       );

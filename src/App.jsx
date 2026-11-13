@@ -82,6 +82,7 @@ function App() {
       setPrestamosParams({
         section: params.section || 'all',
         estado: params.estado || 'todos',
+        solicitudId: params.solicitudId || null,
       });
     }
     setCurrentView(view);
@@ -1116,6 +1117,7 @@ function App() {
                       onReturnLoan={handleReturnLoan}
                       initialSection={prestamosParams.section}
                       initialStatusFilter={prestamosParams.estado}
+                      initialSolicitudId={prestamosParams.solicitudId}
                       sedes={sedesList}
                       onSedeCreated={(nuevaSede) => {
                         const nombreSede = nuevaSede.nombre || nuevaSede;

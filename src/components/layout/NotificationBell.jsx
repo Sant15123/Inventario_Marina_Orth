@@ -209,17 +209,77 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     };
   }, []);
 
+  // Helper para detectar si una solicitud es de compra
+  const esCompraSolicitud = (sol) => {
+    if (!sol) return false;
+    const tipo = String(sol.tipo_solicitud || sol.tipo || sol.tipoSolicitud || '').toUpperCase().trim();
+    const items = Array.isArray(sol.items_solicitud) && sol.items_solicitud.length > 0
+      ? sol.items_solicitud
+      : (Array.isArray(sol.items) ? sol.items : []);
+    return (
+      tipo === 'SUGERENCIA_COMPRA' ||
+      tipo === 'COMPRA' ||
+      tipo.includes('COMPRA') ||
+      items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || String(i.tipo_item || '').toLowerCase() === 'compra') ||
+      (sol.motivo && (
+        sol.motivo.toLowerCase().includes('compra') ||
+        sol.motivo.toLowerCase().includes('batería') ||
+        sol.motivo.toLowerCase().includes('bateria') ||
+        sol.motivo.toLowerCase().includes('lipo')
+      ))
+    );
+  };
+
   const handleVerTodas = () => {
     setIsOpen(false);
+    const listaPendientes = pendientes.length > 0 ? pendientes : solicitudes;
+    const primeraSol = listaPendientes[0] || null;
+    const todasCompras = listaPendientes.length > 0 && listaPendientes.every((s) => esCompraSolicitud(s));
+    const masRecienteEsCompra = primeraSol && esCompraSolicitud(primeraSol);
+
+    const destinoCompras = todasCompras || masRecienteEsCompra;
+    const targetSection = destinoCompras ? 'compras' : 'solicitudes';
+    const tabParam = destinoCompras ? 'compras' : 'entrantes';
+
+    try {
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabParam);
+      url.searchParams.delete('solicitudId');
+      window.history.pushState({}, '', url);
+    } catch (e) {
+      console.warn(e);
+    }
+
     if (onNavigateToSolicitudes) {
-      onNavigateToSolicitudes();
+      onNavigateToSolicitudes({
+        section: targetSection,
+        tab: tabParam,
+      });
     }
   };
 
-  const handleSelectSolicitud = (_sol) => {
+  const handleSelectSolicitud = (sol) => {
     setIsOpen(false);
+    const esCompra = esCompraSolicitud(sol);
+    const targetSection = esCompra ? 'compras' : 'solicitudes';
+    const tabParam = esCompra ? 'compras' : 'entrantes';
+
+    try {
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabParam);
+      if (sol?.id) url.searchParams.set('solicitudId', sol.id);
+      window.history.pushState({}, '', url);
+    } catch (e) {
+      console.warn(e);
+    }
+
     if (onNavigateToSolicitudes) {
-      onNavigateToSolicitudes();
+      onNavigateToSolicitudes({
+        section: targetSection,
+        tab: tabParam,
+        solicitudId: sol?.id || null,
+        solicitud: sol,
+      });
     }
   };
 

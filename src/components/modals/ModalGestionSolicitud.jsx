@@ -299,16 +299,40 @@ export default function ModalGestionSolicitud({
       tabla: isPap ? 'papeleria' : 'consumibles',
       sku: suggestedSku,
       nombre: item.nombre_sugerido || item.nombre_item || 'Material / Insumo',
+      categoria: isPap ? 'Papelería General' : (item.categoria_sugerida === 'robotica' ? 'Robótica' : 'Consumibles STEAM'),
+      marca: '',
+      unidad: item.unidad || 'und',
       cantidad: item.cantidad || 1,
-      sede: solicitud.sede || 'Medellín',
       minimo: 5,
+      valor_unitario: item.precio_estimado ? String(item.precio_estimado) : '',
+      sede: solicitud.sede || 'Medellín',
       estante: 'Recepción / Bodega',
+      observaciones: item.url_compra ? `Enlace de compra: ${item.url_compra}` : (solicitud.motivo || ''),
+      url_compra: item.url_compra || null,
+      estado: 'Disponible',
+      condicion: 'Nuevo',
     });
   };
 
   const handleConfirmarIngreso = async () => {
     if (!modalIngresoData) return;
-    const { item, tabla, sku, nombre, cantidad, sede, minimo, estante } = modalIngresoData;
+    const {
+      item,
+      tabla,
+      sku,
+      nombre,
+      categoria,
+      marca,
+      unidad,
+      cantidad,
+      sede,
+      minimo,
+      estante,
+      valor_unitario,
+      observaciones,
+      estado,
+      condicion,
+    } = modalIngresoData;
 
     if (!sku.trim()) {
       alert('El código o SKU es obligatorio');
@@ -330,10 +354,17 @@ export default function ModalGestionSolicitud({
         tabla_destino: tabla,
         sku: sku.trim(),
         nombre: nombre.trim(),
+        categoria: categoria || (tabla === 'papeleria' ? 'Papelería General' : 'Robótica'),
+        marca: marca ? marca.trim() : null,
+        unidad: unidad || 'und',
         cantidad: cantNum,
         sede: sede || 'Medellín',
         stock_minimo: minNum,
         ubicacion_estante: estante || 'Recepción / Bodega',
+        valor_compra: valor_unitario ? String(valor_unitario).trim() : null,
+        observaciones: observaciones ? observaciones.trim() : null,
+        estado: estado || 'Disponible',
+        condicion: condicion || 'Nuevo',
       });
 
       // Actualizar ítem localmente en itemsDetalle
@@ -1701,14 +1732,14 @@ export default function ModalGestionSolicitud({
         </div>
       </div>
 
-      {/* Mini-Modal de Ingreso Rápido a Inventario Físico */}
+      {/* Modal Completo Estandarizado de Ingreso a Inventario Físico */}
       {modalIngresoData && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1719,26 +1750,29 @@ export default function ModalGestionSolicitud({
         >
           <div
             style={{
-              maxWidth: '520px',
+              maxWidth: '640px',
               width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
               backgroundColor: 'var(--surface, #0f172a)',
               border: '1px solid var(--line-strong, #334155)',
               borderRadius: '20px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
               overflow: 'hidden',
               color: 'var(--text, #f8fafc)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header del Mini-Modal */}
+            {/* Header del Modal */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '18px 22px',
+                padding: '16px 22px',
                 borderBottom: '1px solid var(--line, #1e293b)',
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.8))',
+                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.85))',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1746,18 +1780,18 @@ export default function ModalGestionSolicitud({
                   style={{
                     padding: '8px',
                     borderRadius: '12px',
-                    backgroundColor: 'rgba(132, 204, 22, 0.15)',
-                    color: '#84CC16',
+                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                    color: '#22c55e',
                   }}
                 >
-                  <PackagePlus size={20} />
+                  <PackagePlus size={22} />
                 </div>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}>
-                    Ingreso Rápido a Inventario Físico
+                    Ingreso a Inventario Físico (Alta de Catálogo)
                   </h4>
                   <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
-                    Confirmar recepción para dar de alta en el catálogo
+                    Registra el insumo recibido con todos sus atributos técnicos en el inventario institucional
                   </span>
                 </div>
               </div>
@@ -1778,52 +1812,68 @@ export default function ModalGestionSolicitud({
               </button>
             </div>
 
-            {/* Cuerpo del Mini-Modal */}
-            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {/* Tabla Destino */}
+            {/* Cuerpo del Modal con Scroll */}
+            <div style={{ padding: '20px 22px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Selector Módulo Destino */}
               <div>
                 <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '6px' }}>
                   Módulo de Inventario Destino *
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <button
                     type="button"
-                    onClick={() => setModalIngresoData({ ...modalIngresoData, tabla: 'consumibles' })}
+                    onClick={() => {
+                      const rand = Math.floor(100 + Math.random() * 900);
+                      setModalIngresoData({
+                        ...modalIngresoData,
+                        tabla: 'consumibles',
+                        categoria: 'Robótica',
+                        sku: `ROB-NEW-${rand}`,
+                      });
+                    }}
                     style={{
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       borderRadius: '10px',
-                      fontSize: '12px',
+                      fontSize: '12.5px',
                       fontWeight: 700,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px',
+                      gap: '8px',
                       transition: 'all 0.15s',
-                      backgroundColor: modalIngresoData.tabla === 'consumibles' ? '#84CC16' : 'var(--bg, #0b1120)',
-                      color: modalIngresoData.tabla === 'consumibles' ? '#020617' : 'var(--text-dim, #94a3b8)',
-                      border: `1px solid ${modalIngresoData.tabla === 'consumibles' ? '#84CC16' : 'var(--line, #334155)'}`,
+                      backgroundColor: modalIngresoData.tabla === 'consumibles' ? '#22c55e' : 'var(--bg, #0b1120)',
+                      color: modalIngresoData.tabla === 'consumibles' ? '#ffffff' : 'var(--text-dim, #94a3b8)',
+                      border: `1px solid ${modalIngresoData.tabla === 'consumibles' ? '#16a34a' : 'var(--line, #334155)'}`,
                     }}
                   >
                     📦 Consumibles y Robótica
                   </button>
                   <button
                     type="button"
-                    onClick={() => setModalIngresoData({ ...modalIngresoData, tabla: 'papeleria' })}
+                    onClick={() => {
+                      const rand = Math.floor(100 + Math.random() * 900);
+                      setModalIngresoData({
+                        ...modalIngresoData,
+                        tabla: 'papeleria',
+                        categoria: 'Papelería General',
+                        sku: `PAP-NEW-${rand}`,
+                      });
+                    }}
                     style={{
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       borderRadius: '10px',
-                      fontSize: '12px',
+                      fontSize: '12.5px',
                       fontWeight: 700,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px',
+                      gap: '8px',
                       transition: 'all 0.15s',
                       backgroundColor: modalIngresoData.tabla === 'papeleria' ? '#f59e0b' : 'var(--bg, #0b1120)',
                       color: modalIngresoData.tabla === 'papeleria' ? '#020617' : 'var(--text-dim, #94a3b8)',
-                      border: `1px solid ${modalIngresoData.tabla === 'papeleria' ? '#f59e0b' : 'var(--line, #334155)'}`,
+                      border: `1px solid ${modalIngresoData.tabla === 'papeleria' ? '#d97706' : 'var(--line, #334155)'}`,
                     }}
                   >
                     📄 Papelería Institucional
@@ -1831,8 +1881,8 @@ export default function ModalGestionSolicitud({
                 </div>
               </div>
 
-              {/* SKU y Nombre */}
-              <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '10px' }}>
+              {/* Fila 1: Código / SKU y Nombre */}
+              <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                     Código / SKU *
@@ -1840,7 +1890,7 @@ export default function ModalGestionSolicitud({
                   <input
                     type="text"
                     value={modalIngresoData.sku}
-                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, sku: e.target.value })}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, sku: e.target.value.toUpperCase() })}
                     style={{
                       width: '100%',
                       padding: '8px 10px',
@@ -1857,7 +1907,7 @@ export default function ModalGestionSolicitud({
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
-                    Nombre del Artículo / Material *
+                    Nombre del Artículo / Insumo *
                   </label>
                   <input
                     type="text"
@@ -1878,11 +1928,128 @@ export default function ModalGestionSolicitud({
                 </div>
               </div>
 
-              {/* Cantidad recibida y Stock Mínimo */}
+              {/* Fila 2: Categoría / Subcategoría y Marca / Referencia */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
-                    Cantidad Recibida *
+                    Categoría / Subcategoría *
+                  </label>
+                  <select
+                    value={modalIngresoData.categoria}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, categoria: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {modalIngresoData.tabla === 'papeleria' ? (
+                      <>
+                        <option value="Papelería General">Papelería General</option>
+                        <option value="Cuadernos y Libretas">Cuadernos y Libretas</option>
+                        <option value="Escritura y Marcadores">Escritura y Marcadores</option>
+                        <option value="Adhesivos y Cintas">Adhesivos y Cintas</option>
+                        <option value="Arte y Manualidades">Arte y Manualidades</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="Robótica">Robótica</option>
+                        <option value="Sensores">Sensores</option>
+                        <option value="Componentes Electrónicos">Componentes Electrónicos</option>
+                        <option value="Herramientas">Herramientas</option>
+                        <option value="Mecánica">Mecánica</option>
+                        <option value="Impresión 3D">Impresión 3D</option>
+                        <option value="Baterías y Energía">Baterías y Energía</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Marca / Referencia / Fabricante
+                  </label>
+                  <input
+                    type="text"
+                    value={modalIngresoData.marca}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, marca: e.target.value })}
+                    placeholder="Ej. Arduino, Pololu, Norma, etc."
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Fila 3: Unidad de Medida y Valor Unitario */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Unidad de Medida
+                  </label>
+                  <select
+                    value={modalIngresoData.unidad}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, unidad: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <option value="und">Unidad (und)</option>
+                    <option value="kit">Kit / Set</option>
+                    <option value="pack">Pack / Paquete</option>
+                    <option value="caja">Caja</option>
+                    <option value="rollo">Rollo</option>
+                    <option value="metro">Metro (m)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Valor Unitario ($ COP)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={modalIngresoData.valor_unitario}
+                    onChange={(e) => setModalIngresoData({ ...modalIngresoData, valor_unitario: e.target.value })}
+                    placeholder="Ej. 15000"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line, #334155)',
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      color: 'var(--text, #f8fafc)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Fila 4: Cantidad Recibida y Stock Mínimo */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                    Cantidad Recibida (Stock Actual) *
                   </label>
                   <input
                     type="number"
@@ -1926,7 +2093,7 @@ export default function ModalGestionSolicitud({
                 </div>
               </div>
 
-              {/* Sede y Ubicación en estante */}
+              {/* Fila 5: Sede y Ubicación en estante */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
@@ -1955,13 +2122,13 @@ export default function ModalGestionSolicitud({
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
-                    Estante / Ubicación
+                    Estante / Ubicación Física
                   </label>
                   <input
                     type="text"
                     value={modalIngresoData.estante}
                     onChange={(e) => setModalIngresoData({ ...modalIngresoData, estante: e.target.value })}
-                    placeholder="Ej. B1, Recepción"
+                    placeholder="Ej. Bodega Central, Estante A-2, Caja 5"
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -1975,17 +2142,41 @@ export default function ModalGestionSolicitud({
                   />
                 </div>
               </div>
+
+              {/* Fila 6: Observaciones y Link de Referencia */}
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim, #94a3b8)', display: 'block', marginBottom: '4px' }}>
+                  Observaciones / Enlace de Referencia
+                </label>
+                <textarea
+                  rows={2}
+                  value={modalIngresoData.observaciones}
+                  onChange={(e) => setModalIngresoData({ ...modalIngresoData, observaciones: e.target.value })}
+                  placeholder="Detalles del paquete, enlace del proveedor o notas..."
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--line, #334155)',
+                    backgroundColor: 'var(--bg, #0b1120)',
+                    color: 'var(--text, #f8fafc)',
+                    fontSize: '12.5px',
+                    boxSizing: 'border-box',
+                    resize: 'none',
+                  }}
+                />
+              </div>
             </div>
 
-            {/* Footer del Mini-Modal */}
+            {/* Footer del Modal */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '16px 22px',
+                padding: '14px 22px',
                 borderTop: '1px solid var(--line, #1e293b)',
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.8))',
+                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.85))',
               }}
             >
               <button
@@ -1993,6 +2184,7 @@ export default function ModalGestionSolicitud({
                 onClick={() => setModalIngresoData(null)}
                 disabled={submitting}
                 className="btn ghost small"
+                style={{ cursor: submitting ? 'not-allowed' : 'pointer' }}
               >
                 Cancelar
               </button>
@@ -2000,24 +2192,27 @@ export default function ModalGestionSolicitud({
                 type="button"
                 onClick={handleConfirmarIngreso}
                 disabled={submitting}
-                className="btn btn-primary small inline-flex items-center gap-1.5"
+                className="btn small inline-flex items-center gap-1.5"
                 style={{
-                  backgroundColor: '#84CC16',
-                  borderColor: '#84CC16',
-                  color: '#020617',
+                  backgroundColor: '#22c55e',
+                  borderColor: '#16a34a',
+                  color: '#ffffff',
                   fontWeight: 800,
+                  padding: '8px 18px',
+                  borderRadius: '8px',
                   cursor: submitting ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)',
                 }}
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>Ingresando...</span>
+                    <Loader2 size={15} className="animate-spin" />
+                    <span>Registrando en inventario...</span>
                   </>
                 ) : (
                   <>
-                    <Check size={14} strokeWidth={2.5} />
-                    <span>Confirmar Ingreso al Inventario</span>
+                    <Check size={15} strokeWidth={2.5} />
+                    <span>📥 Confirmar e Ingresar al Inventario</span>
                   </>
                 )}
               </button>

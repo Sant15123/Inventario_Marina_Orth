@@ -104,9 +104,9 @@ export default function Header({
         {/* CAMPANITA DE NOTIFICACIONES EN TIEMPO REAL (Oculta para rol 'usuario' y 'supervisor') */}
         {!isUsuario && !isSupervisor && (
           <NotificationBell
-            onNavigateToSolicitudes={() => {
+            onNavigateToSolicitudes={(targetData) => {
               if (onNavigate) {
-                onNavigate('prestamos', { section: 'solicitudes' });
+                onNavigate('prestamos', targetData || { section: 'solicitudes' });
               }
             }}
           />
