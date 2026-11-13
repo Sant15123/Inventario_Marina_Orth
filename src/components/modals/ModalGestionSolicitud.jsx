@@ -221,21 +221,29 @@ export default function ModalGestionSolicitud({
   }, [solicitud]);
 
   // Estado del ciclo de vida para sugerencias de compra
-  const [estadoCompra, setEstadoCompra] = useState(() => solicitud?.estado || 'Pendiente');
+  const [estadoCompra, setEstadoCompra] = useState(() => solicitud?.estado || 'PENDIENTE');
   useEffect(() => {
     if (solicitud) {
-      setEstadoCompra(solicitud.estado || 'Pendiente');
+      setEstadoCompra(solicitud.estado || 'PENDIENTE');
     }
   }, [solicitud]);
 
-  const ESTADOS_COMPRA = [
-    'Pendiente',
-    'Aprobado para compra',
-    'Comprado / En camino',
-    'Recibido en Oficina',
-    'Completada / En Inventario',
-    'Rechazada',
+  const ESTADOS_COMPRA_OPCIONES = [
+    { value: 'PENDIENTE', label: '⏳ PENDIENTE' },
+    { value: 'APROBADO_COMPRA', label: '✅ APROBADO_COMPRA' },
+    { value: 'COMPRADO', label: '🚚 COMPRADO' },
+    { value: 'RECIBIDO_INVENTARIO', label: '📥 RECIBIDO_INVENTARIO' },
+    { value: 'RECHAZADO', label: '❌ RECHAZADO' },
   ];
+
+  const normalizarEstadoCompra = (est) => {
+    const s = String(est || 'PENDIENTE').toUpperCase();
+    if (s.includes('RECIBID') || s.includes('INVENTARIO') || s.includes('COMPLETAD')) return 'RECIBIDO_INVENTARIO';
+    if (s.includes('COMPRAD') || s.includes('CAMINO')) return 'COMPRADO';
+    if (s.includes('APROBAD')) return 'APROBADO_COMPRA';
+    if (s.includes('RECHAZ')) return 'RECHAZADO';
+    return 'PENDIENTE';
+  };
 
   const handleCambiarEstadoCompra = async (nuevoEstado) => {
     try {
@@ -338,9 +346,9 @@ export default function ModalGestionSolicitud({
       // Si todos los ítems fueron ingresados, marcar estado padre
       const restantes = itemsDetalle.filter((it) => it.id !== item.id && !it.ingresado_inventario);
       if (restantes.length === 0 || resultado?.solicitud_completada) {
-        setEstadoCompra('Completada / En Inventario');
+        setEstadoCompra('RECIBIDO_INVENTARIO');
         if (onSolicitudResolved) {
-          onSolicitudResolved({ ...solicitud, estado: 'Completada / En Inventario' });
+          onSolicitudResolved({ ...solicitud, estado: 'RECIBIDO_INVENTARIO' });
         }
       }
 
@@ -368,11 +376,11 @@ export default function ModalGestionSolicitud({
   };
 
   const yaResuelta = isCompra
-    ? (estadoCompra === 'Completada / En Inventario' || estadoCompra === 'Rechazada' || estadoCompra === 'RECHAZADA' || estadoCompra === 'RECHAZADO')
+    ? (normalizarEstadoCompra(estadoCompra) === 'RECIBIDO_INVENTARIO' || normalizarEstadoCompra(estadoCompra) === 'RECHAZADO')
     : (solicitud.estado === 'APROBADO' ||
-       solicitud.estado === 'APROBADA' ||
-       solicitud.estado === 'RECHAZADO' ||
-       solicitud.estado === 'RECHAZADA');
+      solicitud.estado === 'APROBADA' ||
+      solicitud.estado === 'RECHAZADO' ||
+      solicitud.estado === 'RECHAZADA');
 
   // Manejador del cambio de placa física por dropdown
   const handleSelectPlacaDropdown = (itemId, indexUnit, placaSeleccionada) => {
@@ -669,10 +677,10 @@ export default function ModalGestionSolicitud({
             ) : (
               <span
                 className={`pill ${solicitud.estado === 'APROBADO' || solicitud.estado === 'APROBADA'
-                    ? 'ok'
-                    : solicitud.estado === 'RECHAZADO' || solicitud.estado === 'RECHAZADA'
-                      ? 'low'
-                      : 'prestado'
+                  ? 'ok'
+                  : solicitud.estado === 'RECHAZADO' || solicitud.estado === 'RECHAZADA'
+                    ? 'low'
+                    : 'prestado'
                   }`}
                 style={{ fontSize: '11px', textTransform: 'uppercase', padding: '3px 9px', letterSpacing: '0.04em' }}
               >
@@ -736,7 +744,7 @@ export default function ModalGestionSolicitud({
                       Estado del Pedido:
                     </span>
                     <select
-                      value={estadoCompra}
+                      value={normalizarEstadoCompra(estadoCompra)}
                       disabled={submitting}
                       onChange={(e) => handleCambiarEstadoCompra(e.target.value)}
                       style={{
@@ -750,9 +758,9 @@ export default function ModalGestionSolicitud({
                         cursor: 'pointer',
                       }}
                     >
-                      {ESTADOS_COMPRA.map((est) => (
-                        <option key={est} value={est}>
-                          {est}
+                      {ESTADOS_COMPRA_OPCIONES.map((op) => (
+                        <option key={op.value} value={op.value}>
+                          {op.label}
                         </option>
                       ))}
                     </select>
@@ -769,7 +777,7 @@ export default function ModalGestionSolicitud({
                       border: '1px solid rgba(99, 102, 241, 0.4)',
                     }}
                   >
-                    Estado: {estadoCompra}
+                    Estado: {normalizarEstadoCompra(estadoCompra)}
                   </span>
                 )}
               </div>
@@ -1243,367 +1251,367 @@ export default function ModalGestionSolicitud({
                 )
               ) : (
                 (itemsDetalle.length > 0 ? itemsDetalle : (solicitud.items || [])).map((it, idx) => {
-                const invItem = inventarioMap.get(String(it.item_id));
-                const unitsDisponibles = (invItem?.units || []).filter((u) => u.status === 'disponible');
-                const stockActualConsumible = Number(invItem?.quantity ?? invItem?.disponible ?? 0);
-                const asignadas = (placasAsignadas[it.item_id] || []).filter(Boolean);
-                const cantidadAprobada = cantidadesAprobadas[it.item_id] ?? it.cantidad ?? 1;
+                  const invItem = inventarioMap.get(String(it.item_id));
+                  const unitsDisponibles = (invItem?.units || []).filter((u) => u.status === 'disponible');
+                  const stockActualConsumible = Number(invItem?.quantity ?? invItem?.disponible ?? 0);
+                  const asignadas = (placasAsignadas[it.item_id] || []).filter(Boolean);
+                  const cantidadAprobada = cantidadesAprobadas[it.item_id] ?? it.cantidad ?? 1;
 
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '14px 16px',
-                      borderRadius: 'var(--radius)',
-                      border: '1px solid var(--line)',
-                      background: 'var(--surface-2)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <div>
-                        <strong style={{ fontSize: '14px', color: 'var(--text-h)', display: 'block' }}>
-                          {it.nombre_item}
-                        </strong>
-                        <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>
-                          <span>Solicitado: <strong>{it.cantidad} {it.unidad || 'und'}</strong></span>
-                          {' · '}
-                          {!esPrestamo ? (
-                            <span>
-                              Stock en bodega:{' '}
-                              <strong style={{ color: stockActualConsumible >= it.cantidad ? '#84CC16' : '#f59e0b' }}>
-                                {stockActualConsumible} {it.unidad || 'und'}
-                              </strong>
-                            </span>
-                          ) : (
-                            <span>
-                              Equipos disponibles en estante:{' '}
-                              <strong style={{ color: unitsDisponibles.length >= it.cantidad ? '#84CC16' : '#f59e0b' }}>
-                                {unitsDisponibles.length} unidades
-                              </strong>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Control para Consumibles: Cantidad a despachar con botones */}
-                      {!esPrestamo && !yaResuelta && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)' }}>
-                            Cant. a despachar:
-                          </span>
-                          <div
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              border: '1px solid var(--line)',
-                              borderRadius: 'var(--radius-sm)',
-                              overflow: 'hidden',
-                              background: 'var(--bg)',
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleAjustarCantidad(it.item_id, -1, stockActualConsumible)}
-                              style={{
-                                padding: '6px 10px',
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text)',
-                                cursor: 'pointer',
-                              }}
-                              title="Disminuir"
-                            >
-                              <Minus size={13} />
-                            </button>
-                            <input
-                              type="number"
-                              min="1"
-                              max={stockActualConsumible > 0 ? stockActualConsumible : 999}
-                              value={cantidadAprobada}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value, 10) || 1;
-                                setCantidadesAprobadas((prev) => ({ ...prev, [it.item_id]: val }));
-                              }}
-                              style={{
-                                width: '48px',
-                                textAlign: 'center',
-                                fontWeight: 700,
-                                fontSize: '13px',
-                                border: 'none',
-                                padding: '4px',
-                                background: 'transparent',
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleAjustarCantidad(it.item_id, 1, stockActualConsumible)}
-                              style={{
-                                padding: '6px 10px',
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text)',
-                                cursor: 'pointer',
-                              }}
-                              title="Aumentar"
-                            >
-                              <Plus size={13} />
-                            </button>
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: 'var(--radius)',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface-2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <strong style={{ fontSize: '14px', color: 'var(--text-h)', display: 'block' }}>
+                            {it.nombre_item}
+                          </strong>
+                          <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                            <span>Solicitado: <strong>{it.cantidad} {it.unidad || 'und'}</strong></span>
+                            {' · '}
+                            {!esPrestamo ? (
+                              <span>
+                                Stock en bodega:{' '}
+                                <strong style={{ color: stockActualConsumible >= it.cantidad ? '#84CC16' : '#f59e0b' }}>
+                                  {stockActualConsumible} {it.unidad || 'und'}
+                                </strong>
+                              </span>
+                            ) : (
+                              <span>
+                                Equipos disponibles en estante:{' '}
+                                <strong style={{ color: unitsDisponibles.length >= it.cantidad ? '#84CC16' : '#f59e0b' }}>
+                                  {unitsDisponibles.length} unidades
+                                </strong>
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Selector de Placas Físicas para Equipos Retornables */}
-                    {esPrestamo && !yaResuelta && (
-                      <div
-                        style={{
-                          padding: '12px 14px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px dashed var(--line-strong)',
-                          background: 'var(--bg)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--text-dim)' }}>
-                            Asignar placa física de inventario ({it.cantidad} requerida{it.cantidad > 1 ? 's' : ''}):
-                          </span>
-                          <span
-                            style={{
-                              fontWeight: 700,
-                              color: asignadas.length === it.cantidad ? '#84CC16' : '#f59e0b',
-                            }}
-                          >
-                            {asignadas.length} de {it.cantidad} seleccionada(s)
-                          </span>
-                        </div>
-
-                        {unitsDisponibles.length === 0 ? (
-                          <div style={{ fontSize: '11.5px', color: '#f59e0b', fontStyle: 'italic' }}>
-                            ⚠️ No hay placas disponibles de este equipo en bodega.
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {Array.from({ length: it.cantidad }).map((_, unitIdx) => {
-                              const placaActual = asignadas[unitIdx] || '';
-                              const unidadSeleccionada = unitsDisponibles.find(
-                                (u) => (u.placa || u.code) === placaActual
-                              );
-
-                              return (
-                                <div key={unitIdx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '12px', color: 'var(--text-dim)', minWidth: '70px' }}>
-                                      {it.cantidad > 1 ? `Placa ${unitIdx + 1}:` : 'Placa:'}
-                                    </span>
-                                    <select
-                                      value={placaActual}
-                                      onChange={(e) => handleSelectPlacaDropdown(it.item_id, unitIdx, e.target.value)}
-                                      style={{
-                                        fontSize: '13px',
-                                        fontWeight: 600,
-                                        padding: '7px 10px',
-                                        flex: 1,
-                                        borderRadius: 'var(--radius-sm)',
-                                        border: '1px solid var(--line)',
-                                        background: 'var(--surface-2)',
-                                        color: 'var(--text)',
-                                      }}
-                                    >
-                                      <option value="">-- Elige una placa física disponible --</option>
-                                      {unitsDisponibles.map((u) => {
-                                        const code = u.placa || u.code;
-                                        const yaAsignadaEnOtro = asignadas.includes(code) && code !== placaActual;
-                                        return (
-                                          <option key={code} value={code} disabled={yaAsignadaEnOtro}>
-                                            {code} {u.model ? `(${u.model})` : ''} {yaAsignadaEnOtro ? '— (Asignada)' : ''}
-                                          </option>
-                                        );
-                                      })}
-                                    </select>
-                                  </div>
-
-                                  {/* Ficha de Detalles de la Unidad Seleccionada */}
-                                  {unidadSeleccionada && (
-                                    <div
-                                      style={{
-                                        marginLeft: '78px',
-                                        padding: '10px 14px',
-                                        borderRadius: '10px',
-                                        backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.65))',
-                                        border: '1px solid rgba(132, 204, 22, 0.35)',
-                                        fontSize: '11.5px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '8px',
-                                      }}
-                                    >
-                                      {/* Cabecera de la ficha */}
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #334155)', paddingBottom: '6px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                          <span
-                                            style={{
-                                              fontFamily: 'monospace',
-                                              fontWeight: 800,
-                                              fontSize: '11px',
-                                              color: '#0284c7',
-                                              backgroundColor: 'rgba(56, 189, 248, 0.14)',
-                                              border: '1px solid rgba(56, 189, 248, 0.4)',
-                                              padding: '2px 7px',
-                                              borderRadius: '4px',
-                                            }}
-                                          >
-                                            {unidadSeleccionada.placa || unidadSeleccionada.code}
-                                          </span>
-                                          <strong style={{ fontSize: '12px', color: 'var(--text-h, #ffffff)' }}>
-                                            {unidadSeleccionada.model || invItem?.nombre || invItem?.name || 'Equipo Tecnológico'}
-                                          </strong>
-                                          <span
-                                            style={{
-                                              fontSize: '10px',
-                                              fontWeight: 700,
-                                              color: '#16a34a',
-                                              backgroundColor: 'rgba(34, 197, 94, 0.12)',
-                                              border: '1px solid rgba(34, 197, 94, 0.3)',
-                                              padding: '1px 6px',
-                                              borderRadius: '10px',
-                                            }}
-                                          >
-                                            ● Disponible
-                                          </span>
-                                        </div>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const objDetalle = {
-                                              ...invItem,
-                                              ...unidadSeleccionada,
-                                              id: unidadSeleccionada.placa || unidadSeleccionada.code || invItem?.id,
-                                              placa: unidadSeleccionada.placa || unidadSeleccionada.code,
-                                              codigo: unidadSeleccionada.placa || unidadSeleccionada.code,
-                                              nombre: invItem?.nombre || invItem?.name || it.nombre_item,
-                                              equipo: invItem?.equipo || invItem?.nombre || invItem?.name || it.nombre_item,
-                                              categoria: invItem?.categoria || invItem?.category || 'Equipos electrónicos',
-                                              condicion: unidadSeleccionada.condicion || invItem?.condicion || 'Bueno',
-                                              area: invItem?.area || 'Tecnología',
-                                              cantidad: 1,
-                                              disponible: 1,
-                                              marca: unidadSeleccionada.marca || invItem?.marca || 'LENOVO',
-                                              modelo: unidadSeleccionada.model || invItem?.modelo || invItem?.model || 'ThinkBook',
-                                              serial: unidadSeleccionada.serial || invItem?.serial || '—',
-                                              sede: unidadSeleccionada.sede || invItem?.sede || 'Oficina Medellín',
-                                              ubicacion: unidadSeleccionada.sede || invItem?.ubicacion || 'Oficina Medellín',
-                                              ubicacion_estante: unidadSeleccionada.ubicacion_estante || unidadSeleccionada.location || invItem?.ubicacion_estante || invItem?.location || 'B1',
-                                              responsable: unidadSeleccionada.responsable || 'Bodega Central',
-                                              custodio: unidadSeleccionada.responsable || 'Bodega Central',
-                                              descripcion: invItem?.descripcion || `Equipo estándar registrado bajo la placa ${unidadSeleccionada.placa || unidadSeleccionada.code}.`,
-                                              isEquipo: true,
-                                              itemType: 'equipo',
-                                            };
-                                            setItemParaModalDetalle(objDetalle);
-                                          }}
-                                          className="text-sky-500 hover:text-sky-400"
-                                          style={{
-                                            background: 'transparent',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '4px',
-                                            fontSize: '11px',
-                                            fontWeight: 600,
-                                            padding: '2px 4px',
-                                          }}
-                                          title="Ver ficha técnica completa en modal"
-                                        >
-                                          <span>Ficha completa</span>
-                                          <ExternalLink size={12} />
-                                        </button>
-                                      </div>
-
-                                      {/* Grilla técnica completa y bien ordenada */}
-                                      <div
-                                        style={{
-                                          display: 'grid',
-                                          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                                          gap: '6px 12px',
-                                        }}
-                                      >
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>CATEGORÍA:</span>
-                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{invItem?.categoria || invItem?.category || 'Equipos electrónicos'}</span>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>CONDICIÓN:</span>
-                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.condicion || invItem?.condicion || 'Bueno'}</span>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>MARCA / FABRICANTE:</span>
-                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.marca || invItem?.marca || 'LENOVO'}</span>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>MODELO TÉCNICO:</span>
-                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.model || invItem?.modelo || invItem?.model || 'ThinkBook'}</span>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SERIAL DE FÁBRICA:</span>
-                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 700, fontFamily: 'monospace' }}>{unidadSeleccionada.serial || 'S/N'}</span>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SEDE BASE:</span>
-                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.sede || invItem?.sede || 'Oficina Medellín'}</span>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>ESTANTE / CAJA / GAVETA:</span>
-                                          <span
-                                            style={{
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '3px',
-                                              color: '#65a30d',
-                                              backgroundColor: 'rgba(132, 204, 22, 0.14)',
-                                              border: '1px solid rgba(132, 204, 22, 0.35)',
-                                              padding: '1px 6px',
-                                              borderRadius: '4px',
-                                              fontWeight: 700,
-                                              fontSize: '11px',
-                                              marginTop: '2px',
-                                            }}
-                                          >
-                                            📦 {unidadSeleccionada.ubicacion_estante || unidadSeleccionada.location || invItem?.ubicacion_estante || invItem?.location || 'B1'}
-                                          </span>
-                                        </div>
-                                        <div>
-                                          <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>RESPONSABLE / CUSTODIO:</span>
-                                          <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.responsable || 'Bodega Central'}</span>
-                                        </div>
-                                      </div>
-
-                                      {/* Descripción o notas si existen */}
-                                      {(invItem?.descripcion || unidadSeleccionada.notes || unidadSeleccionada.observaciones) && (
-                                        <div style={{ borderTop: '1px dashed var(--line, #334155)', paddingTop: '6px', fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
-                                          <strong style={{ color: 'var(--text, #f8fafc)' }}>Descripción: </strong>
-                                          <span>{invItem?.descripcion || unidadSeleccionada.notes || unidadSeleccionada.observaciones}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                        {/* Control para Consumibles: Cantidad a despachar con botones */}
+                        {!esPrestamo && !yaResuelta && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)' }}>
+                              Cant. a despachar:
+                            </span>
+                            <div
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                border: '1px solid var(--line)',
+                                borderRadius: 'var(--radius-sm)',
+                                overflow: 'hidden',
+                                background: 'var(--bg)',
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleAjustarCantidad(it.item_id, -1, stockActualConsumible)}
+                                style={{
+                                  padding: '6px 10px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text)',
+                                  cursor: 'pointer',
+                                }}
+                                title="Disminuir"
+                              >
+                                <Minus size={13} />
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                max={stockActualConsumible > 0 ? stockActualConsumible : 999}
+                                value={cantidadAprobada}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value, 10) || 1;
+                                  setCantidadesAprobadas((prev) => ({ ...prev, [it.item_id]: val }));
+                                }}
+                                style={{
+                                  width: '48px',
+                                  textAlign: 'center',
+                                  fontWeight: 700,
+                                  fontSize: '13px',
+                                  border: 'none',
+                                  padding: '4px',
+                                  background: 'transparent',
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAjustarCantidad(it.item_id, 1, stockActualConsumible)}
+                                style={{
+                                  padding: '6px 10px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text)',
+                                  cursor: 'pointer',
+                                }}
+                                title="Aumentar"
+                              >
+                                <Plus size={13} />
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                );
-              })
+
+                      {/* Selector de Placas Físicas para Equipos Retornables */}
+                      {esPrestamo && !yaResuelta && (
+                        <div
+                          style={{
+                            padding: '12px 14px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px dashed var(--line-strong)',
+                            background: 'var(--bg)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-dim)' }}>
+                              Asignar placa física de inventario ({it.cantidad} requerida{it.cantidad > 1 ? 's' : ''}):
+                            </span>
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                color: asignadas.length === it.cantidad ? '#84CC16' : '#f59e0b',
+                              }}
+                            >
+                              {asignadas.length} de {it.cantidad} seleccionada(s)
+                            </span>
+                          </div>
+
+                          {unitsDisponibles.length === 0 ? (
+                            <div style={{ fontSize: '11.5px', color: '#f59e0b', fontStyle: 'italic' }}>
+                              ⚠️ No hay placas disponibles de este equipo en bodega.
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {Array.from({ length: it.cantidad }).map((_, unitIdx) => {
+                                const placaActual = asignadas[unitIdx] || '';
+                                const unidadSeleccionada = unitsDisponibles.find(
+                                  (u) => (u.placa || u.code) === placaActual
+                                );
+
+                                return (
+                                  <div key={unitIdx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ fontSize: '12px', color: 'var(--text-dim)', minWidth: '70px' }}>
+                                        {it.cantidad > 1 ? `Placa ${unitIdx + 1}:` : 'Placa:'}
+                                      </span>
+                                      <select
+                                        value={placaActual}
+                                        onChange={(e) => handleSelectPlacaDropdown(it.item_id, unitIdx, e.target.value)}
+                                        style={{
+                                          fontSize: '13px',
+                                          fontWeight: 600,
+                                          padding: '7px 10px',
+                                          flex: 1,
+                                          borderRadius: 'var(--radius-sm)',
+                                          border: '1px solid var(--line)',
+                                          background: 'var(--surface-2)',
+                                          color: 'var(--text)',
+                                        }}
+                                      >
+                                        <option value="">-- Elige una placa física disponible --</option>
+                                        {unitsDisponibles.map((u) => {
+                                          const code = u.placa || u.code;
+                                          const yaAsignadaEnOtro = asignadas.includes(code) && code !== placaActual;
+                                          return (
+                                            <option key={code} value={code} disabled={yaAsignadaEnOtro}>
+                                              {code} {u.model ? `(${u.model})` : ''} {yaAsignadaEnOtro ? '— (Asignada)' : ''}
+                                            </option>
+                                          );
+                                        })}
+                                      </select>
+                                    </div>
+
+                                    {/* Ficha de Detalles de la Unidad Seleccionada */}
+                                    {unidadSeleccionada && (
+                                      <div
+                                        style={{
+                                          marginLeft: '78px',
+                                          padding: '10px 14px',
+                                          borderRadius: '10px',
+                                          backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.65))',
+                                          border: '1px solid rgba(132, 204, 22, 0.35)',
+                                          fontSize: '11.5px',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: '8px',
+                                        }}
+                                      >
+                                        {/* Cabecera de la ficha */}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #334155)', paddingBottom: '6px' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span
+                                              style={{
+                                                fontFamily: 'monospace',
+                                                fontWeight: 800,
+                                                fontSize: '11px',
+                                                color: '#0284c7',
+                                                backgroundColor: 'rgba(56, 189, 248, 0.14)',
+                                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                                padding: '2px 7px',
+                                                borderRadius: '4px',
+                                              }}
+                                            >
+                                              {unidadSeleccionada.placa || unidadSeleccionada.code}
+                                            </span>
+                                            <strong style={{ fontSize: '12px', color: 'var(--text-h, #ffffff)' }}>
+                                              {unidadSeleccionada.model || invItem?.nombre || invItem?.name || 'Equipo Tecnológico'}
+                                            </strong>
+                                            <span
+                                              style={{
+                                                fontSize: '10px',
+                                                fontWeight: 700,
+                                                color: '#16a34a',
+                                                backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                                                border: '1px solid rgba(34, 197, 94, 0.3)',
+                                                padding: '1px 6px',
+                                                borderRadius: '10px',
+                                              }}
+                                            >
+                                              ● Disponible
+                                            </span>
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const objDetalle = {
+                                                ...invItem,
+                                                ...unidadSeleccionada,
+                                                id: unidadSeleccionada.placa || unidadSeleccionada.code || invItem?.id,
+                                                placa: unidadSeleccionada.placa || unidadSeleccionada.code,
+                                                codigo: unidadSeleccionada.placa || unidadSeleccionada.code,
+                                                nombre: invItem?.nombre || invItem?.name || it.nombre_item,
+                                                equipo: invItem?.equipo || invItem?.nombre || invItem?.name || it.nombre_item,
+                                                categoria: invItem?.categoria || invItem?.category || 'Equipos electrónicos',
+                                                condicion: unidadSeleccionada.condicion || invItem?.condicion || 'Bueno',
+                                                area: invItem?.area || 'Tecnología',
+                                                cantidad: 1,
+                                                disponible: 1,
+                                                marca: unidadSeleccionada.marca || invItem?.marca || 'LENOVO',
+                                                modelo: unidadSeleccionada.model || invItem?.modelo || invItem?.model || 'ThinkBook',
+                                                serial: unidadSeleccionada.serial || invItem?.serial || '—',
+                                                sede: unidadSeleccionada.sede || invItem?.sede || 'Oficina Medellín',
+                                                ubicacion: unidadSeleccionada.sede || invItem?.ubicacion || 'Oficina Medellín',
+                                                ubicacion_estante: unidadSeleccionada.ubicacion_estante || unidadSeleccionada.location || invItem?.ubicacion_estante || invItem?.location || 'B1',
+                                                responsable: unidadSeleccionada.responsable || 'Bodega Central',
+                                                custodio: unidadSeleccionada.responsable || 'Bodega Central',
+                                                descripcion: invItem?.descripcion || `Equipo estándar registrado bajo la placa ${unidadSeleccionada.placa || unidadSeleccionada.code}.`,
+                                                isEquipo: true,
+                                                itemType: 'equipo',
+                                              };
+                                              setItemParaModalDetalle(objDetalle);
+                                            }}
+                                            className="text-sky-500 hover:text-sky-400"
+                                            style={{
+                                              background: 'transparent',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              fontSize: '11px',
+                                              fontWeight: 600,
+                                              padding: '2px 4px',
+                                            }}
+                                            title="Ver ficha técnica completa en modal"
+                                          >
+                                            <span>Ficha completa</span>
+                                            <ExternalLink size={12} />
+                                          </button>
+                                        </div>
+
+                                        {/* Grilla técnica completa y bien ordenada */}
+                                        <div
+                                          style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                                            gap: '6px 12px',
+                                          }}
+                                        >
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>CATEGORÍA:</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{invItem?.categoria || invItem?.category || 'Equipos electrónicos'}</span>
+                                          </div>
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>CONDICIÓN:</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.condicion || invItem?.condicion || 'Bueno'}</span>
+                                          </div>
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>MARCA / FABRICANTE:</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.marca || invItem?.marca || 'LENOVO'}</span>
+                                          </div>
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>MODELO TÉCNICO:</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.model || invItem?.modelo || invItem?.model || 'ThinkBook'}</span>
+                                          </div>
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SERIAL DE FÁBRICA:</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 700, fontFamily: 'monospace' }}>{unidadSeleccionada.serial || 'S/N'}</span>
+                                          </div>
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SEDE BASE:</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.sede || invItem?.sede || 'Oficina Medellín'}</span>
+                                          </div>
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>ESTANTE / CAJA / GAVETA:</span>
+                                            <span
+                                              style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '3px',
+                                                color: '#65a30d',
+                                                backgroundColor: 'rgba(132, 204, 22, 0.14)',
+                                                border: '1px solid rgba(132, 204, 22, 0.35)',
+                                                padding: '1px 6px',
+                                                borderRadius: '4px',
+                                                fontWeight: 700,
+                                                fontSize: '11px',
+                                                marginTop: '2px',
+                                              }}
+                                            >
+                                              📦 {unidadSeleccionada.ubicacion_estante || unidadSeleccionada.location || invItem?.ubicacion_estante || invItem?.location || 'B1'}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>RESPONSABLE / CUSTODIO:</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 600 }}>{unidadSeleccionada.responsable || 'Bodega Central'}</span>
+                                          </div>
+                                        </div>
+
+                                        {/* Descripción o notas si existen */}
+                                        {(invItem?.descripcion || unidadSeleccionada.notes || unidadSeleccionada.observaciones) && (
+                                          <div style={{ borderTop: '1px dashed var(--line, #334155)', paddingTop: '6px', fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
+                                            <strong style={{ color: 'var(--text, #f8fafc)' }}>Descripción: </strong>
+                                            <span>{invItem?.descripcion || unidadSeleccionada.notes || unidadSeleccionada.observaciones}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
