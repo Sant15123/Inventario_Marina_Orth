@@ -3507,24 +3507,24 @@ export default function PrestamosView({
 
                           {/* 6. ESTADO DE COMPRA */}
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            {estLower.includes('completad') || estLower.includes('recibid') || estLower.includes('inventario') ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                ✅ Recibido en Inventario
+                            {sol.ingresado_inventario || solItems.some((it) => it.ingresado_inventario) || estLower.includes('recibid') || estLower.includes('inventario') || estLower.includes('completad') ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" title="Material ingresado y registrado en la bodega institucional">
+                                📦 En Inventario
                               </span>
-                            ) : estLower.includes('camino') || estLower.includes('comprado') ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                                🚚 Comprado
+                            ) : estLower === 'entregado_directo' || estLower.includes('directa') || estLower.includes('comprado') || estLower.includes('camino') ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30" title="Adquisición efectuada sin registro en bodega">
+                                🛍️ Compra directa
                               </span>
                             ) : estLower.includes('aprobad') ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
                                 👍 Aprobado para compra
                               </span>
                             ) : estLower.includes('rechazad') ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
                                 ❌ Rechazada
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                                 ⏳ Pendiente
                               </span>
                             )}

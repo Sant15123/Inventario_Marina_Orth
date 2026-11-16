@@ -28,7 +28,6 @@ import inventoryApi from '../services/inventoryApi';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalQR from '../components/modals/ModalQR';
 import ModalSolicitudMaterial from '../components/modals/ModalSolicitudMaterial';
-import ModalIngresoInventarioFisico from '../components/modals/ModalIngresoInventarioFisico';
 
 // Normalizadores visuales institucionales
 const formatSede = (sede) => {
@@ -155,128 +154,6 @@ export default function MiPanelUsuarioView({
   const [solicitudes, setSolicitudes] = useState([]);
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
   const [modalMotivoRechazo, setModalMotivoRechazo] = useState(null);
-
-  // Modal completo de Ingreso a Inventario Físico para compras aprobadas / compradas
-  const [modalIngresoData, setModalIngresoData] = useState(null);
-  const [ingresandoInventario, setIngresandoInventario] = useState(false);
-
-  const handleAbrirIngresoModalUsuario = (sol) => {
-    const isPap = String(sol.categoria_destino || sol.items?.[0]?.categoria_sugerida || '').toLowerCase() === 'papeleria';
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    const suggestedSku = isPap ? `PAP-NEW-${randomSuffix}` : `ROB-NEW-${randomSuffix}`;
-
-    const nombreProducto = sol.nombre_producto || sol.items?.[0]?.nombre_sugerido || sol.items?.[0]?.nombre_item || 'Material / Insumo';
-    const cantidadProducto = sol.cantidad || sol.items?.[0]?.cantidad || 1;
-    const precioProducto = sol.precio_estimado || sol.items?.[0]?.precio_estimado || 0;
-    const urlProducto = sol.url_compra || sol.items?.[0]?.url_compra || null;
-
-    setModalIngresoData({
-      solicitud_id: sol.id,
-      item_solicitud_id: sol.items?.[0]?.id || sol.id,
-      tabla: isPap ? 'papeleria' : 'consumibles',
-      sku: suggestedSku,
-      nombre: nombreProducto,
-      categoria: isPap ? 'Papelería General' : 'Robótica',
-      marca: '',
-      unidad: sol.items?.[0]?.unidad || 'und',
-      cantidad: cantidadProducto,
-      minimo: 5,
-      valor_unitario: precioProducto ? String(precioProducto) : '',
-      sede: sol.sede || 'Medellín',
-      estante: 'Recepción / Bodega',
-      observaciones: urlProducto ? `Enlace de compra: ${urlProducto}` : (sol.motivo || ''),
-      url_compra: urlProducto,
-      estado: 'Disponible',
-      condicion: 'Nuevo',
-    });
-  };
-
-  const handleConfirmarIngresoUsuario = async (formData) => {
-    try {
-      setIngresandoInventario(true);
-      const cantNum = parseInt(formData.cantidad, 10) || 1;
-      const minNum = parseInt(formData.minimo, 10) || 5;
-
-      await inventoryApi.ingresarArticuloInventario({
-        solicitud_id: formData.solicitud_id,
-        item_solicitud_id: formData.item_solicitud_id,
-        tabla_destino: formData.tabla,
-        sku: formData.sku.trim(),
-        nombre: formData.nombre.trim(),
-        categoria: formData.categoria || (formData.tabla === 'papeleria' ? 'Papelería General' : 'Robótica'),
-        marca: formData.marca ? formData.marca.trim() : null,
-        unidad: formData.unidad || 'und',
-        cantidad: cantNum,
-        sede: formData.sede || 'Medellín',
-        stock_minimo: minNum,
-        ubicacion_estante: formData.estante || 'Recepción / Bodega',
-        valor_compra: formData.valor_unitario ? String(formData.valor_unitario).trim() : null,
-        observaciones: formData.observaciones ? formData.observaciones.trim() : null,
-        estado: formData.estado || 'Disponible',
-        condicion: formData.condicion || 'Nuevo',
-        responsable: currentUser?.nombre_completo || currentUser?.nombre || 'Docente / Formador',
-      });
-
-      // Asegurar actualización en solicitudes_compra directamente en Supabase si está disponible
-      if (supabase && formData.solicitud_id) {
-        await supabase
-          .from('solicitudes_compra')
-          .update({
-            ingresado_inventario: true,
-            estado: 'RECIBIDO_INVENTARIO',
-            item_inventario_id: formData.sku.trim(),
-          })
-          .eq('id', formData.solicitud_id);
-      }
-
-      // Actualizar estado local reactivo en solicitudes
-      setSolicitudes((prev) =>
-        prev.map((s) =>
-          s.id === formData.solicitud_id
-            ? {
-                ...s,
-                ingresado_inventario: true,
-                estado: 'RECIBIDO_INVENTARIO',
-                item_inventario_id: formData.sku.trim(),
-                items: Array.isArray(s.items)
-                  ? s.items.map((it) => ({ ...it, ingresado_inventario: true, item_id: formData.sku.trim() }))
-                  : s.items,
-              }
-            : s
-        )
-      );
-
-      if (showSuccess) {
-        showSuccess(
-          '¡Material recibido e ingresado con éxito!',
-          `"${formData.nombre.trim()}" (${formData.sku.trim()}) ha sido registrado físicamente en el módulo de ${formData.tabla === 'papeleria' ? 'Papelería' : 'Consumibles'}.`
-        );
-      }
-
-      setModalIngresoData(null);
-
-      // Disparar eventos globales para sincronización de inventario
-      try {
-        window.dispatchEvent(new CustomEvent('siga:inventario_actualizado'));
-        window.dispatchEvent(
-          new CustomEvent('siga:solicitud_resuelta', {
-            detail: { id: formData.solicitud_id, estado: 'RECIBIDO_INVENTARIO' },
-          })
-        );
-      } catch (_) {}
-
-      fetchSolicitudes();
-    } catch (err) {
-      console.error('Error al ingresar artículo a inventario desde MiPanel:', err);
-      if (showError) {
-        showError('Error al ingresar material', err.message || 'No se pudo completar el ingreso a inventario.');
-      } else {
-        alert(`Error al ingresar artículo: ${err.message}`);
-      }
-    } finally {
-      setIngresandoInventario(false);
-    }
-  };
 
   // Paginación de 5 en 5 para la pestaña "Mis Solicitudes"
   const [solicitudesPage, setSolicitudesPage] = useState(1);
@@ -1089,7 +966,6 @@ export default function MiPanelUsuarioView({
                     <th style={{ width: '120px' }}>Sede</th>
                     <th style={{ minWidth: '150px' }}>Motivo / Justificación</th>
                     <th style={{ width: '140px', textAlign: 'center' }}>Estado</th>
-                    <th style={{ width: '170px', textAlign: 'center' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1175,52 +1051,16 @@ export default function MiPanelUsuarioView({
                             )}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            {(() => {
-                              const esSugerenciaCompra = sol.is_solicitud_compra || esCompra;
-                              const yaIngresado = Boolean(
-                                sol.ingresado_inventario ||
-                                sol.items?.[0]?.ingresado_inventario ||
-                                estadoUpper === 'RECIBIDO_INVENTARIO' ||
-                                estadoUpper.includes('INVENTARIO')
-                              );
-
-                              if (esSugerenciaCompra) {
-                                if (yaIngresado) {
-                                  return (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                      ✅ Recibido en Inventario
-                                    </span>
-                                  );
-                                }
-                                if (estadoUpper.includes('COMPRADO')) {
-                                  return (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                                      🚚 Comprado
-                                    </span>
-                                  );
-                                }
-                                if (estadoUpper.includes('APROBADO')) {
-                                  return (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                                      👍 Aprobado para compra
-                                    </span>
-                                  );
-                                }
-                              }
-
-                              if (estadoUpper === 'APROBADO' || estadoUpper === 'APROBADA') {
-                                return (
-                                  <span
-                                    className="badge-estado-aprobado"
-                                    title="Aprobado por administración"
-                                  >
-                                    <CheckCircle2 size={13} />
-                                    <span>Aprobado</span>
-                                  </span>
-                                );
-                              }
-
-                              if (estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA') {
+                            {estadoUpper === 'APROBADO' || estadoUpper === 'APROBADA' ? (
+                              <span
+                                className="badge-estado-aprobado"
+                                title="Aprobado por administración"
+                              >
+                                <CheckCircle2 size={13} />
+                                <span>Aprobado</span>
+                              </span>
+                            ) : estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? (
+                              (() => {
                                 const textoRechazo =
                                   sol.motivo_rechazo ||
                                   sol.nota_rechazo ||
@@ -1272,74 +1112,16 @@ export default function MiPanelUsuarioView({
                                     )}
                                   </div>
                                 );
-                              }
-
-                              return (
-                                <span
-                                  className="badge-estado-pendiente"
-                                  title="En revisión administrativa"
-                                >
-                                  <Hourglass size={13} />
-                                  <span>En revisión</span>
-                                </span>
-                              );
-                            })()}
-                          </td>
-
-                          {/* ACCIONES */}
-                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            {(() => {
-                              const esSugerenciaCompra = sol.is_solicitud_compra || esCompra;
-                              const yaIngresado = Boolean(
-                                sol.ingresado_inventario ||
-                                sol.items?.[0]?.ingresado_inventario ||
-                                estadoUpper === 'RECIBIDO_INVENTARIO' ||
-                                estadoUpper.includes('INVENTARIO')
-                              );
-                              const puedeIngresar = !yaIngresado && (
-                                estadoUpper === 'COMPRADO' ||
-                                estadoUpper === 'APROBADO_COMPRA' ||
-                                estadoUpper.includes('COMPRADO') ||
-                                estadoUpper.includes('APROBADO')
-                              );
-
-                              if (esSugerenciaCompra) {
-                                if (yaIngresado) {
-                                  return (
-                                    <span
-                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                                      title="Este material ya fue ingresado al inventario físico"
-                                    >
-                                      ✅ Ya en Inventario
-                                    </span>
-                                  );
-                                }
-                                if (puedeIngresar) {
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleAbrirIngresoModalUsuario(sol)}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
-                                      style={{
-                                        backgroundColor: '#22c55e',
-                                        color: '#ffffff',
-                                        border: '1px solid #16a34a',
-                                        boxShadow: '0 2px 6px rgba(34, 197, 94, 0.3)',
-                                      }}
-                                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#16a34a')}
-                                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#22c55e')}
-                                      title="Registrar la recepción física e ingresar al inventario de la sede"
-                                    >
-                                      <span>📥 Ingresar al Inventario</span>
-                                    </button>
-                                  );
-                                }
-                              }
-
-                              return (
-                                <span style={{ color: 'var(--text-dim, #94a3b8)', fontSize: '12px' }}>—</span>
-                              );
-                            })()}
+                              })()
+                            ) : (
+                              <span
+                                className="badge-estado-pendiente"
+                                title="En revisión administrativa"
+                              >
+                                <Hourglass size={13} />
+                                <span>En revisión</span>
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1637,16 +1419,6 @@ export default function MiPanelUsuarioView({
           </div>
         </div>
       )}
-
-      {/* Modal Completo de Ingreso a Inventario Físico (Vista Formador / Usuario) */}
-      <ModalIngresoInventarioFisico
-        isOpen={Boolean(modalIngresoData)}
-        onClose={() => setModalIngresoData(null)}
-        initialData={modalIngresoData}
-        sedesList={sedesList}
-        onConfirm={handleConfirmarIngresoUsuario}
-        submitting={ingresandoInventario}
-      />
     </div>
   );
 }

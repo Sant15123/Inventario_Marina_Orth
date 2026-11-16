@@ -229,15 +229,17 @@ export default function ModalGestionSolicitud({
   }, [solicitud]);
 
   const ESTADOS_COMPRA_OPCIONES = [
-    { value: 'PENDIENTE', label: '⏳ PENDIENTE' },
-    { value: 'APROBADO_COMPRA', label: '✅ APROBADO_COMPRA' },
-    { value: 'COMPRADO', label: '🚚 COMPRADO' },
-    { value: 'RECIBIDO_INVENTARIO', label: '📥 RECIBIDO_INVENTARIO' },
-    { value: 'RECHAZADO', label: '❌ RECHAZADO' },
+    { value: 'PENDIENTE', label: '⏳ Pendiente de revisión' },
+    { value: 'APROBADO_COMPRA', label: '✅ Aprobado para compra' },
+    { value: 'COMPRADO', label: '🛍️ Comprado / Adquirido' },
+    { value: 'ENTREGADO_DIRECTO', label: '📦 Entrega directa sin bodega' },
+    { value: 'RECIBIDO_INVENTARIO', label: '📥 Recibido en Inventario' },
+    { value: 'RECHAZADO', label: '❌ Rechazado' },
   ];
 
   const normalizarEstadoCompra = (est) => {
     const s = String(est || 'PENDIENTE').toUpperCase();
+    if (s.includes('ENTREGADO_DIRECTO') || s.includes('DIRECTA')) return 'ENTREGADO_DIRECTO';
     if (s.includes('RECIBID') || s.includes('INVENTARIO') || s.includes('COMPLETAD')) return 'RECIBIDO_INVENTARIO';
     if (s.includes('COMPRAD') || s.includes('CAMINO')) return 'COMPRADO';
     if (s.includes('APROBAD')) return 'APROBADO_COMPRA';
@@ -253,10 +255,24 @@ export default function ModalGestionSolicitud({
         estado: nuevoEstado,
         observaciones_admin: formGestion.observaciones_admin?.trim() || solicitud.observaciones_admin || null,
       };
-      const actualizada = await inventoryApi.updateSolicitud(solicitud.id, patch);
+
+      // Si es una solicitud de compra en Supabase, actualizar directamente
+      if (supabase && solicitud?.id) {
+        try {
+          await supabase
+            .from('solicitudes_compra')
+            .update(patch)
+            .eq('id', solicitud.id);
+        } catch (eComp) {
+          console.warn('Aviso update directo solicitudes_compra:', eComp);
+        }
+      }
+
+      await inventoryApi.updateSolicitud(solicitud.id, patch);
       setEstadoCompra(nuevoEstado);
+      const labelNuevo = ESTADOS_COMPRA_OPCIONES.find((op) => op.value === nuevoEstado)?.label || nuevoEstado;
       if (showSuccess) {
-        showSuccess('Estado actualizado', `La sugerencia de compra ahora está en estado "${nuevoEstado}".`);
+        showSuccess('Estado actualizado', `La sugerencia de compra ahora está en "${labelNuevo}".`);
       }
       if (onSolicitudResolved) {
         onSolicitudResolved({ ...solicitud, ...patch });
@@ -378,8 +394,22 @@ export default function ModalGestionSolicitud({
       const restantes = itemsDetalle.filter((it) => it.id !== item.id && !it.ingresado_inventario);
       if (restantes.length === 0 || resultado?.solicitud_completada) {
         setEstadoCompra('RECIBIDO_INVENTARIO');
+        if (supabase && solicitud?.id) {
+          try {
+            await supabase
+              .from('solicitudes_compra')
+              .update({
+                ingresado_inventario: true,
+                estado: 'RECIBIDO_INVENTARIO',
+                item_inventario_id: sku.trim(),
+              })
+              .eq('id', solicitud.id);
+          } catch (eComp) {
+            console.warn('Aviso update directo solicitudes_compra:', eComp);
+          }
+        }
         if (onSolicitudResolved) {
-          onSolicitudResolved({ ...solicitud, estado: 'RECIBIDO_INVENTARIO' });
+          onSolicitudResolved({ ...solicitud, estado: 'RECIBIDO_INVENTARIO', ingresado_inventario: true, item_inventario_id: sku.trim() });
         }
       }
 
@@ -736,33 +766,34 @@ export default function ModalGestionSolicitud({
           {/* Banner de Presupuesto y Ciclo de Estados para Sugerencia de Compra */}
           {isCompra && (
             <div
+              className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 dark:bg-emerald-950/40 dark:border-emerald-800/80"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '12px',
-                padding: '16px',
-                borderRadius: '14px',
-                backgroundColor: 'rgba(99, 102, 241, 0.08)',
-                border: '1px solid rgba(99, 102, 241, 0.25)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                style={{ width: '100%' }}
+              >
+                {/* Icono y Cifra del Presupuesto */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div
+                    className="bg-emerald-100 text-emerald-700 p-2.5 rounded-xl dark:bg-emerald-900/60 dark:text-emerald-300"
                     style={{
-                      padding: '8px',
-                      borderRadius: '10px',
-                      backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                      color: '#a5b4fc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    <ShoppingCart size={20} />
+                    <ShoppingCart size={22} />
                   </div>
                   <div>
-                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a5b4fc', display: 'block' }}>
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">
                       Presupuesto Total Estimado
                     </span>
-                    <strong style={{ fontSize: '1.2rem', color: '#ffffff' }}>
+                    <strong className="text-2xl font-extrabold text-slate-900 dark:text-emerald-100">
                       ${presupuestoTotal.toLocaleString('es-CO')} COP
                     </strong>
                   </div>
@@ -771,26 +802,26 @@ export default function ModalGestionSolicitud({
                 {/* Ciclo de vida de compra */}
                 {esAdmin ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim, #94a3b8)' }}>
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
                       Estado del Pedido:
                     </span>
                     <select
                       value={normalizarEstadoCompra(estadoCompra)}
                       disabled={submitting}
                       onChange={(e) => handleCambiarEstadoCompra(e.target.value)}
+                      className="text-slate-800 font-semibold bg-white border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-3 py-2 text-xs shadow-sm cursor-pointer"
                       style={{
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(99, 102, 241, 0.4)',
-                        backgroundColor: 'var(--bg, #0b1120)',
-                        color: '#c7d2fe',
-                        fontWeight: 700,
-                        fontSize: '12px',
-                        cursor: 'pointer',
+                        minWidth: '220px',
+                        outline: 'none',
                       }}
                     >
                       {ESTADOS_COMPRA_OPCIONES.map((op) => (
-                        <option key={op.value} value={op.value}>
+                        <option
+                          key={op.value}
+                          value={op.value}
+                          className="text-slate-800 bg-white font-medium"
+                          style={{ color: '#1e293b', backgroundColor: '#ffffff' }}
+                        >
                           {op.label}
                         </option>
                       ))}
@@ -798,17 +829,9 @@ export default function ModalGestionSolicitud({
                   </div>
                 ) : (
                   <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                      color: '#c7d2fe',
-                      border: '1px solid rgba(99, 102, 241, 0.4)',
-                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"
                   >
-                    Estado: {normalizarEstadoCompra(estadoCompra)}
+                    Estado: {ESTADOS_COMPRA_OPCIONES.find((op) => op.value === normalizarEstadoCompra(estadoCompra))?.label || normalizarEstadoCompra(estadoCompra)}
                   </span>
                 )}
               </div>
@@ -1253,11 +1276,11 @@ export default function ModalGestionSolicitud({
                                 type="button"
                                 onClick={() => handleAbrirIngresoModal(it)}
                                 disabled={submitting}
-                                className="btn btn-primary small"
+                                className="btn small font-bold"
                                 style={{
-                                  backgroundColor: '#84CC16',
-                                  borderColor: '#84CC16',
-                                  color: '#020617',
+                                  backgroundColor: '#22c55e',
+                                  borderColor: '#16a34a',
+                                  color: '#ffffff',
                                   fontWeight: 800,
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -1265,10 +1288,10 @@ export default function ModalGestionSolicitud({
                                   padding: '8px 14px',
                                   borderRadius: '10px',
                                   fontSize: '12.5px',
-                                  boxShadow: '0 2px 8px rgba(132, 204, 22, 0.25)',
+                                  boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)',
                                   cursor: 'pointer',
                                 }}
-                                title="Ingresar directamente a la bodega física"
+                                title="Ingresar físicamente este material al catálogo e inventario"
                               >
                                 <PackagePlus size={15} />
                                 <span>📥 Ingresar al Inventario</span>
