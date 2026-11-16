@@ -5106,3 +5106,23 @@ html.dark .badge-programa-general {
   color: #FFFFFF !important;
   border-color: #7b2cbf !important;
 }
+
+/* ==========================================================================
+   FASE 4 MARCA OFICIAL FMO - CABECERAS DE TABLA INSTITUCIONALES
+   ========================================================================== */
+thead {
+  border-bottom: 2px solid #abd037 !important;
+}
+thead th, table th {
+  font-family: var(--font-sans) !important;
+  font-weight: 700 !important;
+  color: #013a52 !important;
+  border-bottom: 2px solid #abd037 !important;
+}
+[data-theme="dark"] thead th,
+[data-theme="dark"] table th,
+html.dark thead th,
+html.dark table th {
+  color: #f8fafc !important;
+  border-bottom-color: #abd037 !important;
+}

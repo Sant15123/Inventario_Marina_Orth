@@ -763,14 +763,18 @@ export default function ModalGestionSolicitud({
 
         {/* Cuerpo del modal con el formulario y estructura nativa de la app */}
         <div className="modal-body" style={{ padding: '22px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          {/* Banner de Presupuesto y Ciclo de Estados para Sugerencia de Compra */}
+          {/* Banner de Presupuesto y Ciclo de Estados para Sugerencia de Compra (FMO Bloque de Impacto) */}
           {isCompra && (
             <div
-              className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 dark:bg-emerald-950/40 dark:border-emerald-800/80"
+              className="bg-[#013a52] text-white rounded-2xl p-4 border-l-8 border-[#abd037] shadow-md"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '12px',
+                backgroundColor: '#013a52',
+                borderLeft: '8px solid #abd037',
+                color: '#ffffff',
+                borderRadius: '16px',
               }}
             >
               <div
@@ -780,20 +784,19 @@ export default function ModalGestionSolicitud({
                 {/* Icono y Cifra del Presupuesto */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div
-                    className="bg-emerald-100 text-emerald-700 p-2.5 rounded-xl dark:bg-emerald-900/60 dark:text-emerald-300"
+                    className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                      color: '#abd037',
                     }}
                   >
-                    <ShoppingCart size={22} />
+                    <ShoppingCart size={22} style={{ color: '#abd037' }} />
                   </div>
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">
-                      Presupuesto Total Estimado
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#abd037] block font-['Poppins']">
+                      PRESUPUESTO TOTAL ESTIMADO
                     </span>
-                    <strong className="text-2xl font-extrabold text-slate-900 dark:text-emerald-100">
+                    <strong className="text-2xl font-black text-white block font-['Poppins']">
                       ${presupuestoTotal.toLocaleString('es-CO')} COP
                     </strong>
                   </div>
@@ -802,25 +805,26 @@ export default function ModalGestionSolicitud({
                 {/* Ciclo de vida de compra */}
                 {esAdmin ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#abd037] whitespace-nowrap">
                       Estado del Pedido:
                     </span>
                     <select
                       value={normalizarEstadoCompra(estadoCompra)}
                       disabled={submitting}
                       onChange={(e) => handleCambiarEstadoCompra(e.target.value)}
-                      className="text-slate-800 font-semibold bg-white border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-3 py-2 text-xs shadow-sm cursor-pointer"
+                      className="bg-white text-[#013a52] font-semibold rounded-xl border border-white/20 px-3 py-2 text-xs shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-[#abd037]"
                       style={{
                         minWidth: '220px',
-                        outline: 'none',
+                        backgroundColor: '#ffffff',
+                        color: '#013a52',
                       }}
                     >
                       {ESTADOS_COMPRA_OPCIONES.map((op) => (
                         <option
                           key={op.value}
                           value={op.value}
-                          className="text-slate-800 bg-white font-medium"
-                          style={{ color: '#1e293b', backgroundColor: '#ffffff' }}
+                          className="bg-white text-[#013a52] font-medium"
+                          style={{ color: '#013a52', backgroundColor: '#ffffff' }}
                         >
                           {op.label}
                         </option>
@@ -829,7 +833,7 @@ export default function ModalGestionSolicitud({
                   </div>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#abd037]/20 text-[#abd037] border border-[#abd037]/40"
                   >
                     Estado: {ESTADOS_COMPRA_OPCIONES.find((op) => op.value === normalizarEstadoCompra(estadoCompra))?.label || normalizarEstadoCompra(estadoCompra)}
                   </span>

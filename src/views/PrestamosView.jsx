@@ -1391,26 +1391,26 @@ export default function PrestamosView({
           {(isAdmin || isSupervisor) && (
             <button
               type="button"
-              className={`tab-btn ${activeSection === 'solicitudes' ? 'active' : ''}`}
+              className={`tab-btn ${activeSection === 'solicitudes' ? 'active bg-[#abd037] text-[#013a52] font-bold shadow-sm' : ''}`}
               onClick={() => {
                 setActiveSection('solicitudes');
                 setFilterEstadoPrestamo('todos');
               }}
               style={
                 activeSection === 'solicitudes'
-                  ? {}
+                  ? { backgroundColor: '#abd037', color: '#013a52', fontWeight: 700 }
                   : solicitudesPendientesCount > 0
-                    ? { borderBottom: '2px solid #84CC16' }
+                    ? { borderBottom: '2px solid #abd037' }
                     : {}
               }
             >
               <span>📥 Solicitudes Entrantes</span>
               {solicitudesPendientesCount > 0 ? (
                 <span
-                  className="tab-badge"
+                  className={`tab-badge ${activeSection === 'solicitudes' ? 'bg-[#013a52] text-white font-bold px-2.5 py-0.5 rounded-full text-xs' : 'bg-[#abd037] text-[#013a52] font-bold'}`}
                   style={{
-                    background: '#abd037',
-                    color: '#013a52',
+                    background: activeSection === 'solicitudes' ? '#013a52' : '#abd037',
+                    color: activeSection === 'solicitudes' ? '#ffffff' : '#013a52',
                     fontWeight: 800,
                   }}
                   title={`${solicitudesPendientesCount} solicitudes estándar pendientes por gestionar`}
@@ -1418,7 +1418,12 @@ export default function PrestamosView({
                   {solicitudesPendientesCount} nuevas
                 </span>
               ) : (
-                <span className="tab-badge">{solicitudesEstandar.length}</span>
+                <span
+                  className={`tab-badge ${activeSection === 'solicitudes' ? 'bg-[#013a52] text-white font-bold px-2.5 py-0.5 rounded-full text-xs' : ''}`}
+                  style={activeSection === 'solicitudes' ? { background: '#013a52', color: '#ffffff', fontWeight: 700 } : {}}
+                >
+                  {solicitudesEstandar.length}
+                </span>
               )}
             </button>
           )}
@@ -1427,29 +1432,29 @@ export default function PrestamosView({
           {(isAdmin || isSupervisor) && (
             <button
               type="button"
-              className={`tab-btn ${activeSection === 'compras' ? 'active' : ''}`}
+              className={`tab-btn ${activeSection === 'compras' ? 'active bg-[#abd037] text-[#013a52] font-bold shadow-sm' : ''}`}
               onClick={() => {
                 setActiveSection('compras');
                 setFilterEstadoPrestamo('todos');
               }}
               style={
                 activeSection === 'compras'
-                  ? { borderBottom: '2px solid #22c55e' }
+                  ? { backgroundColor: '#abd037', color: '#013a52', fontWeight: 700 }
                   : comprasPendientesCount > 0
-                    ? { borderBottom: '2px solid #16a34a' }
+                    ? { borderBottom: '2px solid #abd037' }
                     : {}
               }
             >
               <span className="inline-flex items-center gap-1.5">
-                <ShoppingCart size={15} style={{ color: activeSection === 'compras' ? '#22c55e' : 'inherit' }} />
+                <ShoppingCart size={15} style={{ color: activeSection === 'compras' ? '#013a52' : 'inherit' }} />
                 <span>Compras y Adquisiciones</span>
               </span>
               {comprasPendientesCount > 0 ? (
                 <span
-                  className="tab-badge"
+                  className={`tab-badge ${activeSection === 'compras' ? 'bg-[#013a52] text-white font-bold px-2.5 py-0.5 rounded-full text-xs' : 'bg-emerald-600 text-white font-bold'}`}
                   style={{
-                    background: activeSection === 'compras' ? '#ffffff' : '#15803d',
-                    color: activeSection === 'compras' ? '#15803d' : '#ffffff',
+                    background: activeSection === 'compras' ? '#013a52' : '#15803d',
+                    color: '#ffffff',
                     fontWeight: 800,
                   }}
                   title={`${comprasPendientesCount} sugerencias de compra activas o pendientes`}
@@ -1458,12 +1463,16 @@ export default function PrestamosView({
                 </span>
               ) : (
                 <span
-                  className="tab-badge"
-                  style={{
-                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                    color: '#15803d',
-                    border: '1px solid rgba(34, 197, 94, 0.3)',
-                  }}
+                  className={`tab-badge ${activeSection === 'compras' ? 'bg-[#013a52] text-white font-bold px-2.5 py-0.5 rounded-full text-xs' : ''}`}
+                  style={
+                    activeSection === 'compras'
+                      ? { background: '#013a52', color: '#ffffff', fontWeight: 700 }
+                      : {
+                          backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                          color: '#013a52',
+                          border: '1px solid rgba(171, 208, 55, 0.4)',
+                        }
+                  }
                 >
                   {solicitudesCompras.length}
                 </span>
@@ -1473,22 +1482,18 @@ export default function PrestamosView({
         </div>
 
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Botón + Nueva Sede: visible para Administradores y Supervisores */}
+          {/* Botón + Nueva Sede: visible para Administradores y Supervisores (#2CACD0) */}
           {(isAdmin || isSupervisor) && (
             <button
               type="button"
-              className="btn small"
+              className="btn small bg-[#2CACD0]/10 text-[#013a52] dark:text-[#2CACD0] border border-[#2CACD0]/40 font-bold"
               onClick={() => setShowSedeModal(true)}
               style={{
-                background: 'rgba(56, 189, 248, 0.1)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                color: '#38bdf8',
-                fontWeight: 600,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
                 padding: '6px 12px',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
@@ -1501,22 +1506,24 @@ export default function PrestamosView({
 
           {!isSupervisor && (
             <>
+              {/* Botón + Proyecto STEAM (#7b2cbf) */}
               <button
                 type="button"
-                className="btn small"
+                className="btn small bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/30 font-bold"
                 onClick={() => setShowProyectoModal(true)}
                 style={{
-                  background: 'rgba(132, 204, 22, 0.12)',
-                  border: '1px solid rgba(132, 204, 22, 0.45)',
-                  color: '#84CC16',
-                  fontWeight: 600,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 + Proyecto STEAM
               </button>
+              {/* Botón + Nuevo préstamo (#abd037) */}
               <button
                 type="button"
                 className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
@@ -1524,10 +1531,20 @@ export default function PrestamosView({
               >
                 + Nuevo préstamo
               </button>
+              {/* Botón + Entregar Consumibles (#0A3C63) */}
               <button
                 type="button"
-                className="btn small btn-secondary"
+                className="btn small bg-[#0A3C63] hover:bg-[#013a52] text-white font-bold shadow-sm border border-[#0A3C63]"
                 onClick={() => setShowDeliveryModal(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
               >
                 + Entregar Consumibles
               </button>
@@ -2620,9 +2637,9 @@ export default function PrestamosView({
       {(activeSection === 'compras' || activeSection === 'all') && (isAdmin || isSupervisor) && (
         <section>
           <div className="section-header" style={{ marginBottom: '16px' }}>
-            <div className="flex flex-wrap items-center gap-3 mb-2" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <h2 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
-                <ShoppingCart size={22} style={{ color: '#16a34a' }} />
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <h2 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800, color: 'var(--text-h)' }}>
+                <ShoppingCart size={22} style={{ color: '#abd037' }} />
                 <span>Bandeja de Compras y Adquisiciones</span>
               </h2>
               <span
@@ -3292,9 +3309,9 @@ export default function PrestamosView({
               </div>
             ) : (
               <table style={{ width: '100%', tableLayout: 'auto' }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: '42px', minWidth: '42px', textAlign: 'center', padding: '10px 8px' }}>
+                <thead className="border-b-2 border-[#abd037]" style={{ borderBottom: '2px solid #abd037' }}>
+                  <tr style={{ borderBottom: '2px solid #abd037' }}>
+                    <th style={{ width: '42px', minWidth: '42px', textAlign: 'center', padding: '10px 8px', borderBottom: '2px solid #abd037' }}>
                       <input
                         type="checkbox"
                         aria-label="Seleccionar todos los visibles"
@@ -3307,18 +3324,18 @@ export default function PrestamosView({
                           cursor: 'pointer',
                           width: '16px',
                           height: '16px',
-                          accentColor: '#10b981',
+                          accentColor: '#abd037',
                           verticalAlign: 'middle',
                         }}
                       />
                     </th>
-                    <th style={{ width: '140px', minWidth: '130px' }}>Fecha / Requerido Para</th>
-                    <th style={{ minWidth: '160px' }}>Solicitante / Sede Destino</th>
-                    <th style={{ width: '150px' }}>Categoría</th>
-                    <th style={{ minWidth: '240px' }}>Productos Sugeridos y Links</th>
-                    <th style={{ width: '130px' }}>Presupuesto Est.</th>
-                    <th style={{ width: '140px', textAlign: 'center' }}>Estado de Compra</th>
-                    <th style={{ width: '150px', textAlign: 'center' }}>Acciones</th>
+                    <th style={{ width: '140px', minWidth: '130px', color: '#013a52', fontWeight: 700, fontFamily: 'var(--font-sans)', borderBottom: '2px solid #abd037' }} className="dark:text-slate-200">Fecha / Requerido Para</th>
+                    <th style={{ minWidth: '160px', color: '#013a52', fontWeight: 700, fontFamily: 'var(--font-sans)', borderBottom: '2px solid #abd037' }} className="dark:text-slate-200">Solicitante / Sede Destino</th>
+                    <th style={{ width: '150px', color: '#013a52', fontWeight: 700, fontFamily: 'var(--font-sans)', borderBottom: '2px solid #abd037' }} className="dark:text-slate-200">Categoría</th>
+                    <th style={{ minWidth: '240px', color: '#013a52', fontWeight: 700, fontFamily: 'var(--font-sans)', borderBottom: '2px solid #abd037' }} className="dark:text-slate-200">Productos Sugeridos y Links</th>
+                    <th style={{ width: '130px', color: '#013a52', fontWeight: 700, fontFamily: 'var(--font-sans)', borderBottom: '2px solid #abd037' }} className="dark:text-slate-200">Presupuesto Est.</th>
+                    <th style={{ width: '140px', textAlign: 'center', color: '#013a52', fontWeight: 700, fontFamily: 'var(--font-sans)', borderBottom: '2px solid #abd037' }} className="dark:text-slate-200">Estado de Compra</th>
+                    <th style={{ width: '150px', textAlign: 'center', color: '#013a52', fontWeight: 700, fontFamily: 'var(--font-sans)', borderBottom: '2px solid #abd037' }} className="dark:text-slate-200">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3545,25 +3562,10 @@ export default function PrestamosView({
                                 setSolicitudParaGestionar(sol);
                                 setModalGestionOpen(true);
                               }}
-                              className="btn small"
-                              className="btn small font-bold transition-all shadow-sm"
-                              style={{
-                                backgroundColor: '#22c55e',
-                                color: '#ffffff',
-                                fontWeight: 700,
-                                padding: '6px 14px',
-                                fontSize: '11.5px',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                border: '1px solid #16a34a',
-                                boxShadow: '0 2px 6px rgba(34, 197, 94, 0.3)',
-                              }}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#013a52] hover:bg-[#0A3C63] text-white transition-all shadow-sm cursor-pointer border border-[#013a52]"
                               title="Gestionar sugerencia de compra e ingresar ítems al inventario"
                             >
-                              <PackagePlus size={13} />
+                              <PackagePlus size={14} style={{ color: '#abd037' }} />
                               <span>Gestionar / Ingresar</span>
                             </button>
                           </td>
