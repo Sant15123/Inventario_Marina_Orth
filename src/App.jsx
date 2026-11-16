@@ -1165,8 +1165,14 @@ function App() {
                   )}
                 </main>
 
-                <footer>
-                  Registro interno · Fundación Marina Orth · Robótica & Nuevas Tecnologías · {fmtDate(today())}
+                <footer className="app-footer w-full mt-auto">
+                  <div style={{ padding: '16px 24px', textAlign: 'center', fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                    Registro interno · Fundación Marina Orth · Robótica &amp; Nuevas Tecnologías · {fmtDate(today())}
+                  </div>
+                  <div className="h-2 w-full flex" aria-hidden="true" style={{ display: 'flex', height: '8px', width: '100%' }}>
+                    <div style={{ width: '75%', backgroundColor: '#abd037' }} className="w-[75%] bg-[#abd037]" />
+                    <div style={{ width: '25%', backgroundColor: '#7b2cbf' }} className="w-[25%] bg-[#7b2cbf]" />
+                  </div>
                 </footer>
               </div>
             </div>

@@ -67,7 +67,7 @@ export default function Sidebar({ currentView, onViewChange }) {
   return (
     <aside className="sidebar">
       <div>
-        <div className="sidebar-header">
+        <div className="sidebar-header p-5">
           <div className="brand-badge">
             <img
               src="/logo-marina-orth.png"
@@ -75,8 +75,9 @@ export default function Sidebar({ currentView, onViewChange }) {
               className="brand-logo-img"
             />
             <div className="brand-text-wrap">
-              <span className="brand-title">Marina Orth Foundation</span>
-              <span className="brand-subtitle">Robótica & Innovación</span>
+              <span className="brand-title">MARINA ORTH FOUNDATION</span>
+              <div className="brand-divider" aria-hidden="true" />
+              <span className="brand-subtitle">EDUCATING FOR THE FUTURE</span>
             </div>
           </div>
         </div>
@@ -90,7 +91,11 @@ export default function Sidebar({ currentView, onViewChange }) {
                   <button
                     type="button"
                     onClick={() => onViewChange(item.id)}
-                    className={`nav-item-btn ${isActive ? 'active' : ''}`}
+                    className={`nav-item-btn ${
+                      isActive
+                        ? 'active bg-[#abd037]/20 text-[#013a52] font-bold dark:bg-[#abd037] dark:text-[#013a52]'
+                        : 'text-[#6d6e71] hover:text-[#013a52] dark:text-slate-300 dark:hover:text-[#abd037]'
+                    }`}
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <span className="dot" aria-hidden="true"></span>
@@ -106,7 +111,7 @@ export default function Sidebar({ currentView, onViewChange }) {
 
       <div className="sidebar-footer">
         <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-dim)' }}>
-          Rol activo: <strong style={{ color: '#84CC16', textTransform: 'capitalize' }}>{currentUser?.rol}</strong>
+          Rol activo: <strong style={{ color: '#abd037', textTransform: 'capitalize' }}>{currentUser?.rol}</strong>
         </div>
         <p>Sistema Interno de Inventario</p>
         <p style={{ marginTop: '2px', opacity: 0.7 }}>v2.0 • React + Vite</p>

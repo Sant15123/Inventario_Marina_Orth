@@ -6,38 +6,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Paleta corporativa Marina Orth (#84CC16 & #FFFFFF) */
-  --color-primary: #84CC16;
-  --color-primary-hover: #65A30D;
+  /* Paleta corporativa Marina Orth (#abd037 & #FFFFFF) */
+  --color-primary: #abd037;
+  --color-primary-hover: #96bc28;
   --color-white: #FFFFFF;
 
-  /* Paleta base institucional moderna (Dark Mode por defecto) */
-  --bg: #0f172a;
-  /* Slate 900 */
-  --bg-alt: #0b1120;
-  /* Slate 950 */
-  --surface: #1e293b;
-  /* Slate 800 */
-  --surface-2: #273549;
-  /* Slate 750 */
-  --surface-hover: #334155;
-  /* Slate 700 */
-  --line: #334155;
-  /* Border subtle */
-  --line-strong: #475569;
+  /* Paleta base institucional moderna (Dark Mode Institucional FMO #013a52 & #062838) */
+  --bg: #013a52;
+  /* Azul Complementario FMO */
+  --bg-alt: #012b3d;
+  --surface: #062838;
+  /* Contenedores Dark FMO */
+  --surface-2: #093448;
+  --surface-hover: #0d425c;
+  --line: #0d4661;
+  --line-strong: #155779;
 
-  --text: #f8fafc;
-  /* Slate 50 */
-  --text-dim: #94a3b8;
-  /* Slate 400 */
-  --text-muted: #64748b;
-  /* Slate 500 */
+  --text: #ffffff;
+  /* Blanco puro */
+  --text-dim: #cbd5e1;
+  --text-muted: #94a3b8;
 
-  /* Acentos de marca e interactividad (Verde Lima Corporativo) */
-  --copper: #84CC16;
-  --copper-hover: #65A30D;
-  --copper-ink: #0f172a;
-  --copper-glow: rgba(132, 204, 22, 0.28);
+  /* Acentos de marca e interactividad (Verde FMO #abd037) */
+  --copper: #abd037;
+  --copper-hover: #96bc28;
+  --copper-ink: #013a52;
+  --copper-glow: rgba(171, 208, 55, 0.28);
+  --accent: #abd037;
 
   /* Estados y Badges con alto contraste */
   --green: #84CC16;
@@ -79,14 +74,15 @@
   --line: #e2e8f0;
   --line-strong: #cbd5e1;
 
-  --text: #0f172a;
-  --text-dim: #475569;
-  --text-muted: #64748b;
+  --text: #013a52;
+  --text-dim: #6d6e71;
+  --text-muted: #6d6e71;
 
-  --copper: #84CC16;
-  --copper-hover: #65A30D;
-  --copper-ink: #0f172a;
-  --copper-glow: rgba(132, 204, 22, 0.3);
+  --copper: #abd037;
+  --copper-hover: #96bc28;
+  --copper-ink: #013a52;
+  --copper-glow: rgba(171, 208, 55, 0.3);
+  --accent: #abd037;
 
   --green: #4d7c0f;
   --green-bg: #ecfccb;
@@ -135,17 +131,20 @@
 
 [data-theme="light"] .header-search input:focus {
   background: #ffffff;
-  border-color: #84CC16;
-  box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.25);
+  border-color: #013a52;
+  box-shadow: 0 0 0 2px #abd037;
 }
 
 [data-theme="light"] .brand-title {
-  color: #0f172a;
+  color: #6d6e71;
+  font-family: var(--font-sans);
+  font-weight: 700;
 }
 
 [data-theme="light"] .brand-subtitle {
-  color: #4d7c0f;
-  font-weight: 700;
+  color: #abd037;
+  font-family: var(--font-sans);
+  font-weight: 500;
 }
 
 [data-theme="light"] .brand-icon-wrap {
@@ -206,28 +205,31 @@
 }
 
 [data-theme="light"] .nav-item-btn {
-  color: #475569;
+  color: #6d6e71;
 }
 
 [data-theme="light"] .nav-item-btn:hover:not(.active) {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(171, 208, 55, 0.08);
+  color: #013a52;
 }
 
 [data-theme="light"] .nav-item-btn.active {
-  background: #ecfccb;
-  color: #14532d;
-  border-color: #84CC16;
-  box-shadow: 0 2px 8px rgba(132, 204, 22, 0.2);
+  background: #abd037;
+  color: #013a52;
+  font-weight: 700;
+  border: 1px solid #abd037;
+  box-shadow: 0 2px 10px rgba(171, 208, 55, 0.3);
 }
 
-[data-theme="light"] .nav-item-btn.active .dot {
-  background: #84CC16;
-  box-shadow: 0 0 6px #84CC16;
+.nav-item-btn.active .dot {
+  background: #013a52;
+  box-shadow: 0 0 6px rgba(1, 58, 82, 0.5);
+  transform: scale(1.2);
 }
 
-[data-theme="light"] .nav-item-btn.active .nav-icon {
-  color: #4d7c0f;
+.nav-item-btn.active .nav-icon {
+  opacity: 1;
+  color: #013a52;
 }
 
 [data-theme="light"] .btn.secondary {
@@ -465,7 +467,7 @@ h4 {
 }
 
 .sidebar-header {
-  padding-bottom: 20px;
+  padding: 20px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -485,7 +487,7 @@ h4 {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0f172a;
+  color: #013a52;
   font-weight: 900;
   font-size: 18px;
   box-shadow: 0 4px 14px var(--copper-glow);
@@ -493,35 +495,57 @@ h4 {
 }
 
 .brand-logo-img {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   border-radius: 50%;
   filter: drop-shadow(0 3px 8px var(--copper-glow));
   flex-shrink: 0;
   background: #ffffff;
-  padding: 1px;
+  padding: 2px;
 }
 
 .brand-text-wrap {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .brand-title {
-  font-size: 14.5px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: #6d6e71;
   line-height: 1.25;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="dark"] .brand-title,
+html.dark .brand-title {
+  color: #ffffff;
+}
+
+.brand-divider {
+  height: 1px;
+  width: 100%;
+  background: rgba(109, 110, 113, 0.2);
+  margin: 4px 0;
+}
+
+[data-theme="dark"] .brand-divider,
+html.dark .brand-divider {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .brand-subtitle {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--copper);
-  letter-spacing: 0.05em;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  color: #abd037;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-top: 2px;
+  margin-top: 1px;
+  line-height: 1.2;
 }
 
 .nav-menu {
@@ -1221,16 +1245,23 @@ h4 {
   line-height: 1.2;
 }
 
-/* Rol: Administrador */
+/* Rol: Administrador (FMO Morado Estratégico) */
 .badge-role.administrador {
-  background: rgba(99, 102, 241, 0.18);
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #a5b4fc;
+  background: rgba(123, 44, 191, 0.1);
+  border-color: rgba(123, 44, 191, 0.25);
+  color: #7b2cbf;
+  font-weight: 700;
 }
 [data-theme="light"] .badge-role.administrador {
-  background: #e0e7ff;
-  border-color: #c7d2fe;
-  color: #4338ca;
+  background: rgba(123, 44, 191, 0.1);
+  border-color: rgba(123, 44, 191, 0.25);
+  color: #7b2cbf;
+}
+[data-theme="dark"] .badge-role.administrador,
+html.dark .badge-role.administrador {
+  background: rgba(123, 44, 191, 0.25);
+  border-color: rgba(123, 44, 191, 0.45);
+  color: #c084fc;
 }
 
 /* Rol: Supervisor */
@@ -1247,8 +1278,8 @@ h4 {
 
 /* Rol: Operador */
 .badge-role.operador {
-  background: rgba(132, 204, 22, 0.18);
-  border-color: rgba(132, 204, 22, 0.4);
+  background: rgba(171, 208, 55, 0.18);
+  border-color: rgba(171, 208, 55, 0.4);
   color: #bef264;
 }
 [data-theme="light"] .badge-role.operador {
@@ -1257,16 +1288,23 @@ h4 {
   color: #4d7c0f;
 }
 
-/* Rol: Usuario */
+/* Rol: Usuario (FMO Cyan Institucional #2CACD0 & Azul Complementario #013a52) */
 .badge-role.usuario {
-  background: rgba(14, 165, 233, 0.18);
-  border-color: rgba(14, 165, 233, 0.4);
-  color: #7dd3fc;
+  background: rgba(44, 172, 208, 0.15);
+  border-color: rgba(44, 172, 208, 0.3);
+  color: #013a52;
+  font-weight: 700;
 }
 [data-theme="light"] .badge-role.usuario {
-  background: #e0f2fe;
-  border-color: #bae6fd;
-  color: #0369a1;
+  background: rgba(44, 172, 208, 0.15);
+  border-color: rgba(44, 172, 208, 0.3);
+  color: #013a52;
+}
+[data-theme="dark"] .badge-role.usuario,
+html.dark .badge-role.usuario {
+  background: rgba(44, 172, 208, 0.2);
+  border-color: rgba(44, 172, 208, 0.4);
+  color: #2CACD0;
 }
 
 /* --------------------------------------------------------------------------
@@ -4794,4 +4832,101 @@ html.dark .dark\:text-emerald-400 {
 }
 .max-w-sm {
   max-width: 24rem !important;
+}
+
+/* ==========================================================================
+   FASE 2 MARCA OFICIAL FMO - IDENTIDAD DE INTERFAZ & MODO OSCURO
+   ========================================================================== */
+
+[data-theme="dark"],
+html.dark {
+  --bg: #013a52;
+  --bg-alt: #012b3d;
+  --surface: #062838;
+  --surface-2: #093448;
+  --surface-hover: #0d425c;
+  --line: #0d4661;
+  --line-strong: #155779;
+  --text: #ffffff;
+  --text-dim: #cbd5e1;
+  --text-muted: #94a3b8;
+  --copper: #abd037;
+  --copper-hover: #96bc28;
+  --copper-ink: #013a52;
+  --copper-glow: rgba(171, 208, 55, 0.28);
+  --accent: #abd037;
+  --green: #abd037;
+  --border: #0d4661;
+  --bg-card: #062838;
+  --surface-modal: #062838;
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] .layout,
+[data-theme="dark"] .main-wrapper,
+html.dark body,
+html.dark .layout,
+html.dark .main-wrapper {
+  background-color: #013a52 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .sidebar,
+html.dark .sidebar {
+  background: #062838 !important;
+  border-right-color: #0d4661 !important;
+}
+
+[data-theme="dark"] .header-bar,
+html.dark .header-bar {
+  background: #062838 !important;
+  border-bottom-color: #0d4661 !important;
+}
+
+[data-theme="dark"] .header-search input,
+html.dark .header-search input {
+  background: #093448 !important;
+  border-color: #0d4661 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .header-search input:focus,
+html.dark .header-search input:focus {
+  background: #093448 !important;
+  border-color: #013a52 !important;
+  box-shadow: 0 0 0 2px #abd037 !important;
+}
+
+.header-search-input:focus {
+  outline: none;
+  border-color: #013a52 !important;
+  box-shadow: 0 0 0 2px #abd037 !important;
+}
+
+/* Botón Excel Cabecera Institucional */
+.btn-excel-header {
+  border: 1px solid #abd037 !important;
+  background: rgba(171, 208, 55, 0.15) !important;
+  color: #013a52 !important;
+  font-weight: 700 !important;
+}
+
+.btn-excel-header:hover {
+  background: #abd037 !important;
+  color: #013a52 !important;
+}
+
+[data-theme="dark"] .btn-excel-header,
+html.dark .btn-excel-header {
+  border-color: #abd037 !important;
+  background: #abd037 !important;
+  color: #013a52 !important;
+}
+
+/* Pie de página institucional FMO */
+.app-footer {
+  width: 100%;
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
 }

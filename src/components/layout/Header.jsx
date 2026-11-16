@@ -69,16 +69,16 @@ export default function Header({
 
   // Estilos de badge de rol
   const getRolBadgeClass = (rol) => {
-    switch (rol) {
+    switch (rol?.toLowerCase()) {
       case 'administrador':
-        return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800';
+        return 'bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 font-bold';
       case 'supervisor':
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+        return 'bg-amber-100 text-amber-800 border border-amber-300 font-bold dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60';
       case 'operador':
-        return 'bg-lime-100 text-lime-800 dark:bg-lime-950/70 dark:text-[#84CC16] border-lime-300 dark:border-lime-700/60';
+        return 'bg-[#abd037]/15 text-[#4d7c0f] border border-[#abd037]/40 font-bold dark:bg-[#abd037]/25 dark:text-[#abd037]';
       case 'usuario':
       default:
-        return 'bg-sky-100 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200 dark:border-sky-800';
+        return 'bg-[#2CACD0]/15 text-[#013a52] dark:text-[#2CACD0] border border-[#2CACD0]/30 font-bold';
     }
   };
 
@@ -97,6 +97,7 @@ export default function Header({
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           aria-label="Buscar en el inventario"
+          className="header-search-input focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] outline-none"
         />
       </div>
 
@@ -130,7 +131,7 @@ export default function Header({
               <span className="user-profile-name">
                 {currentUser?.nombre}
               </span>
-              <span className={`badge-role ${currentUser?.rol || 'usuario'}`}>
+              <span className={`badge-role ${currentUser?.rol || 'usuario'} ${getRolBadgeClass(currentUser?.rol)}`}>
                 {currentUser?.rol}
               </span>
             </div>
@@ -166,7 +167,7 @@ export default function Header({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                  <span className={`badge-role ${currentUser?.rol || 'usuario'}`}>
+                  <span className={`badge-role ${currentUser?.rol || 'usuario'} ${getRolBadgeClass(currentUser?.rol)}`}>
                     {currentUser?.rol}
                   </span>
                   <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
@@ -238,7 +239,7 @@ export default function Header({
           >
             <span className="theme-toggle-icon" aria-hidden="true">
               {isDark ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#84CC16" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#abd037" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="5"></circle>
                   <line x1="12" y1="1" x2="12" y2="3"></line>
                   <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -250,7 +251,7 @@ export default function Header({
                   <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                 </svg>
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#013a52" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </svg>
               )}
@@ -264,10 +265,10 @@ export default function Header({
           <button
             type="button"
             onClick={onExportExcel}
-            className="btn secondary small"
+            className="btn-excel-header flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#abd037] bg-[#abd037]/15 hover:bg-[#abd037] text-[#013a52] font-bold transition-all text-xs shadow-sm cursor-pointer group"
             title="Descargar reporte consolidado en formato Excel"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[#013a52] group-hover:scale-105 transition-transform">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
