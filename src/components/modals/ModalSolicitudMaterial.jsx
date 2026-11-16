@@ -142,6 +142,13 @@ export default function ModalSolicitudMaterial({
       setValidationError('Ingresa el nombre o especificación del producto sugerido.');
       return;
     }
+
+    const urlTrimmed = (compraForm.url || '').trim();
+    if (!urlTrimmed || !/^https?:\/\//i.test(urlTrimmed)) {
+      setValidationError('Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
+      return;
+    }
+
     const qty = parseInt(compraForm.cantidad, 10);
     if (isNaN(qty) || qty <= 0) {
       setValidationError('La cantidad debe ser mayor a 0.');
@@ -161,7 +168,7 @@ export default function ModalSolicitudMaterial({
       nombre_item: compraForm.nombre.trim(),
       nombre_sugerido: compraForm.nombre.trim(),
       categoria_sugerida: catDestino, // 'consumibles' | 'papeleria'
-      url_compra: compraForm.url.trim() || null,
+      url_compra: urlTrimmed,
       precio_estimado: precioNum || 0,
       cantidad: qty,
       unidad: 'und',
@@ -201,6 +208,11 @@ export default function ModalSolicitudMaterial({
     let itemsParaEnviar = [...itemsSolicitud];
     if (itemsParaEnviar.length === 0) {
       if (esCompra && compraForm.nombre.trim()) {
+        const urlTrimmed = (compraForm.url || '').trim();
+        if (!urlTrimmed || !/^https?:\/\//i.test(urlTrimmed)) {
+          setValidationError('Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
+          return;
+        }
         const qty = parseInt(compraForm.cantidad, 10) || 1;
         const precioNum = compraForm.precio ? parseFloat(compraForm.precio) : 0;
         const catDestino = compraForm.categoria === 'papeleria' ? 'papeleria' : 'consumibles';
@@ -210,7 +222,7 @@ export default function ModalSolicitudMaterial({
           nombre_item: compraForm.nombre.trim(),
           nombre_sugerido: compraForm.nombre.trim(),
           categoria_sugerida: catDestino,
-          url_compra: compraForm.url.trim() || null,
+          url_compra: urlTrimmed,
           precio_estimado: precioNum || 0,
           cantidad: qty,
           unidad: 'und',
@@ -219,7 +231,22 @@ export default function ModalSolicitudMaterial({
         itemsParaEnviar = [nuevoItem];
         setItemsSolicitud(itemsParaEnviar);
       } else {
-        setValidationError('Debes agregar al menos un artículo a la solicitud.');
+        setValidationError(
+          esCompra
+            ? 'Debes ingresar un producto y su enlace de compra válido (https://...) para sugerir material.'
+            : 'Debes agregar al menos un artículo a la solicitud.'
+        );
+        return;
+      }
+    }
+
+    if (tipoSolicitud === 'SUGERENCIA_COMPRA' || esCompra) {
+      const itemInvalido = itemsParaEnviar.find((item) => {
+        const u = (item.url_compra || '').trim();
+        return !u || !/^https?:\/\//i.test(u);
+      });
+      if (itemInvalido) {
+        setValidationError('Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
         return;
       }
     }
@@ -261,13 +288,14 @@ export default function ModalSolicitudMaterial({
       if (tipoSolicitud === 'SUGERENCIA_COMPRA') {
         const registrosCompra = itemsParaEnviar.map((item) => {
           const catDestino = (item.categoria_sugerida || item.categoria_destino || item.categoria) === 'papeleria' ? 'papeleria' : 'consumibles';
+          const urlValida = (item.url_compra || '').trim();
           return {
             usuario_id: currentUser?.id || currentUser?.documento || null,
             usuario_nombre: currentUser?.nombre_completo || currentUser?.nombre || 'Docente / Custodio',
             sede: sede || 'Medellín',
             categoria_destino: catDestino,
             nombre_producto: item.nombre_sugerido || item.nombre_producto || item.nombre_item || 'Producto sugerido',
-            url_compra: item.url_compra || null,
+            url_compra: urlValida,
             cantidad: Number(item.cantidad) || 1,
             precio_estimado: Number(item.precio_estimado) || 0,
             fecha_requerida: fechaEstimada || null,
@@ -364,7 +392,7 @@ export default function ModalSolicitudMaterial({
             cantidad: Number(item.cantidad) || 1,
             nombre_sugerido: item.nombre_sugerido || item.nombre_item || 'Artículo sugerido',
             categoria_sugerida: cat, // 'consumibles' o 'papeleria'
-            url_compra: item.url_compra || null,
+            url_compra: (item.url_compra || '').trim(),
             precio_estimado: Number(item.precio_estimado) || 0,
             ingresado_inventario: false,
           };
@@ -838,14 +866,18 @@ export default function ModalSolicitudMaterial({
                 {/* Fila 2: Enlace de compra con botón lateral Probar */}
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Enlace de Compra (URL de referencia)
+                    Enlace De Compra (URL De Referencia) *
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
                       <input
                         type="url"
+                        required={itemsSolicitud.length === 0}
                         value={compraForm.url}
-                        onChange={(e) => setCompraForm({ ...compraForm, url: e.target.value })}
+                        onChange={(e) => {
+                          setCompraForm({ ...compraForm, url: e.target.value });
+                          if (validationError) setValidationError('');
+                        }}
                         placeholder="https://articulo.mercadolibre.com.co/... o tienda virtual"
                         className="w-full rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         style={{
