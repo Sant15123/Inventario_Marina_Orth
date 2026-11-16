@@ -1,3 +1,4 @@
+import FmoSignatureMotif from '../components/common/FmoSignatureMotif';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -179,6 +180,7 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
           margin: 'auto',
           padding: '2rem',
           position: 'relative',
+          overflow: 'hidden',
           borderRadius: '1rem',
           boxSizing: 'border-box',
           backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
@@ -191,6 +193,16 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
           transition: 'background-color 0.2s ease, border-color 0.2s ease',
         }}
       >
+        {/* Recurso Gráfico Oficial FMO - Trazo Manuscrito Orth (Página 22) */}
+        <FmoSignatureMotif
+          color="#abd037"
+          opacity={isDark ? 0.12 : 0.15}
+          className="absolute -right-12 -bottom-12 pointer-events-none"
+          width={240}
+          height={160}
+          variant="ribbon"
+        />
+
         {/* Botón de tema adicional dentro de la tarjeta */}
         <button
           type="button"

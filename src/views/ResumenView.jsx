@@ -1,3 +1,4 @@
+import FmoSignatureMotif from '../components/common/FmoSignatureMotif';
 import { getCategoryBadgeClass } from '../services/fmoBranding';
 import { useState, useEffect } from 'react';
 import { fmtDate, available, isOverdue, getDaysDiff, today } from '../services/mockData';
@@ -221,9 +222,9 @@ export default function ResumenView({
     <div className="resumen-container">
       {/* 4 TARJETAS KPI SUPERIORES */}
       <div className="stats">
-        {/* KPI 1: Materiales y Equipos */}
+        {/* KPI 1: Materiales y Equipos (Tarjeta Destacada de Impacto FMO) */}
         <div
-          className="stat cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md"
+          className="stat fmo-impact-featured cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl relative overflow-hidden"
           role="button"
           tabIndex={0}
           onClick={() => {
@@ -238,23 +239,32 @@ export default function ResumenView({
           }}
           title="Ver todos los materiales y equipos en Inventario"
         >
-          <div className="stat-header">
-            <span className="stat-icon" aria-hidden="true">📦</span>
-            <span className="pill default">Total</span>
+          {/* Recurso Gráfico Oficial FMO - Trazo Manuscrito Orth (Pág. 22) */}
+          <FmoSignatureMotif
+            color="#abd037"
+            opacity={0.18}
+            className="absolute -right-6 -bottom-6 pointer-events-none"
+            width={180}
+            height={110}
+            variant="ribbon"
+          />
+          <div className="stat-header relative z-10">
+            <span className="stat-icon" aria-hidden="true" style={{ background: 'rgba(171, 208, 55, 0.2)', color: '#abd037', borderRadius: '10px', padding: '4px 6px' }}>📦</span>
+            <span className="pill default" style={{ backgroundColor: '#abd037', color: '#013a52', fontWeight: 800 }}>Total FMO</span>
           </div>
-          <div className="num mono-num">
+          <div className="num mono-num relative z-10" style={{ color: '#abd037', fontWeight: 900, fontFamily: "'Poppins', sans-serif", fontSize: '32px' }}>
             {showKpiSkeleton ? (
               <span className="kpi-skeleton-box animate-pulse" style={{ width: '48px', height: '32px' }} />
             ) : (
               totalItemsCount
             )}
           </div>
-          <div className="lbl">Materiales y Equipos registrados</div>
+          <div className="lbl relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 600 }}>Materiales y Equipos registrados</div>
         </div>
 
-        {/* KPI 2: En stock mínimo */}
+        {/* KPI 2: En stock mínimo (Robótica & Consumibles Críticos) */}
         <div
-          className={`stat ${stockCriticoCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
+          className={`stat fmo-card-robotica ${stockCriticoCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden`}
           role="button"
           tabIndex={0}
           onClick={() => {
@@ -269,7 +279,16 @@ export default function ResumenView({
           }}
           title="Ver consumibles en stock mínimo en Inventario"
         >
-          <div className="stat-header">
+          {/* Recurso Gráfico Oficial FMO */}
+          <FmoSignatureMotif
+            color="#6d6e71"
+            opacity={0.08}
+            className="absolute -right-6 -bottom-6 pointer-events-none"
+            width={160}
+            height={100}
+            variant="flourish"
+          />
+          <div className="stat-header relative z-10">
             <span className="stat-icon" aria-hidden="true">⚠️</span>
             {showKpiSkeleton ? (
               <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
@@ -279,19 +298,19 @@ export default function ResumenView({
               <span className="pill ok">Óptimo</span>
             )}
           </div>
-          <div className="num mono-num">
+          <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
             {showKpiSkeleton ? (
               <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
             ) : (
               stockCriticoCount
             )}
           </div>
-          <div className="lbl">En stock mínimo o por debajo</div>
+          <div className="lbl relative z-10">En stock mínimo o por debajo</div>
         </div>
 
-        {/* KPI 3: Préstamos activos */}
+        {/* KPI 3: Préstamos activos (Cómputo & Nuevas Tecnologías) */}
         <div
-          className="stat highlight cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md"
+          className="stat fmo-card-computo cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden"
           role="button"
           tabIndex={0}
           onClick={() => {
@@ -306,27 +325,36 @@ export default function ResumenView({
           }}
           title="Ver préstamos activos en Préstamos y entregas"
         >
-          <div className="stat-header">
+          {/* Recurso Gráfico Oficial FMO */}
+          <FmoSignatureMotif
+            color="#013a52"
+            opacity={0.08}
+            className="absolute -right-6 -bottom-6 pointer-events-none"
+            width={160}
+            height={100}
+            variant="curve"
+          />
+          <div className="stat-header relative z-10">
             <span className="stat-icon" aria-hidden="true">🔄</span>
             {showKpiSkeleton ? (
               <span className="kpi-skeleton-box animate-pulse" style={{ width: '60px', height: '18px', borderRadius: '999px' }} />
             ) : (
-              <span className="pill prestado">En campo</span>
+              <span className="pill prestado" style={{ backgroundColor: 'rgba(44, 172, 208, 0.15)', color: '#013a52', borderColor: 'rgba(44, 172, 208, 0.35)', fontWeight: 700 }}>En campo</span>
             )}
           </div>
-          <div className="num mono-num">
+          <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
             {showKpiSkeleton ? (
               <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
             ) : (
               prestamosActivosCount
             )}
           </div>
-          <div className="lbl">Préstamos activos</div>
+          <div className="lbl relative z-10">Préstamos activos</div>
         </div>
 
-        {/* KPI 4: Préstamos vencidos */}
+        {/* KPI 4: Préstamos vencidos (TeachLabs / Seguimiento) */}
         <div
-          className={`stat ${prestamosVencidosCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md`}
+          className={`stat fmo-card-teachlabs ${prestamosVencidosCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden`}
           role="button"
           tabIndex={0}
           onClick={() => {
@@ -341,7 +369,16 @@ export default function ResumenView({
           }}
           title="Ver préstamos vencidos en Préstamos y entregas"
         >
-          <div className="stat-header">
+          {/* Recurso Gráfico Oficial FMO */}
+          <FmoSignatureMotif
+            color="#7b2cbf"
+            opacity={0.10}
+            className="absolute -right-6 -bottom-6 pointer-events-none"
+            width={160}
+            height={100}
+            variant="flourish"
+          />
+          <div className="stat-header relative z-10">
             <span className="stat-icon" aria-hidden="true">⏰</span>
             {showKpiSkeleton ? (
               <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
@@ -351,14 +388,14 @@ export default function ResumenView({
               <span className="pill ok">Al día</span>
             )}
           </div>
-          <div className="num mono-num">
+          <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
             {showKpiSkeleton ? (
               <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
             ) : (
               prestamosVencidosCount
             )}
           </div>
-          <div className="lbl">Préstamos vencidos</div>
+          <div className="lbl relative z-10">Préstamos vencidos</div>
         </div>
       </div>
 
