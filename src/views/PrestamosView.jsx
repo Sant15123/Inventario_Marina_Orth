@@ -64,8 +64,15 @@ const renderTipoSolicitud = (solicitud) => {
       }
     }
 
+    if (etiqueta.includes('Papelería')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 dark:bg-[#7b2cbf]/25 dark:text-[#c084fc]">
+          🛒 {etiqueta}
+        </span>
+      );
+    }
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-700">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
         🛒 {etiqueta}
       </span>
     );
@@ -73,14 +80,14 @@ const renderTipoSolicitud = (solicitud) => {
 
   if (tipo.includes('CONSUMIBLE')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
         📦 Consumibles Robótica
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#2CACD0]/15 text-[#013a52] dark:text-[#2CACD0] border border-[#2CACD0]/40">
       💻 Equipo Retornable
     </span>
   );
@@ -1402,8 +1409,8 @@ export default function PrestamosView({
                 <span
                   className="tab-badge"
                   style={{
-                    background: '#84CC16',
-                    color: '#0B132B',
+                    background: '#abd037',
+                    color: '#013a52',
                     fontWeight: 800,
                   }}
                   title={`${solicitudesPendientesCount} solicitudes estándar pendientes por gestionar`}
@@ -1512,7 +1519,7 @@ export default function PrestamosView({
               </button>
               <button
                 type="button"
-                className="btn small btn-primary"
+                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
                 onClick={() => setShowLoanModal(true)}
               >
                 + Nuevo préstamo
@@ -3405,15 +3412,15 @@ export default function PrestamosView({
                           {/* 3. CATEGORÍA */}
                           <td style={{ padding: '10px 12px' }}>
                             {esPapeleria ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 dark:bg-[#7b2cbf]/25 dark:text-[#c084fc]">
                                 📄 Papelería
                               </span>
                             ) : esMixto ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
                                 📦 Robótica y Papelería
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
                                 🤖 Robótica / Cons.
                               </span>
                             )}

@@ -701,7 +701,7 @@ export default function ModalSolicitudMaterial({
                     }
                   }}
                 >
-                  <Laptop size={16} />
+                  <Laptop size={16} color={tipoSolicitud === "PRESTAMO_EQUIPO" ? "#FFFFFF" : "#6d6e71"} />
                   <span>Equipo Retornable</span>
                 </button>
 
@@ -748,7 +748,7 @@ export default function ModalSolicitudMaterial({
                     }
                   }}
                 >
-                  <Package size={16} />
+                  <Package size={16} color={tipoSolicitud === "CONSUMIBLES" ? "#FFFFFF" : "#6d6e71"} />
                   <span>Consumibles</span>
                 </button>
 
@@ -795,7 +795,7 @@ export default function ModalSolicitudMaterial({
                     }
                   }}
                 >
-                  <ShoppingCart size={16} />
+                  <ShoppingCart size={16} color={esCompra ? "#FFFFFF" : "#6d6e71"} />
                   <span>Sugerencia Compra</span>
                 </button>
               </div>
@@ -1401,7 +1401,7 @@ export default function ModalSolicitudMaterial({
                 color: '#020617',
                 cursor: submitting || itemsSolicitud.length === 0 || !motivo.trim() ? 'not-allowed' : 'pointer',
                 opacity: submitting || itemsSolicitud.length === 0 || !motivo.trim() ? 0.5 : 1,
-                boxShadow: '0 4px 12px rgba(132, 204, 22, 0.25)',
+                boxShadow: '0 4px 12px rgba(171, 208, 55, 0.25)',
               }}
             >
               {submitting ? (

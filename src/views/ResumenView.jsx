@@ -1,3 +1,4 @@
+import { getCategoryBadgeClass } from '../services/fmoBranding';
 import { useState, useEffect } from 'react';
 import { fmtDate, available, isOverdue, getDaysDiff, today } from '../services/mockData';
 import inventoryApi from '../services/inventoryApi';
@@ -417,7 +418,7 @@ export default function ResumenView({
                         </div>
                       </td>
                       <td>
-                        <span className="category-tag">{it.category || 'General'}</span>
+                        <span className={`category-tag ${getCategoryBadgeClass(it.category)}`}>{it.category || 'General'}</span>
                       </td>
                       <td className="mono-num">
                         <span className={`qty-indicator ${isCritical ? 'qty-zero' : 'qty-low'}`}>

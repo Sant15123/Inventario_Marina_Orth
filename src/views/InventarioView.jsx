@@ -2291,7 +2291,7 @@ export default function InventarioView({
         <div className="tab-buttons">
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'equipos' ? 'active' : ''}`}
+            className={`tab-btn tab-equipos ${activeTab === 'equipos' ? 'active' : ''}`}
             onClick={() => setActiveTab('equipos')}
           >
             <span className="tab-icon">💻</span>
@@ -2300,7 +2300,7 @@ export default function InventarioView({
           </button>
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'consumibles' ? 'active' : ''}`}
+            className={`tab-btn tab-consumibles ${activeTab === 'consumibles' ? 'active' : ''}`}
             onClick={() => setActiveTab('consumibles')}
           >
             <span className="tab-icon">🔌</span>
@@ -2309,7 +2309,7 @@ export default function InventarioView({
           </button>
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'papeleria' ? 'active' : ''}`}
+            className={`tab-btn tab-papeleria ${activeTab === 'papeleria' ? 'active' : ''}`}
             onClick={() => setActiveTab('papeleria')}
           >
             <span className="tab-icon">📄</span>
@@ -2332,7 +2332,7 @@ export default function InventarioView({
             activeTab === 'equipos' ? (
               <button
                 type="button"
-                className="btn small btn-primary"
+                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
                 onClick={() => handleOpenCreate('equipo')}
               >
                 + Nuevo Equipo
@@ -2340,7 +2340,7 @@ export default function InventarioView({
             ) : activeTab === 'papeleria' ? (
               <button
                 type="button"
-                className="btn small btn-primary"
+                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
                 onClick={handleOpenCreatePapeleria}
               >
                 + Nuevo Insumo
@@ -2348,7 +2348,7 @@ export default function InventarioView({
             ) : activeTab === 'mobiliario' ? (
               <button
                 type="button"
-                className="btn small btn-primary"
+                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
                 onClick={handleOpenCreateMobiliario}
               >
                 + Nuevo Mobiliario
@@ -2356,7 +2356,7 @@ export default function InventarioView({
             ) : (
               <button
                 type="button"
-                className="btn small btn-primary"
+                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
                 onClick={() => handleOpenCreate('consumible')}
               >
                 + Nuevo Consumible
@@ -3017,7 +3017,7 @@ export default function InventarioView({
                         {/* 2. CATEGORÍA: Tag redondeado */}
                         <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <span
-                            className="category-tag"
+                            className="category-tag robotica bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 font-bold dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]"
                             title={it.categoria || it.category || 'Robótica'}
                             style={{
                               fontSize: '11.5px',

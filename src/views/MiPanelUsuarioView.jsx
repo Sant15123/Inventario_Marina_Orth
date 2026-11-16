@@ -96,8 +96,15 @@ const renderTipoSolicitud = (solicitud) => {
       }
     }
 
+    if (etiqueta.includes('Papelería')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 dark:bg-[#7b2cbf]/25 dark:text-[#c084fc]">
+          🛒 {etiqueta}
+        </span>
+      );
+    }
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
         🛒 {etiqueta}
       </span>
     );
@@ -105,14 +112,14 @@ const renderTipoSolicitud = (solicitud) => {
 
   if (tipo.includes('CONSUMIBLE')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
         📦 Consumibles Robótica
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#2CACD0]/15 text-[#013a52] dark:text-[#2CACD0] border border-[#2CACD0]/40">
       💻 Equipo Retornable
     </span>
   );
@@ -574,7 +581,7 @@ export default function MiPanelUsuarioView({
           <button
             type="button"
             onClick={() => setModalSolicitudOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#84CC16] hover:bg-[#65A30D] text-slate-950 text-sm font-black transition-all shadow-md hover:shadow-lime-500/20 active:scale-95"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] text-sm font-black transition-all shadow-md hover:shadow-lime-500/20 active:scale-95"
           >
             <PackagePlus size={18} />
             <span>+ Solicitar Equipo o Material</span>
@@ -589,7 +596,7 @@ export default function MiPanelUsuarioView({
           onClick={() => setPestanaActiva('equipos')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
             pestanaActiva === 'equipos'
-              ? 'bg-[#84CC16] text-slate-950 shadow-sm'
+              ? 'bg-[#abd037] text-[#013a52] shadow-sm'
               : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
           }`}
         >
@@ -602,7 +609,7 @@ export default function MiPanelUsuarioView({
           onClick={() => setPestanaActiva('consumibles')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
             pestanaActiva === 'consumibles'
-              ? 'bg-[#84CC16] text-slate-950 shadow-sm'
+              ? 'bg-[#abd037] text-[#013a52] shadow-sm'
               : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
           }`}
         >
@@ -615,7 +622,7 @@ export default function MiPanelUsuarioView({
           onClick={() => setPestanaActiva('solicitudes')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
             pestanaActiva === 'solicitudes'
-              ? 'bg-[#84CC16] text-slate-950 shadow-sm'
+              ? 'bg-[#abd037] text-[#013a52] shadow-sm'
               : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
           }`}
         >
@@ -929,7 +936,7 @@ export default function MiPanelUsuarioView({
             <button
               type="button"
               onClick={() => setModalSolicitudOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#84CC16] hover:bg-[#65A30D] text-slate-950 text-xs font-black transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] text-xs font-black transition-all shadow-sm"
             >
               <PackagePlus size={16} />
               <span>+ Nueva Solicitud</span>

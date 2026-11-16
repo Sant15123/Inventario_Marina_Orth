@@ -4930,3 +4930,179 @@ html.dark .btn-excel-header {
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
+
+/* ==========================================================================
+   FASE 3 MARCA OFICIAL FMO - COLORES DE PROGRAMA E ICONOGRAFÍA INSTITUCIONAL
+   ========================================================================== */
+
+/* 1. Regla de Iconografía Institucional:
+   - Neutro / sin fondo: #6d6e71
+   - En contenedor con color sólido de programa: BLANCO (#FFFFFF)
+*/
+.icon-neutral {
+  color: #6d6e71 !important;
+}
+
+.icon-container-solid,
+.icon-container-solid svg,
+.icon-container-robotica,
+.icon-container-robotica svg,
+.icon-container-tecnologia,
+.icon-container-tecnologia svg,
+.icon-container-teachlabs,
+.icon-container-teachlabs svg,
+.icon-container-ingles,
+.icon-container-ingles svg,
+.icon-container-socioemocional,
+.icon-container-socioemocional svg,
+.bg-\[\#0A3C63\] svg,
+.bg-\[\#2CACD0\] svg,
+.bg-\[\#7b2cbf\] svg,
+.bg-\[\#E0321C\] svg,
+.bg-\[\#F4C400\] svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* 1. Robótica / Consumibles (#0A3C63 - Azul Oscuro Robótica) */
+.badge-programa-robotica {
+  background-color: rgba(10, 60, 99, 0.1) !important;
+  color: #0A3C63 !important;
+  border: 1px solid rgba(10, 60, 99, 0.25) !important;
+  font-weight: 700 !important;
+}
+[data-theme="dark"] .badge-programa-robotica,
+html.dark .badge-programa-robotica {
+  background-color: rgba(10, 60, 99, 0.35) !important;
+  color: #93c5fd !important;
+  border-color: rgba(147, 197, 253, 0.35) !important;
+}
+.icon-container-robotica {
+  background-color: #0A3C63 !important;
+  color: #FFFFFF !important;
+}
+
+/* 2. Nuevas Tecnologías / Equipos Retornables (#2CACD0 - Azul Claro) */
+.badge-programa-tecnologia {
+  background-color: rgba(44, 172, 208, 0.15) !important;
+  color: #013a52 !important;
+  border: 1px solid rgba(44, 172, 208, 0.4) !important;
+  font-weight: 700 !important;
+}
+[data-theme="dark"] .badge-programa-tecnologia,
+html.dark .badge-programa-tecnologia {
+  background-color: rgba(44, 172, 208, 0.25) !important;
+  color: #2CACD0 !important;
+  border-color: rgba(44, 172, 208, 0.5) !important;
+}
+.icon-container-tecnologia {
+  background-color: #2CACD0 !important;
+  color: #FFFFFF !important;
+}
+
+/* 3. TeachLabs / Papelería y Laboratorio Pedagógico (#7b2cbf - Morado TeachLabs) */
+.badge-programa-teachlabs {
+  background-color: rgba(123, 44, 191, 0.1) !important;
+  color: #7b2cbf !important;
+  border: 1px solid rgba(123, 44, 191, 0.25) !important;
+  font-weight: 700 !important;
+}
+[data-theme="dark"] .badge-programa-teachlabs,
+html.dark .badge-programa-teachlabs {
+  background-color: rgba(123, 44, 191, 0.25) !important;
+  color: #c084fc !important;
+  border-color: rgba(123, 44, 191, 0.45) !important;
+}
+.icon-container-teachlabs {
+  background-color: #7b2cbf !important;
+  color: #FFFFFF !important;
+}
+
+/* 4. Inglés (#E0321C - Rojo Inglés) */
+.badge-programa-ingles {
+  background-color: rgba(224, 50, 28, 0.1) !important;
+  color: #E0321C !important;
+  border: 1px solid rgba(224, 50, 28, 0.25) !important;
+  font-weight: 700 !important;
+}
+[data-theme="dark"] .badge-programa-ingles,
+html.dark .badge-programa-ingles {
+  background-color: rgba(224, 50, 28, 0.25) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(224, 50, 28, 0.45) !important;
+}
+.icon-container-ingles {
+  background-color: #E0321C !important;
+  color: #FFFFFF !important;
+}
+
+/* 5. Habilidades Socioemocionales y para la Vida (#F4C400 - Amarillo) */
+.badge-programa-socioemocional {
+  background-color: rgba(244, 196, 0, 0.2) !important;
+  color: #013a52 !important;
+  border: 1px solid #F4C400 !important;
+  font-weight: 700 !important;
+}
+[data-theme="dark"] .badge-programa-socioemocional,
+html.dark .badge-programa-socioemocional {
+  background-color: rgba(244, 196, 0, 0.25) !important;
+  color: #fde047 !important;
+  border-color: #F4C400 !important;
+}
+.icon-container-socioemocional {
+  background-color: #F4C400 !important;
+  color: #FFFFFF !important;
+}
+
+/* 6. Becas / Institucional General (#abd037 - Verde FMO) */
+.badge-programa-general {
+  background-color: rgba(171, 208, 55, 0.15) !important;
+  color: #013a52 !important;
+  border: 1px solid rgba(171, 208, 55, 0.35) !important;
+  font-weight: 700 !important;
+}
+[data-theme="dark"] .badge-programa-general,
+html.dark .badge-programa-general {
+  background-color: rgba(171, 208, 55, 0.25) !important;
+  color: #abd037 !important;
+  border-color: rgba(171, 208, 55, 0.5) !important;
+}
+.icon-container-general {
+  background-color: #abd037 !important;
+  color: #013a52 !important;
+}
+
+/* Botones de acción primaria institucionales FMO */
+.btn-primary,
+.btn.btn-primary,
+.btn.primary {
+  background-color: #abd037 !important;
+  color: #013a52 !important;
+  border-color: #abd037 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+.btn-primary:hover,
+.btn.btn-primary:hover,
+.btn.primary:hover {
+  background-color: #96b82d !important;
+  border-color: #96b82d !important;
+  color: #013a52 !important;
+}
+
+/* Pestañas activas con color de programa */
+.tab-btn.active.tab-equipos {
+  background: #2CACD0 !important;
+  color: #FFFFFF !important;
+  border-color: #2CACD0 !important;
+}
+.tab-btn.active.tab-consumibles {
+  background: #0A3C63 !important;
+  color: #FFFFFF !important;
+  border-color: #0A3C63 !important;
+}
+.tab-btn.active.tab-papeleria {
+  background: #7b2cbf !important;
+  color: #FFFFFF !important;
+  border-color: #7b2cbf !important;
+}
