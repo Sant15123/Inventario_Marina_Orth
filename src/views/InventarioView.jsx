@@ -5053,8 +5053,8 @@ export default function InventarioView({
               >
                 {/* PASO 1: DATOS OPERATIVOS */}
                 {pasoActual === 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -5064,8 +5064,8 @@ export default function InventarioView({
                       <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
                     </div>
 
-                    {/* Fila 1: Nombre del Elemento (md:col-span-8) + Código / Placa (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-8">
+                    {/* Fila 1: Nombre del Elemento (Izquierda) + Código / Placa (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Nombre Del Elemento / Material *
                       </label>
@@ -5086,7 +5086,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Código / Placa *
                       </label>
@@ -5107,8 +5107,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Categoría (md:col-span-5) + Cantidad / Stock (md:col-span-3) + Condición / Unidad (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-5">
+                    {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Categoría *
                       </label>
@@ -5146,7 +5146,7 @@ export default function InventarioView({
                       )}
                     </div>
 
-                    <div className="col-span-12 md:col-span-3">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Cantidad / Stock *
                       </label>
@@ -5167,7 +5167,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 3: Condición / Unidad (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Condición / Unidad
                       </label>
@@ -5200,8 +5201,7 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    {/* Fila 3: Selector Área Asignada / Programa (md:col-span-6) + Recuadro Vista previa en tabla (md:col-span-6) */}
-                    <div className="col-span-12 md:col-span-6">
+                    <div className="space-y-1.5">
                       <ProgramAreaSelect
                         label="Área Asignada / Programa FMO"
                         value={formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica')}
@@ -5209,20 +5209,14 @@ export default function InventarioView({
                         showPreview={false}
                         onChange={(e) => setFormDataEditar({ ...formDataEditar, area: e.target.value, area_asignada: e.target.value })}
                       />
-                    </div>
-
-                    <div className="col-span-12 md:col-span-6 flex flex-col justify-end">
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Vista previa en tabla
-                      </label>
                       <div
-                        className="h-[38px] px-3.5 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-between"
+                        className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
                         style={{
                           backgroundColor: 'var(--bg, #0f172a)',
                           borderColor: 'var(--line, #334155)',
                         }}
                       >
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo institucional:</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
                         <ProgramAreaBadge
                           area={formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica')}
                           defaultProgram={isPapeleriaEdit ? 'teachlabs' : 'robotica'}
@@ -5231,8 +5225,8 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 4: Descripción General (md:col-span-12) */}
-                    <div className="col-span-12">
+                    {/* Fila 4: Descripción General (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Descripción General
                       </label>
@@ -5256,8 +5250,8 @@ export default function InventarioView({
 
                 {/* PASO 2: ESPECIFICACIONES */}
                 {pasoActual === 2 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -5266,8 +5260,8 @@ export default function InventarioView({
                       </h4>
                     </div>
 
-                    {/* Fila 1: Sede / Ubicación Física, Estante / Caja y Stock Mínimo */}
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 1: Sede / Ubicación Física | Estante / Gaveta */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Sede / Ubicación Física
                       </label>
@@ -5293,7 +5287,7 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Estante / Caja / Gaveta
                       </label>
@@ -5313,7 +5307,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 2: Stock Mínimo De Alerta * | Características */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Stock Mínimo De Alerta *
                       </label>
@@ -5334,8 +5329,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Características, Estado y Condición */}
-                    <div className="col-span-12 md:col-span-6">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Características
                       </label>
@@ -5355,7 +5349,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-3">
+                    {/* Fila 3: Estado | Condición */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Estado
                       </label>
@@ -5376,7 +5371,7 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    <div className="col-span-12 md:col-span-3">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Condición
                       </label>
@@ -5397,8 +5392,8 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    {/* Fila 3: Observaciones de Ficha */}
-                    <div className="col-span-12">
+                    {/* Fila 4: Detalle Técnico / Observaciones (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Detalle Técnico / Observaciones
                       </label>
@@ -5422,8 +5417,8 @@ export default function InventarioView({
 
                 {/* PASO 3: ADQUISICIÓN Y NOTAS */}
                 {pasoActual === 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -5432,8 +5427,8 @@ export default function InventarioView({
                       </h4>
                     </div>
 
-                    {/* Fila 1: Valor Compra, Fecha Compra y Vencimiento Garantía */}
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 1: Valor Compra | Fecha Compra */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Valor Compra ($)
                       </label>
@@ -5467,7 +5462,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Fecha Compra
                       </label>
@@ -5485,7 +5480,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 2: Vencimiento Garantía */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Vencimiento Garantía
                       </label>
@@ -5503,8 +5499,12 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Notas u Observaciones */}
-                    <div className="col-span-12">
+                    <div className="hidden md:block">
+                      {/* Espacio alineado en grilla */}
+                    </div>
+
+                    {/* Fila 3: Notas u Observaciones (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Notas u Observaciones
                       </label>
@@ -5888,8 +5888,8 @@ export default function InventarioView({
               >
                 {/* PASO 1: DATOS OPERATIVOS */}
                 {pasoActualNuevo === 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -5899,8 +5899,8 @@ export default function InventarioView({
                       <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
                     </div>
 
-                    {/* Fila 1: Nombre del Elemento (md:col-span-8) + Código / Placa con aviso compacto (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-8">
+                    {/* Fila 1: Nombre del Elemento (Izquierda) + Código / Placa (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Nombre Del Elemento / Material *
                       </label>
@@ -5921,7 +5921,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
                           Código Del Ítem *
@@ -5949,8 +5949,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Categoría (md:col-span-5) + Cantidad / Stock (md:col-span-3) + Condición / Unidad (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-5">
+                    {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Categoría *
                       </label>
@@ -5989,7 +5989,7 @@ export default function InventarioView({
                       )}
                     </div>
 
-                    <div className="col-span-12 md:col-span-3">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Cantidad Inicial *
                       </label>
@@ -6010,7 +6010,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 3: Condición / Unidad * (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Condición / Unidad *
                       </label>
@@ -6044,8 +6045,7 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    {/* Fila 3: Selector Área Asignada / Programa (md:col-span-6) + Recuadro Vista previa en tabla (md:col-span-6) */}
-                    <div className="col-span-12 md:col-span-6">
+                    <div className="space-y-1.5">
                       <ProgramAreaSelect
                         label="Área Asignada / Programa FMO"
                         value={formDataNuevo.area_asignada || formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
@@ -6053,20 +6053,14 @@ export default function InventarioView({
                         showPreview={false}
                         onChange={(e) => setFormDataNuevo({ ...formDataNuevo, area: e.target.value, area_asignada: e.target.value })}
                       />
-                    </div>
-
-                    <div className="col-span-12 md:col-span-6 flex flex-col justify-end">
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Vista previa en tabla
-                      </label>
                       <div
-                        className="h-[38px] px-3.5 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-between"
+                        className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
                         style={{
                           backgroundColor: 'var(--bg, #0f172a)',
                           borderColor: 'var(--line, #334155)',
                         }}
                       >
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo institucional:</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
                         <ProgramAreaBadge
                           area={formDataNuevo.area_asignada || formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
                           defaultProgram={isPapeleriaNuevo ? 'teachlabs' : 'robotica'}
@@ -6075,8 +6069,8 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 4: Descripción General (md:col-span-12) */}
-                    <div className="col-span-12">
+                    {/* Fila 4: Descripción General (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Descripción General
                       </label>
@@ -6100,8 +6094,8 @@ export default function InventarioView({
 
                 {/* PASO 2: ESPECIFICACIONES */}
                 {pasoActualNuevo === 2 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -6110,8 +6104,8 @@ export default function InventarioView({
                       </h4>
                     </div>
 
-                    {/* Fila 1: Sede / Ubicación Física, Estante / Caja y Stock Mínimo */}
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 1: Sede / Ubicación Física | Estante / Gaveta */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Sede / Ubicación Física
                       </label>
@@ -6137,7 +6131,7 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Estante / Caja / Gaveta
                       </label>
@@ -6157,7 +6151,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 2: Stock Mínimo De Alerta * | Características */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Stock Mínimo De Alerta *
                       </label>
@@ -6178,8 +6173,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Características, Estado y Condición */}
-                    <div className="col-span-12 md:col-span-6">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Características
                       </label>
@@ -6199,7 +6193,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-3">
+                    {/* Fila 3: Estado | Condición */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Estado
                       </label>
@@ -6220,7 +6215,7 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    <div className="col-span-12 md:col-span-3">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Condición
                       </label>
@@ -6242,8 +6237,8 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    {/* Fila 3: Detalle Técnico / Observaciones */}
-                    <div className="col-span-12">
+                    {/* Fila 4: Detalle Técnico / Observaciones (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Detalle Técnico / Observaciones
                       </label>
@@ -6267,8 +6262,8 @@ export default function InventarioView({
 
                 {/* PASO 3: ADQUISICIÓN Y NOTAS */}
                 {pasoActualNuevo === 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -6277,8 +6272,8 @@ export default function InventarioView({
                       </h4>
                     </div>
 
-                    {/* Fila 1: Valor Compra, Fecha Compra y Vencimiento Garantía */}
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 1: Valor Compra | Fecha Compra */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Valor Compra ($)
                       </label>
@@ -6300,7 +6295,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Fecha Compra
                       </label>
@@ -6318,7 +6313,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 2: Vencimiento Garantía */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Vencimiento Garantía
                       </label>
@@ -6336,8 +6332,12 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Notas u Observaciones */}
-                    <div className="col-span-12">
+                    <div className="hidden md:block">
+                      {/* Espacio alineado en grilla */}
+                    </div>
+
+                    {/* Fila 3: Notas u Observaciones (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Notas u Observaciones
                       </label>
@@ -6727,8 +6727,8 @@ export default function InventarioView({
                     PASO 1: Identificación y Clasificación
                     ========================================== */}
                 {pasoActualEquipo === 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -6738,8 +6738,8 @@ export default function InventarioView({
                       <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
                     </div>
 
-                    {/* Fila 1: Nombre del Elemento / Equipo (md:col-span-8) + Código / Placa con aviso compacto (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-8">
+                    {/* Fila 1: Nombre del Elemento / Equipo (Izquierda) + Código / Placa (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Nombre Del Elemento / Equipo *
                       </label>
@@ -6760,7 +6760,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
                           Código / Placa *
@@ -6788,8 +6788,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Categoría (md:col-span-5) + Cantidad (md:col-span-3) + Condición (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-5">
+                    {/* Fila 2: Categoría (Izquierda) + Cantidad (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Categoría *
                       </label>
@@ -6815,7 +6815,7 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    <div className="col-span-12 md:col-span-3">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Cantidad
                       </label>
@@ -6833,7 +6833,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 3: Condición (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Condición
                       </label>
@@ -6854,28 +6855,21 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    {/* Fila 3: Selector Área Asignada (md:col-span-6) + Recuadro Vista previa en tabla (md:col-span-6) */}
-                    <div className="col-span-12 md:col-span-6">
+                    <div className="space-y-1.5">
                       <ProgramAreaSelect
                         label="Área Asignada / Programa FMO"
                         value={formDataNuevoEquipo.area || ''}
                         showPreview={false}
                         onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, area: e.target.value })}
                       />
-                    </div>
-
-                    <div className="col-span-12 md:col-span-6 flex flex-col justify-end">
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Vista previa en tabla
-                      </label>
                       <div
-                        className="h-[38px] px-3.5 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-between"
+                        className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
                         style={{
                           backgroundColor: 'var(--bg, #0f172a)',
                           borderColor: 'var(--line, #334155)',
                         }}
                       >
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo institucional:</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
                         <ProgramAreaBadge
                           area={formDataNuevoEquipo.area || 'Robótica'}
                           iconSize={16}
@@ -6883,8 +6877,8 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 4: Descripción General (md:col-span-12) */}
-                    <div className="col-span-12">
+                    {/* Fila 4: Descripción General (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Descripción General
                       </label>
@@ -6910,8 +6904,8 @@ export default function InventarioView({
                     PASO 2: Ficha Técnica y Asignación
                     ========================================== */}
                 {pasoActualEquipo === 2 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -6921,8 +6915,8 @@ export default function InventarioView({
                       <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
                     </div>
 
-                    {/* Fila 1: Marca (md:col-span-4) + Modelo (md:col-span-4) + Serial * (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 1: Marca | Modelo */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Marca
                       </label>
@@ -6942,7 +6936,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Modelo
                       </label>
@@ -6962,7 +6956,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 2: Serial * | Sede / Ubicación Física */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Serial *
                       </label>
@@ -6983,69 +6978,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Característica 1 (md:col-span-4) + Característica 2 (md:col-span-4) + Característica 3 (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-4">
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Característica 1
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristica_1"
-                        maxLength={120}
-                        value={formDataNuevoEquipo.caracteristica_1 || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_1: e.target.value })}
-                        placeholder="Ej. Core i5-1135G7"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    <div className="col-span-12 md:col-span-4">
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Característica 2
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristica_2"
-                        maxLength={120}
-                        value={formDataNuevoEquipo.caracteristica_2 || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_2: e.target.value })}
-                        placeholder="Ej. 16GB RAM DDR4"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    <div className="col-span-12 md:col-span-4">
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Característica 3
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristica_3"
-                        maxLength={120}
-                        value={formDataNuevoEquipo.caracteristica_3 || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_3: e.target.value })}
-                        placeholder="Ej. Pantalla 14 FHD"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 3: Sede / Ubicación Física, Estante/Caja/Gaveta y Responsable */}
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Sede / Ubicación Física
                       </label>
@@ -7071,7 +7004,8 @@ export default function InventarioView({
                       </select>
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 3: Estante / Caja / Gaveta | Responsable / Custodio */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Estante / Caja / Gaveta
                       </label>
@@ -7091,7 +7025,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Responsable / Custodio
                       </label>
@@ -7110,6 +7044,68 @@ export default function InventarioView({
                         }}
                       />
                     </div>
+
+                    {/* Fila 4: Característica 1 | Característica 2 */}
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                        Característica 1
+                      </label>
+                      <input
+                        type="text"
+                        name="caracteristica_1"
+                        maxLength={120}
+                        value={formDataNuevoEquipo.caracteristica_1 || ''}
+                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_1: e.target.value })}
+                        placeholder="Ej. Core i5-1135G7"
+                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                        style={{
+                          backgroundColor: 'var(--bg, #0f172a)',
+                          color: 'var(--text, #f8fafc)',
+                          borderColor: 'var(--line, #334155)',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                        Característica 2
+                      </label>
+                      <input
+                        type="text"
+                        name="caracteristica_2"
+                        maxLength={120}
+                        value={formDataNuevoEquipo.caracteristica_2 || ''}
+                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_2: e.target.value })}
+                        placeholder="Ej. 16GB RAM DDR4"
+                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                        style={{
+                          backgroundColor: 'var(--bg, #0f172a)',
+                          color: 'var(--text, #f8fafc)',
+                          borderColor: 'var(--line, #334155)',
+                        }}
+                      />
+                    </div>
+
+                    {/* Fila 5: Característica 3 (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
+                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                        Característica 3
+                      </label>
+                      <input
+                        type="text"
+                        name="caracteristica_3"
+                        maxLength={120}
+                        value={formDataNuevoEquipo.caracteristica_3 || ''}
+                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_3: e.target.value })}
+                        placeholder="Ej. Pantalla 14 FHD"
+                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                        style={{
+                          backgroundColor: 'var(--bg, #0f172a)',
+                          color: 'var(--text, #f8fafc)',
+                          borderColor: 'var(--line, #334155)',
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -7117,8 +7113,8 @@ export default function InventarioView({
                     PASO 3: Adquisición, Garantía y Accesos
                     ========================================== */}
                 {pasoActualEquipo === 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                    <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -7128,8 +7124,8 @@ export default function InventarioView({
                       <span className="text-[11px] text-slate-400">Datos de compra y observaciones</span>
                     </div>
 
-                    {/* Fila 1: Proveedor (md:col-span-4) + Valor Unitario (md:col-span-4) + Valor Total (md:col-span-4) */}
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 1: Proveedor | Valor Unitario ($) */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Proveedor
                       </label>
@@ -7149,7 +7145,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Valor Unitario ($)
                       </label>
@@ -7184,7 +7180,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-4">
+                    {/* Fila 2: Valor Total ($) | Fecha Compra */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Valor Total ($)
                       </label>
@@ -7217,8 +7214,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 2: Fecha Compra (md:col-span-6) + Vencimiento Garantía (md:col-span-6) */}
-                    <div className="col-span-12 md:col-span-6">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Fecha Compra
                       </label>
@@ -7236,7 +7232,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-6">
+                    {/* Fila 3: Vencimiento Garantía | Claves / Credenciales de Acceso */}
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Vencimiento Garantía
                       </label>
@@ -7254,8 +7251,7 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 3: Claves (md:col-span-6) + Notas (md:col-span-6) */}
-                    <div className="col-span-12 md:col-span-6">
+                    <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Claves / Credenciales de Acceso
                       </label>
@@ -7275,7 +7271,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    <div className="col-span-12 md:col-span-6">
+                    {/* Fila 4: Notas u Observaciones (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Notas u Observaciones
                       </label>
@@ -7295,8 +7292,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 4: Control de Seguimiento Contable Institucional (md:col-span-12) */}
-                    <div className="col-span-12">
+                    {/* Fila 5: Control de Seguimiento Contable Institucional (md:col-span-2) */}
+                    <div className="col-span-1 md:col-span-2">
                       <label
                         className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
                         style={{
@@ -7408,7 +7405,6 @@ export default function InventarioView({
                           </div>
                         </div>
 
-                        {/* Switch Toggle Animado Verde Lima */}
                         <div
                           aria-hidden="true"
                           style={{

@@ -434,8 +434,8 @@ export default function ModalEditarActivo({
                 PASO 1: Identificación y Clasificación
                 ========================================== */}
             {pasoActual === 1 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -445,8 +445,8 @@ export default function ModalEditarActivo({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Nombre del Elemento (md:col-span-8) + Código / Placa (md:col-span-4) */}
-                <div className="col-span-12 md:col-span-8">
+                {/* Fila 1: Nombre del Elemento / Equipo (Izquierda) + Código / Placa (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Nombre Del Equipo *
                   </label>
@@ -467,7 +467,7 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Código / Placa *
                   </label>
@@ -488,8 +488,8 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                {/* Fila 2: Categoría (md:col-span-5) + Cantidad / Stock (md:col-span-3) + Condición / Unidad (md:col-span-4) */}
-                <div className="col-span-12 md:col-span-5">
+                {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Categoría *
                   </label>
@@ -521,7 +521,7 @@ export default function ModalEditarActivo({
                   </select>
                 </div>
 
-                <div className="col-span-12 md:col-span-3">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Cantidad / Stock *
                   </label>
@@ -540,7 +540,8 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 3: Condición Física (Izquierda) + Área Asignada / Programa FMO con Badge en tabla (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Condición Física
                   </label>
@@ -564,8 +565,7 @@ export default function ModalEditarActivo({
                   </select>
                 </div>
 
-                {/* Fila 3: Selector Área Asignada / Programa (md:col-span-6) + Recuadro Vista previa en tabla (md:col-span-6) */}
-                <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1.5">
                   <ProgramAreaSelect
                     label="Área Asignada / Programa FMO"
                     value={formData.area_asignada || formData.area || 'Nuevas Tecnologías'}
@@ -573,20 +573,14 @@ export default function ModalEditarActivo({
                     showPreview={false}
                     onChange={(e) => setFormData({ ...formData, area: e.target.value, area_asignada: e.target.value })}
                   />
-                </div>
-
-                <div className="col-span-12 md:col-span-6 flex flex-col justify-end">
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Vista previa en tabla
-                  </label>
                   <div
-                    className="h-[38px] px-3.5 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-between"
+                    className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
                     style={{
                       backgroundColor: 'var(--bg, #0f172a)',
                       borderColor: 'var(--line, #334155)',
                     }}
                   >
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo institucional:</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
                     <ProgramAreaBadge
                       area={formData.area_asignada || formData.area || 'Nuevas Tecnologías'}
                       defaultProgram="tecnologia"
@@ -595,8 +589,8 @@ export default function ModalEditarActivo({
                   </div>
                 </div>
 
-                {/* Fila 4: Descripción General (md:col-span-12) */}
-                <div className="col-span-12">
+                {/* Fila 4: Descripción General (md:col-span-2) */}
+                <div className="col-span-1 md:col-span-2">
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Descripción General
                   </label>
@@ -622,8 +616,8 @@ export default function ModalEditarActivo({
                 PASO 2: Ficha Técnica y Asignación
                 ========================================== */}
             {pasoActual === 2 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -633,8 +627,8 @@ export default function ModalEditarActivo({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Marca, Modelo, Serial * en 3 Columnas */}
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 1: Marca | Modelo */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Marca
                   </label>
@@ -654,7 +648,7 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Modelo
                   </label>
@@ -674,7 +668,8 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 2: Serial * | Sede / Ubicación Física */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Serial *
                   </label>
@@ -695,69 +690,7 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                {/* Fila 2: Características 1, 2 y 3 */}
-                <div className="col-span-12 md:col-span-4">
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Característica 1 (CPU)
-                  </label>
-                  <input
-                    type="text"
-                    name="caracteristica_1"
-                    maxLength={120}
-                    value={formData.caracteristica_1 || ''}
-                    onChange={(e) => setFormData({ ...formData, caracteristica_1: e.target.value })}
-                    placeholder="Ej. RAM 16GB / i5"
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                    style={{
-                      backgroundColor: 'var(--bg, #0f172a)',
-                      color: 'var(--text, #f8fafc)',
-                      borderColor: 'var(--line, #334155)',
-                    }}
-                  />
-                </div>
-
-                <div className="col-span-12 md:col-span-4">
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Característica 2 (RAM)
-                  </label>
-                  <input
-                    type="text"
-                    name="caracteristica_2"
-                    maxLength={120}
-                    value={formData.caracteristica_2 || ''}
-                    onChange={(e) => setFormData({ ...formData, caracteristica_2: e.target.value })}
-                    placeholder="Ej. SSD 512GB"
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                    style={{
-                      backgroundColor: 'var(--bg, #0f172a)',
-                      color: 'var(--text, #f8fafc)',
-                      borderColor: 'var(--line, #334155)',
-                    }}
-                  />
-                </div>
-
-                <div className="col-span-12 md:col-span-4">
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Característica 3 (Disco)
-                  </label>
-                  <input
-                    type="text"
-                    name="caracteristica_3"
-                    maxLength={120}
-                    value={formData.caracteristica_3 || ''}
-                    onChange={(e) => setFormData({ ...formData, caracteristica_3: e.target.value })}
-                    placeholder="Ej. Pantalla 14 FHD"
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                    style={{
-                      backgroundColor: 'var(--bg, #0f172a)',
-                      color: 'var(--text, #f8fafc)',
-                      borderColor: 'var(--line, #334155)',
-                    }}
-                  />
-                </div>
-
-                {/* Fila 3: Sede / Ubicación Física, Estante / Gaveta y Responsable */}
-                <div className="col-span-12 md:col-span-4">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Sede / Ubicación Física
                   </label>
@@ -783,7 +716,8 @@ export default function ModalEditarActivo({
                   </select>
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 3: Estante / Gaveta | Responsable / Asignado */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Estante / Caja / Gaveta
                   </label>
@@ -803,7 +737,7 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Responsable / Asignado
                   </label>
@@ -822,6 +756,68 @@ export default function ModalEditarActivo({
                     }}
                   />
                 </div>
+
+                {/* Fila 4: Característica 1 | Característica 2 */}
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Característica 1 (CPU)
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristica_1"
+                    maxLength={120}
+                    value={formData.caracteristica_1 || ''}
+                    onChange={(e) => setFormData({ ...formData, caracteristica_1: e.target.value })}
+                    placeholder="Ej. RAM 16GB / i5"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Característica 2 (RAM)
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristica_2"
+                    maxLength={120}
+                    value={formData.caracteristica_2 || ''}
+                    onChange={(e) => setFormData({ ...formData, caracteristica_2: e.target.value })}
+                    placeholder="Ej. SSD 512GB"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                {/* Fila 5: Característica 3 (md:col-span-2) */}
+                <div className="col-span-1 md:col-span-2">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Característica 3 (Disco)
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristica_3"
+                    maxLength={120}
+                    value={formData.caracteristica_3 || ''}
+                    onChange={(e) => setFormData({ ...formData, caracteristica_3: e.target.value })}
+                    placeholder="Ej. Pantalla 14 FHD"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
               </div>
             )}
 
@@ -829,8 +825,8 @@ export default function ModalEditarActivo({
                 PASO 3: Adquisición, Garantía y Credenciales
                 ========================================== */}
             {pasoActual === 3 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -840,8 +836,8 @@ export default function ModalEditarActivo({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">Datos de compra y credenciales</span>
                 </div>
 
-                {/* Fila 1: Proveedor, Valor Unitario, Valor Total */}
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 1: Proveedor | Valor Unitario ($) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Proveedor
                   </label>
@@ -861,7 +857,7 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Valor Unitario ($)
                   </label>
@@ -896,7 +892,8 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 2: Valor Total ($) | Fecha de Compra */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Valor Total ($)
                   </label>
@@ -922,8 +919,7 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                {/* Fila 2: Fecha de Compra y Vencimiento Garantía */}
-                <div className="col-span-12 md:col-span-6">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Fecha de Compra
                   </label>
@@ -941,7 +937,8 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-6">
+                {/* Fila 3: Vencimiento Garantía | Claves / Credenciales */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Vencimiento Garantía
                   </label>
@@ -959,8 +956,7 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                {/* Fila 3: Claves / Credenciales y Observaciones */}
-                <div className="col-span-12 md:col-span-6">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Claves / Credenciales
                   </label>
@@ -980,7 +976,8 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-6">
+                {/* Fila 4: Observaciones (md:col-span-2) */}
+                <div className="col-span-1 md:col-span-2">
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Observaciones
                   </label>
@@ -1000,8 +997,8 @@ export default function ModalEditarActivo({
                   />
                 </div>
 
-                {/* Fila 4: Control de Seguimiento Contable */}
-                <div className="col-span-12">
+                {/* Fila 5: Control de Seguimiento Contable (md:col-span-2) */}
+                <div className="col-span-1 md:col-span-2">
                   <label
                     className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
                     style={{

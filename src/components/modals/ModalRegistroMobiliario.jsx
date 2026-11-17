@@ -630,8 +630,8 @@ export default function ModalRegistroMobiliario({
           >
             {/* PESTAÑA 1: IDENTIFICACIÓN Y CLASIFICACIÓN */}
             {paso === 1 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -641,8 +641,8 @@ export default function ModalRegistroMobiliario({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Nombre del Elemento (md:col-span-8) + Código / Placa con aviso compacto (md:col-span-4) */}
-                <div className="col-span-12 md:col-span-8">
+                {/* Fila 1: Nombre del Elemento / Mueble (Izquierda) + Código / Placa (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Nombre Del Mueble *
                   </label>
@@ -663,7 +663,7 @@ export default function ModalRegistroMobiliario({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
                       Código / Placa *
@@ -701,8 +701,8 @@ export default function ModalRegistroMobiliario({
                   </div>
                 </div>
 
-                {/* Fila 2: Categoría (md:col-span-5) + Cantidad / Stock (md:col-span-3) + Condición / Unidad (md:col-span-4) */}
-                <div className="col-span-12 md:col-span-5">
+                {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Categoría *
                   </label>
@@ -726,7 +726,7 @@ export default function ModalRegistroMobiliario({
                   </select>
                 </div>
 
-                <div className="col-span-12 md:col-span-3">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Cantidad / Unidades *
                   </label>
@@ -747,7 +747,8 @@ export default function ModalRegistroMobiliario({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 3: Condición Física (Izquierda) + Área Asignada / Programa FMO con Badge en tabla (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Condición Física
                   </label>
@@ -770,8 +771,7 @@ export default function ModalRegistroMobiliario({
                   </select>
                 </div>
 
-                {/* Fila 3: Selector Área Asignada / Programa (md:col-span-6) + Recuadro Vista previa en tabla (md:col-span-6) */}
-                <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1.5">
                   <ProgramAreaSelect
                     label="Área Asignada / Programa FMO"
                     value={formData.area_proceso || 'General'}
@@ -779,20 +779,14 @@ export default function ModalRegistroMobiliario({
                     showPreview={false}
                     onChange={(e) => setFormData({ ...formData, area_proceso: e.target.value })}
                   />
-                </div>
-
-                <div className="col-span-12 md:col-span-6 flex flex-col justify-end">
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Vista previa en tabla
-                  </label>
                   <div
-                    className="h-[38px] px-3.5 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-between"
+                    className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
                     style={{
                       backgroundColor: 'var(--bg, #0f172a)',
                       borderColor: 'var(--line, #334155)',
                     }}
                   >
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo institucional:</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
                     <ProgramAreaBadge
                       area={formData.area_proceso || 'General'}
                       defaultProgram="teachlabs"
@@ -801,8 +795,8 @@ export default function ModalRegistroMobiliario({
                   </div>
                 </div>
 
-                {/* Fila 4: Sede Institucional (md:col-span-6) + Espacio / Área Específica (md:col-span-6) */}
-                <div className="col-span-12 md:col-span-6">
+                {/* Fila 4: Sede Institucional (Izquierda) + Espacio / Área Específica (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Sede Institucional *
                   </label>
@@ -826,7 +820,7 @@ export default function ModalRegistroMobiliario({
                   </select>
                 </div>
 
-                <div className="col-span-12 md:col-span-6">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Espacio / Área Específica
                   </label>
@@ -850,8 +844,8 @@ export default function ModalRegistroMobiliario({
 
             {/* PESTAÑA 2: ESPECIFICACIONES FÍSICAS */}
             {paso === 2 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -861,8 +855,8 @@ export default function ModalRegistroMobiliario({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Material (md:col-span-4) + Color (md:col-span-4) + Dimensiones (md:col-span-4) */}
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 1: Material (Izquierda) + Color (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Material de Fabricación
                   </label>
@@ -885,7 +879,7 @@ export default function ModalRegistroMobiliario({
                   </select>
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Color
                   </label>
@@ -905,7 +899,8 @@ export default function ModalRegistroMobiliario({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-4">
+                {/* Fila 2: Dimensiones (md:col-span-2) */}
+                <div className="col-span-1 md:col-span-2">
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Dimensiones (Alto x Ancho x Fondo)
                   </label>
@@ -929,8 +924,8 @@ export default function ModalRegistroMobiliario({
 
             {/* PESTAÑA 3: ASIGNACIÓN, ESTADO Y ADQUISICIÓN */}
             {paso === 3 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
-                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
+                <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -940,8 +935,8 @@ export default function ModalRegistroMobiliario({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Responsable / Asignado (md:col-span-6) + Estado Operativo (md:col-span-3) + Fecha Adquisición (md:col-span-3) */}
-                <div className="col-span-12 md:col-span-6">
+                {/* Fila 1: Responsable / Asignado (Izquierda) + Estado Operativo (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Responsable / Asignado
                   </label>
@@ -961,7 +956,7 @@ export default function ModalRegistroMobiliario({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-3">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Estado Operativo
                   </label>
@@ -984,7 +979,8 @@ export default function ModalRegistroMobiliario({
                   </select>
                 </div>
 
-                <div className="col-span-12 md:col-span-3">
+                {/* Fila 2: Fecha Adquisición (Izquierda) + Proveedor / Donante (Derecha) */}
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Fecha Adquisición / Registro
                   </label>
@@ -1002,8 +998,7 @@ export default function ModalRegistroMobiliario({
                   />
                 </div>
 
-                {/* Fila 2: Proveedor / Origen (md:col-span-6) + Observaciones Físicas o Notas (md:col-span-6) */}
-                <div className="col-span-12 md:col-span-6">
+                <div>
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Proveedor / Fabricante / Donante
                   </label>
@@ -1023,7 +1018,8 @@ export default function ModalRegistroMobiliario({
                   />
                 </div>
 
-                <div className="col-span-12 md:col-span-6">
+                {/* Fila 3: Observaciones Físicas o Notas (md:col-span-2) */}
+                <div className="col-span-1 md:col-span-2">
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Observaciones Físicas o Notas
                   </label>
@@ -1043,160 +1039,162 @@ export default function ModalRegistroMobiliario({
                   />
                 </div>
 
-                                {/* Control de Seguimiento Contable Institucional (Exclusivo Activos y Mobiliario) */}
-                <label
-                  className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    transition: 'all 0.2s ease',
-                    backgroundColor: formData.en_contabilidad
-                      ? 'rgba(132, 204, 22, 0.08)'
-                      : 'var(--surface-2, #f8fafc)',
-                    borderColor: formData.en_contabilidad
-                      ? '#84CC16'
-                      : 'var(--line, #cbd5e1)',
-                    boxShadow: formData.en_contabilidad
-                      ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
-                      : 'none',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    name="en_contabilidad"
-                    checked={Boolean(formData.en_contabilidad)}
-                    onChange={(e) => setFormData({ ...formData, en_contabilidad: e.target.checked })}
-                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                    {/* Icono temático de Contabilidad / FMO */}
-                    <div
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '10px',
-                        backgroundColor: formData.en_contabilidad
-                          ? 'rgba(132, 204, 22, 0.22)'
-                          : 'rgba(148, 163, 184, 0.15)',
-                        border: formData.en_contabilidad
-                          ? '1px solid rgba(132, 204, 22, 0.45)'
-                          : '1px solid var(--line, #e2e8f0)',
-                        color: formData.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '18px',
-                        flexShrink: 0,
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      🏛️
-                    </div>
-
-                    {/* Textos estructurados con jerarquía estricta (sin colapso) */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span
-                          style={{
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            color: 'var(--text-h, #0f172a)',
-                            lineHeight: 1.2,
-                          }}
-                        >
-                          Registrado en Contabilidad
-                        </span>
-                        {formData.en_contabilidad ? (
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              padding: '1.5px 7px',
-                              borderRadius: '9999px',
-                              backgroundColor: '#84CC16',
-                              color: '#0f172a',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            Activo
-                          </span>
-                        ) : (
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontWeight: 600,
-                              padding: '1.5px 7px',
-                              borderRadius: '9999px',
-                              backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                              color: 'var(--text-dim, #64748b)',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            Pendiente
-                          </span>
-                        )}
-                      </div>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: '11.5px',
-                          color: 'var(--text-dim, #64748b)',
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        Marcar si este bien ya cuenta con registro y soporte en el área contable
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Switch Toggle Animado Verde Lima */}
-                  <div
-                    aria-hidden="true"
+                {/* Control de Seguimiento Contable Institucional (md:col-span-2) */}
+                <div className="col-span-1 md:col-span-2">
+                  <label
+                    className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
                     style={{
-                      width: '44px',
-                      height: '24px',
-                      borderRadius: '9999px',
-                      backgroundColor: formData.en_contabilidad ? '#84CC16' : '#cbd5e1',
-                      position: 'relative',
-                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: formData.en_contabilidad
+                        ? 'rgba(132, 204, 22, 0.08)'
+                        : 'var(--surface-2, #f8fafc)',
+                      borderColor: formData.en_contabilidad
+                        ? '#84CC16'
+                        : 'var(--line, #cbd5e1)',
                       boxShadow: formData.en_contabilidad
-                        ? '0 0 10px rgba(132, 204, 22, 0.4)'
-                        : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
+                        ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
+                        : 'none',
                     }}
                   >
+                    <input
+                      type="checkbox"
+                      name="en_contabilidad"
+                      checked={Boolean(formData.en_contabilidad)}
+                      onChange={(e) => setFormData({ ...formData, en_contabilidad: e.target.checked })}
+                      style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      {/* Icono temático de Contabilidad / FMO */}
+                      <div
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          backgroundColor: formData.en_contabilidad
+                            ? 'rgba(132, 204, 22, 0.22)'
+                            : 'rgba(148, 163, 184, 0.15)',
+                          border: formData.en_contabilidad
+                            ? '1px solid rgba(132, 204, 22, 0.45)'
+                            : '1px solid var(--line, #e2e8f0)',
+                          color: formData.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                          flexShrink: 0,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        🏛️
+                      </div>
+
+                      {/* Textos estructurados con jerarquía estricta (sin colapso) */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              color: 'var(--text-h, #0f172a)',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            Registrado en Contabilidad
+                          </span>
+                          {formData.en_contabilidad ? (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                padding: '1.5px 7px',
+                                borderRadius: '9999px',
+                                backgroundColor: '#84CC16',
+                                color: '#0f172a',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                              }}
+                            >
+                              Activo
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: '1.5px 7px',
+                                borderRadius: '9999px',
+                                backgroundColor: 'rgba(148, 163, 184, 0.2)',
+                                color: 'var(--text-dim, #64748b)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                              }}
+                            >
+                              Pendiente
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: '11.5px',
+                            color: 'var(--text-dim, #64748b)',
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          Marcar si este bien ya cuenta con registro y soporte en el área contable
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Switch Toggle Animado Verde Lima */}
                     <div
+                      aria-hidden="true"
                       style={{
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        backgroundColor: '#ffffff',
-                        position: 'absolute',
-                        top: '3px',
-                        left: formData.en_contabilidad ? '23px' : '3px',
+                        width: '44px',
+                        height: '24px',
+                        borderRadius: '9999px',
+                        backgroundColor: formData.en_contabilidad ? '#84CC16' : '#cbd5e1',
+                        position: 'relative',
                         transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: formData.en_contabilidad
+                          ? '0 0 10px rgba(132, 204, 22, 0.4)'
+                          : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
                       }}
                     >
-                      {formData.en_contabilidad && (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
+                      <div
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          backgroundColor: '#ffffff',
+                          position: 'absolute',
+                          top: '3px',
+                          left: formData.en_contabilidad ? '23px' : '3px',
+                          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {formData.en_contabilidad && (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
             )}
           </div>
