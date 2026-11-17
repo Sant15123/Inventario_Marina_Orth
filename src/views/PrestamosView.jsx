@@ -1,3 +1,5 @@
+import ProgramBadgeIcon from '../components/common/ProgramBadgeIcon';
+import FmoStarIcon from '../components/common/FmoStarIcon';
 import FmoPrintLetterhead from '../components/common/FmoPrintLetterhead';
 import FmoPrintFooter from '../components/common/FmoPrintFooter';
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -67,32 +69,16 @@ const renderTipoSolicitud = (solicitud) => {
     }
 
     if (etiqueta.includes('Papelería')) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 dark:bg-[#7b2cbf]/25 dark:text-[#c084fc]">
-          🛒 {etiqueta}
-        </span>
-      );
+      return <ProgramBadgeIcon program="teachlabs" variant="badge" label={`🛒 ${etiqueta}`} />;
     }
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
-        🛒 {etiqueta}
-      </span>
-    );
+    return <ProgramBadgeIcon program="robotica" variant="badge" label={`🛒 ${etiqueta}`} />;
   }
 
   if (tipo.includes('CONSUMIBLE')) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
-        📦 Consumibles Robótica
-      </span>
-    );
+    return <ProgramBadgeIcon program="robotica" variant="badge" label="📦 Consumibles Robótica" />;
   }
 
-  return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#2CACD0]/15 text-[#013a52] dark:text-[#2CACD0] border border-[#2CACD0]/40">
-      💻 Equipo Retornable
-    </span>
-  );
+  return <ProgramBadgeIcon program="tecnologia" variant="badge" label="💻 Equipo Retornable" />;
 };
 
 
@@ -3407,10 +3393,12 @@ export default function PrestamosView({
                           {/* 2. SOLICITANTE / SEDE DESTINO */}
                           <td style={{ padding: '10px 12px' }}>
                             <div>
-                              <strong style={{ fontSize: '12.5px', color: 'var(--text-h)', display: 'block' }}>
-                                {sol.usuario_nombre || 'Docente / Formador'}
+                              <strong style={{ fontSize: '12.5px', color: 'var(--text-h)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                <FmoStarIcon indicator="usuario" size={13} color="#6d6e71" />
+                                <span>{sol.usuario_nombre || 'Docente / Formador'}</span>
                               </strong>
                               <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <FmoStarIcon indicator="sede" size={12} color="#6d6e71" />
                                 <span>Sede:</span>
                                 <span
                                   className="sede-badge municipal"
@@ -3431,17 +3419,11 @@ export default function PrestamosView({
                           {/* 3. CATEGORÍA */}
                           <td style={{ padding: '10px 12px' }}>
                             {esPapeleria ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 dark:bg-[#7b2cbf]/25 dark:text-[#c084fc]">
-                                📄 Papelería
-                              </span>
+                              <ProgramBadgeIcon program="teachlabs" variant="badge" label="Papelería" />
                             ) : esMixto ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
-                                📦 Robótica y Papelería
-                              </span>
+                              <ProgramBadgeIcon program="robotica" variant="badge" label="Robótica y Papelería" />
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
-                                🤖 Robótica / Cons.
-                              </span>
+                              <ProgramBadgeIcon program="robotica" variant="badge" label="Robótica / Cons." />
                             )}
                           </td>
 

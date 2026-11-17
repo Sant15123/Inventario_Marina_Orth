@@ -1,3 +1,5 @@
+import ProgramBadgeIcon from '../components/common/ProgramBadgeIcon';
+import FmoStarIcon from '../components/common/FmoStarIcon';
 import FmoSignatureMotif from '../components/common/FmoSignatureMotif';
 import { getCategoryBadgeClass } from '../services/fmoBranding';
 import { useState, useEffect } from 'react';
@@ -455,7 +457,7 @@ export default function ResumenView({
                         </div>
                       </td>
                       <td>
-                        <span className={`category-tag ${getCategoryBadgeClass(it.category)}`}>{it.category || 'General'}</span>
+                        <ProgramBadgeIcon categoria={it.category} variant="badge" label={it.category || 'General'} />
                       </td>
                       <td className="mono-num">
                         <span className={`qty-indicator ${isCritical ? 'qty-zero' : 'qty-low'}`}>
@@ -467,7 +469,7 @@ export default function ResumenView({
                       </td>
                       <td>
                         <div className="location-cell">
-                          <span className="location-name">{it.location || '—'}</span>
+                          <span className="location-name inline-flex items-center gap-1.5"><FmoStarIcon indicator="sede" size={12} color="#6d6e71" /><span>{it.location || '—'}</span></span>
                           {it.sede && <span className="sede-badge">{it.sede}</span>}
                         </div>
                       </td>

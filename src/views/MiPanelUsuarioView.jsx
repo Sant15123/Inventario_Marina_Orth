@@ -1,3 +1,5 @@
+import ProgramBadgeIcon from '../components/common/ProgramBadgeIcon';
+import FmoStarIcon from '../components/common/FmoStarIcon';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   ShoppingCart,
@@ -97,32 +99,16 @@ const renderTipoSolicitud = (solicitud) => {
     }
 
     if (etiqueta.includes('Papelería')) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 dark:bg-[#7b2cbf]/25 dark:text-[#c084fc]">
-          🛒 {etiqueta}
-        </span>
-      );
+      return <ProgramBadgeIcon program="teachlabs" variant="badge" label={`🛒 ${etiqueta}`} />;
     }
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
-        🛒 {etiqueta}
-      </span>
-    );
+    return <ProgramBadgeIcon program="robotica" variant="badge" label={`🛒 ${etiqueta}`} />;
   }
 
   if (tipo.includes('CONSUMIBLE')) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]">
-        📦 Consumibles Robótica
-      </span>
-    );
+    return <ProgramBadgeIcon program="robotica" variant="badge" label="📦 Consumibles Robótica" />;
   }
 
-  return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#2CACD0]/15 text-[#013a52] dark:text-[#2CACD0] border border-[#2CACD0]/40">
-      💻 Equipo Retornable
-    </span>
-  );
+  return <ProgramBadgeIcon program="tecnologia" variant="badge" label="💻 Equipo Retornable" />;
 };
 
 
