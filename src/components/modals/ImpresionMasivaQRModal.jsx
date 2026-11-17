@@ -1,90 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer, X, Copy, ListFilter, Hash } from 'lucide-react';
+import { Printer, X, Hash } from 'lucide-react';
 
 /**
- * Componente individual de Etiqueta QR Institucional (SIGA-FMO)
- * Diseño oficial estandarizado en 3 columnas (9 etiquetas por hoja Carta).
- */
-function EtiquetaQRCard({ etiqueta, isPrint = false }) {
-  return (
-    <div
-      className={`bg-white border border-dashed border-[#6d6e71]/50 rounded-xl p-4 flex flex-col items-center text-center shadow-2xs break-inside-avoid w-full ${
-        isPrint ? 'qr-card-3x3-print p-3 justify-between' : ''
-      }`}
-      style={{
-        breakInside: 'avoid',
-        pageBreakInside: 'avoid',
-        ...(isPrint ? { height: '7.8cm', minHeight: '7.8cm', maxHeight: '8.0cm' } : {}),
-      }}
-    >
-      {/* 1. Encabezado de la etiqueta institucional */}
-      <div className="flex items-center gap-2 pb-2 mb-2 border-b-2 border-[#abd037] w-full justify-center">
-        <img
-          src="/logo-marina-orth.png"
-          alt="FMO"
-          width="24"
-          height="24"
-          className="w-6 h-6 shrink-0 object-contain rounded-full"
-          style={{ width: '24px', height: '24px', maxWidth: '24px', maxHeight: '24px', flexShrink: 0 }}
-        />
-        <div className="flex flex-col text-left">
-          <span className="text-[10px] font-extrabold text-[#013a52] leading-none tracking-tight uppercase">
-            FUNDACIÓN MARINA ORTH
-          </span>
-          <span className="text-[7px] font-semibold text-[#6d6e71] tracking-wider mt-0.5 uppercase">
-            CONTROL DE ACTIVOS FIJOS
-          </span>
-        </div>
-      </div>
-
-      {/* 2. Código QR nítido */}
-      <div className="my-1 flex items-center justify-center bg-white">
-        <QRCodeSVG
-          value={etiqueta.qrUrl}
-          size={105}
-          level="M"
-          includeMargin={false}
-          bgColor="#ffffff"
-          fgColor="#000000"
-        />
-      </div>
-
-      {/* 3. Datos del Activo (espaciados y limpios) */}
-      <div className="w-full flex flex-col items-center justify-center mt-1">
-        {/* Placa / Código */}
-        <div className="font-mono font-black text-sm text-[#000000] tracking-widest mt-1">
-          {etiqueta.placa}
-        </div>
-
-        {/* Nombre del equipo */}
-        <div
-          className="text-xs font-semibold text-[#013a52] line-clamp-1 mt-0.5 max-w-full"
-          title={etiqueta.nombre}
-        >
-          {etiqueta.nombre}
-        </div>
-
-        {/* Subtexto: S/N y Sede resaltada */}
-        <div className="text-[10px] text-[#6d6e71] mt-1 max-w-full truncate">
-          {etiqueta.serial ? `S/N: ${etiqueta.serial} • ` : ''}
-          <span className="font-semibold text-[#659c1e]">{etiqueta.sede || 'OFICINA FMO'}</span>
-          {etiqueta.totalCopias > 1 && (
-            <span className="text-[#6d6e71] font-normal ml-1 no-print">
-              (c.{etiqueta.copiaNumero})
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * ImpresionMasivaQRModal - Rediseño Profesional (SIGA-FMO)
- * Header y Footer fijos con scroll interno exclusivo en el área de etiquetas.
- * Formato: 9 etiquetas por hoja Carta (3 columnas × 3 filas).
+ * ImpresionMasivaQRModal - Reescritura Total con Estilos en Línea
+ * Grilla real de 3 columnas garantizada, Header y Footer fijos sin pérdida en scroll.
  */
 export default function ImpresionMasivaQRModal({
   items = [],
@@ -101,10 +22,10 @@ export default function ImpresionMasivaQRModal({
   // Inicializar rango con primer y último código de la vista filtrada
   useEffect(() => {
     if (allFilteredItems && allFilteredItems.length > 0) {
-      if (!rangoDesde) setRangoDesde(allFilteredItems[0].placa || allFilteredItems[0].code || '');
+      if (!rangoDesde) setRangoDesde(allFilteredItems[0].placa || allFilteredItems[0].code || allFilteredItems[0].codigo || '');
       if (!rangoHasta) {
         const defaultHastaIdx = Math.min(allFilteredItems.length - 1, 49);
-        setRangoHasta(allFilteredItems[defaultHastaIdx].placa || allFilteredItems[defaultHastaIdx].code || '');
+        setRangoHasta(allFilteredItems[defaultHastaIdx].placa || allFilteredItems[defaultHastaIdx].code || allFilteredItems[defaultHastaIdx].codigo || '');
       }
     }
   }, [allFilteredItems]);
@@ -144,21 +65,20 @@ export default function ImpresionMasivaQRModal({
       if (!desdeClean && !hastaClean) return allFilteredItems;
 
       let idxDesde = allFilteredItems.findIndex(
-        (it) => (it.placa || it.code || '').toLowerCase() === desdeClean
+        (it) => (it.placa || it.code || it.codigo || '').toLowerCase() === desdeClean
       );
       let idxHasta = allFilteredItems.findIndex(
-        (it) => (it.placa || it.code || '').toLowerCase() === hastaClean
+        (it) => (it.placa || it.code || it.codigo || '').toLowerCase() === hastaClean
       );
 
-      // Búsqueda por inclusión si no hubo coincidencia exacta
       if (idxDesde === -1 && desdeClean) {
         idxDesde = allFilteredItems.findIndex((it) =>
-          (it.placa || it.code || '').toLowerCase().includes(desdeClean)
+          (it.placa || it.code || it.codigo || '').toLowerCase().includes(desdeClean)
         );
       }
       if (idxHasta === -1 && hastaClean) {
         idxHasta = allFilteredItems.findIndex((it) =>
-          (it.placa || it.code || '').toLowerCase().includes(hastaClean)
+          (it.placa || it.code || it.codigo || '').toLowerCase().includes(hastaClean)
         );
       }
 
@@ -174,24 +94,24 @@ export default function ImpresionMasivaQRModal({
   }, [modoImpresion, items, allFilteredItems, rangoDesde, rangoHasta]);
 
   // Expandir etiquetas según el número de copias configurado
-  const etiquetasParaImprimir = useMemo(() => {
+  const etiquetasAImprimir = useMemo(() => {
     const copias = Math.max(1, Math.min(10, Number(copiasPorItem) || 1));
     const lista = [];
-    (itemsBase || []).forEach((it, itemIdx) => {
-      const placa = it.placa || it.code || it.id || 'S-PLACA';
-      const nombre = it.nombre || it.name || it.material || it.parentName || 'Equipo Tecnológico';
+    (itemsBase || []).forEach((it, idx) => {
+      const codigo = it.placa || it.code || it.codigo || it.id || 'S-COD';
+      const nombre = it.nombre || it.name || it.material || it.parentName || 'Equipo';
       const serial = it.serial && it.serial !== '—' ? it.serial : '';
       const sede = it.sede || it.ubicacion || 'OFICINA FMO';
       const qrUrl =
         it.qrUrl ||
         (typeof window !== 'undefined'
-          ? `${window.location.origin}/activo/${encodeURIComponent(placa)}`
-          : `https://inventario.fundacionmarinaorth.org/activo/${encodeURIComponent(placa)}`);
+          ? `${window.location.origin}/activo/${encodeURIComponent(codigo)}`
+          : `https://inventario.fundacionmarinaorth.org/activo/${encodeURIComponent(codigo)}`);
 
       for (let c = 0; c < copias; c++) {
         lista.push({
-          uniqueKey: `${placa}-${itemIdx}-${c}`,
-          placa,
+          uniqueKey: `${codigo}-${idx}-${c}`,
+          codigo,
           nombre,
           serial,
           sede,
@@ -204,14 +124,14 @@ export default function ImpresionMasivaQRModal({
     return lista;
   }, [itemsBase, copiasPorItem]);
 
-  // Agrupar en bloques de EXACTAMENTE 9 etiquetas (3 columnas × 3 filas) para hojas tamaño Carta
+  // Agrupar en bloques de EXACTAMENTE 9 etiquetas (3 columnas × 3 filas) para hojas Carta
   const paginasDeEtiquetas = useMemo(() => {
     const paginas = [];
-    for (let i = 0; i < etiquetasParaImprimir.length; i += 9) {
-      paginas.push(etiquetasParaImprimir.slice(i, i + 9));
+    for (let i = 0; i < etiquetasAImprimir.length; i += 9) {
+      paginas.push(etiquetasAImprimir.slice(i, i + 9));
     }
     return paginas;
-  }, [etiquetasParaImprimir]);
+  }, [etiquetasAImprimir]);
 
   const handlePrint = () => {
     document.body.classList.add('printing-qr-active');
@@ -221,27 +141,76 @@ export default function ImpresionMasivaQRModal({
   return (
     <>
       {/* ==============================================================
-          1. MODAL FLOTANTE EN PANTALLA (Header & Footer Fijos, Scroll Interno)
+          1. ESTRUCTURA EXACTA DEL MODAL (Header Fijo + Scroll Interno + Footer Fijo)
           ============================================================== */}
       <div
-        className="fixed inset-0 z-50 bg-[#013a52]/60 backdrop-blur-xs flex items-center justify-center p-4 md:p-6 no-print"
-        role="dialog"
-        aria-modal="true"
+        className="no-print"
         onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          backgroundColor: 'rgba(1, 58, 82, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+        }}
       >
         <div
-          className="flex flex-col max-h-[88vh] w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '1000px',
+            maxHeight: '88vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          }}
         >
-          {/* HEADER FIJO */}
-          <div className="shrink-0 bg-white border-b border-slate-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-[#abd037]/20 text-[#013a52] p-2 rounded-xl">
-                  <Printer className="w-5 h-5" />
+          {/* 1. HEADER FIJO (Nunca se mueve ni desaparece) */}
+          <div
+            style={{
+              padding: '16px 24px',
+              borderBottom: '1px solid #e2e8f0',
+              flexShrink: 0,
+              backgroundColor: '#ffffff',
+            }}
+          >
+            {/* Fila superior: Título + Botón Cerrar */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                    color: '#013a52',
+                    padding: '8px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Printer size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-[#013a52] m-0">
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: '18px',
+                      fontWeight: 700,
+                      color: '#013a52',
+                    }}
+                  >
                     Impresión Masiva de Etiquetas QR
                   </h3>
                 </div>
@@ -249,26 +218,54 @@ export default function ImpresionMasivaQRModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                aria-label="Cerrar modal"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '8px',
+                  color: '#64748b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                aria-label="Cerrar"
               >
-                <X className="w-5 h-5" />
+                <X size={20} />
               </button>
             </div>
 
-            {/* Barra de filtros / acciones limpia debajo del título */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
-              {/* Píldoras de selección (Tabs) */}
-              <div className="flex flex-wrap items-center gap-2">
+            {/* Fila inferior: Tabs de selección + Input Copias + Botón Imprimir */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '12px',
+                marginTop: '12px',
+                paddingTop: '12px',
+                borderTop: '1px solid #f1f5f9',
+              }}
+            >
+              {/* Tabs de selección */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={() => setModoImpresion('seleccionados')}
                   disabled={!items || items.length === 0}
-                  className={`cursor-pointer transition-all ${
-                    modoImpresion === 'seleccionados'
-                      ? 'bg-[#013a52] text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-xs'
-                      : 'bg-slate-100 text-[#6d6e71] hover:text-[#013a52] font-medium px-3.5 py-1.5 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed'
-                  }`}
+                  style={{
+                    cursor: !items || items.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: !items || items.length === 0 ? 0.4 : 1,
+                    backgroundColor: modoImpresion === 'seleccionados' ? '#013a52' : '#f1f5f9',
+                    color: modoImpresion === 'seleccionados' ? '#ffffff' : '#6d6e71',
+                    fontWeight: modoImpresion === 'seleccionados' ? 600 : 500,
+                    fontSize: '12px',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
                   Solo seleccionados ({items.length})
                 </button>
@@ -276,11 +273,17 @@ export default function ImpresionMasivaQRModal({
                 <button
                   type="button"
                   onClick={() => setModoImpresion('todos')}
-                  className={`cursor-pointer transition-all ${
-                    modoImpresion === 'todos'
-                      ? 'bg-[#013a52] text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-xs'
-                      : 'bg-slate-100 text-[#6d6e71] hover:text-[#013a52] font-medium px-3.5 py-1.5 rounded-lg text-xs'
-                  }`}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: modoImpresion === 'todos' ? '#013a52' : '#f1f5f9',
+                    color: modoImpresion === 'todos' ? '#ffffff' : '#6d6e71',
+                    fontWeight: modoImpresion === 'todos' ? 600 : 500,
+                    fontSize: '12px',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
                   Todos los de esta vista ({allFilteredItems.length})
                 </button>
@@ -288,47 +291,90 @@ export default function ImpresionMasivaQRModal({
                 <button
                   type="button"
                   onClick={() => setModoImpresion('rango')}
-                  className={`cursor-pointer transition-all flex items-center gap-1 ${
-                    modoImpresion === 'rango'
-                      ? 'bg-[#013a52] text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-xs'
-                      : 'bg-slate-100 text-[#6d6e71] hover:text-[#013a52] font-medium px-3.5 py-1.5 rounded-lg text-xs'
-                  }`}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: modoImpresion === 'rango' ? '#013a52' : '#f1f5f9',
+                    color: modoImpresion === 'rango' ? '#ffffff' : '#6d6e71',
+                    fontWeight: modoImpresion === 'rango' ? 600 : 500,
+                    fontSize: '12px',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
-                  <Hash className="w-3.5 h-3.5" />
+                  <Hash size={14} />
                   <span>Por rango de códigos</span>
                 </button>
 
                 {/* Filtro Rango inline si está activo */}
                 {modoImpresion === 'rango' && (
-                  <div className="flex items-center gap-1.5 ml-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg text-xs">
-                    <span className="text-slate-500 font-medium">De:</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <span style={{ color: '#64748b', fontWeight: 500 }}>De:</span>
                     <input
                       type="text"
                       value={rangoDesde}
                       onChange={(e) => setRangoDesde(e.target.value)}
                       placeholder="ACT-FMO-001"
-                      className="w-24 px-1.5 py-0.5 border border-slate-300 rounded font-mono font-bold text-[#013a52] text-xs focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                      style={{
+                        width: '85px',
+                        padding: '2px 6px',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        color: '#013a52',
+                        outline: 'none',
+                      }}
                     />
-                    <span className="text-slate-500 font-medium">A:</span>
+                    <span style={{ color: '#64748b', fontWeight: 500 }}>A:</span>
                     <input
                       type="text"
                       value={rangoHasta}
                       onChange={(e) => setRangoHasta(e.target.value)}
                       placeholder="ACT-FMO-050"
-                      className="w-24 px-1.5 py-0.5 border border-slate-300 rounded font-mono font-bold text-[#013a52] text-xs focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                      style={{
+                        width: '85px',
+                        padding: '2px 6px',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        color: '#013a52',
+                        outline: 'none',
+                      }}
                     />
                   </div>
                 )}
               </div>
 
-              {/* Controles derechos: Copias y Botón Imprimir */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <label htmlFor="copias-input" className="text-xs font-semibold text-[#6d6e71]">
+              {/* Controles derechos: Copias + Botón Imprimir Verde #abd037 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label
+                    htmlFor="copias-input-header"
+                    style={{ fontSize: '12px', fontWeight: 600, color: '#6d6e71' }}
+                  >
                     Copias:
                   </label>
                   <input
-                    id="copias-input"
+                    id="copias-input-header"
                     type="number"
                     min="1"
                     max="10"
@@ -337,73 +383,256 @@ export default function ImpresionMasivaQRModal({
                       const val = parseInt(e.target.value, 10);
                       setCopiasPorItem(isNaN(val) ? 1 : Math.max(1, Math.min(10, val)));
                     }}
-                    className="w-16 text-center border border-slate-300 rounded-lg py-1 text-sm font-bold text-[#013a52] focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                    style={{
+                      width: '60px',
+                      textAlign: 'center',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '4px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      color: '#013a52',
+                      outline: 'none',
+                    }}
                   />
                 </div>
 
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold px-5 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer text-xs sm:text-sm active:scale-95"
+                  style={{
+                    backgroundColor: '#abd037',
+                    color: '#013a52',
+                    fontWeight: 700,
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  }}
                 >
-                  <Printer className="w-4 h-4" />
-                  <span>Imprimir ({etiquetasParaImprimir.length})</span>
+                  <Printer size={16} />
+                  <span>Imprimir ({etiquetasAImprimir.length})</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* BODY CON SCROLL INTERNO EXCLUSIVO */}
-          <div className="flex-1 overflow-y-auto bg-slate-50/70 p-6">
-            {/* Indicador discreto */}
-            <div className="text-xs text-[#6d6e71] mb-4 font-medium flex items-center justify-between">
+          {/* 2. BODY CON SCROLL INTERNO Y GRILLA REAL DE 3 COLUMNAS */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '20px',
+              backgroundColor: '#f8fafc',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#6d6e71',
+                marginBottom: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <span>
-                Vista previa de impresión • <strong>{etiquetasParaImprimir.length}</strong> {etiquetasParaImprimir.length === 1 ? 'etiqueta' : 'etiquetas'} ({paginasDeEtiquetas.length} {paginasDeEtiquetas.length === 1 ? 'hoja Carta' : 'hojas Carta'})
+                Vista previa de impresión • <strong>{etiquetasAImprimir.length}</strong> etiquetas (
+                {paginasDeEtiquetas.length} {paginasDeEtiquetas.length === 1 ? 'hoja' : 'hojas'} Carta)
               </span>
-              <span className="hidden sm:inline text-slate-400">
-                Formato: 3×3 (9 etiquetas por hoja)
-              </span>
+              <span>Formato: 3×3 (9 etiquetas por hoja)</span>
             </div>
 
-            {/* Cuadrícula limpia de 3 columnas (SIN cajas vacías placeholder) */}
-            {etiquetasParaImprimir.length === 0 ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-[#6d6e71]">
-                <p className="font-semibold text-sm">No hay etiquetas para mostrar en esta selección.</p>
-                <p className="text-xs mt-1 text-slate-400">Selecciona activos en la tabla o cambia al modo "Todos los de esta vista".</p>
+            {etiquetasAImprimir.length === 0 ? (
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0',
+                  padding: '32px',
+                  textAlign: 'center',
+                  color: '#6d6e71',
+                }}
+              >
+                <p style={{ fontWeight: 600, fontSize: '14px', margin: 0 }}>
+                  No hay etiquetas para mostrar en esta selección.
+                </p>
+                <p style={{ fontSize: '12px', marginTop: '4px', color: '#94a3b8' }}>
+                  Selecciona activos en la tabla o cambia al modo "Todos los de esta vista".
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {etiquetasParaImprimir.map((etiqueta) => (
-                  <EtiquetaQRCard
-                    key={etiqueta.uniqueKey}
-                    etiqueta={etiqueta}
-                    isPrint={false}
-                  />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', // ⚠️ FORZAR 3 COLUMNAS REALES UNO AL LADO DEL OTRO
+                  gap: '14px',
+                }}
+              >
+                {etiquetasAImprimir.map((item, idx) => (
+                  <div
+                    key={item.uniqueKey || idx}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1.5px dashed #94a3b8',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {/* Encabezado compacto: Isotipo FMO (22x22px) + FUNDACIÓN MARINA ORTH */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        borderBottom: '2px solid #abd037',
+                        paddingBottom: '6px',
+                        marginBottom: '8px',
+                        width: '100%',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <img
+                        src="/logo-marina-orth.png"
+                        alt="FMO"
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          flexShrink: 0,
+                          borderRadius: '50%',
+                          objectFit: 'contain',
+                        }}
+                      />
+                      <div style={{ textAlign: 'left' }}>
+                        <div
+                          style={{
+                            fontSize: '9px',
+                            fontWeight: 800,
+                            color: '#013a52',
+                            lineHeight: 1.1,
+                          }}
+                        >
+                          FUNDACIÓN MARINA ORTH
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '7px',
+                            fontWeight: 600,
+                            color: '#6d6e71',
+                          }}
+                        >
+                          CONTROL DE ACTIVOS FIJOS
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* QR Compacto y Nítido */}
+                    <div style={{ margin: '4px 0' }}>
+                      <QRCodeSVG size={96} value={item.qrUrl} level="M" includeMargin={false} />
+                    </div>
+
+                    {/* Datos del equipo */}
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 900,
+                        color: '#000000',
+                        marginTop: '8px',
+                        letterSpacing: '0.05em',
+                      }}
+                    >
+                      {item.codigo}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: '#013a52',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%',
+                        marginTop: '2px',
+                      }}
+                      title={item.nombre}
+                    >
+                      {item.nombre}
+                    </div>
+                    <div style={{ fontSize: '9px', color: '#6d6e71', marginTop: '2px' }}>
+                      S/N: {item.serial || 'N/A'} •{' '}
+                      <span style={{ color: '#659c1e', fontWeight: 700 }}>{item.sede}</span>
+                      {item.totalCopias > 1 && (
+                        <span style={{ color: '#6d6e71', marginLeft: '4px' }}>
+                          (c.{item.copiaNumero})
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* FOOTER FIJO */}
-          <div className="shrink-0 bg-white border-t border-slate-200 px-6 py-3.5 flex items-center justify-between">
-            <span className="text-xs text-[#6d6e71] font-medium">
-              Formato optimizado para papel Carta (9 etiquetas por hoja)
+          {/* 3. FOOTER FIJO */}
+          <div
+            style={{
+              padding: '12px 24px',
+              borderTop: '1px solid #e2e8f0',
+              flexShrink: 0,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#ffffff',
+            }}
+          >
+            <span style={{ fontSize: '12px', color: '#6d6e71' }}>
+              9 etiquetas por hoja Carta (3×3)
             </span>
-            <div className="flex items-center gap-2.5">
+            <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl border border-slate-300 text-[#6d6e71] hover:text-[#013a52] font-medium text-sm transition-colors cursor-pointer"
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  color: '#6d6e71',
+                  fontWeight: 600,
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
               >
                 Cerrar
               </button>
               <button
                 type="button"
                 onClick={handlePrint}
-                className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold px-5 py-2 rounded-xl text-sm transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: '10px',
+                  backgroundColor: '#abd037',
+                  color: '#013a52',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
               >
-                <Printer className="w-4 h-4" />
-                <span>Imprimir Ahora</span>
+                🖨️ Imprimir Hoja
               </button>
             </div>
           </div>
@@ -411,24 +640,132 @@ export default function ImpresionMasivaQRModal({
       </div>
 
       {/* ==============================================================
-          2. PORTAL DE IMPRESIÓN DIRECTO EN document.body (#qr-print-portal)
-          Montado fuera de #root para impresión 100% limpia sin hojas en blanco
-          Paginado en bloques de EXACTAMENTE 9 etiquetas (3 columnas × 3 filas)
+          PORTAL DE IMPRESIÓN DIRECTO EN document.body (#qr-print-portal)
           ============================================================== */}
       {typeof document !== 'undefined' &&
         createPortal(
-          <div id="qr-print-portal" className="hidden print:block w-full bg-white m-0 p-0">
+          <div id="qr-print-portal" className="hidden print:block" style={{ width: '100%', margin: 0, padding: 0 }}>
             {paginasDeEtiquetas.map((pagina, pageIdx) => (
               <div
                 key={`qr-print-page-${pageIdx}`}
-                className="qr-page-grid grid grid-cols-3 gap-3 w-full bg-white box-border"
+                className="qr-page-grid"
                 style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gridTemplateRows: 'repeat(3, 7.8cm)',
+                  gap: '12px',
+                  width: '100%',
+                  boxSizing: 'border-box',
                   pageBreakAfter: pageIdx < paginasDeEtiquetas.length - 1 ? 'always' : 'auto',
                   breakAfter: pageIdx < paginasDeEtiquetas.length - 1 ? 'page' : 'auto',
                 }}
               >
-                {pagina.map((etiqueta) => (
-                  <EtiquetaQRCard key={etiqueta.uniqueKey} etiqueta={etiqueta} isPrint={true} />
+                {pagina.map((item, idx) => (
+                  <div
+                    key={item.uniqueKey || idx}
+                    className="qr-card-3x3-print"
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1.5px dashed #6d6e71',
+                      borderRadius: '10px',
+                      padding: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      boxSizing: 'border-box',
+                      justifyContent: 'space-between',
+                      height: '7.8cm',
+                      minHeight: '7.8cm',
+                      maxHeight: '8.0cm',
+                      pageBreakInside: 'avoid',
+                      breakInside: 'avoid',
+                    }}
+                  >
+                    {/* Encabezado compacto */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        borderBottom: '2px solid #abd037',
+                        paddingBottom: '5px',
+                        marginBottom: '6px',
+                        width: '100%',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <img
+                        src="/logo-marina-orth.png"
+                        alt="FMO"
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          flexShrink: 0,
+                          borderRadius: '50%',
+                          objectFit: 'contain',
+                        }}
+                      />
+                      <div style={{ textAlign: 'left' }}>
+                        <div
+                          style={{
+                            fontSize: '9px',
+                            fontWeight: 800,
+                            color: '#013a52',
+                            lineHeight: 1.1,
+                          }}
+                        >
+                          FUNDACIÓN MARINA ORTH
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '7px',
+                            fontWeight: 600,
+                            color: '#6d6e71',
+                          }}
+                        >
+                          CONTROL DE ACTIVOS FIJOS
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* QR Compacto */}
+                    <div style={{ margin: '4px 0' }}>
+                      <QRCodeSVG size={96} value={item.qrUrl} level="M" includeMargin={false} />
+                    </div>
+
+                    {/* Datos del equipo */}
+                    <div style={{ width: '100%', marginTop: '6px' }}>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 900,
+                          color: '#000000',
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        {item.codigo}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#013a52',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '100%',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {item.nombre}
+                      </div>
+                      <div style={{ fontSize: '9px', color: '#6d6e71', marginTop: '2px' }}>
+                        S/N: {item.serial || 'N/A'} •{' '}
+                        <span style={{ color: '#659c1e', fontWeight: 700 }}>{item.sede}</span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             ))}
