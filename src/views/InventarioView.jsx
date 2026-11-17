@@ -938,22 +938,6 @@ export default function InventarioView({
   // Total de equipos registrados sin filtrar
   const totalEquiposRegistrados = rawEquiposUnits.length;
 
-  const areAllVisibleEquiposSelected =
-    (paginatedEquiposUnits || []).length > 0 &&
-    (paginatedEquiposUnits || []).every((u) => isQRSelected(u.placa || u.code || 'S-PLACA'));
-
-  const areAllVisibleConsumiblesSelected =
-    (paginatedConsumibles || []).length > 0 &&
-    (paginatedConsumibles || []).every((it) => isQRSelected(it.id || it.code || 'S-COD'));
-
-  const areAllVisiblePapeleriaSelected =
-    (paginatedPapeleria || []).length > 0 &&
-    (paginatedPapeleria || []).every((it) => isQRSelected(it.id || it.placa || 'S-COD'));
-
-  const areAllVisibleMobiliarioSelected =
-    (paginatedMobiliario || []).length > 0 &&
-    (paginatedMobiliario || []).every((m) => isQRSelected(m.placa || m.code || m.id || 'S-PLACA'));
-
   // Render plano con filtros y buscador reactivo
   const allEquiposUnits = useMemo(() => {
     const term = normalizeText(searchTerm);
@@ -1230,6 +1214,23 @@ export default function InventarioView({
     const start = (currentEquiposPage - 1) * ITEMS_PER_PAGE;
     return allEquiposUnits.slice(start, start + ITEMS_PER_PAGE);
   }, [allEquiposUnits, currentEquiposPage]);
+
+  // Verificación de selección completa para encabezados de tablas (SIGA-FMO)
+  const areAllVisibleEquiposSelected =
+    (paginatedEquiposUnits || []).length > 0 &&
+    (paginatedEquiposUnits || []).every((u) => isQRSelected(u.placa || u.code || 'S-PLACA'));
+
+  const areAllVisibleConsumiblesSelected =
+    (paginatedConsumibles || []).length > 0 &&
+    (paginatedConsumibles || []).every((it) => isQRSelected(it.id || it.code || 'S-COD'));
+
+  const areAllVisiblePapeleriaSelected =
+    (paginatedPapeleria || []).length > 0 &&
+    (paginatedPapeleria || []).every((it) => isQRSelected(it.id || it.placa || 'S-COD'));
+
+  const areAllVisibleMobiliarioSelected =
+    (paginatedMobiliario || []).length > 0 &&
+    (paginatedMobiliario || []).every((m) => isQRSelected(m.placa || m.code || m.id || 'S-PLACA'));
 
   // Manejador para dar de baja / eliminar activo tecnológico con confirmación institucional
   const handleDeleteEquipo = (u) => {
