@@ -3035,7 +3035,7 @@ export default function PrestamosView({
                     border: '1px solid var(--border)',
                   }}
                 >
-                  <Calendar size={13} style={{ color: '#16a34a', flexShrink: 0 }} />
+                  <Calendar size={13} style={{ color: '#6d6e71', flexShrink: 0 }} />
                   <span style={{ fontSize: '11.5px', color: 'var(--text-dim)', fontWeight: 600 }}>Criterio:</span>
                   <select
                     value={comprasFechaTipo}

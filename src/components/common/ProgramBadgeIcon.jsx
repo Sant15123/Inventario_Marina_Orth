@@ -1,4 +1,12 @@
 import React from 'react';
+import {
+  RoboticaIcon as FmoRoboticaSvg,
+  NuevasTecnologiasIcon as FmoTecnologiaSvg,
+  TeachLabsIcon as FmoTeachLabsSvg,
+  SocioemocionalIcon as FmoSocioemocionalSvg,
+  InglesIcon as FmoInglesSvg,
+  BecasIcon as FmoBecasSvg,
+} from './FmoProgramIcons';
 
 /**
  * ProgramBadgeIcon - Iconos Oficiales de los 6 Programas Institucionales
@@ -274,18 +282,18 @@ export default function ProgramBadgeIcon({
   const renderIcon = (iconColor = '#FFFFFF') => {
     switch (config.id) {
       case 'robotica':
-        return <RoboticaIcon size={size} color={iconColor} />;
+        return <FmoRoboticaSvg size={size} className="w-full h-full" />;
       case 'tecnologia':
-        return <TecnologiaIcon size={size} color={iconColor} />;
+        return <FmoTecnologiaSvg size={size} className="w-full h-full" />;
       case 'teachlabs':
-        return <TeachLabsIcon size={size} color={iconColor} />;
+        return <FmoTeachLabsSvg size={size} className="w-full h-full" />;
       case 'ingles':
-        return <InglesIcon size={size} color={iconColor} />;
+        return <FmoInglesSvg size={size} className="w-full h-full" />;
       case 'socioemocional':
-        return <SocioemocionalIcon size={size} color={iconColor} />;
+        return <FmoSocioemocionalSvg size={size} className="w-full h-full" />;
       case 'becas':
       default:
-        return <BecasIcon size={size} color={iconColor} />;
+        return <FmoBecasSvg size={size} className="w-full h-full" />;
     }
   };
 
@@ -307,8 +315,6 @@ export default function ProgramBadgeIcon({
         style={{
           width: `${boxSize}px`,
           height: `${boxSize}px`,
-          backgroundColor: config.color,
-          color: '#FFFFFF',
           ...style,
         }}
         title={`Programa Oficial: ${config.nombre}`}
@@ -323,16 +329,14 @@ export default function ProgramBadgeIcon({
   const displayLabel = label || config.nombre;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${config.bgBadge} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${config.bgBadge} ${className}`}
       style={style}
     >
       <span
-        className="inline-flex items-center justify-center rounded-md p-1 shadow-xs flex-shrink-0"
+        className="inline-flex items-center justify-center flex-shrink-0"
         style={{
-          backgroundColor: config.color,
-          color: '#FFFFFF',
-          width: `${size + 4}px`,
-          height: `${size + 4}px`,
+          width: `${size}px`,
+          height: `${size}px`,
         }}
       >
         {renderIcon('#FFFFFF')}

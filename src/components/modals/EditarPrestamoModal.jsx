@@ -295,7 +295,7 @@ export const EditarPrestamoModal = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
-                  <Building2 size={14} className="text-slate-400" />
+                  <Building2 size={14} style={{ color: '#6d6e71' }} />
                   Sede / Destino *
                 </label>
                 <select
@@ -345,7 +345,7 @@ export const EditarPrestamoModal = ({
             {/* Campo: Fecha Devolución Pactada */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
-                <Calendar size={14} className="text-slate-400" />
+                <Calendar size={14} style={{ color: '#6d6e71' }} />
                 Fecha Devolución Pactada *
               </label>
               <input

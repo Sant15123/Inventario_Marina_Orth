@@ -490,7 +490,7 @@ export default function DetalleUsuarioModal({
                   gap: '5px',
                 }}
               >
-                <MapPin size={12} style={{ color: '#84CC16' }} />
+                <MapPin size={12} style={{ color: '#6d6e71' }} />
                 <span>Sede Asignada</span>
               </span>
               <div>

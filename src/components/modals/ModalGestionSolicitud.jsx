@@ -927,7 +927,7 @@ export default function ModalGestionSolicitud({
             {/* Sede / Municipio de Destino */}
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: '22px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <MapPin size={14} style={{ color: '#38bdf8' }} />
+                <MapPin size={14} style={{ color: '#6d6e71' }} />
                 <span style={{ fontSize: '12px', fontWeight: 600 }}>Sede / Municipio de Destino</span>
                 {esAdmin && !yaResuelta && <span style={{ fontSize: '10px', color: '#84CC16', fontWeight: 700 }}>· Editable Admin</span>}
               </div>
@@ -982,7 +982,7 @@ export default function ModalGestionSolicitud({
             {/* Tipo de Requerimiento o Fecha de Retorno / Fecha Ideal Requerida */}
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: '22px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {isCompra ? <ShoppingCart size={14} style={{ color: '#818cf8' }} /> : esPrestamo ? <Calendar size={14} style={{ color: '#84CC16' }} /> : <Layers size={14} style={{ color: '#f59e0b' }} />}
+                {isCompra ? <ShoppingCart size={14} style={{ color: '#6d6e71' }} /> : esPrestamo ? <Calendar size={14} style={{ color: '#6d6e71' }} /> : <Layers size={14} style={{ color: '#6d6e71' }} />}
                 <span style={{ fontSize: '12px', fontWeight: 600 }}>
                   {isCompra ? 'Fecha Ideal Requerida' : esPrestamo ? 'Fecha de Devolución Pactada' : 'Tipo de Requerimiento'}
                 </span>

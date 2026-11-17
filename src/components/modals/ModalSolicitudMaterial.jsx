@@ -1232,7 +1232,7 @@ export default function ModalSolicitudMaterial({
                   className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
                   style={{ color: 'var(--text-dim, #94a3b8)' }}
                 >
-                  <Calendar size={14} style={{ color: esCompra ? '#818cf8' : '#84CC16' }} />
+                  <Calendar size={14} style={{ color: '#6d6e71' }} />
                   <span>
                     {esCompra ? 'Fecha Ideal Requerida' : 'Fecha de Devolución Estimada'}
                   </span>
@@ -1269,7 +1269,7 @@ export default function ModalSolicitudMaterial({
                   className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1.5"
                   style={{ color: 'var(--text-dim, #94a3b8)' }}
                 >
-                  <MapPin size={14} style={{ color: '#84CC16' }} />
+                  <MapPin size={14} style={{ color: '#6d6e71' }} />
                   <span>Sede / Municipio Destino</span>
                   <span className="text-rose-400">*</span>
                 </label>

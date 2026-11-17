@@ -1,4 +1,10 @@
 import FmoCobrandingBadge from '../components/common/FmoCobrandingBadge';
+import {
+  FmoProgramBadge,
+  RoboticaIcon,
+  NuevasTecnologiasIcon,
+  TeachLabsIcon,
+} from '../components/common/FmoProgramIcons';
 import { useState, useMemo, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QrCode, Eye, Pencil, Trash2, X } from 'lucide-react';
@@ -2531,17 +2537,11 @@ export default function InventarioView({
                               {u.parentName}
                             </strong>
                             <span
-                              title={u.model || u.parentCategory || 'Estándar'}
-                              style={{
-                                fontSize: '11.5px',
-                                color: 'var(--text-dim)',
-                                maxWidth: '100%',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#2CACD0]/15 text-[#013a52] border border-[#2CACD0]/30 dark:bg-[#2CACD0]/25 dark:text-[#2CACD0] mt-0.5"
+                              title={u.model || u.parentCategory || 'Nuevas Tecnologías'}
                             >
-                              {u.model || u.parentCategory || 'Estándar'}
+                              <NuevasTecnologiasIcon className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{u.model || u.parentCategory || 'Nuevas Tecnologías'}</span>
                             </span>
                           </div>
                         </td>
@@ -3024,20 +3024,11 @@ export default function InventarioView({
 
                         {/* 2. CATEGORÍA: Tag redondeado */}
                         <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <span
-                            className="category-tag robotica bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 font-bold dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]"
-                            title={it.categoria || it.category || 'Robótica'}
-                            style={{
-                              fontSize: '11.5px',
-                              padding: '2px 8px',
-                              display: 'inline-block',
-                              maxWidth: '100%',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {it.categoria || it.category || 'Robótica'}
-                          </span>
+                          <FmoProgramBadge
+                            program="robotica"
+                            label={it.categoria || it.category || 'Robótica'}
+                            iconSize={15}
+                          />
                         </td>
 
                         {/* 3. DISPONIBLE: Indicador numérico con unidad según diseño institucional */}
@@ -3480,6 +3471,13 @@ export default function InventarioView({
                             >
                               {matName}
                             </strong>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                              <FmoProgramBadge
+                                program="teachlabs"
+                                label={it.categoria || 'TeachLabs'}
+                                iconSize={13}
+                              />
+                            </div>
                             {it.descripcion ? (
                               <span
                                 style={{
