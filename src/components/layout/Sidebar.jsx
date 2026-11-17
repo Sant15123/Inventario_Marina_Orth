@@ -81,16 +81,35 @@ export default function Sidebar({ currentView, onViewChange }) {
                   <button
                     type="button"
                     onClick={() => onViewChange(item.id)}
-                    className={`nav-item-btn ${
+                    className={`nav-item-btn group ${
                       isActive
-                        ? 'active bg-[#abd037]/20 text-[#013a52] font-bold dark:bg-[#abd037] dark:text-[#013a52]'
+                        ? 'active bg-[#abd037] text-[#013a52] font-bold dark:bg-[#abd037] dark:text-[#013a52]'
                         : 'text-[#6d6e71] hover:text-[#013a52] dark:text-slate-300 dark:hover:text-[#abd037]'
                     }`}
                     aria-current={isActive ? 'page' : undefined}
+                    style={isActive ? { backgroundColor: '#abd037', color: '#013a52' } : {}}
                   >
-                    <span className="dot" aria-hidden="true"></span>
-                    <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-                    <span>{item.label}</span>
+                    <span
+                      className={`dot ${
+                        isActive
+                          ? 'bg-[#013a52]'
+                          : 'bg-slate-300 dark:bg-[#6d6e71]/40 group-hover:bg-[#013a52]'
+                      }`}
+                      style={isActive ? { backgroundColor: '#013a52' } : {}}
+                      aria-hidden="true"
+                    ></span>
+                    <span
+                      className={`nav-icon ${
+                        isActive
+                          ? 'text-[#013a52]'
+                          : 'text-[#6d6e71] group-hover:text-[#013a52] dark:text-slate-400 dark:group-hover:text-[#abd037]'
+                      }`}
+                      style={isActive ? { color: '#013a52' } : {}}
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </span>
+                    <span className={isActive ? 'text-[#013a52] font-bold' : ''}>{item.label}</span>
                   </button>
                 </li>
               );
