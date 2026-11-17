@@ -188,15 +188,20 @@ function App() {
       // Mapear activos directamente desde la base de datos
       if (Array.isArray(activosData)) {
         activosData.forEach((a) => {
+          const itemArea = a.area_asignada || a.area || a.programa || 'Nuevas Tecnologías';
           const unitObj = {
+            id: a.id,
+            dbId: a.id,
             code: a.placa,
             placa: a.placa,
             model: a.modelo || a.marca || 'Estándar',
-            serial: a.serial || 'â',
+            serial: a.serial || '—',
             sede: a.sede || 'Medellín',
             ubicacion_estante: a.ubicacion_estante || '',
             status: a.estado === 'En campo' ? 'prestado' : (a.estado || 'disponible').toLowerCase(),
             responsable: a.custodio || (a.estado === 'En campo' ? 'Custodio Temporal' : 'Bodega Central'),
+            area: itemArea,
+            area_asignada: itemArea,
           };
 
           const existingEq = newItems.find(
@@ -208,12 +213,15 @@ function App() {
           } else {
             newItems.push({
               id: `eq-${a.id || a.placa}`,
+              dbId: a.id,
               name: a.nombre,
               category: a.marca || 'Equipos de Cómputo',
               itemType: 'equipo',
               location: a.sede ? `Sede ${a.sede}` : 'Bodega Medellín',
               sede: a.sede || 'Medellín',
               ubicacion_estante: a.ubicacion_estante || '',
+              area: itemArea,
+              area_asignada: itemArea,
               minStock: 1,
               units: [unitObj],
               quantity: 0,

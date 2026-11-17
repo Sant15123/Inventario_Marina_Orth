@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { supabase } from '../../services/supabase';
 import ProgramAreaBadge, { ProgramAreaSelect } from '../common/ProgramAreaBadge';
 
 /**
@@ -53,7 +54,8 @@ export default function ModalEditarActivo({
     nombre: '',
     categoria: 'Portátiles',
     condicion: 'Bueno',
-    area: 'Tecnología',
+    area: 'Nuevas Tecnologías',
+    area_asignada: 'Nuevas Tecnologías',
     ubicacion: 'Oficina Medellín',
     ubicacion_estante: '',
     cantidad: 1,
@@ -91,7 +93,8 @@ export default function ModalEditarActivo({
         nombre: itemActivo.nombre || itemActivo.equipo || itemActivo.material || itemActivo.name || '',
         categoria: itemActivo.categoria || itemActivo.category || 'Portátiles',
         condicion: itemActivo.condicion || itemActivo.estado_fisico || itemActivo.estado || 'Bueno',
-        area: itemActivo.area || 'Tecnología',
+        area: itemActivo.area_asignada || itemActivo.area || 'Nuevas Tecnologías',
+        area_asignada: itemActivo.area_asignada || itemActivo.area || 'Nuevas Tecnologías',
         ubicacion: itemActivo.ubicacion || itemActivo.location || 'Oficina Medellín',
         ubicacion_estante: itemActivo.ubicacion_estante || '',
         cantidad: 1,
@@ -156,6 +159,36 @@ export default function ModalEditarActivo({
 
     try {
       setInternalSubmitting(true);
+      if (supabase && itemActivo) {
+        try {
+          const areaAsignada = formData.area_asignada || formData.area || 'Nuevas Tecnologías';
+          const updatePayload = {
+            nombre: formData.nombre?.trim(),
+            marca: formData.marca?.trim(),
+            modelo: formData.modelo?.trim(),
+            serial: formData.serial?.trim(),
+            categoria: formData.categoria,
+            condicion: formData.condicion,
+            area_asignada: areaAsignada,
+            area: areaAsignada,
+            ubicacion: formData.ubicacion?.trim(),
+            ubicacion_estante: formData.ubicacion_estante?.trim(),
+            sede: formData.sede || formData.ubicacion,
+            responsable: formData.responsable?.trim(),
+            estado: formData.condicion,
+          };
+          const targetId = itemActivo.dbId || (itemActivo.id && !String(itemActivo.id).startsWith('eq-') ? itemActivo.id : null);
+          const targetPlaca = (formData.placa || itemActivo.placa || '').trim();
+
+          if (targetId) {
+            await supabase.from('equipos').update(updatePayload).eq('id', targetId);
+          } else if (targetPlaca) {
+            await supabase.from('equipos').update(updatePayload).eq('placa', targetPlaca);
+          }
+        } catch (sbE) {
+          console.warn('Aviso Supabase update en modal:', sbE?.message);
+        }
+      }
       if (onSave) {
         await onSave(formData);
       } else if (onSaveSuccess) {
@@ -495,8 +528,8 @@ export default function ModalEditarActivo({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   <ProgramAreaSelect
                     label="Área Asignada / Programa FMO"
-                    value={formData.area || ''}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                    value={formData.area_asignada || formData.area || 'Nuevas Tecnologías'}
+                    onChange={(e) => setFormData({ ...formData, area: e.target.value, area_asignada: e.target.value })}
                   />
 
                   <div>

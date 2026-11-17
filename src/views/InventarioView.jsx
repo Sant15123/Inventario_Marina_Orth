@@ -76,6 +76,7 @@ const mapEquipoItem = (a) => {
   const ubicacion_estante = a.ubicacion_estante || '';
   const custodio = a.custodio || (estado === 'En campo' ? 'Custodio Temporal' : 'Bodega Central');
   const responsable = a.responsable || custodio;
+  const areaAsignada = a.area_asignada || a.area || a.programa || 'Nuevas Tecnologías';
 
   return {
     id: `eq-${a.id || placa}`,
@@ -89,7 +90,8 @@ const mapEquipoItem = (a) => {
     categoria: a.categoria || a.marca || 'Portátiles',
     condicion: a.condicion || estado || 'Nuevo',
     estado: estado,
-    area: a.area || 'Tecnología',
+    area: areaAsignada,
+    area_asignada: areaAsignada,
     ubicacion: ubicacion,
     location: ubicacion,
     ubicacion_estante: ubicacion_estante,
@@ -135,6 +137,8 @@ const mapEquipoItem = (a) => {
         custodio: custodio,
         baseLocation: ubicacion,
         ubicacion_estante: ubicacion_estante,
+        area: areaAsignada,
+        area_asignada: areaAsignada,
       },
     ],
   };
@@ -732,6 +736,8 @@ export default function InventarioView({
     equipos.forEach((eq) => {
       if (eq.units && eq.units.length > 0) {
         eq.units.forEach((u) => {
+          const unitPlaca = u.placa || u.code || eq.placa || eq.id || '—';
+          const unitArea = u.area_asignada || u.area || u.programa || eq.area_asignada || eq.area || 'Nuevas Tecnologías';
           list.push({
             parentItemId: eq.id,
             parentName: eq.nombre || eq.name,
@@ -745,20 +751,28 @@ export default function InventarioView({
             responsable: u.responsable || eq.responsable || eq.custodio || '—',
             modelo: u.model || u.modelo || eq.modelo || eq.model || 'General',
             serial: u.serial || eq.serial || '—',
-            placa: u.placa || u.code || eq.placa || eq.id || '—',
-            code: u.code || u.placa || eq.placa || eq.id || '—',
+            placa: unitPlaca,
+            code: unitPlaca,
             ...u,
+            id: u.id || u.dbId || unitPlaca,
+            dbId: u.dbId || (u.id && !String(u.id).startsWith('eq-') ? u.id : eq.dbId),
+            area_asignada: unitArea,
+            area: unitArea,
           });
         });
       } else {
         // En caso de activo plano sin array units
+        const eqPlaca = eq.placa || eq.codigoItem || eq.id || 'SIN-COD';
+        const eqArea = eq.area_asignada || eq.area || eq.programa || 'Nuevas Tecnologías';
         list.push({
+          id: eq.id || eqPlaca,
+          dbId: eq.dbId,
           parentItemId: eq.id,
           parentName: eq.nombre || eq.name,
           nombre: eq.nombre || eq.name,
           parentCategory: eq.categoria || eq.category,
-          code: eq.placa || eq.codigoItem || eq.id || 'SIN-COD',
-          placa: eq.placa || eq.id || '—',
+          code: eqPlaca,
+          placa: eqPlaca,
           model: eq.modelo || eq.model || 'General',
           modelo: eq.modelo || eq.model || 'General',
           serial: eq.serial || '—',
@@ -769,6 +783,8 @@ export default function InventarioView({
           ubicacion: eq.ubicacion || eq.location || (eq.sede ? `Sede ${eq.sede}` : 'Bodega'),
           ubicacion_estante: eq.ubicacion_estante || '',
           responsable: eq.responsable || eq.custodio || '—',
+          area_asignada: eqArea,
+          area: eqArea,
         });
       }
     });
@@ -1425,7 +1441,8 @@ export default function InventarioView({
         categoria: itemCombinado.categoria || itemCombinado.category || 'Portátiles',
         condicion: condicionReal,
         condicion_fisica: condicionReal,
-        area: itemCombinado.area_proceso || itemCombinado.area || 'Tecnología',
+        area: itemCombinado.area_asignada || itemCombinado.area_proceso || itemCombinado.area || 'Nuevas Tecnologías',
+        area_asignada: itemCombinado.area_asignada || itemCombinado.area_proceso || itemCombinado.area || 'Nuevas Tecnologías',
         area_proceso: itemCombinado.area_proceso || itemCombinado.area || 'Tecnología',
         sede: sedeReal,
         ubicacion: itemCombinado.ubicacion || sedeReal,
@@ -1474,7 +1491,8 @@ export default function InventarioView({
         categoria: equipo.categoria || equipo.category || 'Portátiles',
         condicion: condicionReal,
         condicion_fisica: condicionReal,
-        area: equipo.area_proceso || equipo.area || 'Tecnología',
+        area: equipo.area_asignada || equipo.area_proceso || equipo.area || 'Nuevas Tecnologías',
+        area_asignada: equipo.area_asignada || equipo.area_proceso || equipo.area || 'Nuevas Tecnologías',
         area_proceso: equipo.area_proceso || equipo.area || 'Tecnología',
         sede: sedeReal,
         ubicacion: equipo.ubicacion || sedeReal,
@@ -1516,10 +1534,11 @@ export default function InventarioView({
     if (e && e.preventDefault) e.preventDefault();
     if (!equipoParaEditar) return;
 
-    const placaIdentificador = (equipoParaEditar.placa || (equipoParaEditar.units && equipoParaEditar.units[0]?.placa) || equipoParaEditar.id || '').trim();
+    const placaIdentificador = (equipoParaEditar.placa || (equipoParaEditar.units && equipoParaEditar.units[0]?.placa) || equipoParaEditar.code || '').trim();
     const placaNueva = (formDataEditarEquipo.placa || placaIdentificador).trim();
     const nombre = formDataEditarEquipo.nombre?.trim();
     const serial = formDataEditarEquipo.serial?.trim();
+    const areaAsignada = formDataEditarEquipo.area_asignada || formDataEditarEquipo.area?.trim() || 'Nuevas Tecnologías';
 
     if (!placaNueva) {
       showError('Validación', 'La Placa / Código del equipo es obligatoria.');
@@ -1548,7 +1567,8 @@ export default function InventarioView({
         serial,
         categoria: formDataEditarEquipo.categoria || 'Portátiles',
         condicion: formDataEditarEquipo.condicion || 'Nuevo',
-        area: formDataEditarEquipo.area?.trim() || 'Tecnología',
+        area: areaAsignada,
+        area_asignada: areaAsignada,
         ubicacion: formDataEditarEquipo.ubicacion?.trim() || 'Oficina Medellín',
         ubicacion_estante: formDataEditarEquipo.ubicacion_estante?.trim() || '',
         sede: formDataEditarEquipo.ubicacion || formDataEditarEquipo.sede || 'Medellín',
@@ -1569,6 +1589,52 @@ export default function InventarioView({
         observaciones: formDataEditarEquipo.observaciones?.trim() || '',
         en_contabilidad: Boolean(formDataEditarEquipo.en_contabilidad),
       };
+
+      // 1. UPDATE en Supabase (Guardar solo el registro editado filtrando exclusivamente por id o placa única)
+      if (supabase) {
+        const payloadSupabase = {
+          nombre,
+          marca: payload.marca,
+          modelo: payload.modelo,
+          serial: payload.serial,
+          categoria: payload.categoria,
+          condicion: payload.condicion,
+          area_asignada: areaAsignada,
+          area: areaAsignada,
+          ubicacion: payload.ubicacion,
+          ubicacion_estante: payload.ubicacion_estante,
+          sede: payload.sede,
+          responsable: payload.responsable,
+          custodio: payload.custodio,
+          estado: payload.estado,
+          descripcion: payload.descripcion,
+          observaciones: payload.observaciones,
+        };
+
+        const targetDbId = equipoParaEditar.dbId || (equipoParaEditar.id && !String(equipoParaEditar.id).startsWith('eq-') ? equipoParaEditar.id : null);
+        const targetPlaca = (placaIdentificador || placaNueva).trim();
+
+        // ⚠️ NUNCA filtrar por nombre ni omitir .eq('id', ...) o .eq('placa', ...)
+        try {
+          if (targetDbId) {
+            await supabase.from('equipos').update(payloadSupabase).eq('id', targetDbId);
+          } else if (targetPlaca) {
+            await supabase.from('equipos').update(payloadSupabase).eq('placa', targetPlaca);
+          }
+        } catch (sbE) {
+          console.warn('Aviso Supabase update equipos:', sbE?.message);
+        }
+
+        try {
+          if (targetDbId) {
+            await supabase.from('activos').update(payloadSupabase).eq('id', targetDbId);
+          } else if (targetPlaca) {
+            await supabase.from('activos').update(payloadSupabase).eq('placa', targetPlaca);
+          }
+        } catch (sbE2) {
+          console.warn('Aviso Supabase update activos:', sbE2?.message);
+        }
+      }
 
       // Intentar actualizar vía PUT /api/activos/:placa o /api/equipos/:id
       const res = await fetch(`${API_BASE_URL}/api/activos/${encodeURIComponent(placaIdentificador || placaNueva)}`, {
@@ -1598,65 +1664,83 @@ export default function InventarioView({
         setItemSeleccionado(equipoActualizado);
       }
 
-      // Actualizar inmediatamente el estado local de React sin requerir F5
+      // 2. Actualizar inmediatamente el estado local de React sin requerir F5 (modificando SOLO el ítem editado)
       setLocalItems((prev) => {
         const base = Array.isArray(prev) && prev.length > 0 ? prev : (Array.isArray(items) ? items : []);
+        const targetId = equipoParaEditar.id;
+        const targetDbId = equipoParaEditar.dbId;
+        const targetPlacaUpper = (placaIdentificador || placaNueva).trim().toUpperCase();
+
         return base.map((eq) => {
-          const matchId = String(eq.id || '').replace(/^eq-/, '');
-          const matchTarget = String(equipoParaEditar.id || '').replace(/^eq-/, '');
-          const matchPlaca = String(eq.placa || eq.code || '');
-          const isTarget = matchId === matchTarget || matchPlaca.toUpperCase() === placaIdentificador.toUpperCase();
+          const isDirectMatch = Boolean(
+            (targetId && eq.id === targetId) ||
+            (targetDbId && eq.dbId === targetDbId) ||
+            (targetPlacaUpper && String(eq.placa || eq.code || '').toUpperCase() === targetPlacaUpper)
+          );
 
-          if (!isTarget) return eq;
+          const hasMatchingUnit = Boolean(
+            eq.units && eq.units.some((u) => {
+              const uPlaca = String(u.placa || u.code || '').trim().toUpperCase();
+              return (
+                (targetId && (u.id === targetId || u.parentItemId === targetId)) ||
+                (targetDbId && u.dbId === targetDbId) ||
+                (targetPlacaUpper && uPlaca === targetPlacaUpper)
+              );
+            })
+          );
 
-          const updatedUnits = (eq.units && eq.units.length > 0)
-            ? eq.units.map((u) => {
-                const uPlaca = String(u.placa || u.code || '');
-                if (uPlaca.toUpperCase() === placaIdentificador.toUpperCase() || uPlaca.toUpperCase() === placaNueva.toUpperCase()) {
-                  return {
-                    ...u,
-                    placa: placaNueva,
-                    code: placaNueva,
-                    model: payload.modelo,
-                    serial: payload.serial,
-                    sede: payload.sede,
-                    baseLocation: payload.ubicacion,
-                    ubicacion: payload.ubicacion,
-                    ubicacion_estante: payload.ubicacion_estante,
-                    responsable: payload.responsable,
-                    custodio: payload.custodio,
-                    status: payload.estado === 'En campo' ? 'prestado' : payload.estado.toLowerCase(),
-                  };
-                }
-                return u;
-              })
-            : [
-                {
-                  placa: placaNueva,
-                  code: placaNueva,
-                  model: payload.modelo,
-                  serial: payload.serial,
-                  sede: payload.sede,
-                  baseLocation: payload.ubicacion,
-                  ubicacion: payload.ubicacion,
-                  ubicacion_estante: payload.ubicacion_estante,
-                  responsable: payload.responsable,
-                  custodio: payload.custodio,
-                  status: payload.estado === 'En campo' ? 'prestado' : payload.estado.toLowerCase(),
-                },
-              ];
+          if (!isDirectMatch && !hasMatchingUnit) {
+            return eq;
+          }
+
+          if (eq.units && eq.units.length > 0) {
+            const updatedUnits = eq.units.map((u) => {
+              const uPlaca = String(u.placa || u.code || '').trim().toUpperCase();
+              const isThisUnit = Boolean(
+                (targetId && u.id === targetId) ||
+                (targetDbId && u.dbId === targetDbId) ||
+                (targetPlacaUpper && uPlaca === targetPlacaUpper)
+              );
+
+              if (!isThisUnit) {
+                return u; // ⚠️ Unidad hermana no modificada, conserva su área asignada independiente
+              }
+
+              return {
+                ...u,
+                placa: placaNueva,
+                code: placaNueva,
+                model: payload.modelo,
+                serial: payload.serial,
+                sede: payload.sede,
+                baseLocation: payload.ubicacion,
+                ubicacion: payload.ubicacion,
+                ubicacion_estante: payload.ubicacion_estante,
+                responsable: payload.responsable,
+                custodio: payload.custodio,
+                status: payload.estado === 'En campo' ? 'prestado' : payload.estado.toLowerCase(),
+                area_asignada: areaAsignada,
+                area: areaAsignada,
+              };
+            });
+
+            const isSingleUnit = eq.units.length === 1;
+            return {
+              ...eq,
+              ...(isSingleUnit ? payload : {}),
+              ...(isSingleUnit ? { area_asignada: areaAsignada, area: areaAsignada } : {}),
+              units: updatedUnits,
+            };
+          }
 
           return {
             ...eq,
             ...payload,
+            area_asignada: areaAsignada,
+            area: areaAsignada,
             id: eq.id || `eq-${placaNueva}`,
             placa: placaNueva,
             code: placaNueva,
-            nombre: payload.nombre,
-            name: payload.nombre,
-            categoria: payload.categoria,
-            category: payload.categoria,
-            units: updatedUnits,
           };
         });
       });
@@ -1803,6 +1887,34 @@ export default function InventarioView({
             : it
         );
       });
+
+            // UPDATE en Supabase para consumibles / papelería filtrando estrictamente por id único
+      if (supabase) {
+        const payloadConsumibleSb = {
+          material: payload.material,
+          categoria: payload.categoria,
+          ubicacion: payload.ubicacion,
+          ubicacion_estante: payload.ubicacion_estante,
+          disponible: payload.disponible,
+          minimo: payload.minimo,
+          estado: payload.estado,
+          condicion: payload.condicion,
+          descripcion: payload.descripcion,
+          observaciones: payload.observaciones,
+          area_asignada: payload.categoria || (esPapeleria ? 'TeachLabs' : 'Robótica'),
+          area: payload.categoria || (esPapeleria ? 'TeachLabs' : 'Robótica'),
+        };
+
+        try {
+          if (esPapeleria) {
+            await supabase.from('papeleria').update(payloadConsumibleSb).eq('id', idOriginal);
+          } else {
+            await supabase.from('consumibles').update(payloadConsumibleSb).eq('id', idOriginal);
+          }
+        } catch (sbE) {
+          console.warn('Aviso Supabase update consumible:', sbE?.message);
+        }
+      }
 
       try {
         const primaryUrl = esPapeleria
@@ -2542,7 +2654,7 @@ export default function InventarioView({
                                 {u.model || 'Estándar'}
                               </span>
                               <ProgramAreaBadge
-                                area={u.area || u.area_asignada || u.programa || u.parentCategory || 'Nuevas Tecnologías'}
+                                area={u.area_asignada || u.area || u.programa || 'Nuevas Tecnologías'}
                                 iconSize={14}
                               />
                             </div>
@@ -2737,7 +2849,10 @@ export default function InventarioView({
                                   handleOpenEdit({
                                     ...(parent || {}),
                                     ...u,
-                                    id: u.parentItemId || u.id,
+                                    id: u.id || u.parentItemId || placa,
+                                    dbId: u.dbId || (parent && parent.dbId),
+                                    area_asignada: u.area_asignada || u.area || (parent && (parent.area_asignada || parent.area)) || 'Nuevas Tecnologías',
+                                    area: u.area_asignada || u.area || (parent && (parent.area_asignada || parent.area)) || 'Nuevas Tecnologías',
                                     placa: placa,
                                     codigo: placa,
                                   });

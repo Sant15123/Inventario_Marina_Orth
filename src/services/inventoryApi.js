@@ -98,12 +98,44 @@ export const inventoryApi = {
   },
 
   updateActivo: async (placa, updates) => {
-    const json = await request(`/activos/${encodeURIComponent(placa)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    return json?.data !== undefined ? json.data : json;
+    let apiSuccess = null;
+    try {
+      const json = await request(`/activos/${encodeURIComponent(placa)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      apiSuccess = json?.data !== undefined ? json.data : json;
+    } catch (err) {
+      console.warn(`API /activos/${placa} error:`, err.message);
+    }
+
+    // Actualización directa en Supabase (filtrando EXCLUSIVAMENTE por identificador único)
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const areaAsignada = updates.area_asignada || updates.area || 'Nuevas Tecnologías';
+        const patch = {
+          ...updates,
+          area_asignada: areaAsignada,
+          area: areaAsignada,
+        };
+        const targetPlaca = String(placa || updates.placa || '').trim();
+        const targetId = updates.id && !String(updates.id).startsWith('eq-') ? updates.id : null;
+
+        if (targetId) {
+          await supabase.from('equipos').update(patch).eq('id', targetId);
+          await supabase.from('activos').update(patch).eq('id', targetId);
+        } else if (targetPlaca) {
+          await supabase.from('equipos').update(patch).eq('placa', targetPlaca);
+          await supabase.from('activos').update(patch).eq('placa', targetPlaca);
+        }
+      }
+    } catch (sbE) {
+      console.warn('Aviso Supabase updateActivo:', sbE?.message);
+    }
+
+    return apiSuccess || { placa, ...updates };
   },
 
   // 2. Consumibles
