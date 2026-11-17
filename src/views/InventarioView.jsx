@@ -150,8 +150,8 @@ const mapEquipoItem = (a) => {
   };
 };
 
-// Número de filas por página para tablas de inventario (vista compacta sin scroll vertical excesivo)
-const ITEMS_PER_PAGE = 5;
+// Número de filas por página por defecto para tablas de inventario (configurable reactivamente)
+const DEFAULT_ITEMS_PER_PAGE = 25;
 
 export default function InventarioView({
   items = [],
@@ -290,6 +290,10 @@ export default function InventarioView({
   const [managingUnitsItem, setManagingUnitsItem] = useState(null);
   const [qrModalItem, setQrModalItem] = useState(null);
 
+  // Paginación reactiva configurable (10, 25, 50, 100 o Todos)
+  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const ITEMS_PER_PAGE = itemsPerPage;
+
   // Selección múltiple para impresión masiva de códigos QR en cuadrícula (SIGA-FMO)
   const [selectedQRs, setSelectedQRs] = useState([]);
   const [modalImpresionMasivaOpen, setModalImpresionMasivaOpen] = useState(false);
@@ -390,24 +394,79 @@ export default function InventarioView({
     setSelectedQRs([]);
   };
 
+  const getCurrentTabFilteredItems = () => {
+    if (activeTab === 'equipos') {
+      return (allEquiposUnits || []).map((u) => normalizeItemForQR(u, 'equipo'));
+    }
+    if (activeTab === 'consumibles') {
+      return (consumibles || []).map((c) => normalizeItemForQR(c, 'consumible'));
+    }
+    if (activeTab === 'papeleria') {
+      return (papeleriaFiltrada || []).map((p) => normalizeItemForQR(p, 'papeleria'));
+    }
+    if (activeTab === 'mobiliario') {
+      return (mobiliarioFiltrado || []).map((m) => normalizeItemForQR(m, 'mobiliario'));
+    }
+    return [];
+  };
+
+  const selectAllFilteredInCurrentTab = () => {
+    const list = getCurrentTabFilteredItems();
+    setSelectedQRs((prev) => {
+      const existingPlacas = new Set(prev.map((x) => x.placa));
+      const toAdd = list.filter((x) => !existingPlacas.has(x.placa));
+      return [...prev, ...toAdd];
+    });
+  };
+
+  const deselectAllFilteredInCurrentTab = () => {
+    const list = getCurrentTabFilteredItems();
+    const placasToRemove = new Set(list.map((x) => x.placa));
+    setSelectedQRs((prev) => prev.filter((x) => !placasToRemove.has(x.placa)));
+  };
+
   const renderQRSelectionBanner = () => {
+    const currentList = getCurrentTabFilteredItems();
+    const areAllCurrentFilteredSelected =
+      currentList.length > 0 &&
+      currentList.every((item) => selectedQRs.some((x) => x.placa === item.placa));
+
     if (selectedQRs.length === 0) return null;
+
     return (
       <div className="mb-3.5 bg-[#013a52]/5 border border-[#013a52]/20 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-xs animate-fade-in no-print">
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <span className="w-6 h-6 rounded-full bg-[#013a52] text-[#abd037] font-bold text-xs flex items-center justify-center shadow-xs">
             {selectedQRs.length}
           </span>
           <span className="text-xs sm:text-sm text-[#013a52] font-medium">
-            {selectedQRs.length === 1 ? '1 ítem seleccionado' : `${selectedQRs.length} ítems seleccionados`} para impresión QR (Cuadrícula 2×2)
+            {selectedQRs.length === 1 ? '1 ítem seleccionado' : `${selectedQRs.length} ítems seleccionados`}
           </span>
+
+          {/* Botón rápido para seleccionar o deseleccionar todos los registros de la vista actual */}
+          {currentList.length > 0 && (
+            <button
+              type="button"
+              onClick={areAllCurrentFilteredSelected ? deselectAllFilteredInCurrentTab : selectAllFilteredInCurrentTab}
+              className="bg-[#013a52] hover:bg-[#0A3C63] text-[#abd037] font-bold text-xs px-3 py-1.5 rounded-lg border border-[#abd037]/50 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
+              title="Seleccionar o deseleccionar todos los registros filtrados en esta vista sin cambiar de página"
+            >
+              <span>{areAllCurrentFilteredSelected ? '✓' : '⚡'}</span>
+              <span>
+                {areAllCurrentFilteredSelected
+                  ? `Deseleccionar los ${currentList.length} de esta vista`
+                  : `Seleccionar todos los ${currentList.length} registros de esta vista`}
+              </span>
+            </button>
+          )}
         </div>
+
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setModalImpresionMasivaOpen(true)}
             className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02] text-xs sm:text-sm"
-            title="Abrir vista previa e impresión de etiquetas QR en cuadrícula 2x2"
+            title="Abrir vista previa e impresión de etiquetas QR (12 stickers por hoja)"
           >
             <span>🖨️</span>
             <span>Imprimir QRs Seleccionados</span>
@@ -2626,6 +2685,33 @@ export default function InventarioView({
         </div>
 
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Botón Exportar Excel */}
+          <button
+            type="button"
+            className="btn small btn-secondary flex items-center gap-1.5 border border-slate-300 hover:border-slate-400 bg-white text-[#013a52] font-semibold shadow-xs"
+            onClick={handleDescargarReporteExcel}
+            title="Descargar libro maestro Excel (.xlsx)"
+          >
+            <span>📊</span>
+            <span>Exportar Excel</span>
+          </button>
+
+          {/* Botón Directo Imprimir QRs */}
+          <button
+            type="button"
+            className="btn small bg-[#013a52] hover:bg-[#0A3C63] text-white font-bold px-3 py-1.5 rounded-lg border border-[#abd037]/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer text-xs"
+            onClick={() => setModalImpresionMasivaOpen(true)}
+            title="Imprimir etiquetas QR en stickers compactos (12 por hoja)"
+          >
+            <span>🖨️</span>
+            <span>Imprimir QRs</span>
+            {selectedQRs.length > 0 && (
+              <span className="bg-[#abd037] text-[#013a52] px-1.5 py-0.2 rounded-full text-[10px] font-black">
+                {selectedQRs.length}
+              </span>
+            )}
+          </button>
+
           {isAdmin && (
             activeTab === 'equipos' ? (
               <button
@@ -3124,7 +3210,7 @@ export default function InventarioView({
                   })}
 
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
-                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedEquiposUnits.length) }).map((_, phIdx) => (
+                  {Array.from({ length: Math.max(0, Math.min(ITEMS_PER_PAGE, 5) - paginatedEquiposUnits.length) }).map((_, phIdx) => (
                     <tr key={`ph-equipos-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
                       <td colSpan={8} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
@@ -3160,7 +3246,29 @@ export default function InventarioView({
                   de <strong style={{ color: 'var(--text-h)' }}>{allEquiposUnits.length}</strong> {allEquiposUnits.length !== totalEquiposRegistrados ? `(filtrados de ${totalEquiposRegistrados} registrados)` : 'equipos registrados'}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div className="flex items-center gap-1.5 text-xs text-[#6d6e71]">
+                    <span>Filas:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setItemsPerPage(val);
+                        setEquiposPage(1);
+                        setConsumiblesPage(1);
+                        setPapeleriaPage(1);
+                        setMobiliarioPage(1);
+                      }}
+                      className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
                     type="button"
                     className="btn small ghost"
@@ -3184,6 +3292,7 @@ export default function InventarioView({
                   >
                     Siguiente →
                   </button>
+                </div>
                 </div>
               </div>
             </div>
@@ -3592,7 +3701,7 @@ export default function InventarioView({
                   })}
 
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
-                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedConsumibles.length) }).map((_, phIdx) => (
+                  {Array.from({ length: Math.max(0, Math.min(ITEMS_PER_PAGE, 5) - paginatedConsumibles.length) }).map((_, phIdx) => (
                     <tr key={`ph-consumibles-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
                       <td colSpan={7} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
@@ -3628,7 +3737,29 @@ export default function InventarioView({
                   de <strong style={{ color: 'var(--text-h)' }}>{consumibles.length}</strong> materiales
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div className="flex items-center gap-1.5 text-xs text-[#6d6e71]">
+                    <span>Filas:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setItemsPerPage(val);
+                        setEquiposPage(1);
+                        setConsumiblesPage(1);
+                        setPapeleriaPage(1);
+                        setMobiliarioPage(1);
+                      }}
+                      className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
                     type="button"
                     className="btn small ghost"
@@ -3652,6 +3783,7 @@ export default function InventarioView({
                   >
                     Siguiente →
                   </button>
+                </div>
                 </div>
               </div>
             </div>
@@ -4112,7 +4244,7 @@ export default function InventarioView({
                   })}
 
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
-                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedPapeleria.length) }).map((_, phIdx) => (
+                  {Array.from({ length: Math.max(0, Math.min(ITEMS_PER_PAGE, 5) - paginatedPapeleria.length) }).map((_, phIdx) => (
                     <tr key={`ph-papeleria-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
                       <td colSpan={7} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
@@ -4148,7 +4280,29 @@ export default function InventarioView({
                   de <strong style={{ color: 'var(--text-h)' }}>{papeleriaFiltrada.length}</strong> insumos de papelería
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div className="flex items-center gap-1.5 text-xs text-[#6d6e71]">
+                    <span>Filas:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setItemsPerPage(val);
+                        setEquiposPage(1);
+                        setConsumiblesPage(1);
+                        setPapeleriaPage(1);
+                        setMobiliarioPage(1);
+                      }}
+                      className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
                     type="button"
                     className="btn small ghost"
@@ -4172,6 +4326,7 @@ export default function InventarioView({
                   >
                     Siguiente →
                   </button>
+                </div>
                 </div>
               </div>
             </div>
@@ -4477,7 +4632,7 @@ export default function InventarioView({
                   })}
 
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
-                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedMobiliario.length) }).map((_, phIdx) => (
+                  {Array.from({ length: Math.max(0, Math.min(ITEMS_PER_PAGE, 5) - paginatedMobiliario.length) }).map((_, phIdx) => (
                     <tr key={`ph-mobiliario-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
                       <td colSpan={7} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
@@ -4513,7 +4668,29 @@ export default function InventarioView({
                   de <strong style={{ color: 'var(--text-h)' }}>{mobiliarioFiltrado.length}</strong> muebles
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div className="flex items-center gap-1.5 text-xs text-[#6d6e71]">
+                    <span>Filas:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setItemsPerPage(val);
+                        setEquiposPage(1);
+                        setConsumiblesPage(1);
+                        setPapeleriaPage(1);
+                        setMobiliarioPage(1);
+                      }}
+                      className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
                     type="button"
                     className="btn small ghost"
@@ -4537,6 +4714,7 @@ export default function InventarioView({
                   >
                     Siguiente →
                   </button>
+                </div>
                 </div>
               </div>
             </div>
@@ -4828,6 +5006,7 @@ export default function InventarioView({
       {modalImpresionMasivaOpen && (
         <ImpresionMasivaQRModal
           items={selectedQRs}
+          allFilteredItems={getCurrentTabFilteredItems()}
           onClose={() => setModalImpresionMasivaOpen(false)}
         />
       )}
@@ -4849,7 +5028,7 @@ export default function InventarioView({
                 {selectedQRs.length} {selectedQRs.length === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
               </span>
               <span className="text-[10px] text-slate-300 leading-tight">
-                Cuadrícula 2×2 (4 por hoja Carta)
+                Stickers 3×4 (12 por hoja Carta)
               </span>
             </div>
           </div>
