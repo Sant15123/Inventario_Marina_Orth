@@ -1,3 +1,4 @@
+import FmoCobrandingBadge from '../components/common/FmoCobrandingBadge';
 import { useState, useMemo, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QrCode, Eye, Pencil, Trash2, X } from 'lucide-react';
@@ -2382,6 +2383,13 @@ export default function InventarioView({
               Gestión, trazabilidad y control de préstamos para equipos de cómputo, tablets y periféricos
             </span>
           </div>
+
+          {/* Módulo de Cobranding Oficial FMO & Sede Aliada (Página 8) */}
+          {filterSede && filterSede !== 'todas' && (
+            <div style={{ marginBottom: '8px' }}>
+              <FmoCobrandingBadge sede={filterSede} alianza={`Alcaldía / Sede ${filterSede}`} height={30} />
+            </div>
+          )}
 
           {/* Barra de filtros para equipos */}
           <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>

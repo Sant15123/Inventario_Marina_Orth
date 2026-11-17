@@ -5197,3 +5197,43 @@ html.dark table th {
   color: #f8fafc !important;
   border-bottom-color: #abd037 !important;
 }
+
+
+/* ==========================================================================
+   FASE 9 MARCA FMO: RESPONSIVE LOGO, COBRANDING Y TIPOGRAFÍA APTOS (PÁGS 7, 8, 17)
+   ========================================================================== */
+
+/* Versiones Responsivas del Logo FMO (Página 7) */
+.fmo-brand-logo-container {
+  min-width: 52px;
+}
+
+@media (max-width: 900px) {
+  .sidebar-header {
+    padding: 12px 14px;
+  }
+}
+
+/* En contenedores reducidos entre 85px y 52px: ocultar lema para no comprometer legibilidad de 'Orth' */
+@container (max-width: 85px) {
+  .fmo-logo-motto,
+  .brand-divider,
+  .brand-subtitle {
+    display: none !important;
+  }
+}
+
+/* Cobranding reglamentario de Sedes y Alianzas (Página 8) */
+.fmo-cobranding-badge {
+  transition: all 0.2s ease;
+}
+
+.fmo-cobranding-divider {
+  transition: all 0.2s ease;
+}
+
+/* Tipografía Aptos para Notificaciones y Correos Externos (Página 17) */
+.fmo-email-template,
+.fmo-email-signature {
+  font-family: 'Aptos', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}

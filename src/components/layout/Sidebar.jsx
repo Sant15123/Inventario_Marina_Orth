@@ -1,3 +1,4 @@
+import FmoBrandLogo from '../common/FmoBrandLogo';
 import React from 'react';
 import {
   LayoutDashboard,
@@ -68,18 +69,7 @@ export default function Sidebar({ currentView, onViewChange }) {
     <aside className="sidebar">
       <div>
         <div className="sidebar-header p-5">
-          <div className="brand-badge">
-            <img
-              src="/logo-marina-orth.png"
-              alt="Logo Fundación Marina Orth"
-              className="brand-logo-img"
-            />
-            <div className="brand-text-wrap">
-              <span className="brand-title">MARINA ORTH FOUNDATION</span>
-              <div className="brand-divider" aria-hidden="true" />
-              <span className="brand-subtitle">EDUCATING FOR THE FUTURE</span>
-            </div>
-          </div>
+          <FmoBrandLogo variant="auto" />
         </div>
 
         <nav aria-label="Navegación principal" style={{ marginTop: '20px' }}>
