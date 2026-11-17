@@ -18,6 +18,7 @@ import {
   Check,
   PackagePlus,
   Loader2,
+  Mail,
 } from 'lucide-react';
 import { fmtDate, formatearFechaSegura, today, SEDES, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
