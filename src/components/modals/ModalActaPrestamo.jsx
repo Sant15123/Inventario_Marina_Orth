@@ -1,3 +1,5 @@
+import FmoPrintLetterhead from '../common/FmoPrintLetterhead';
+import FmoPrintFooter from '../common/FmoPrintFooter';
 import React, { useState, useMemo } from 'react';
 
 /**
@@ -352,102 +354,13 @@ export default function ModalActaPrestamo({
             overflowY: 'auto',
           }}
         >
-          {/* 1. ENCABEZADO INSTITUCIONAL */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderBottom: '2px solid #0f172a',
-              paddingBottom: '14px',
-              marginBottom: '14px',
-              gap: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <img
-                src="/logo-marina-orth.png"
-                alt="Fundación Marina Orth"
-                style={{
-                  height: '46px',
-                  maxWidth: '160px',
-                  objectFit: 'contain',
-                }}
-              />
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: '15px',
-                    fontWeight: 900,
-                    color: '#0f172a',
-                    letterSpacing: '0.02em',
-                    lineHeight: '1.2',
-                  }}
-                >
-                  FUNDACIÓN MARINA ORTH
-                </h2>
-                <p
-                  style={{
-                    margin: '3px 0 0',
-                    fontSize: '11px',
-                    color: '#475569',
-                    fontWeight: 700,
-                    letterSpacing: '0.03em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Robótica & Innovación STEAM • Bodega Central
-                </p>
-                <p style={{ margin: '1px 0 0', fontSize: '10px', color: '#64748b' }}>
-                  Sistema Integrado de Gestión de Activos (SIGA)
-                </p>
-              </div>
-            </div>
-
-            <div
-              style={{
-                textAlign: 'right',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #cbd5e1',
-                borderRadius: '6px',
-                padding: '8px 12px',
-                minWidth: '210px',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: '9px',
-                  textTransform: 'uppercase',
-                  fontWeight: 800,
-                  color: '#64748b',
-                  display: 'block',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                RADICADO / CONSECUTIVO
-              </span>
-              <span
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: '14px',
-                  fontWeight: 800,
-                  color: '#0f172a',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                {radicado}
-              </span>
-              <div style={{ marginTop: '3px', fontSize: '10px', color: '#475569', lineHeight: 1.35 }}>
-                <div>
-                  <strong>Expedición:</strong> {fechaExpedicion}
-                </div>
-                <div>
-                  <strong style={{ color: '#b91c1c' }}>Devolución pactada:</strong> {fechaEstimadaDevolucion}
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* 1. ENCABEZADO INSTITUCIONAL OFICIAL FMO (PÁGINA 61) */}
+          <FmoPrintLetterhead
+            titulo="Guía / Acta de Préstamo de Activos Retornables"
+            subtitulo="Sistema Integrado de Gestión de Activos (SIGA) • Bodega Central de Robótica"
+            radicado={radicado}
+            fecha={fechaExpedicion}
+          />
 
           {/* BANNER DE TÍTULO OFICIAL */}
           <div
@@ -720,6 +633,9 @@ export default function ModalActaPrestamo({
               </div>
             </div>
           </div>
+
+          {/* 6. PIE DE PÁGINA INSTITUCIONAL FIJO (PÁGINA 61) */}
+          <FmoPrintFooter />
         </div>
       </div>
     </div>

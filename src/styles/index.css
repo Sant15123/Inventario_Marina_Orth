@@ -3266,6 +3266,16 @@ tbody tr:hover {
     /* si es un modal regular de edición o creación */
   }
 
+  /* Membrete y Pie de Página Institucional Oficial FMO (Página 61) */
+  .fmo-print-letterhead,
+  .fmo-print-footer {
+    display: block !important;
+    width: 100% !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   /* CASO 1: GUÍA DE REMISIÓN / ACTA OFICIAL (.acta-remision-sheet y .acta-prestamo-sheet) */
   .acta-remision-sheet,
   .acta-prestamo-sheet {

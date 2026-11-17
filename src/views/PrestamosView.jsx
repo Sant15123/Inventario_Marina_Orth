@@ -1,3 +1,5 @@
+import FmoPrintLetterhead from '../components/common/FmoPrintLetterhead';
+import FmoPrintFooter from '../components/common/FmoPrintFooter';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { fmtDate, formatearFechaSegura, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, esPrestamoVencido, today } from '../services/mockData';
 import { supabase } from '../services/supabase';
@@ -4424,49 +4426,13 @@ export default function PrestamosView({
                 overflowY: 'auto',
               }}
             >
-              {/* Encabezado Institucional */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderBottom: '2px solid #0f172a',
-                  paddingBottom: '16px',
-                  marginBottom: '20px',
-                }}
-              >
-                <div>
-                  <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                    FUNDACIÓN MARINA ORTH
-                  </h2>
-                  <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
-                    Sistema de Gestión de Inventario y Bodega Central de Robótica
-                  </p>
-                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                    Acta de Salida y Remisión Oficial de Materiales e Insumos
-                  </p>
-                </div>
-
-                <div
-                  style={{
-                    textAlign: 'right',
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '8px',
-                    padding: '8px 14px',
-                  }}
-                >
-                  <span style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#64748b', display: 'block' }}>
-                    N° DE REMISIÓN / ACTA
-                  </span>
-                  <span style={{ fontFamily: 'monospace', fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
-                    {remisionParaImprimir.codigo_acta || remisionParaImprimir.remision_id}
-                  </span>
-                  <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block', marginTop: '2px' }}>
-                    Fecha: {formatFecha(remisionParaImprimir.fecha_entrega || remisionParaImprimir.date || today())}
-                  </span>
-                </div>
-              </div>
+              {/* ENCABEZADO INSTITUCIONAL OFICIAL FMO (PÁGINA 61) */}
+              <FmoPrintLetterhead
+                titulo="Acta de Salida y Remisión Oficial de Insumos"
+                subtitulo="Sistema Integrado de Gestión de Activos (SIGA) • Bodega Central de Robótica"
+                radicado={remisionParaImprimir.codigo_acta || remisionParaImprimir.remision_id}
+                fecha={formatFecha(remisionParaImprimir.fecha_entrega || remisionParaImprimir.date || today())}
+              />
 
               {/* Ficha de Información de la Entrega */}
               <div
@@ -4607,6 +4573,9 @@ export default function PrestamosView({
                   <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Fundación Marina Orth</div>
                 </div>
               </div>
+
+              {/* PIE DE PÁGINA INSTITUCIONAL FIJO (PÁGINA 61) */}
+              <FmoPrintFooter />
             </div>
           </div>
         </div>
