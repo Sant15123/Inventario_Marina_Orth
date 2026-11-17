@@ -2399,15 +2399,15 @@ export default function InventarioView({
 
           {/* Barra de filtros para equipos */}
           <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
-            <div className="filter-group">
-              <label style={{ fontSize: '12px' }}>Sede / Municipio:</label>
+            <div className="filter-group flex items-center gap-2">
+              <label className="text-[#6d6e71] font-medium text-sm">Sede / Municipio:</label>
               <select
                 value={filterSede}
                 onChange={(e) => {
                   setFilterSede(e.target.value);
                   setEquiposPage(1);
                 }}
-                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+                className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
               >
                 <option value="todas">Todas las sedes</option>
                 {(sedesList || []).map((s) => (
@@ -2416,15 +2416,15 @@ export default function InventarioView({
               </select>
             </div>
 
-            <div className="filter-group">
-              <label style={{ fontSize: '12px' }}>Estado:</label>
+            <div className="filter-group flex items-center gap-2">
+              <label className="text-[#6d6e71] font-medium text-sm">Estado:</label>
               <select
                 value={filterStatus}
                 onChange={(e) => {
                   setFilterStatus(e.target.value);
                   setEquiposPage(1);
                 }}
-                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+                className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
               >
                 <option value="todos">Todos los estados</option>
                 <option value="disponible">Disponible</option>
@@ -2434,8 +2434,8 @@ export default function InventarioView({
               </select>
             </div>
 
-            <div className="filter-count" style={{ fontSize: '12.5px' }}>
-              Mostrando <strong>{allEquiposUnits.length}</strong> de <strong>{totalEquiposRegistrados}</strong> equipos registrados
+            <div className="filter-count text-[#6d6e71] text-sm">
+              Mostrando <strong className="font-bold text-[#013a52]">{allEquiposUnits.length}</strong> de <strong className="font-bold text-[#013a52]">{totalEquiposRegistrados}</strong> equipos registrados
             </div>
           </div>
 
@@ -2911,15 +2911,15 @@ export default function InventarioView({
 
           {/* Barra de filtros para consumibles con el mismo diseño que equipos tecnológicos */}
           <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
-            <div className="filter-group">
-              <label style={{ fontSize: '12px' }}>Estado de Stock:</label>
+            <div className="filter-group flex items-center gap-2">
+              <label className="text-[#6d6e71] font-medium text-sm">Estado de Stock:</label>
               <select
                 value={filterStockConsumibles}
                 onChange={(e) => {
                   setFilterStockConsumibles(e.target.value);
                   setConsumiblesPage(1);
                 }}
-                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+                className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
               >
                 <option value="todos">Todos los materiales ({countConsumiblesTodos})</option>
                 <option value="minimo">⚠️ Solo Stock Bajo ({countConsumiblesMinimo})</option>
@@ -2927,8 +2927,8 @@ export default function InventarioView({
               </select>
             </div>
 
-            <div className="filter-count" style={{ fontSize: '12.5px' }}>
-              Mostrando <strong>{consumibles.length}</strong> de <strong>{countConsumiblesTodos}</strong> materiales registrados
+            <div className="filter-count text-[#6d6e71] text-sm">
+              Mostrando <strong className="font-bold text-[#013a52]">{consumibles.length}</strong> de <strong className="font-bold text-[#013a52]">{countConsumiblesTodos}</strong> materiales registrados
             </div>
           </div>
 
@@ -3351,15 +3351,15 @@ export default function InventarioView({
 
           {/* Barra de filtros con el mismo diseño que Equipos y Consumibles */}
           <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
-            <div className="filter-group">
-              <label style={{ fontSize: '12px' }}>Contenedor:</label>
+            <div className="filter-group flex items-center gap-2">
+              <label className="text-[#6d6e71] font-medium text-sm">Contenedor:</label>
               <select
                 value={filterCajaPapeleria}
                 onChange={(e) => {
                   setFilterCajaPapeleria(e.target.value);
                   setPapeleriaPage(1);
                 }}
-                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+                className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
               >
                 <option value="todas">Todas las cajas</option>
                 <option value="CAJA #1">CAJA #1</option>
@@ -3377,15 +3377,15 @@ export default function InventarioView({
               </select>
             </div>
 
-            <div className="filter-group">
-              <label style={{ fontSize: '12px' }}>Estado de Stock:</label>
+            <div className="filter-group flex items-center gap-2">
+              <label className="text-[#6d6e71] font-medium text-sm">Estado de Stock:</label>
               <select
                 value={filterStockPapeleria}
                 onChange={(e) => {
                   setFilterStockPapeleria(e.target.value);
                   setPapeleriaPage(1);
                 }}
-                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+                className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
               >
                 <option value="todos">Todos los Insumos ({rawPapeleria.length})</option>
                 <option value="minimo">⚠️ Solo Stock Bajo (≤ 3 unid.)</option>
@@ -3393,8 +3393,8 @@ export default function InventarioView({
               </select>
             </div>
 
-            <div className="filter-count" style={{ fontSize: '12.5px' }}>
-              Mostrando <strong>{papeleriaFiltrada.length}</strong> de <strong>{rawPapeleria.length}</strong> insumos de papelería
+            <div className="filter-count text-[#6d6e71] text-sm">
+              Mostrando <strong className="font-bold text-[#013a52]">{papeleriaFiltrada.length}</strong> de <strong className="font-bold text-[#013a52]">{rawPapeleria.length}</strong> insumos de papelería
             </div>
           </div>
 
@@ -3816,15 +3816,15 @@ export default function InventarioView({
 
           {/* Barra de Filtros con el mismo diseño que Equipos y Consumibles */}
           <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
-            <div className="filter-group">
-              <label style={{ fontSize: '12px' }}>Sede / Ubicación:</label>
+            <div className="filter-group flex items-center gap-2">
+              <label className="text-[#6d6e71] font-medium text-sm">Sede / Ubicación:</label>
               <select
                 value={filterSedeMobiliario}
                 onChange={(e) => {
                   setFilterSedeMobiliario(e.target.value);
                   setMobiliarioPage(1);
                 }}
-                style={{ padding: '4px 10px', fontSize: '12.5px' }}
+                className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
               >
                 <option value="todas">Todas las sedes ({rawMobiliario.length})</option>
                 {sedesList.map((s) => (
@@ -3833,8 +3833,8 @@ export default function InventarioView({
               </select>
             </div>
 
-            <div className="filter-count" style={{ fontSize: '12.5px' }}>
-              Mostrando <strong>{mobiliarioFiltrado.length}</strong> de <strong>{rawMobiliario.length}</strong> muebles registrados
+            <div className="filter-count text-[#6d6e71] text-sm">
+              Mostrando <strong className="font-bold text-[#013a52]">{mobiliarioFiltrado.length}</strong> de <strong className="font-bold text-[#013a52]">{rawMobiliario.length}</strong> muebles registrados
             </div>
           </div>
 

@@ -27,8 +27,12 @@
     rgba(0, 0, 0, 0.06) 0 4px 12px 0,
     rgba(0, 0, 0, 0.04) 0 2px 4px -1px;
 
-  --sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --heading: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fmo-green: #abd037;
+  --fmo-purple: #7b2cbf;
+  --fmo-gray: #6d6e71;
+  --fmo-deep-blue: #013a52;
+  --sans: 'Poppins', sans-serif;
+  --heading: 'Poppins', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
