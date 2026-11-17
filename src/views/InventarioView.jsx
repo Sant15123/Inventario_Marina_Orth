@@ -5585,8 +5585,8 @@ export default function InventarioView({
               >
                 {/* PASO 1: DATOS OPERATIVOS */}
                 {pasoActual === 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -5597,70 +5597,122 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Nombre del Elemento (Izquierda) + Código / Placa (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Nombre Del Elemento / Material *
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        name="material"
-                        maxLength={90}
-                        value={formDataEditar.material || ''}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, material: e.target.value })}
-                        placeholder={isPapeleriaEdit ? "Ej. Carpetas de Cartón Yute Oficio" : "Ej. ARDUINO UNO R3 con Cable USB"}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Código / Placa *
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        name="id"
-                        maxLength={25}
-                        value={formDataEditar.id || ''}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, id: e.target.value })}
-                        placeholder={isPapeleriaEdit ? "Ej. Pape0036" : "Ej. Rob0043"}
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Categoría *
-                      </label>
-                      {isPapeleriaEdit ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Nombre Del Elemento / Material *
+                        </label>
                         <input
+                          required
                           type="text"
-                          readOnly
-                          value={formDataEditar.categoria || 'Papelería'}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 cursor-not-allowed opacity-90"
+                          name="material"
+                          maxLength={90}
+                          value={formDataEditar.material || ''}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, material: e.target.value })}
+                          placeholder={isPapeleriaEdit ? "Ej. Carpetas de Cartón Yute Oficio" : "Ej. ARDUINO UNO R3 con Cable USB"}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
                             borderColor: 'var(--line, #334155)',
                           }}
                         />
-                      ) : (
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Código / Placa *
+                        </label>
+                        <input
+                          required
+                          type="text"
+                          name="id"
+                          maxLength={25}
+                          value={formDataEditar.id || ''}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, id: e.target.value })}
+                          placeholder={isPapeleriaEdit ? "Ej. Pape0036" : "Ej. Rob0043"}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Categoría *
+                        </label>
+                        {isPapeleriaEdit ? (
+                          <input
+                            type="text"
+                            readOnly
+                            value={formDataEditar.categoria || 'Papelería'}
+                            className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 cursor-not-allowed opacity-90"
+                            style={{
+                              backgroundColor: 'var(--bg, #0f172a)',
+                              color: 'var(--text, #f8fafc)',
+                              borderColor: 'var(--line, #334155)',
+                            }}
+                          />
+                        ) : (
+                          <select
+                            name="categoria"
+                            value={formDataEditar.categoria || 'Robótica'}
+                            onChange={(e) => setFormDataEditar({ ...formDataEditar, categoria: e.target.value })}
+                            className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                            style={{
+                              backgroundColor: 'var(--bg, #0f172a)',
+                              color: 'var(--text, #f8fafc)',
+                              borderColor: 'var(--line, #334155)',
+                            }}
+                          >
+                            <option value="Robótica">Robótica</option>
+                            <option value="Electrónica">Electrónica</option>
+                            <option value="Herramientas">Herramientas</option>
+                            <option value="Impresión 3D">Impresión 3D</option>
+                            <option value="Cables y Adaptadores">Cables y Adaptadores</option>
+                            <option value="Cómputo & Formación">Cómputo & Formación</option>
+                          </select>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Cantidad / Stock *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          max="99999"
+                          name="disponible"
+                          value={formDataEditar.disponible ?? 0}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, disponible: e.target.value })}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fila 3: Condición / Unidad (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Condición / Unidad
+                        </label>
                         <select
-                          name="categoria"
-                          value={formDataEditar.categoria || 'Robótica'}
-                          onChange={(e) => setFormDataEditar({ ...formDataEditar, categoria: e.target.value })}
+                          name="condicion"
+                          value={formDataEditar.condicion || (isPapeleriaEdit ? 'Nuevos' : 'Bueno')}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, condicion: e.target.value })}
                           className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
@@ -5668,97 +5720,51 @@ export default function InventarioView({
                             borderColor: 'var(--line, #334155)',
                           }}
                         >
-                          <option value="Robótica">Robótica</option>
-                          <option value="Electrónica">Electrónica</option>
-                          <option value="Herramientas">Herramientas</option>
-                          <option value="Impresión 3D">Impresión 3D</option>
-                          <option value="Cables y Adaptadores">Cables y Adaptadores</option>
-                          <option value="Cómputo & Formación">Cómputo & Formación</option>
+                          {isPapeleriaEdit ? (
+                            <>
+                              <option value="Nuevos">Nuevos</option>
+                              <option value="Usados">Usados</option>
+                              <option value="Mixto">Mixto</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="Nuevo">Nuevo</option>
+                              <option value="Bueno">Bueno</option>
+                              <option value="Regular">Regular</option>
+                              <option value="Usado">Usado</option>
+                              <option value="Donación">Donación</option>
+                            </>
+                          )}
                         </select>
-                      )}
-                    </div>
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Cantidad / Stock *
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        min="0"
-                        max="99999"
-                        name="disponible"
-                        value={formDataEditar.disponible ?? 0}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, disponible: e.target.value })}
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 3: Condición / Unidad (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Condición / Unidad
-                      </label>
-                      <select
-                        name="condicion"
-                        value={formDataEditar.condicion || (isPapeleriaEdit ? 'Nuevos' : 'Bueno')}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, condicion: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        {isPapeleriaEdit ? (
-                          <>
-                            <option value="Nuevos">Nuevos</option>
-                            <option value="Usados">Usados</option>
-                            <option value="Mixto">Mixto</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="Nuevo">Nuevo</option>
-                            <option value="Bueno">Bueno</option>
-                            <option value="Regular">Regular</option>
-                            <option value="Usado">Usado</option>
-                            <option value="Donación">Donación</option>
-                          </>
-                        )}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <ProgramAreaSelect
-                        label="Área Asignada / Programa FMO"
-                        value={formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica')}
-                        defaultProgram={isPapeleriaEdit ? 'teachlabs' : 'robotica'}
-                        showPreview={false}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, area: e.target.value, area_asignada: e.target.value })}
-                      />
-                      <div
-                        className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
-                        <ProgramAreaBadge
-                          area={formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica')}
+                      <div className="space-y-1.5">
+                        <ProgramAreaSelect
+                          label="Área Asignada / Programa FMO"
+                          value={formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica')}
                           defaultProgram={isPapeleriaEdit ? 'teachlabs' : 'robotica'}
-                          iconSize={16}
+                          showPreview={false}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, area: e.target.value, area_asignada: e.target.value })}
                         />
+                        <div
+                          className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
+                          <ProgramAreaBadge
+                            area={formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica')}
+                            defaultProgram={isPapeleriaEdit ? 'teachlabs' : 'robotica'}
+                            iconSize={16}
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Fila 4: Descripción General (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 4: Descripción General */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Descripción General
                       </label>
@@ -5782,8 +5788,8 @@ export default function InventarioView({
 
                 {/* PASO 2: ESPECIFICACIONES */}
                 {pasoActual === 2 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -5793,139 +5799,145 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Sede / Ubicación Física | Estante / Gaveta */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Sede / Ubicación Física
-                      </label>
-                      <select
-                        name="ubicacion"
-                        value={formDataEditar.ubicacion || formDataEditar.sede || sedesList[0] || 'Medellín'}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion: e.target.value, sede: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        {formDataEditar.ubicacion && !sedesList.includes(formDataEditar.ubicacion) && (
-                          <option value={formDataEditar.ubicacion}>{formDataEditar.ubicacion}</option>
-                        )}
-                        {sedesList.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Sede / Ubicación Física
+                        </label>
+                        <select
+                          name="ubicacion"
+                          value={formDataEditar.ubicacion || formDataEditar.sede || sedesList[0] || 'Medellín'}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion: e.target.value, sede: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          {formDataEditar.ubicacion && !sedesList.includes(formDataEditar.ubicacion) && (
+                            <option value={formDataEditar.ubicacion}>{formDataEditar.ubicacion}</option>
+                          )}
+                          {sedesList.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Estante / Caja / Gaveta
-                      </label>
-                      <input
-                        type="text"
-                        name="ubicacion_estante"
-                        maxLength={70}
-                        value={formDataEditar.ubicacion_estante || ''}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion_estante: e.target.value })}
-                        placeholder="Ej. Caja Rimax 12, Estantería B-1"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Estante / Caja / Gaveta
+                        </label>
+                        <input
+                          type="text"
+                          name="ubicacion_estante"
+                          maxLength={70}
+                          value={formDataEditar.ubicacion_estante || ''}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, ubicacion_estante: e.target.value })}
+                          placeholder="Ej. Caja Rimax 12, Estantería B-1"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 2: Stock Mínimo De Alerta * | Características */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Stock Mínimo De Alerta *
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        min="0"
-                        max="99999"
-                        name="minimo"
-                        value={formDataEditar.minimo ?? (isPapeleriaEdit ? 3 : 5)}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, minimo: e.target.value })}
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Stock Mínimo De Alerta *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          max="99999"
+                          name="minimo"
+                          value={formDataEditar.minimo ?? (isPapeleriaEdit ? 3 : 5)}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, minimo: e.target.value })}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Características
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristicas"
-                        maxLength={120}
-                        value={formDataEditar.caracteristicas || ''}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, caracteristicas: e.target.value })}
-                        placeholder="Marcas, presentación, conectores, voltajes..."
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Características
+                        </label>
+                        <input
+                          type="text"
+                          name="caracteristicas"
+                          maxLength={120}
+                          value={formDataEditar.caracteristicas || ''}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, caracteristicas: e.target.value })}
+                          placeholder="Marcas, presentación, conectores, voltajes..."
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 3: Estado | Condición */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Estado
-                      </label>
-                      <select
-                        name="estado"
-                        value={formDataEditar.estado || 'Bueno'}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, estado: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <option value="Bueno">Bueno</option>
-                        <option value="Regular">Regular</option>
-                        <option value="Malo">Malo</option>
-                      </select>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Estado
+                        </label>
+                        <select
+                          name="estado"
+                          value={formDataEditar.estado || 'Bueno'}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, estado: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <option value="Bueno">Bueno</option>
+                          <option value="Regular">Regular</option>
+                          <option value="Malo">Malo</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Condición
+                        </label>
+                        <select
+                          name="condicion"
+                          value={formDataEditar.condicion || 'Nuevo'}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, condicion: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <option value="Nuevo">Nuevo</option>
+                          <option value="Usado">Usado</option>
+                          <option value="Donación">Donación</option>
+                        </select>
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Condición
-                      </label>
-                      <select
-                        name="condicion"
-                        value={formDataEditar.condicion || 'Nuevo'}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, condicion: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <option value="Nuevo">Nuevo</option>
-                        <option value="Usado">Usado</option>
-                        <option value="Donación">Donación</option>
-                      </select>
-                    </div>
-
-                    {/* Fila 4: Detalle Técnico / Observaciones (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 4: Detalle Técnico / Observaciones */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Detalle Técnico / Observaciones
                       </label>
@@ -5949,8 +5961,8 @@ export default function InventarioView({
 
                 {/* PASO 3: ADQUISICIÓN Y NOTAS */}
                 {pasoActual === 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -5960,83 +5972,84 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Valor Compra | Fecha Compra */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Valor Compra ($)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="999999999"
-                        step="any"
-                        name="valor_compra"
-                        value={formDataEditar.valor_compra ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '') {
-                            setFormDataEditar({ ...formDataEditar, valor_compra: '', valor_total: '' });
-                            return;
-                          }
-                          const clamped = Math.min(999999999, Math.max(0, Number(val)));
-                          setFormDataEditar({
-                            ...formDataEditar,
-                            valor_compra: clamped,
-                            valor_total: clamped,
-                          });
-                        }}
-                        placeholder="Ej. 25000"
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Valor Compra ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="999999999"
+                          step="any"
+                          name="valor_compra"
+                          value={formDataEditar.valor_compra ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              setFormDataEditar({ ...formDataEditar, valor_compra: '', valor_total: '' });
+                              return;
+                            }
+                            const clamped = Math.min(999999999, Math.max(0, Number(val)));
+                            setFormDataEditar({
+                              ...formDataEditar,
+                              valor_compra: clamped,
+                              valor_total: clamped,
+                            });
+                          }}
+                          placeholder="Ej. 25000"
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Fecha Compra
-                      </label>
-                      <input
-                        type="date"
-                        name="fecha_compra"
-                        value={formDataEditar.fecha_compra || ''}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, fecha_compra: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Fecha Compra
+                        </label>
+                        <input
+                          type="date"
+                          name="fecha_compra"
+                          value={formDataEditar.fecha_compra || ''}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, fecha_compra: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 2: Vencimiento Garantía */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Vencimiento Garantía
-                      </label>
-                      <input
-                        type="date"
-                        name="fecha_vencimiento_garantia"
-                        value={formDataEditar.fecha_vencimiento_garantia || ''}
-                        onChange={(e) => setFormDataEditar({ ...formDataEditar, fecha_vencimiento_garantia: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Vencimiento Garantía
+                        </label>
+                        <input
+                          type="date"
+                          name="fecha_vencimiento_garantia"
+                          value={formDataEditar.fecha_vencimiento_garantia || ''}
+                          onChange={(e) => setFormDataEditar({ ...formDataEditar, fecha_vencimiento_garantia: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                      <div></div>
                     </div>
 
-                    <div className="hidden md:block">
-                      {/* Espacio alineado en grilla */}
-                    </div>
-
-                    {/* Fila 3: Notas u Observaciones (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 3: Notas u Observaciones */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Notas u Observaciones
                       </label>
@@ -6420,8 +6433,8 @@ export default function InventarioView({
               >
                 {/* PASO 1: DATOS OPERATIVOS */}
                 {pasoActualNuevo === 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -6432,78 +6445,131 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Nombre del Elemento (Izquierda) + Código / Placa (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Nombre Del Elemento / Material *
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        name="material"
-                        maxLength={90}
-                        value={formDataNuevo.material || ''}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, material: e.target.value })}
-                        placeholder={isPapeleriaNuevo ? "Ej. Carpetas de Cartón Yute Oficio" : "Ej. Sensor Ultrasónico HC-SR04 o Arduino UNO"}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                          Código Del Ítem *
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Nombre Del Elemento / Material *
                         </label>
-                        <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
-                          {isPapeleriaNuevo ? 'Formato PapeXXXX' : 'Formato RobXXXX'}
-                        </span>
-                      </div>
-                      <input
-                        required
-                        type="text"
-                        name="id"
-                        maxLength={25}
-                        readOnly={false}
-                        disabled={false}
-                        value={formDataNuevo.id || ''}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, id: e.target.value })}
-                        placeholder={isPapeleriaNuevo ? "Ej. Pape2012" : "Ej. Rob0143"}
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Categoría *
-                      </label>
-                      {isPapeleriaNuevo ? (
                         <input
+                          required
                           type="text"
-                          readOnly
-                          value={formDataNuevo.categoria || 'Papelería'}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 cursor-not-allowed opacity-90"
+                          name="material"
+                          maxLength={90}
+                          value={formDataNuevo.material || ''}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, material: e.target.value })}
+                          placeholder={isPapeleriaNuevo ? "Ej. Carpetas de Cartón Yute Oficio" : "Ej. Sensor Ultrasónico HC-SR04 o Arduino UNO"}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
                             borderColor: 'var(--line, #334155)',
                           }}
                         />
-                      ) : (
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                            Código Del Ítem *
+                          </label>
+                          <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
+                            {isPapeleriaNuevo ? 'Formato PapeXXXX' : 'Formato RobXXXX'}
+                          </span>
+                        </div>
+                        <input
+                          required
+                          type="text"
+                          name="id"
+                          maxLength={25}
+                          readOnly={false}
+                          disabled={false}
+                          value={formDataNuevo.id || ''}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, id: e.target.value })}
+                          placeholder={isPapeleriaNuevo ? "Ej. Pape2012" : "Ej. Rob0143"}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Categoría *
+                        </label>
+                        {isPapeleriaNuevo ? (
+                          <input
+                            type="text"
+                            readOnly
+                            value={formDataNuevo.categoria || 'Papelería'}
+                            className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 cursor-not-allowed opacity-90"
+                            style={{
+                              backgroundColor: 'var(--bg, #0f172a)',
+                              color: 'var(--text, #f8fafc)',
+                              borderColor: 'var(--line, #334155)',
+                            }}
+                          />
+                        ) : (
+                          <select
+                            required
+                            name="categoria"
+                            value={formDataNuevo.categoria || 'Robótica'}
+                            onChange={(e) => setFormDataNuevo({ ...formDataNuevo, categoria: e.target.value })}
+                            className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                            style={{
+                              backgroundColor: 'var(--bg, #0f172a)',
+                              color: 'var(--text, #f8fafc)',
+                              borderColor: 'var(--line, #334155)',
+                            }}
+                          >
+                            <option value="Robótica">Robótica</option>
+                            <option value="Electrónica">Electrónica</option>
+                            <option value="Herramientas">Herramientas</option>
+                            <option value="Impresión 3D">Impresión 3D</option>
+                            <option value="Cables y Adaptadores">Cables y Adaptadores</option>
+                            <option value="Cómputo & Formación">Cómputo & Formación</option>
+                          </select>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Cantidad Inicial *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          max="99999"
+                          name="disponible"
+                          value={formDataNuevo.disponible ?? 10}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, disponible: e.target.value })}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fila 3: Condición / Unidad * (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Condición / Unidad *
+                        </label>
                         <select
                           required
-                          name="categoria"
-                          value={formDataNuevo.categoria || 'Robótica'}
-                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, categoria: e.target.value })}
+                          name="condicion"
+                          value={formDataNuevo.condicion || (isPapeleriaNuevo ? 'Nuevos' : 'Bueno')}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, condicion: e.target.value })}
                           className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
@@ -6511,98 +6577,51 @@ export default function InventarioView({
                             borderColor: 'var(--line, #334155)',
                           }}
                         >
-                          <option value="Robótica">Robótica</option>
-                          <option value="Electrónica">Electrónica</option>
-                          <option value="Herramientas">Herramientas</option>
-                          <option value="Impresión 3D">Impresión 3D</option>
-                          <option value="Cables y Adaptadores">Cables y Adaptadores</option>
-                          <option value="Cómputo & Formación">Cómputo & Formación</option>
+                          {isPapeleriaNuevo ? (
+                            <>
+                              <option value="Nuevos">Nuevos</option>
+                              <option value="Usados">Usados</option>
+                              <option value="Mixto">Mixto</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="Nuevo">Nuevo</option>
+                              <option value="Bueno">Bueno</option>
+                              <option value="Regular">Regular</option>
+                              <option value="Usado">Usado</option>
+                              <option value="Donación">Donación</option>
+                            </>
+                          )}
                         </select>
-                      )}
-                    </div>
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Cantidad Inicial *
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        min="0"
-                        max="99999"
-                        name="disponible"
-                        value={formDataNuevo.disponible ?? 10}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, disponible: e.target.value })}
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 3: Condición / Unidad * (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Condición / Unidad *
-                      </label>
-                      <select
-                        required
-                        name="condicion"
-                        value={formDataNuevo.condicion || (isPapeleriaNuevo ? 'Nuevos' : 'Bueno')}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, condicion: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        {isPapeleriaNuevo ? (
-                          <>
-                            <option value="Nuevos">Nuevos</option>
-                            <option value="Usados">Usados</option>
-                            <option value="Mixto">Mixto</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="Nuevo">Nuevo</option>
-                            <option value="Bueno">Bueno</option>
-                            <option value="Regular">Regular</option>
-                            <option value="Usado">Usado</option>
-                            <option value="Donación">Donación</option>
-                          </>
-                        )}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <ProgramAreaSelect
-                        label="Área Asignada / Programa FMO"
-                        value={formDataNuevo.area_asignada || formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
-                        defaultProgram={isPapeleriaNuevo ? 'teachlabs' : 'robotica'}
-                        showPreview={false}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, area: e.target.value, area_asignada: e.target.value })}
-                      />
-                      <div
-                        className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
-                        <ProgramAreaBadge
-                          area={formDataNuevo.area_asignada || formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
+                      <div className="space-y-1.5">
+                        <ProgramAreaSelect
+                          label="Área Asignada / Programa FMO"
+                          value={formDataNuevo.area_asignada || formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
                           defaultProgram={isPapeleriaNuevo ? 'teachlabs' : 'robotica'}
-                          iconSize={16}
+                          showPreview={false}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, area: e.target.value, area_asignada: e.target.value })}
                         />
+                        <div
+                          className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
+                          <ProgramAreaBadge
+                            area={formDataNuevo.area_asignada || formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
+                            defaultProgram={isPapeleriaNuevo ? 'teachlabs' : 'robotica'}
+                            iconSize={16}
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Fila 4: Descripción General (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 4: Descripción General */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Descripción General
                       </label>
@@ -6626,8 +6645,8 @@ export default function InventarioView({
 
                 {/* PASO 2: ESPECIFICACIONES */}
                 {pasoActualNuevo === 2 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -6637,140 +6656,146 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Sede / Ubicación Física | Estante / Gaveta */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Sede / Ubicación Física
-                      </label>
-                      <select
-                        name="ubicacion"
-                        value={formDataNuevo.ubicacion || formDataNuevo.sede || sedesList[0] || 'Medellín'}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion: e.target.value, sede: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        {formDataNuevo.ubicacion && !sedesList.includes(formDataNuevo.ubicacion) && (
-                          <option value={formDataNuevo.ubicacion}>{formDataNuevo.ubicacion}</option>
-                        )}
-                        {sedesList.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Sede / Ubicación Física
+                        </label>
+                        <select
+                          name="ubicacion"
+                          value={formDataNuevo.ubicacion || formDataNuevo.sede || sedesList[0] || 'Medellín'}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion: e.target.value, sede: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          {formDataNuevo.ubicacion && !sedesList.includes(formDataNuevo.ubicacion) && (
+                            <option value={formDataNuevo.ubicacion}>{formDataNuevo.ubicacion}</option>
+                          )}
+                          {sedesList.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Estante / Caja / Gaveta
-                      </label>
-                      <input
-                        type="text"
-                        name="ubicacion_estante"
-                        maxLength={70}
-                        value={formDataNuevo.ubicacion_estante || ''}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion_estante: e.target.value })}
-                        placeholder="Ej. Caja Rimax 12, Estantería B-1"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Estante / Caja / Gaveta
+                        </label>
+                        <input
+                          type="text"
+                          name="ubicacion_estante"
+                          maxLength={70}
+                          value={formDataNuevo.ubicacion_estante || ''}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, ubicacion_estante: e.target.value })}
+                          placeholder="Ej. Caja Rimax 12, Estantería B-1"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 2: Stock Mínimo De Alerta * | Características */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Stock Mínimo De Alerta *
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        min="0"
-                        max="99999"
-                        name="minimo"
-                        value={formDataNuevo.minimo ?? (isPapeleriaNuevo ? 3 : 5)}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, minimo: e.target.value })}
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Stock Mínimo De Alerta *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          max="99999"
+                          name="minimo"
+                          value={formDataNuevo.minimo ?? (isPapeleriaNuevo ? 3 : 5)}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, minimo: e.target.value })}
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Características
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristicas"
-                        maxLength={120}
-                        value={formDataNuevo.caracteristicas || ''}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, caracteristicas: e.target.value })}
-                        placeholder="Marcas, presentación, conectores, voltajes..."
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Características
+                        </label>
+                        <input
+                          type="text"
+                          name="caracteristicas"
+                          maxLength={120}
+                          value={formDataNuevo.caracteristicas || ''}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, caracteristicas: e.target.value })}
+                          placeholder="Marcas, presentación, conectores, voltajes..."
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 3: Estado | Condición */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Estado
-                      </label>
-                      <select
-                        name="estado"
-                        value={formDataNuevo.estado || 'Bueno'}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, estado: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <option value="Bueno">Bueno</option>
-                        <option value="Regular">Regular</option>
-                        <option value="Malo">Malo</option>
-                      </select>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Estado
+                        </label>
+                        <select
+                          name="estado"
+                          value={formDataNuevo.estado || 'Bueno'}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, estado: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <option value="Bueno">Bueno</option>
+                          <option value="Regular">Regular</option>
+                          <option value="Malo">Malo</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Condición
+                        </label>
+                        <select
+                          name="condicion"
+                          value={formDataNuevo.condicion || 'Nuevos'}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, condicion: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <option value="Nuevos">Nuevos</option>
+                          <option value="Usados">Usados</option>
+                          <option value="Nuevos y Usados">Nuevos y Usados</option>
+                          <option value="Donación">Donación</option>
+                        </select>
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Condición
-                      </label>
-                      <select
-                        name="condicion"
-                        value={formDataNuevo.condicion || 'Nuevos'}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, condicion: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <option value="Nuevos">Nuevos</option>
-                        <option value="Usados">Usados</option>
-                        <option value="Nuevos y Usados">Nuevos y Usados</option>
-                        <option value="Donación">Donación</option>
-                      </select>
-                    </div>
-
-                    {/* Fila 4: Detalle Técnico / Observaciones (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 4: Detalle Técnico / Observaciones */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Detalle Técnico / Observaciones
                       </label>
@@ -6794,8 +6819,8 @@ export default function InventarioView({
 
                 {/* PASO 3: ADQUISICIÓN Y NOTAS */}
                 {pasoActualNuevo === 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -6805,71 +6830,72 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Valor Compra | Fecha Compra */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Valor Compra ($)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="999999999"
-                        step="any"
-                        name="valor_compra"
-                        value={formDataNuevo.valor_compra ?? ''}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, valor_compra: e.target.value })}
-                        placeholder="Ej. 35000"
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Valor Compra ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="999999999"
+                          step="any"
+                          name="valor_compra"
+                          value={formDataNuevo.valor_compra ?? ''}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, valor_compra: e.target.value })}
+                          placeholder="Ej. 35000"
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Fecha Compra
-                      </label>
-                      <input
-                        type="date"
-                        name="fecha_compra"
-                        value={formDataNuevo.fecha_compra || ''}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, fecha_compra: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Fecha Compra
+                        </label>
+                        <input
+                          type="date"
+                          name="fecha_compra"
+                          value={formDataNuevo.fecha_compra || ''}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, fecha_compra: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 2: Vencimiento Garantía */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Vencimiento Garantía
-                      </label>
-                      <input
-                        type="date"
-                        name="fecha_vencimiento_garantia"
-                        value={formDataNuevo.fecha_vencimiento_garantia || ''}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, fecha_vencimiento_garantia: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Vencimiento Garantía
+                        </label>
+                        <input
+                          type="date"
+                          name="fecha_vencimiento_garantia"
+                          value={formDataNuevo.fecha_vencimiento_garantia || ''}
+                          onChange={(e) => setFormDataNuevo({ ...formDataNuevo, fecha_vencimiento_garantia: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                      <div></div>
                     </div>
 
-                    <div className="hidden md:block">
-                      {/* Espacio alineado en grilla */}
-                    </div>
-
-                    {/* Fila 3: Notas u Observaciones (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 3: Notas u Observaciones */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Notas u Observaciones
                       </label>
@@ -7259,8 +7285,8 @@ export default function InventarioView({
                     PASO 1: Identificación y Clasificación
                     ========================================== */}
                 {pasoActualEquipo === 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -7271,146 +7297,152 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Nombre del Elemento / Equipo (Izquierda) + Código / Placa (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Nombre Del Elemento / Equipo *
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        name="nombre"
-                        maxLength={90}
-                        value={formDataNuevoEquipo.nombre || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, nombre: e.target.value })}
-                        placeholder="Ej. Portátil Lenovo ThinkPad L14"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                          Código / Placa *
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Nombre Del Elemento / Equipo *
                         </label>
-                        <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
-                          Consecutivo oficial
-                        </span>
+                        <input
+                          required
+                          type="text"
+                          name="nombre"
+                          maxLength={90}
+                          value={formDataNuevoEquipo.nombre || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, nombre: e.target.value })}
+                          placeholder="Ej. Portátil Lenovo ThinkPad L14"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
                       </div>
-                      <input
-                        required
-                        type="text"
-                        name="placa"
-                        maxLength={25}
-                        readOnly={false}
-                        disabled={false}
-                        value={formDataNuevoEquipo.placa || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, placa: e.target.value.toUpperCase() })}
-                        placeholder="Ej: P57 o PLA-901"
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
 
-                    {/* Fila 2: Categoría (Izquierda) + Cantidad (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Categoría *
-                      </label>
-                      <select
-                        name="categoria"
-                        value={formDataNuevoEquipo.categoria || 'Portátiles'}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, categoria: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <option value="Portátiles">Portátiles / Laptops</option>
-                        <option value="Tablets">Tablets</option>
-                        <option value="Robótica y Sensores">Robótica y Sensores</option>
-                        <option value="Proyectores y Audio">Proyectores y Audio</option>
-                        <option value="Cámaras y Video">Cámaras y Video</option>
-                        <option value="Impresoras 3D">Impresoras 3D</option>
-                        <option value="Redes y Servidores">Redes y Servidores</option>
-                        <option value="Otros Equipos">Otros Equipos</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Cantidad
-                      </label>
-                      <input
-                        type="number"
-                        name="cantidad"
-                        value={1}
-                        readOnly
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 cursor-not-allowed opacity-90"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 3: Condición (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Condición
-                      </label>
-                      <select
-                        name="condicion"
-                        value={formDataNuevoEquipo.condicion || 'Nuevo'}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, condicion: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <option value="Nuevo">Nuevo</option>
-                        <option value="Usado">Usado</option>
-                        <option value="Donación">Donación</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <ProgramAreaSelect
-                        label="Área Asignada / Programa FMO"
-                        value={formDataNuevoEquipo.area || ''}
-                        showPreview={false}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, area: e.target.value })}
-                      />
-                      <div
-                        className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
-                        <ProgramAreaBadge
-                          area={formDataNuevoEquipo.area || 'Robótica'}
-                          iconSize={16}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                            Código / Placa *
+                          </label>
+                          <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
+                            Consecutivo oficial
+                          </span>
+                        </div>
+                        <input
+                          required
+                          type="text"
+                          name="placa"
+                          maxLength={25}
+                          readOnly={false}
+                          disabled={false}
+                          value={formDataNuevoEquipo.placa || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, placa: e.target.value.toUpperCase() })}
+                          placeholder="Ej: P57 o PLA-901"
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
                         />
                       </div>
                     </div>
 
-                    {/* Fila 4: Descripción General (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 2: Categoría (Izquierda) + Cantidad (Derecha) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Categoría *
+                        </label>
+                        <select
+                          name="categoria"
+                          value={formDataNuevoEquipo.categoria || 'Portátiles'}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, categoria: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <option value="Portátiles">Portátiles / Laptops</option>
+                          <option value="Tablets">Tablets</option>
+                          <option value="Robótica y Sensores">Robótica y Sensores</option>
+                          <option value="Proyectores y Audio">Proyectores y Audio</option>
+                          <option value="Cámaras y Video">Cámaras y Video</option>
+                          <option value="Impresoras 3D">Impresoras 3D</option>
+                          <option value="Redes y Servidores">Redes y Servidores</option>
+                          <option value="Otros Equipos">Otros Equipos</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Cantidad
+                        </label>
+                        <input
+                          type="number"
+                          name="cantidad"
+                          value={1}
+                          readOnly
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 cursor-not-allowed opacity-90"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fila 3: Condición (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Condición
+                        </label>
+                        <select
+                          name="condicion"
+                          value={formDataNuevoEquipo.condicion || 'Nuevo'}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, condicion: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <option value="Nuevo">Nuevo</option>
+                          <option value="Usado">Usado</option>
+                          <option value="Donación">Donación</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <ProgramAreaSelect
+                          label="Área Asignada / Programa FMO"
+                          value={formDataNuevoEquipo.area || ''}
+                          showPreview={false}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, area: e.target.value })}
+                        />
+                        <div
+                          className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
+                          <ProgramAreaBadge
+                            area={formDataNuevoEquipo.area || 'Robótica'}
+                            iconSize={16}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fila 4: Descripción General */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Descripción General
                       </label>
@@ -7436,8 +7468,8 @@ export default function InventarioView({
                     PASO 2: Ficha Técnica y Asignación
                     ========================================== */}
                 {pasoActualEquipo === 2 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -7448,178 +7480,186 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Marca | Modelo */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Marca
-                      </label>
-                      <input
-                        type="text"
-                        name="marca"
-                        maxLength={50}
-                        value={formDataNuevoEquipo.marca || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, marca: e.target.value })}
-                        placeholder="Ej. Lenovo, Dell, HP..."
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Marca
+                        </label>
+                        <input
+                          type="text"
+                          name="marca"
+                          maxLength={50}
+                          value={formDataNuevoEquipo.marca || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, marca: e.target.value })}
+                          placeholder="Ej. Lenovo, Dell, HP..."
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Modelo
-                      </label>
-                      <input
-                        type="text"
-                        name="modelo"
-                        maxLength={60}
-                        value={formDataNuevoEquipo.modelo || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, modelo: e.target.value })}
-                        placeholder="Ej. ThinkPad L14"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Modelo
+                        </label>
+                        <input
+                          type="text"
+                          name="modelo"
+                          maxLength={60}
+                          value={formDataNuevoEquipo.modelo || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, modelo: e.target.value })}
+                          placeholder="Ej. ThinkPad L14"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 2: Serial * | Sede / Ubicación Física */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Serial *
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        name="serial"
-                        maxLength={60}
-                        value={formDataNuevoEquipo.serial || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, serial: e.target.value })}
-                        placeholder="Ej. PF-42X89"
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Serial *
+                        </label>
+                        <input
+                          required
+                          type="text"
+                          name="serial"
+                          maxLength={60}
+                          value={formDataNuevoEquipo.serial || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, serial: e.target.value })}
+                          placeholder="Ej. PF-42X89"
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Sede / Ubicación Física
-                      </label>
-                      <select
-                        name="ubicacion"
-                        value={formDataNuevoEquipo.ubicacion || formDataNuevoEquipo.sede || sedesList[0] || 'Medellín'}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion: e.target.value, sede: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      >
-                        {formDataNuevoEquipo.ubicacion && !sedesList.includes(formDataNuevoEquipo.ubicacion) && (
-                          <option value={formDataNuevoEquipo.ubicacion}>{formDataNuevoEquipo.ubicacion}</option>
-                        )}
-                        {sedesList.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Sede / Ubicación Física
+                        </label>
+                        <select
+                          name="ubicacion"
+                          value={formDataNuevoEquipo.ubicacion || formDataNuevoEquipo.sede || sedesList[0] || 'Medellín'}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion: e.target.value, sede: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        >
+                          {formDataNuevoEquipo.ubicacion && !sedesList.includes(formDataNuevoEquipo.ubicacion) && (
+                            <option value={formDataNuevoEquipo.ubicacion}>{formDataNuevoEquipo.ubicacion}</option>
+                          )}
+                          {sedesList.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     {/* Fila 3: Estante / Caja / Gaveta | Responsable / Custodio */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Estante / Caja / Gaveta
-                      </label>
-                      <input
-                        type="text"
-                        name="ubicacion_estante"
-                        maxLength={70}
-                        value={formDataNuevoEquipo.ubicacion_estante || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion_estante: e.target.value })}
-                        placeholder="Ej. Estante A-2, Caja 05, Gaveta 3"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Estante / Caja / Gaveta
+                        </label>
+                        <input
+                          type="text"
+                          name="ubicacion_estante"
+                          maxLength={70}
+                          value={formDataNuevoEquipo.ubicacion_estante || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion_estante: e.target.value })}
+                          placeholder="Ej. Estante A-2, Caja 05, Gaveta 3"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Responsable / Custodio
-                      </label>
-                      <input
-                        type="text"
-                        name="responsable"
-                        maxLength={90}
-                        value={formDataNuevoEquipo.responsable || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, responsable: e.target.value })}
-                        placeholder="Ej. Bodega Central o Custodio"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Responsable / Custodio
+                        </label>
+                        <input
+                          type="text"
+                          name="responsable"
+                          maxLength={90}
+                          value={formDataNuevoEquipo.responsable || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, responsable: e.target.value })}
+                          placeholder="Ej. Bodega Central o Custodio"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 4: Característica 1 | Característica 2 */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Característica 1
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristica_1"
-                        maxLength={120}
-                        value={formDataNuevoEquipo.caracteristica_1 || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_1: e.target.value })}
-                        placeholder="Ej. Core i5-1135G7"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Característica 1
+                        </label>
+                        <input
+                          type="text"
+                          name="caracteristica_1"
+                          maxLength={120}
+                          value={formDataNuevoEquipo.caracteristica_1 || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_1: e.target.value })}
+                          placeholder="Ej. Core i5-1135G7"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Característica 2
+                        </label>
+                        <input
+                          type="text"
+                          name="caracteristica_2"
+                          maxLength={120}
+                          value={formDataNuevoEquipo.caracteristica_2 || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_2: e.target.value })}
+                          placeholder="Ej. 16GB RAM DDR4"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Característica 2
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristica_2"
-                        maxLength={120}
-                        value={formDataNuevoEquipo.caracteristica_2 || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_2: e.target.value })}
-                        placeholder="Ej. 16GB RAM DDR4"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 5: Característica 3 (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 5: Característica 3 */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Característica 3
                       </label>
@@ -7645,8 +7685,8 @@ export default function InventarioView({
                     PASO 3: Adquisición, Garantía y Accesos
                     ========================================== */}
                 {pasoActualEquipo === 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 animate-fade-in">
-                    <div className="col-span-1 md:col-span-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <div className="animate-fade-in">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
                         className="font-bold text-xs uppercase tracking-wider m-0"
                         style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -7657,154 +7697,160 @@ export default function InventarioView({
                     </div>
 
                     {/* Fila 1: Proveedor | Valor Unitario ($) */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Proveedor
-                      </label>
-                      <input
-                        type="text"
-                        name="proveedor"
-                        maxLength={90}
-                        value={formDataNuevoEquipo.proveedor || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, proveedor: e.target.value })}
-                        placeholder="Ej. Lenovo Colombia"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Proveedor
+                        </label>
+                        <input
+                          type="text"
+                          name="proveedor"
+                          maxLength={90}
+                          value={formDataNuevoEquipo.proveedor || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, proveedor: e.target.value })}
+                          placeholder="Ej. Lenovo Colombia"
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Valor Unitario ($)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="999999999"
-                        step="any"
-                        name="valor_compra"
-                        value={formDataNuevoEquipo.valor_compra ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '') {
-                            setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_compra: '', valor_total: '' });
-                            return;
-                          }
-                          const clamped = Math.max(0, Math.min(999999999, Number(val)));
-                          const qty = Number(formDataNuevoEquipo.cantidad) || 1;
-                          setFormDataNuevoEquipo({
-                            ...formDataNuevoEquipo,
-                            valor_compra: clamped,
-                            valor_total: clamped * qty,
-                          });
-                        }}
-                        placeholder="Ej. 2800000"
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Valor Unitario ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="999999999"
+                          step="any"
+                          name="valor_compra"
+                          value={formDataNuevoEquipo.valor_compra ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_compra: '', valor_total: '' });
+                              return;
+                            }
+                            const clamped = Math.max(0, Math.min(999999999, Number(val)));
+                            const qty = Number(formDataNuevoEquipo.cantidad) || 1;
+                            setFormDataNuevoEquipo({
+                              ...formDataNuevoEquipo,
+                              valor_compra: clamped,
+                              valor_total: clamped * qty,
+                            });
+                          }}
+                          placeholder="Ej. 2800000"
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 2: Valor Total ($) | Fecha Compra */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Valor Total ($)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="999999999"
-                        step="any"
-                        name="valor_total"
-                        value={formDataNuevoEquipo.valor_total ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '') {
-                            setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_total: '' });
-                            return;
-                          }
-                          const clamped = Math.min(999999999, Math.max(0, Number(val)));
-                          setFormDataNuevoEquipo({
-                            ...formDataNuevoEquipo,
-                            valor_total: clamped,
-                          });
-                        }}
-                        placeholder="Ej. 2800000"
-                        className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Valor Total ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="999999999"
+                          step="any"
+                          name="valor_total"
+                          value={formDataNuevoEquipo.valor_total ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_total: '' });
+                              return;
+                            }
+                            const clamped = Math.min(999999999, Math.max(0, Number(val)));
+                            setFormDataNuevoEquipo({
+                              ...formDataNuevoEquipo,
+                              valor_total: clamped,
+                            });
+                          }}
+                          placeholder="Ej. 2800000"
+                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Fecha Compra
-                      </label>
-                      <input
-                        type="date"
-                        name="fecha_compra"
-                        value={formDataNuevoEquipo.fecha_compra || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, fecha_compra: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Fecha Compra
+                        </label>
+                        <input
+                          type="date"
+                          name="fecha_compra"
+                          value={formDataNuevoEquipo.fecha_compra || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, fecha_compra: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Fila 3: Vencimiento Garantía | Claves / Credenciales de Acceso */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Vencimiento Garantía
-                      </label>
-                      <input
-                        type="date"
-                        name="fecha_vencimiento_garantia"
-                        value={formDataNuevoEquipo.fecha_vencimiento_garantia || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, fecha_vencimiento_garantia: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Vencimiento Garantía
+                        </label>
+                        <input
+                          type="date"
+                          name="fecha_vencimiento_garantia"
+                          value={formDataNuevoEquipo.fecha_vencimiento_garantia || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, fecha_vencimiento_garantia: e.target.value })}
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                          Claves / Credenciales de Acceso
+                        </label>
+                        <textarea
+                          name="claves_otros"
+                          rows={2}
+                          maxLength={350}
+                          value={formDataNuevoEquipo.claves_otros || ''}
+                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, claves_otros: e.target.value })}
+                          placeholder="PIN de acceso, usuario administrador o credenciales..."
+                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
+                          style={{
+                            backgroundColor: 'var(--bg, #0f172a)',
+                            color: 'var(--text, #f8fafc)',
+                            borderColor: 'var(--line, #334155)',
+                          }}
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Claves / Credenciales de Acceso
-                      </label>
-                      <textarea
-                        name="claves_otros"
-                        rows={2}
-                        maxLength={350}
-                        value={formDataNuevoEquipo.claves_otros || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, claves_otros: e.target.value })}
-                        placeholder="PIN de acceso, usuario administrador o credenciales..."
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 4: Notas u Observaciones (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 4: Notas u Observaciones */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                         Notas u Observaciones
                       </label>
@@ -7824,8 +7870,8 @@ export default function InventarioView({
                       />
                     </div>
 
-                    {/* Fila 5: Control de Seguimiento Contable Institucional (md:col-span-2) */}
-                    <div className="col-span-1 md:col-span-2">
+                    {/* Fila 5: Control de Seguimiento Contable Institucional */}
+                    <div style={{ marginBottom: '12px' }}>
                       <label
                         className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
                         style={{
