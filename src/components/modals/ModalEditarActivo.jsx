@@ -93,8 +93,20 @@ export default function ModalEditarActivo({
         nombre: itemActivo.nombre || itemActivo.equipo || itemActivo.material || itemActivo.name || '',
         categoria: itemActivo.categoria || itemActivo.category || 'Portátiles',
         condicion: itemActivo.condicion || itemActivo.estado_fisico || itemActivo.estado || 'Bueno',
-        area: itemActivo.area_asignada || itemActivo.area || 'Nuevas Tecnologías',
-        area_asignada: itemActivo.area_asignada || itemActivo.area || 'Nuevas Tecnologías',
+        area: itemActivo.area_asignada || itemActivo.area || (
+          itemActivo.subtipo === 'papeleria' || itemActivo.categoria === 'Papelería' || itemActivo.category === 'Papelería' || String(itemActivo.id || '').toLowerCase().startsWith('pape')
+            ? 'TeachLabs'
+            : itemActivo.itemType === 'consumible' || itemActivo.subtipo === 'robotica' || String(itemActivo.id || '').toLowerCase().startsWith('rob')
+            ? 'Robótica'
+            : 'Nuevas Tecnologías'
+        ),
+        area_asignada: itemActivo.area_asignada || itemActivo.area || (
+          itemActivo.subtipo === 'papeleria' || itemActivo.categoria === 'Papelería' || itemActivo.category === 'Papelería' || String(itemActivo.id || '').toLowerCase().startsWith('pape')
+            ? 'TeachLabs'
+            : itemActivo.itemType === 'consumible' || itemActivo.subtipo === 'robotica' || String(itemActivo.id || '').toLowerCase().startsWith('rob')
+            ? 'Robótica'
+            : 'Nuevas Tecnologías'
+        ),
         ubicacion: itemActivo.ubicacion || itemActivo.location || 'Oficina Medellín',
         ubicacion_estante: itemActivo.ubicacion_estante || '',
         cantidad: 1,
@@ -180,10 +192,23 @@ export default function ModalEditarActivo({
           const targetId = itemActivo.dbId || (itemActivo.id && !String(itemActivo.id).startsWith('eq-') ? itemActivo.id : null);
           const targetPlaca = (formData.placa || itemActivo.placa || '').trim();
 
-          if (targetId) {
-            await supabase.from('equipos').update(updatePayload).eq('id', targetId);
-          } else if (targetPlaca) {
-            await supabase.from('equipos').update(updatePayload).eq('placa', targetPlaca);
+          const isPapeleriaItem = itemActivo.subtipo === 'papeleria' || itemActivo.categoria === 'Papelería' || String(targetPlaca || targetId || itemActivo.id || '').toLowerCase().startsWith('pape');
+          const isConsumibleItem = itemActivo.itemType === 'consumible' || itemActivo.subtipo === 'robotica' || String(targetPlaca || targetId || itemActivo.id || '').toLowerCase().startsWith('rob');
+
+          if (isPapeleriaItem) {
+            const papeId = targetId || targetPlaca || itemActivo.id;
+            if (papeId) await supabase.from('papeleria').update(updatePayload).eq('id', papeId);
+          } else if (isConsumibleItem) {
+            const robId = targetId || targetPlaca || itemActivo.id;
+            if (robId) await supabase.from('consumibles').update(updatePayload).eq('id', robId);
+          } else {
+            if (targetId) {
+              await supabase.from('equipos').update(updatePayload).eq('id', targetId);
+              await supabase.from('activos').update(updatePayload).eq('id', targetId);
+            } else if (targetPlaca) {
+              await supabase.from('equipos').update(updatePayload).eq('placa', targetPlaca);
+              await supabase.from('activos').update(updatePayload).eq('placa', targetPlaca);
+            }
           }
         } catch (sbE) {
           console.warn('Aviso Supabase update en modal:', sbE?.message);

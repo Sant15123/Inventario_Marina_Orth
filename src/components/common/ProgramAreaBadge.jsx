@@ -7,7 +7,7 @@ import {
   InglesIcon,
 } from './FmoProgramIcons';
 
-// Icono neutro institucional para General / Administración / Sin Asignar
+// Icono neutro institucional para General / Administración / Sin Asignar (Caja de inventario, nunca calendario)
 export const NeutralAreaIcon = ({ className = 'w-5 h-5', size = 20 }) => (
   <svg
     viewBox="0 0 24 24"
@@ -21,10 +21,9 @@ export const NeutralAreaIcon = ({ className = 'w-5 h-5', size = 20 }) => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-    <line x1="16" y1="2" x2="16" y2="6" />
-    <line x1="8" y1="2" x2="8" y2="6" />
-    <line x1="3" y1="10" x2="21" y2="10" />
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
   </svg>
 );
 
@@ -38,22 +37,44 @@ export const PROGRAM_OPTIONS = [
 ];
 
 /**
- * Resuelve la configuración y estilos cromáticos del badge de Área / Programa
+ * Normaliza una cadena eliminando acentos/tildes, espacios extras y pasando a minúsculas
  */
-export function resolveAreaConfig(area) {
-  if (!area) {
-    return {
-      id: 'general',
-      label: 'Sin asignar',
-      badgeClass: 'bg-slate-50 text-[#6d6e71] border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-      Icon: NeutralAreaIcon,
-    };
-  }
+export function normalizeAreaText(str) {
+  if (!str && str !== 0) return '';
+  return String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
-  const str = String(area).toLowerCase().trim();
+/**
+ * Resuelve la configuración y estilos cromáticos del badge de Área / Programa
+ * Soporta tildes (Robótica, Tecnologías, Inglés), sinónimos y subcategorías
+ * con opción de programa predeterminado de respaldo.
+ */
+export function resolveAreaConfig(area, defaultProgram = null) {
+  const norm = normalizeAreaText(area);
+  const defNorm = normalizeAreaText(defaultProgram);
 
   // 1. Robótica (#0A3C63)
-  if (str.includes('robot')) {
+  if (
+    norm.includes('robot') ||
+    norm.includes('electron') ||
+    norm.includes('herramient') ||
+    norm.includes('impresion 3d') ||
+    norm.includes('3d') ||
+    norm.includes('sensor') ||
+    norm.includes('cable') ||
+    norm.includes('adaptador') ||
+    norm.includes('arduino') ||
+    norm.includes('lego') ||
+    norm.includes('maker') ||
+    norm.includes('motor') ||
+    norm.includes('mecatron') ||
+    norm.includes('dron') ||
+    (norm.includes('consumible') && !norm.includes('papel'))
+  ) {
     return {
       id: 'robotica',
       label: 'Robótica',
@@ -64,11 +85,17 @@ export function resolveAreaConfig(area) {
 
   // 2. Nuevas Tecnologías (#2CACD0)
   if (
-    str.includes('tecnolog') ||
-    str.includes('computo') ||
-    str.includes('laptop') ||
-    str.includes('tablet') ||
-    str.includes('equipo')
+    norm.includes('tecnolog') ||
+    norm.includes('comput') ||
+    norm.includes('laptop') ||
+    norm.includes('tablet') ||
+    norm.includes('portatil') ||
+    norm.includes('equipo') ||
+    norm.includes('servidor') ||
+    norm.includes('switch') ||
+    norm.includes('router') ||
+    norm.includes('pantalla') ||
+    norm.includes('monitor')
   ) {
     return {
       id: 'tecnologia',
@@ -80,10 +107,20 @@ export function resolveAreaConfig(area) {
 
   // 3. TeachLabs (#7b2cbf)
   if (
-    str.includes('teach') ||
-    str.includes('papel') ||
-    str.includes('lab') ||
-    str.includes('pedagog')
+    norm.includes('teach') ||
+    norm.includes('papel') ||
+    norm.includes('lab') ||
+    norm.includes('pedagog') ||
+    norm.includes('educa') ||
+    norm.includes('escolar') ||
+    norm.includes('aula') ||
+    norm.includes('docente') ||
+    norm.includes('cuaderno') ||
+    norm.includes('marcador') ||
+    norm.includes('cartulina') ||
+    norm.includes('resma') ||
+    norm.includes('tinta') ||
+    norm.includes('oficina')
   ) {
     return {
       id: 'teachlabs',
@@ -95,10 +132,12 @@ export function resolveAreaConfig(area) {
 
   // 4. Habilidades Socioemocionales (#F4C400)
   if (
-    str.includes('socio') ||
-    str.includes('emocion') ||
-    str.includes('vida') ||
-    str.includes('habilidad')
+    norm.includes('socio') ||
+    norm.includes('emocion') ||
+    norm.includes('vida') ||
+    norm.includes('habilidad') ||
+    norm.includes('bienestar') ||
+    norm.includes('psico')
   ) {
     return {
       id: 'socioemocional',
@@ -110,10 +149,11 @@ export function resolveAreaConfig(area) {
 
   // 5. Inglés (#E0321C)
   if (
-    str.includes('ingl') ||
-    str.includes('english') ||
-    str.includes('idioma') ||
-    str.includes('biling')
+    norm.includes('ingl') ||
+    norm.includes('english') ||
+    norm.includes('idioma') ||
+    norm.includes('biling') ||
+    norm.includes('lengua')
   ) {
     return {
       id: 'ingles',
@@ -123,10 +163,64 @@ export function resolveAreaConfig(area) {
     };
   }
 
-  // 6. Cualquier otro valor / Administración / General
+  // Si no coincide y se proporcionó un defaultProgram, recurrir a él
+  if (defNorm) {
+    if (defNorm.includes('robot')) {
+      return {
+        id: 'robotica',
+        label: 'Robótica',
+        badgeClass: 'bg-[#0A3C63]/10 text-[#0A3C63] border border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]',
+        Icon: RoboticaIcon,
+      };
+    }
+    if (defNorm.includes('teach') || defNorm.includes('papel')) {
+      return {
+        id: 'teachlabs',
+        label: 'TeachLabs',
+        badgeClass: 'bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 dark:bg-[#7b2cbf]/25 dark:text-[#c084fc]',
+        Icon: TeachLabsIcon,
+      };
+    }
+    if (defNorm.includes('tec') || defNorm.includes('equipo')) {
+      return {
+        id: 'tecnologia',
+        label: 'Nuevas Tecnologías',
+        badgeClass: 'bg-[#2CACD0]/15 text-[#013a52] border border-[#2CACD0]/40 dark:bg-[#2CACD0]/25 dark:text-[#67e8f9]',
+        Icon: NuevasTecnologiasIcon,
+      };
+    }
+    if (defNorm.includes('socio') || defNorm.includes('emocion')) {
+      return {
+        id: 'socioemocional',
+        label: 'Habilidades Socioemocionales',
+        badgeClass: 'bg-[#F4C400]/20 text-[#013a52] border border-[#F4C400] dark:bg-[#F4C400]/25 dark:text-[#fde047]',
+        Icon: SocioemocionalIcon,
+      };
+    }
+    if (defNorm.includes('ingl') || defNorm.includes('english')) {
+      return {
+        id: 'ingles',
+        label: 'Inglés',
+        badgeClass: 'bg-[#E0321C]/10 text-[#E0321C] border border-[#E0321C]/25 dark:bg-[#E0321C]/25 dark:text-[#fca5a5]',
+        Icon: InglesIcon,
+      };
+    }
+  }
+
+  // 6. Sin asignar o Administración / General
+  if (!area) {
+    return {
+      id: 'general',
+      label: 'Sin asignar',
+      badgeClass: 'bg-slate-50 text-[#6d6e71] border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+      Icon: NeutralAreaIcon,
+    };
+  }
+
+  // 7. Cualquier otro valor explícito / Administración / General
   return {
     id: 'general',
-    label: area || 'Administración / General',
+    label: area,
     badgeClass: 'bg-slate-50 text-[#6d6e71] border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
     Icon: NeutralAreaIcon,
   };
@@ -137,12 +231,13 @@ export function resolveAreaConfig(area) {
  */
 export default function ProgramAreaBadge({
   area = '',
+  defaultProgram = null,
   className = '',
   iconSize = 18,
   showIcon = true,
   style = {},
 }) {
-  const config = resolveAreaConfig(area);
+  const config = resolveAreaConfig(area, defaultProgram);
   const IconComponent = config.Icon;
 
   return (
@@ -180,6 +275,7 @@ export function ProgramAreaSelect({
   showPreview = true,
   required = false,
   label = 'Área Asignada',
+  defaultProgram = null,
 }) {
   return (
     <div className="program-area-select-container">
@@ -209,7 +305,7 @@ export function ProgramAreaSelect({
           <span className="text-[11px] text-[#6d6e71] dark:text-slate-400 font-medium">
             Previsualización en inventario:
           </span>
-          <ProgramAreaBadge area={value} />
+          <ProgramAreaBadge area={value} defaultProgram={defaultProgram} />
         </div>
       )}
     </div>

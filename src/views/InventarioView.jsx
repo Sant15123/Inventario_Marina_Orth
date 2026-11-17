@@ -30,12 +30,17 @@ const DEFAULT_PAPELERIA = catalogoPapeleriaFMO;
 const mapConsumibleItem = (c) => {
   const disp = Number(c.disponible ?? c.quantity ?? 0);
   const min = Number(c.minimo ?? c.minStock ?? 5);
+  const isPape = c.categoria === 'Papelería' || c.category === 'Papelería' || c.subtipo === 'papeleria' || String(c.id || '').toLowerCase().startsWith('pape');
+  const defaultArea = isPape ? 'TeachLabs' : 'Robótica';
+  const resolvedArea = c.area_asignada || c.area || defaultArea;
   return {
     id: c.id,
     material: c.material || c.name || '',
     name: c.material || c.name || '',
-    categoria: c.categoria || c.category || 'Robótica',
-    category: c.categoria || c.category || 'Robótica',
+    categoria: c.categoria || c.category || (isPape ? 'Papelería' : 'Robótica'),
+    category: c.categoria || c.category || (isPape ? 'Papelería' : 'Robótica'),
+    area: resolvedArea,
+    area_asignada: resolvedArea,
     disponible: disp,
     quantity: disp,
     minimo: min,
@@ -875,6 +880,8 @@ export default function InventarioView({
     id: '',
     material: '',
     categoria: 'Robótica',
+    area: 'Robótica',
+    area_asignada: 'Robótica',
     ubicacion: 'Oficina FMO',
     ubicacion_estante: '',
     disponible: 10,
@@ -1764,11 +1771,14 @@ export default function InventarioView({
     setItemParaEditar(item);
     setPasoActual(1);
     const esPapeleria = activeTab === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || item.subtipo === 'papeleria' || String(item.id || '').toLowerCase().startsWith('pape');
+    const areaInicial = item.area_asignada || item.area || (esPapeleria ? 'TeachLabs' : 'Robótica');
     setFormDataEditar({
       id: item.codigo || item.id_referencia || item.placa || item.id || '',
       material: item.material || item.name || '',
       categoria: esPapeleria ? 'Papelería' : (item.categoria || item.category || 'Robótica'),
       subtipo: esPapeleria ? 'papeleria' : (item.subtipo || 'robotica'),
+      area: areaInicial,
+      area_asignada: areaInicial,
       ubicacion: item.ubicacion || item.location || 'Oficina FMO',
       ubicacion_estante: item.ubicacion_estante || '',
       disponible: item.disponible ?? item.quantity ?? 0,
@@ -1791,8 +1801,13 @@ export default function InventarioView({
     if (!itemParaEditar) return;
 
     const idOriginal = itemParaEditar.id;
+    if (!idOriginal) {
+      showError('Validación', 'El identificador del registro a editar es obligatorio.');
+      return;
+    }
     const nuevoId = (formDataEditar.id || '').trim();
     const esPapeleria = activeTab === 'papeleria' || itemParaEditar.subtipo === 'papeleria' || itemParaEditar.categoria === 'Papelería' || String(itemParaEditar.id || '').toLowerCase().startsWith('pape');
+    const areaAsignada = formDataEditar.area_asignada || formDataEditar.area || (esPapeleria ? 'TeachLabs' : 'Robótica');
 
     // Validación de código / placa para consumibles y papelería
     if (!nuevoId) {
@@ -1824,6 +1839,8 @@ export default function InventarioView({
         material: formDataEditar.material?.trim(),
         categoria: categoriaFinal,
         category: categoriaFinal,
+        area: areaAsignada,
+        area_asignada: areaAsignada,
         subtipo: esPapeleria ? 'papeleria' : (formDataEditar.subtipo || 'robotica'),
         ubicacion: formDataEditar.ubicacion?.trim() || 'Oficina FMO',
         sede: formDataEditar.ubicacion?.trim() || 'Oficina FMO',
@@ -1841,36 +1858,41 @@ export default function InventarioView({
         observaciones: formDataEditar.observaciones?.trim() || null,
       };
 
-      // Si el ítem es de papelería, actualizar en localPapeleria
+      // Si el ítem es de papelería, actualizar en localPapeleria (aislado por ID estricto)
       if (esPapeleria) {
         setPapeleria((prev) => {
-        if (!Array.isArray(prev)) return [];
-        return prev.map((p) =>
-            p.id === idOriginal
+          if (!Array.isArray(prev)) return [];
+          return prev.map((p) =>
+            String(p.id).toLowerCase() === String(idOriginal).toLowerCase()
               ? {
-                ...p,
-                ...payload,
-                id: finalId,
-                placa: finalId,
-                name: payload.material,
-                quantity: payload.disponible,
-                minStock: payload.minimo,
-                location: payload.ubicacion,
-                caja: payload.ubicacion_estante,
-              }
+                  ...p,
+                  ...payload,
+                  area: areaAsignada,
+                  area_asignada: areaAsignada,
+                  id: finalId,
+                  placa: finalId,
+                  name: payload.material,
+                  quantity: payload.disponible,
+                  minStock: payload.minimo,
+                  location: payload.ubicacion,
+                  caja: payload.ubicacion_estante,
+                }
               : p
           );
         });
       }
 
-      // Actualizar estado local inmediato optimista
+      // Actualizar estado local inmediato optimista (aislado por ID / placa estricto)
       setLocalItems((prev) => {
         const base = Array.isArray(prev) && prev.length > 0 ? prev : (Array.isArray(items) ? items : []);
         return base.map((it) =>
-          it.id === idOriginal
+          String(it.id).toLowerCase() === String(idOriginal).toLowerCase() ||
+          (it.placa && String(it.placa).toLowerCase() === String(idOriginal).toLowerCase())
             ? {
                 ...it,
                 ...payload,
+                area: areaAsignada,
+                area_asignada: areaAsignada,
                 id: finalId,
                 placa: finalId,
                 code: finalId,
@@ -1888,8 +1910,8 @@ export default function InventarioView({
         );
       });
 
-            // UPDATE en Supabase para consumibles / papelería filtrando estrictamente por id único
-      if (supabase) {
+      // UPDATE en Supabase para consumibles / papelería filtrando estrictamente por id único
+      if (supabase && idOriginal) {
         const payloadConsumibleSb = {
           material: payload.material,
           categoria: payload.categoria,
@@ -1901,8 +1923,8 @@ export default function InventarioView({
           condicion: payload.condicion,
           descripcion: payload.descripcion,
           observaciones: payload.observaciones,
-          area_asignada: payload.categoria || (esPapeleria ? 'TeachLabs' : 'Robótica'),
-          area: payload.categoria || (esPapeleria ? 'TeachLabs' : 'Robótica'),
+          area_asignada: areaAsignada,
+          area: areaAsignada,
         };
 
         try {
@@ -2655,6 +2677,7 @@ export default function InventarioView({
                               </span>
                               <ProgramAreaBadge
                                 area={u.area_asignada || u.area || u.programa || 'Nuevas Tecnologías'}
+                                defaultProgram="tecnologia"
                                 iconSize={14}
                               />
                             </div>
@@ -3144,6 +3167,7 @@ export default function InventarioView({
                         <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <ProgramAreaBadge
                             area={it.area_asignada || it.area || it.programa || it.categoria || it.category || 'Robótica'}
+                            defaultProgram="robotica"
                             iconSize={15}
                           />
                         </td>
@@ -3591,6 +3615,7 @@ export default function InventarioView({
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                               <ProgramAreaBadge
                                 area={it.area_asignada || it.area || it.programa || it.categoria || 'TeachLabs'}
+                                defaultProgram="teachlabs"
                                 iconSize={13}
                               />
                             </div>
@@ -5137,8 +5162,9 @@ export default function InventarioView({
                     <div className="mb-3">
                       <ProgramAreaSelect
                         label="Área Asignada / Programa FMO"
-                        value={formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
-                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, area: e.target.value })}
+                        value={formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica')}
+                        defaultProgram={isPapeleriaEdit ? 'teachlabs' : 'robotica'}
+                        onChange={(e) => setFormDataEditar({ ...formDataEditar, area: e.target.value, area_asignada: e.target.value })}
                       />
                     </div>
 

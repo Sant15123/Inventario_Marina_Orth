@@ -1209,12 +1209,33 @@ export const inventoryApi = {
   },
 
   update: async (id, patch) => {
+    if (!id) return patch;
+    const targetId = String(id).trim();
+
+    // Actualizar en Supabase de forma segura filtrando estrictamente por id único
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase && targetId) {
+        const idLower = targetId.toLowerCase();
+        if (idLower.startsWith('pape')) {
+          await supabase.from('papeleria').update(patch).eq('id', targetId);
+        } else if (idLower.startsWith('rob')) {
+          await supabase.from('consumibles').update(patch).eq('id', targetId);
+        } else {
+          await supabase.from('equipos').update(patch).eq('id', targetId);
+          await supabase.from('activos').update(patch).eq('id', targetId);
+        }
+      }
+    } catch (sbE) {
+      console.warn('Aviso Supabase inventoryApi.update:', sbE?.message);
+    }
+
     // Actualizar consumible o activo
-    const json = await request(`/consumibles/${id}`, {
+    const json = await request(`/consumibles/${encodeURIComponent(targetId)}`, {
       method: 'PUT',
       body: JSON.stringify(patch),
     }).catch(async () => {
-      return await request(`/activos/${id}`, {
+      return await request(`/activos/${encodeURIComponent(targetId)}`, {
         method: 'PUT',
         body: JSON.stringify(patch),
       });

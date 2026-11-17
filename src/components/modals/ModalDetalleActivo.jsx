@@ -256,7 +256,25 @@ export default function ModalDetalleActivo({
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Área / Programa FMO:
                 </span>
-                <ProgramAreaBadge area={item.area_asignada || item.area || 'Nuevas Tecnologías'} iconSize={16} />
+                <ProgramAreaBadge
+                  area={
+                    item.area_asignada ||
+                    item.area ||
+                    (item.subtipo === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || String(item.id || '').toLowerCase().startsWith('pape')
+                      ? 'TeachLabs'
+                      : item.itemType === 'consumible' || item.subtipo === 'robotica' || String(item.id || '').toLowerCase().startsWith('rob')
+                      ? 'Robótica'
+                      : 'Nuevas Tecnologías')
+                  }
+                  defaultProgram={
+                    item.subtipo === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || String(item.id || '').toLowerCase().startsWith('pape')
+                      ? 'teachlabs'
+                      : item.itemType === 'consumible' || item.subtipo === 'robotica' || String(item.id || '').toLowerCase().startsWith('rob')
+                      ? 'robotica'
+                      : 'tecnologia'
+                  }
+                  iconSize={16}
+                />
               </div>
               {renderKeyValue(
                 'Stock Registrado',
