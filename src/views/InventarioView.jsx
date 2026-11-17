@@ -393,32 +393,32 @@ export default function InventarioView({
   const renderQRSelectionBanner = () => {
     if (selectedQRs.length === 0) return null;
     return (
-      <div className="mb-3.5 p-3 px-4 rounded-xl bg-[#013a52] border border-[#abd037]/60 flex flex-wrap items-center justify-between gap-3 shadow-md animate-fade-in no-print">
+      <div className="mb-3.5 bg-[#013a52]/5 border border-[#013a52]/20 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-xs animate-fade-in no-print">
         <div className="flex items-center gap-2.5">
-          <span className="w-6 h-6 rounded-full bg-[#abd037] text-[#013a52] font-black text-xs flex items-center justify-center">
+          <span className="w-6 h-6 rounded-full bg-[#013a52] text-[#abd037] font-bold text-xs flex items-center justify-center shadow-xs">
             {selectedQRs.length}
           </span>
-          <span className="text-xs sm:text-sm text-white font-medium">
-            {selectedQRs.length === 1 ? '1 ítem seleccionado' : `${selectedQRs.length} ítems seleccionados`} para impresión QR
+          <span className="text-xs sm:text-sm text-[#013a52] font-medium">
+            {selectedQRs.length === 1 ? '1 ítem seleccionado' : `${selectedQRs.length} ítems seleccionados`} para impresión QR (Cuadrícula 2×2)
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setModalImpresionMasivaOpen(true)}
-            className="bg-[#013a52] hover:bg-[#0A3C63] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 border border-[#abd037] transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
-            title="Abrir vista previa e impresión de etiquetas QR en cuadrícula"
+            className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02] text-xs sm:text-sm"
+            title="Abrir vista previa e impresión de etiquetas QR en cuadrícula 2x2"
           >
             <span>🖨️</span>
             <span>Imprimir QRs Seleccionados</span>
-            <span className="bg-[#abd037] text-[#013a52] px-2 py-0.5 rounded-full text-xs font-black">
+            <span className="bg-[#013a52] text-[#abd037] px-2 py-0.5 rounded-full text-xs font-bold">
               {selectedQRs.length}
             </span>
           </button>
           <button
             type="button"
             onClick={clearQRSelection}
-            className="text-xs text-[#6d6e71] hover:text-slate-200 font-semibold px-2 py-1 transition-colors cursor-pointer"
+            className="bg-white border border-slate-300 text-[#6d6e71] hover:text-[#013a52] hover:border-[#013a52] font-medium px-3 py-2 rounded-lg transition-colors cursor-pointer text-xs"
             title="Deseleccionar todos los ítems"
           >
             Limpiar selección
@@ -4841,7 +4841,7 @@ export default function InventarioView({
           style={{ boxShadow: '0 10px 25px -5px rgba(1, 58, 82, 0.5), 0 8px 10px -6px rgba(171, 208, 55, 0.3)' }}
         >
           <div className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-full bg-[#abd037] text-[#013a52] font-black text-xs flex items-center justify-center">
+            <span className="w-7 h-7 rounded-full bg-[#013a52] border border-[#abd037] text-[#abd037] font-bold text-xs flex items-center justify-center shadow-xs">
               {selectedQRs.length}
             </span>
             <div className="flex flex-col">
@@ -4849,7 +4849,7 @@ export default function InventarioView({
                 {selectedQRs.length} {selectedQRs.length === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
               </span>
               <span className="text-[10px] text-slate-300 leading-tight">
-                Listos para imprimir en cuadrícula
+                Cuadrícula 2×2 (4 por hoja Carta)
               </span>
             </div>
           </div>
@@ -4860,8 +4860,8 @@ export default function InventarioView({
             <button
               type="button"
               onClick={() => setModalImpresionMasivaOpen(true)}
-              className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer hover:scale-[1.03]"
-              title="Abrir vista previa de impresión en cuadrícula"
+              className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.03]"
+              title="Abrir vista previa de impresión en cuadrícula 2x2"
             >
               <span>🖨️</span>
               <span>Imprimir QRs</span>
@@ -4869,7 +4869,7 @@ export default function InventarioView({
             <button
               type="button"
               onClick={clearQRSelection}
-              className="text-xs text-slate-300 hover:text-white font-semibold px-2 py-1 transition-colors cursor-pointer"
+              className="bg-white/10 hover:bg-white/20 text-white font-medium text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
               title="Deseleccionar todos los ítems"
             >
               Limpiar
