@@ -349,7 +349,7 @@ export default function ModalActaPrestamo({
             padding: '28px 32px',
             backgroundColor: '#ffffff',
             color: '#0f172a',
-            fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+            fontFamily: "'Poppins', sans-serif",
             maxHeight: '80vh',
             overflowY: 'auto',
           }}

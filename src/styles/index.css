@@ -3,7 +3,7 @@
    Diseño Moderno & Optimizado (Dark Mode First con contraste accesible)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
   /* Paleta corporativa Marina Orth (#abd037 & #FFFFFF) */
@@ -401,6 +401,16 @@ body {
   min-height: 100vh;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Tipografía Institucional Obligatoria: Poppins (Manual de Marca Páginas 27 y 28) */
+body,
+button,
+input,
+select,
+textarea,
+optgroup {
+  font-family: var(--font-sans);
 }
 
 /* Scrollbars Estilizados */
@@ -4153,6 +4163,19 @@ html.dark .demo-role-card-email {
 .font-medium {
   font-weight: 500;
 }
+/* Utilidades Tipográficas Oficiales Poppins */
+.font-sans {
+  font-family: var(--font-sans) !important;
+}
+
+.font-light {
+  font-weight: 300 !important;
+}
+
+.font-extrabold {
+  font-weight: 800 !important;
+}
+
 .font-mono {
   font-family: var(--font-mono, monospace);
 }
