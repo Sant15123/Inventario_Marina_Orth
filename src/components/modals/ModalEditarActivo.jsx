@@ -247,12 +247,12 @@ export default function ModalEditarActivo({
       onClick={() => !isSubmitting && onClose()}
     >
       <div
-        className="relative w-full max-w-lg md:max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: 'var(--surface, #0b1320)',
           border: '1px solid var(--line, #1e293b)',
           borderRadius: '16px',
-          maxWidth: '36rem',
+          maxWidth: '56rem', width: '100%',
           width: '100%',
           maxHeight: '90vh',
           display: 'flex',
@@ -319,7 +319,7 @@ export default function ModalEditarActivo({
           }}
         >
           <div
-            className="flex items-center justify-between gap-2 max-w-xl mx-auto"
+            className="flex items-center justify-between gap-2 max-w-4xl mx-auto"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -434,8 +434,8 @@ export default function ModalEditarActivo({
                 PASO 1: Identificación y Clasificación
                 ========================================== */}
             {pasoActual === 1 && (
-              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
+                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -445,153 +445,164 @@ export default function ModalEditarActivo({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Código / Placa y Nombre del Equipo en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Código / Placa *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="placa"
-                      maxLength={25}
-                      value={formData.placa || ''}
-                      onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase() })}
-                      placeholder="Ej: FMO-EQ-005 o PLA-901"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Nombre Del Equipo *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="nombre"
-                      maxLength={90}
-                      value={formData.nombre || ''}
-                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                      placeholder="Ej. Computador portatil"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                {/* Fila 1: Nombre del Elemento (md:col-span-8) + Código / Placa (md:col-span-4) */}
+                <div className="col-span-12 md:col-span-8">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Nombre Del Equipo *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    name="nombre"
+                    maxLength={90}
+                    value={formData.nombre || ''}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    placeholder="Ej. Computador portatil"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
-                {/* Fila 2: Categoría y Condición en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Categoría *
-                    </label>
-                    <select
-                      name="categoria"
-                      value={formData.categoria || 'Portátiles'}
-                      onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {formData.categoria && ![
-                        'Portátiles', 'Tablets', 'Robótica y Sensores', 'Proyectores y Audio',
-                        'Cámaras y Video', 'Impresoras 3D', 'Redes y Servidores', 'Otros Equipos'
-                      ].includes(formData.categoria) && (
-                        <option value={formData.categoria}>{formData.categoria}</option>
-                      )}
-                      <option value="Portátiles">Portátiles / Laptops</option>
-                      <option value="Tablets">Tablets</option>
-                      <option value="Robótica y Sensores">Robótica y Sensores</option>
-                      <option value="Proyectores y Audio">Proyectores y Audio</option>
-                      <option value="Cámaras y Video">Cámaras y Video</option>
-                      <option value="Impresoras 3D">Impresoras 3D</option>
-                      <option value="Redes y Servidores">Redes y Servidores</option>
-                      <option value="Otros Equipos">Otros Equipos</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Condición Física
-                    </label>
-                    <select
-                      name="condicion"
-                      value={formData.condicion || 'Bueno'}
-                      onChange={(e) => setFormData({ ...formData, condicion: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      <option value="Bueno">Bueno</option>
-                      <option value="Nuevo">Nuevo</option>
-                      <option value="Regular">Regular</option>
-                      <option value="Malo">Malo</option>
-                      <option value="Usado">Usado</option>
-                      <option value="Donación">Donación</option>
-                    </select>
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Código / Placa *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    name="placa"
+                    maxLength={25}
+                    value={formData.placa || ''}
+                    onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase() })}
+                    placeholder="Ej: FMO-EQ-005 o PLA-901"
+                    className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
-                {/* Fila 3: Área / Proceso y Sede / Ubicación Física en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                {/* Fila 2: Categoría (md:col-span-5) + Cantidad / Stock (md:col-span-3) + Condición / Unidad (md:col-span-4) */}
+                <div className="col-span-12 md:col-span-5">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Categoría *
+                  </label>
+                  <select
+                    name="categoria"
+                    value={formData.categoria || 'Portátiles'}
+                    onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    {formData.categoria && ![
+                      'Portátiles', 'Tablets', 'Robótica y Sensores', 'Proyectores y Audio',
+                      'Cámaras y Video', 'Impresoras 3D', 'Redes y Servidores', 'Otros Equipos'
+                    ].includes(formData.categoria) && (
+                      <option value={formData.categoria}>{formData.categoria}</option>
+                    )}
+                    <option value="Portátiles">Portátiles / Laptops</option>
+                    <option value="Tablets">Tablets</option>
+                    <option value="Robótica y Sensores">Robótica y Sensores</option>
+                    <option value="Proyectores y Audio">Proyectores y Audio</option>
+                    <option value="Cámaras y Video">Cámaras y Video</option>
+                    <option value="Impresoras 3D">Impresoras 3D</option>
+                    <option value="Redes y Servidores">Redes y Servidores</option>
+                    <option value="Otros Equipos">Otros Equipos</option>
+                  </select>
+                </div>
+
+                <div className="col-span-12 md:col-span-3">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Cantidad / Stock *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    name="cantidad"
+                    value={formData.cantidad ?? 1}
+                    onChange={(e) => setFormData({ ...formData, cantidad: parseInt(e.target.value, 10) || 1 })}
+                    className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Condición Física
+                  </label>
+                  <select
+                    name="condicion"
+                    value={formData.condicion || 'Bueno'}
+                    onChange={(e) => setFormData({ ...formData, condicion: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    <option value="Bueno">Bueno</option>
+                    <option value="Nuevo">Nuevo</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Malo">Malo</option>
+                    <option value="Usado">Usado</option>
+                    <option value="Donación">Donación</option>
+                  </select>
+                </div>
+
+                {/* Fila 3: Selector Área Asignada / Programa (md:col-span-6) + Recuadro Vista previa en tabla (md:col-span-6) */}
+                <div className="col-span-12 md:col-span-6">
                   <ProgramAreaSelect
                     label="Área Asignada / Programa FMO"
                     value={formData.area_asignada || formData.area || 'Nuevas Tecnologías'}
+                    defaultProgram="tecnologia"
+                    showPreview={false}
                     onChange={(e) => setFormData({ ...formData, area: e.target.value, area_asignada: e.target.value })}
                   />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Sede / Ubicación Física
-                    </label>
-                    <select
-                      name="ubicacion"
-                      value={formData.ubicacion || formData.sede || sedesList[0] || 'Medellín'}
-                      onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value, sede: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {formData.ubicacion && !sedesList.includes(formData.ubicacion) && (
-                        <option value={formData.ubicacion}>{formData.ubicacion}</option>
-                      )}
-                      {sedesList.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                <div className="col-span-12 md:col-span-6 flex flex-col justify-end">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Vista previa en tabla
+                  </label>
+                  <div
+                    className="h-[38px] px-3.5 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-between"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo institucional:</span>
+                    <ProgramAreaBadge
+                      area={formData.area_asignada || formData.area || 'Nuevas Tecnologías'}
+                      defaultProgram="tecnologia"
+                      iconSize={16}
+                    />
                   </div>
                 </div>
 
-                {/* Fila 4: Descripción General */}
-                <div>
+                {/* Fila 4: Descripción General (md:col-span-12) */}
+                <div className="col-span-12">
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Descripción General
                   </label>
                   <textarea
                     name="descripcion"
-                    rows="2"
+                    rows={2}
                     maxLength={350}
                     value={formData.descripcion || ''}
                     onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
@@ -611,8 +622,8 @@ export default function ModalEditarActivo({
                 PASO 2: Ficha Técnica y Asignación
                 ========================================== */}
             {pasoActual === 2 && (
-              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
+                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -623,199 +634,193 @@ export default function ModalEditarActivo({
                 </div>
 
                 {/* Fila 1: Marca, Modelo, Serial * en 3 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Marca
-                    </label>
-                    <input
-                      type="text"
-                      name="marca"
-                      maxLength={50}
-                      value={formData.marca || ''}
-                      onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                      placeholder="Ej. Lenovo, Dell, HP..."
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Marca
+                  </label>
+                  <input
+                    type="text"
+                    name="marca"
+                    maxLength={50}
+                    value={formData.marca || ''}
+                    onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
+                    placeholder="Ej. Lenovo, Dell, HP..."
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Modelo
-                    </label>
-                    <input
-                      type="text"
-                      name="modelo"
-                      maxLength={60}
-                      value={formData.modelo || ''}
-                      onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
-                      placeholder="Ej. ThinkPad L14"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Modelo
+                  </label>
+                  <input
+                    type="text"
+                    name="modelo"
+                    maxLength={60}
+                    value={formData.modelo || ''}
+                    onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
+                    placeholder="Ej. ThinkPad L14"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Serial *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="serial"
-                      maxLength={60}
-                      value={formData.serial || ''}
-                      onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
-                      placeholder="Ej. PF-3X9011"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Serial *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    name="serial"
+                    maxLength={60}
+                    value={formData.serial || ''}
+                    onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
+                    placeholder="Ej. PF-3X9011"
+                    className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
                 {/* Fila 2: Características 1, 2 y 3 */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Característica 1 (CPU)
-                    </label>
-                    <input
-                      type="text"
-                      name="caracteristica_1"
-                      maxLength={120}
-                      value={formData.caracteristica_1 || ''}
-                      onChange={(e) => setFormData({ ...formData, caracteristica_1: e.target.value })}
-                      placeholder="Ej. RAM 16GB / i5"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Característica 2 (RAM)
-                    </label>
-                    <input
-                      type="text"
-                      name="caracteristica_2"
-                      maxLength={120}
-                      value={formData.caracteristica_2 || ''}
-                      onChange={(e) => setFormData({ ...formData, caracteristica_2: e.target.value })}
-                      placeholder="Ej. SSD 512GB"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Característica 3 (Disco)
-                    </label>
-                    <input
-                      type="text"
-                      name="caracteristica_3"
-                      maxLength={120}
-                      value={formData.caracteristica_3 || ''}
-                      onChange={(e) => setFormData({ ...formData, caracteristica_3: e.target.value })}
-                      placeholder="Ej. Pantalla 14 FHD"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Característica 1 (CPU)
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristica_1"
+                    maxLength={120}
+                    value={formData.caracteristica_1 || ''}
+                    onChange={(e) => setFormData({ ...formData, caracteristica_1: e.target.value })}
+                    placeholder="Ej. RAM 16GB / i5"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
-                {/* Fila 3: Ubicación Física, Estante / Gaveta y Responsable */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Sede / Ubicación Física
-                    </label>
-                    <select
-                      name="ubicacion"
-                      value={formData.ubicacion || formData.sede || sedesList[0] || 'Medellín'}
-                      onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value, sede: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {formData.ubicacion && !sedesList.includes(formData.ubicacion) && (
-                        <option value={formData.ubicacion}>{formData.ubicacion}</option>
-                      )}
-                      {sedesList.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Característica 2 (RAM)
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristica_2"
+                    maxLength={120}
+                    value={formData.caracteristica_2 || ''}
+                    onChange={(e) => setFormData({ ...formData, caracteristica_2: e.target.value })}
+                    placeholder="Ej. SSD 512GB"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Estante / Caja / Gaveta
-                    </label>
-                    <input
-                      type="text"
-                      name="ubicacion_estante"
-                      maxLength={70}
-                      value={formData.ubicacion_estante || ''}
-                      onChange={(e) => setFormData({ ...formData, ubicacion_estante: e.target.value })}
-                      placeholder="Ej. Estante A-2, Caja 05"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Característica 3 (Disco)
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristica_3"
+                    maxLength={120}
+                    value={formData.caracteristica_3 || ''}
+                    onChange={(e) => setFormData({ ...formData, caracteristica_3: e.target.value })}
+                    placeholder="Ej. Pantalla 14 FHD"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Responsable / Asignado
-                    </label>
-                    <input
-                      type="text"
-                      name="responsable"
-                      maxLength={90}
-                      value={formData.responsable || ''}
-                      onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
-                      placeholder="Ej. Bodega Central o Custodio"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                {/* Fila 3: Sede / Ubicación Física, Estante / Gaveta y Responsable */}
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Sede / Ubicación Física
+                  </label>
+                  <select
+                    name="ubicacion"
+                    value={formData.ubicacion || formData.sede || sedesList[0] || 'Medellín'}
+                    onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value, sede: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    {formData.ubicacion && !sedesList.includes(formData.ubicacion) && (
+                      <option value={formData.ubicacion}>{formData.ubicacion}</option>
+                    )}
+                    {sedesList.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Estante / Caja / Gaveta
+                  </label>
+                  <input
+                    type="text"
+                    name="ubicacion_estante"
+                    maxLength={70}
+                    value={formData.ubicacion_estante || ''}
+                    onChange={(e) => setFormData({ ...formData, ubicacion_estante: e.target.value })}
+                    placeholder="Ej. Estante A-2, Caja 05"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Responsable / Asignado
+                  </label>
+                  <input
+                    type="text"
+                    name="responsable"
+                    maxLength={90}
+                    value={formData.responsable || ''}
+                    onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
+                    placeholder="Ej. Bodega Central o Custodio"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
               </div>
             )}
@@ -824,8 +829,8 @@ export default function ModalEditarActivo({
                 PASO 3: Adquisición, Garantía y Credenciales
                 ========================================== */}
             {pasoActual === 3 && (
-              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
+                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -836,325 +841,317 @@ export default function ModalEditarActivo({
                 </div>
 
                 {/* Fila 1: Proveedor, Valor Unitario, Valor Total */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Proveedor
-                    </label>
-                    <input
-                      type="text"
-                      name="proveedor"
-                      maxLength={90}
-                      value={formData.proveedor || ''}
-                      onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
-                      placeholder="Ej. Lenovo Colombia"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Proveedor
+                  </label>
+                  <input
+                    type="text"
+                    name="proveedor"
+                    maxLength={90}
+                    value={formData.proveedor || ''}
+                    onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
+                    placeholder="Ej. Lenovo Colombia"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Valor Unitario ($)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="999999999"
-                      step="any"
-                      name="valor_compra"
-                      value={formData.valor_compra ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          setFormData({ ...formData, valor_compra: '', valor_total: '' });
-                          return;
-                        }
-                        const clamped = Math.max(0, Math.min(999999999, Number(val)));
-                        const qty = Number(formData.cantidad) || 1;
-                        setFormData({
-                          ...formData,
-                          valor_compra: clamped,
-                          valor_total: clamped * qty,
-                        });
-                      }}
-                      placeholder="Ej. 2800000"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Valor Unitario ($)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="999999999"
+                    step="any"
+                    name="valor_compra"
+                    value={formData.valor_compra ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setFormData({ ...formData, valor_compra: '', valor_total: '' });
+                        return;
+                      }
+                      const clamped = Math.max(0, Math.min(999999999, Number(val)));
+                      const qty = Number(formData.cantidad) || 1;
+                      setFormData({
+                        ...formData,
+                        valor_compra: clamped,
+                        valor_total: clamped * qty,
+                      });
+                    }}
+                    placeholder="Ej. 2800000"
+                    className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Valor Total ($)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="999999999"
-                      step="any"
-                      name="valor_total"
-                      value={formData.valor_total ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const clamped = val === '' ? '' : Math.max(0, Math.min(999999999, Number(val)));
-                        setFormData({ ...formData, valor_total: clamped });
-                      }}
-                      placeholder="Ej. 2800000"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Valor Total ($)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="999999999"
+                    step="any"
+                    name="valor_total"
+                    value={formData.valor_total ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const clamped = val === '' ? '' : Math.max(0, Math.min(999999999, Number(val)));
+                      setFormData({ ...formData, valor_total: clamped });
+                    }}
+                    placeholder="Ej. 2800000"
+                    className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
                 {/* Fila 2: Fecha de Compra y Vencimiento Garantía */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Fecha de Compra
-                    </label>
-                    <input
-                      type="date"
-                      name="fecha_compra"
-                      value={formData.fecha_compra || ''}
-                      onChange={(e) => setFormData({ ...formData, fecha_compra: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Fecha de Compra
+                  </label>
+                  <input
+                    type="date"
+                    name="fecha_compra"
+                    value={formData.fecha_compra || ''}
+                    onChange={(e) => setFormData({ ...formData, fecha_compra: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Vencimiento Garantía
-                    </label>
-                    <input
-                      type="date"
-                      name="fecha_vencimiento_garantia"
-                      value={formData.fecha_vencimiento_garantia || ''}
-                      onChange={(e) => setFormData({ ...formData, fecha_vencimiento_garantia: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Vencimiento Garantía
+                  </label>
+                  <input
+                    type="date"
+                    name="fecha_vencimiento_garantia"
+                    value={formData.fecha_vencimiento_garantia || ''}
+                    onChange={(e) => setFormData({ ...formData, fecha_vencimiento_garantia: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
                 {/* Fila 3: Claves / Credenciales y Observaciones */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Claves / Credenciales
-                    </label>
-                    <textarea
-                      name="claves_otros"
-                      rows="2"
-                      maxLength={350}
-                      value={formData.claves_otros || ''}
-                      onChange={(e) => setFormData({ ...formData, claves_otros: e.target.value })}
-                      placeholder="PIN de acceso, usuario administrador o credenciales..."
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Observaciones
-                    </label>
-                    <textarea
-                      name="observaciones"
-                      rows="2"
-                      maxLength={350}
-                      value={formData.observaciones || ''}
-                      onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-                      placeholder="Comentarios adicionales, estado del paquete, donante..."
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Claves / Credenciales
+                  </label>
+                  <textarea
+                    name="claves_otros"
+                    rows={2}
+                    maxLength={350}
+                    value={formData.claves_otros || ''}
+                    onChange={(e) => setFormData({ ...formData, claves_otros: e.target.value })}
+                    placeholder="PIN de acceso, usuario administrador o credenciales..."
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
-                                {/* Control de Seguimiento Contable Institucional (Exclusivo Activos y Mobiliario) */}
-                <label
-                  className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    transition: 'all 0.2s ease',
-                    backgroundColor: formData.en_contabilidad
-                      ? 'rgba(132, 204, 22, 0.08)'
-                      : 'var(--surface-2, #f8fafc)',
-                    borderColor: formData.en_contabilidad
-                      ? '#84CC16'
-                      : 'var(--line, #cbd5e1)',
-                    boxShadow: formData.en_contabilidad
-                      ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
-                      : 'none',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    name="en_contabilidad"
-                    checked={Boolean(formData.en_contabilidad)}
-                    onChange={(e) => setFormData({ ...formData, en_contabilidad: e.target.checked })}
-                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                    {/* Icono temático de Contabilidad / FMO */}
-                    <div
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '10px',
-                        backgroundColor: formData.en_contabilidad
-                          ? 'rgba(132, 204, 22, 0.22)'
-                          : 'rgba(148, 163, 184, 0.15)',
-                        border: formData.en_contabilidad
-                          ? '1px solid rgba(132, 204, 22, 0.45)'
-                          : '1px solid var(--line, #e2e8f0)',
-                        color: formData.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '18px',
-                        flexShrink: 0,
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      🏛️
-                    </div>
-
-                    {/* Textos estructurados con jerarquía estricta (sin colapso) */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span
-                          style={{
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            color: 'var(--text-h, #0f172a)',
-                            lineHeight: 1.2,
-                          }}
-                        >
-                          Registrado en Contabilidad
-                        </span>
-                        {formData.en_contabilidad ? (
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              padding: '1.5px 7px',
-                              borderRadius: '9999px',
-                              backgroundColor: '#84CC16',
-                              color: '#0f172a',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            Activo
-                          </span>
-                        ) : (
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontWeight: 600,
-                              padding: '1.5px 7px',
-                              borderRadius: '9999px',
-                              backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                              color: 'var(--text-dim, #64748b)',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            Pendiente
-                          </span>
-                        )}
-                      </div>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: '11.5px',
-                          color: 'var(--text-dim, #64748b)',
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        Marcar si este bien ya cuenta con registro y soporte en el área contable
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Switch Toggle Animado Verde Lima */}
-                  <div
-                    aria-hidden="true"
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Observaciones
+                  </label>
+                  <textarea
+                    name="observaciones"
+                    rows={2}
+                    maxLength={350}
+                    value={formData.observaciones || ''}
+                    onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                    placeholder="Comentarios adicionales, estado del paquete, donante..."
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
                     style={{
-                      width: '44px',
-                      height: '24px',
-                      borderRadius: '9999px',
-                      backgroundColor: formData.en_contabilidad ? '#84CC16' : '#cbd5e1',
-                      position: 'relative',
-                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                      flexShrink: 0,
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                {/* Fila 4: Control de Seguimiento Contable */}
+                <div className="col-span-12">
+                  <label
+                    className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: formData.en_contabilidad
+                        ? 'rgba(132, 204, 22, 0.08)'
+                        : 'var(--surface-2, #f8fafc)',
+                      borderColor: formData.en_contabilidad
+                        ? '#84CC16'
+                        : 'var(--line, #cbd5e1)',
                       boxShadow: formData.en_contabilidad
-                        ? '0 0 10px rgba(132, 204, 22, 0.4)'
-                        : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
+                        ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
+                        : 'none',
                     }}
                   >
+                    <input
+                      type="checkbox"
+                      name="en_contabilidad"
+                      checked={Boolean(formData.en_contabilidad)}
+                      onChange={(e) => setFormData({ ...formData, en_contabilidad: e.target.checked })}
+                      style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          backgroundColor: formData.en_contabilidad
+                            ? 'rgba(132, 204, 22, 0.22)'
+                            : 'rgba(148, 163, 184, 0.15)',
+                          border: formData.en_contabilidad
+                            ? '1px solid rgba(132, 204, 22, 0.45)'
+                            : '1px solid var(--line, #e2e8f0)',
+                          color: formData.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                          flexShrink: 0,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        🏛️
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              color: 'var(--text-h, #0f172a)',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            Registrado en Contabilidad
+                          </span>
+                          {formData.en_contabilidad ? (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                padding: '1.5px 7px',
+                                borderRadius: '9999px',
+                                backgroundColor: '#84CC16',
+                                color: '#0f172a',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                              }}
+                            >
+                              Activo
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: '1.5px 7px',
+                                borderRadius: '9999px',
+                                backgroundColor: 'rgba(148, 163, 184, 0.2)',
+                                color: 'var(--text-dim, #64748b)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                              }}
+                            >
+                              Pendiente
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: '11.5px',
+                            color: 'var(--text-dim, #64748b)',
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          Marcar si este bien ya cuenta con registro y soporte en el área contable
+                        </p>
+                      </div>
+                    </div>
+
                     <div
+                      aria-hidden="true"
                       style={{
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        backgroundColor: '#ffffff',
-                        position: 'absolute',
-                        top: '3px',
-                        left: formData.en_contabilidad ? '23px' : '3px',
+                        width: '44px',
+                        height: '24px',
+                        borderRadius: '9999px',
+                        backgroundColor: formData.en_contabilidad ? '#84CC16' : '#cbd5e1',
+                        position: 'relative',
                         transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: formData.en_contabilidad
+                          ? '0 0 10px rgba(132, 204, 22, 0.4)'
+                          : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
                       }}
                     >
-                      {formData.en_contabilidad && (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
+                      <div
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          backgroundColor: '#ffffff',
+                          position: 'absolute',
+                          top: '3px',
+                          left: formData.en_contabilidad ? '23px' : '3px',
+                          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {formData.en_contabilidad && (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
             )}
           </div>

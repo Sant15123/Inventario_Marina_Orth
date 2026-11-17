@@ -6,6 +6,7 @@ import {
 import { inventoryApi } from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useToast } from '../../context/ToastContext';
+import ProgramAreaBadge, { ProgramAreaSelect } from '../common/ProgramAreaBadge';
 
 const CATEGORIAS_MOBILIARIO = [
   'Mesas y Escritorios',
@@ -437,14 +438,14 @@ export default function ModalRegistroMobiliario({
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="relative w-full max-w-lg md:max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: 'var(--surface, #0b1320)',
           border: '1px solid var(--line, #1e293b)',
           borderRadius: '16px',
-          maxWidth: '36rem',
+          maxWidth: '56rem',
           width: '100%',
-          maxHeight: '90vh',
+          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
@@ -511,7 +512,7 @@ export default function ModalRegistroMobiliario({
           }}
         >
           <div
-            className="flex items-center justify-between gap-2 max-w-xl mx-auto"
+            className="flex items-center justify-between gap-2 max-w-4xl mx-auto"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -618,7 +619,7 @@ export default function ModalRegistroMobiliario({
         >
           {/* Cuerpo del Formulario con scroll vertical */}
           <div
-            className="p-5 text-sm overflow-y-auto flex-1"
+            className="p-4 sm:p-5 text-sm overflow-y-auto flex-1"
             style={{
               padding: '16px 20px',
               backgroundColor: 'var(--surface, #0b1320)',
@@ -627,179 +628,230 @@ export default function ModalRegistroMobiliario({
               minHeight: 0,
             }}
           >
-            {/* PESTAÑA 1: IDENTIFICACIÓN */}
+            {/* PESTAÑA 1: IDENTIFICACIÓN Y CLASIFICACIÓN */}
             {paso === 1 && (
-              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
+                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
                   >
-                    Identificación y Ubicación
+                    Identificación y Clasificación
                   </h4>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Código / Placa y Nombre del Mueble en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                {/* Fila 1: Nombre del Elemento (md:col-span-8) + Código / Placa con aviso compacto (md:col-span-4) */}
+                <div className="col-span-12 md:col-span-8">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Nombre Del Mueble *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    name="nombre"
+                    maxLength={90}
+                    value={formData.nombre}
+                    onChange={handleChange}
+                    placeholder="Ej. Mesa de Trabajo Robótica STEAM"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                <div className="col-span-12 md:col-span-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
                       Código / Placa *
                     </label>
-                    <div className="relative">
-                      <input
-                        required
-                        type="text"
-                        name="codigo"
-                        maxLength={25}
-                        value={formData.codigo}
-                        onChange={handleChange}
-                        placeholder="Ej: MOB-001"
-                        disabled={isEditing}
-                        className={`w-full font-mono rounded-lg px-3 py-1.5 text-sm border focus:outline-none transition-colors ${
-                          isEditing
-                            ? 'opacity-80 cursor-not-allowed text-slate-400'
-                            : 'focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400'
-                        }`}
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: isEditing ? 'var(--text-dim, #94a3b8)' : 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                      {loadingPlaca && (
-                        <div className="absolute right-3 top-2 flex items-center gap-1 text-[11px] text-lime-400">
-                          <Loader2 size={12} className="animate-spin" />
-                        </div>
-                      )}
-                    </div>
+                    <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
+                      Formato MOB-XXX
+                    </span>
                   </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Nombre Del Mueble *
-                    </label>
+                  <div className="relative">
                     <input
                       required
                       type="text"
-                      name="nombre"
-                      maxLength={90}
-                      value={formData.nombre}
+                      name="codigo"
+                      maxLength={25}
+                      value={formData.codigo}
                       onChange={handleChange}
-                      placeholder="Ej. Mesa de Trabajo Robótica STEAM"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      placeholder="Ej: MOB-001"
+                      disabled={isEditing}
+                      className={`w-full font-mono rounded-lg px-3 py-1.5 text-sm border focus:outline-none transition-colors ${
+                        isEditing
+                          ? 'opacity-80 cursor-not-allowed text-slate-400'
+                          : 'focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400'
+                      }`}
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
+                        color: isEditing ? 'var(--text-dim, #94a3b8)' : 'var(--text, #f8fafc)',
                         borderColor: 'var(--line, #334155)',
                       }}
+                    />
+                    {loadingPlaca && (
+                      <div className="absolute right-3 top-2 flex items-center gap-1 text-[11px] text-lime-400">
+                        <Loader2 size={12} className="animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fila 2: Categoría (md:col-span-5) + Cantidad / Stock (md:col-span-3) + Condición / Unidad (md:col-span-4) */}
+                <div className="col-span-12 md:col-span-5">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Categoría *
+                  </label>
+                  <select
+                    name="categoria"
+                    value={formData.categoria}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    {CATEGORIAS_MOBILIARIO.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-12 md:col-span-3">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Cantidad / Unidades *
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    name="disponible"
+                    min={1}
+                    max={9999}
+                    value={formData.disponible}
+                    onChange={handleChange}
+                    className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Condición Física
+                  </label>
+                  <select
+                    name="condicion_fisica"
+                    value={formData.condicion_fisica}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    {CONDICIONES_FISICAS.map((est) => (
+                      <option key={est} value={est}>
+                        {est}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Fila 3: Selector Área Asignada / Programa (md:col-span-6) + Recuadro Vista previa en tabla (md:col-span-6) */}
+                <div className="col-span-12 md:col-span-6">
+                  <ProgramAreaSelect
+                    label="Área Asignada / Programa FMO"
+                    value={formData.area_proceso || 'General'}
+                    defaultProgram="teachlabs"
+                    showPreview={false}
+                    onChange={(e) => setFormData({ ...formData, area_proceso: e.target.value })}
+                  />
+                </div>
+
+                <div className="col-span-12 md:col-span-6 flex flex-col justify-end">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Vista previa en tabla
+                  </label>
+                  <div
+                    className="h-[38px] px-3.5 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-between"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo institucional:</span>
+                    <ProgramAreaBadge
+                      area={formData.area_proceso || 'General'}
+                      defaultProgram="teachlabs"
+                      iconSize={16}
                     />
                   </div>
                 </div>
 
-                {/* Fila 2: Categoría y Condición Física en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Categoría *
-                    </label>
-                    <select
-                      name="categoria"
-                      value={formData.categoria}
-                      onChange={handleChange}
-                      required
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {CATEGORIAS_MOBILIARIO.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Condición Física
-                    </label>
-                    <select
-                      name="condicion_fisica"
-                      value={formData.condicion_fisica}
-                      onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {CONDICIONES_FISICAS.map((est) => (
-                        <option key={est} value={est}>
-                          {est}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Fila 4: Sede Institucional (md:col-span-6) + Espacio / Área Específica (md:col-span-6) */}
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Sede Institucional *
+                  </label>
+                  <select
+                    name="sede"
+                    value={formData.sede}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    {sedes.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Fila 3: Sede Institucional y Espacio / Ubicación en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Sede Institucional *
-                    </label>
-                    <select
-                      name="sede"
-                      value={formData.sede}
-                      onChange={handleChange}
-                      required
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {sedes.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Espacio / Área Específica
-                    </label>
-                    <input
-                      type="text"
-                      name="ubicacion"
-                      maxLength={70}
-                      value={formData.ubicacion}
-                      onChange={handleChange}
-                      placeholder="Ej. Sala Robótica, Oficina 2, Bodega"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Espacio / Área Específica
+                  </label>
+                  <input
+                    type="text"
+                    name="ubicacion"
+                    maxLength={70}
+                    value={formData.ubicacion}
+                    onChange={handleChange}
+                    placeholder="Ej. Sala Robótica, Oficina 2, Bodega"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
               </div>
             )}
 
-            {/* PESTAÑA 2: FICHA TÉCNICA */}
+            {/* PESTAÑA 2: ESPECIFICACIONES FÍSICAS */}
             {paso === 2 && (
-              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
+                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -809,102 +861,76 @@ export default function ModalRegistroMobiliario({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Material de Fabricación y Color en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Material de Fabricación
-                    </label>
-                    <select
-                      name="material"
-                      value={formData.material}
-                      onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {MATERIALES_OPCIONES.map((mat) => (
-                        <option key={mat} value={mat}>
-                          {mat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Color
-                    </label>
-                    <input
-                      type="text"
-                      name="color"
-                      maxLength={40}
-                      value={formData.color}
-                      onChange={handleChange}
-                      placeholder="Ej. Blanco / Gris / Madera clara"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                {/* Fila 1: Material (md:col-span-4) + Color (md:col-span-4) + Dimensiones (md:col-span-4) */}
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Material de Fabricación
+                  </label>
+                  <select
+                    name="material"
+                    value={formData.material}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    {MATERIALES_OPCIONES.map((mat) => (
+                      <option key={mat} value={mat}>
+                        {mat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Fila 2: Dimensiones y Cantidad en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Dimensiones (Alto x Ancho x Profundidad)
-                    </label>
-                    <input
-                      type="text"
-                      name="dimensiones"
-                      maxLength={50}
-                      value={formData.dimensiones}
-                      onChange={handleChange}
-                      placeholder="Ej. 75cm x 160cm x 80cm"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Color
+                  </label>
+                  <input
+                    type="text"
+                    name="color"
+                    maxLength={40}
+                    value={formData.color}
+                    onChange={handleChange}
+                    placeholder="Ej. Blanco / Gris / Madera clara"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Cantidad / Unidades *
-                    </label>
-                    <input
-                      required
-                      type="number"
-                      name="disponible"
-                      min={1}
-                      max={9999}
-                      value={formData.disponible}
-                      onChange={handleChange}
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-4">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Dimensiones (Alto x Ancho x Fondo)
+                  </label>
+                  <input
+                    type="text"
+                    name="dimensiones"
+                    maxLength={50}
+                    value={formData.dimensiones}
+                    onChange={handleChange}
+                    placeholder="Ej. 75cm x 160cm x 80cm"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
               </div>
             )}
 
-            {/* PESTAÑA 3: ASIGNACIÓN / ESTADO */}
+            {/* PESTAÑA 3: ASIGNACIÓN, ESTADO Y ADQUISICIÓN */}
             {paso === 3 && (
-              <div className="space-y-3 animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 animate-fade-in">
+                <div className="col-span-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <h4
                     className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
                     style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
@@ -914,95 +940,90 @@ export default function ModalRegistroMobiliario({
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
 
-                {/* Fila 1: Área / Proceso y Responsable en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Área / Proceso
-                    </label>
-                    <input
-                      type="text"
-                      name="area_proceso"
-                      maxLength={60}
-                      value={formData.area_proceso}
-                      onChange={handleChange}
-                      placeholder="Ej. Innovación STEAM, Administrativa..."
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Responsable / Asignado
-                    </label>
-                    <input
-                      type="text"
-                      name="responsable"
-                      maxLength={80}
-                      value={formData.responsable}
-                      onChange={handleChange}
-                      placeholder="Ej. Bodega Central o Custodio"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                {/* Fila 1: Responsable / Asignado (md:col-span-6) + Estado Operativo (md:col-span-3) + Fecha Adquisición (md:col-span-3) */}
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Responsable / Asignado
+                  </label>
+                  <input
+                    type="text"
+                    name="responsable"
+                    maxLength={80}
+                    value={formData.responsable}
+                    onChange={handleChange}
+                    placeholder="Ej. Bodega Central o Custodio"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
                 </div>
 
-                {/* Fila 2: Estado Operativo y Fecha de Adquisición en 2 Columnas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Estado Operativo
-                    </label>
-                    <select
-                      name="estado_operativo"
-                      value={formData.estado_operativo}
-                      onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {ESTADOS_OPERATIVOS.map((eo) => (
-                        <option key={eo} value={eo}>
-                          {eo}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Fecha de Adquisición / Registro
-                    </label>
-                    <input
-                      type="date"
-                      name="fecha_adquisicion"
-                      value={formData.fecha_adquisicion}
-                      onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                <div className="col-span-12 md:col-span-3">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Estado Operativo
+                  </label>
+                  <select
+                    name="estado_operativo"
+                    value={formData.estado_operativo}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  >
+                    {ESTADOS_OPERATIVOS.map((eo) => (
+                      <option key={eo} value={eo}>
+                        {eo}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Fila 3: Observaciones */}
-                <div>
+                <div className="col-span-12 md:col-span-3">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Fecha Adquisición / Registro
+                  </label>
+                  <input
+                    type="date"
+                    name="fecha_adquisicion"
+                    value={formData.fecha_adquisicion}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                {/* Fila 2: Proveedor / Origen (md:col-span-6) + Observaciones Físicas o Notas (md:col-span-6) */}
+                <div className="col-span-12 md:col-span-6">
+                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
+                    Proveedor / Fabricante / Donante
+                  </label>
+                  <input
+                    type="text"
+                    name="proveedor"
+                    maxLength={90}
+                    value={formData.proveedor}
+                    onChange={handleChange}
+                    placeholder="Ej. Muebles & Diseños SAS o Donación Institucional"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--bg, #0f172a)',
+                      color: 'var(--text, #f8fafc)',
+                      borderColor: 'var(--line, #334155)',
+                    }}
+                  />
+                </div>
+
+                <div className="col-span-12 md:col-span-6">
                   <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
                     Observaciones Físicas o Notas
                   </label>
