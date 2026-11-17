@@ -10,6 +10,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QrCode, Eye, Pencil, Trash2, X } from 'lucide-react';
 import ModalQR from '../components/modals/ModalQR';
+import ImpresionMasivaQRModal from '../components/modals/ImpresionMasivaQRModal';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalRegistroMobiliario from '../components/modals/ModalRegistroMobiliario';
@@ -288,6 +289,144 @@ export default function InventarioView({
   const [editingItem, setEditingItem] = useState(null);
   const [managingUnitsItem, setManagingUnitsItem] = useState(null);
   const [qrModalItem, setQrModalItem] = useState(null);
+
+  // Selección múltiple para impresión masiva de códigos QR en cuadrícula (SIGA-FMO)
+  const [selectedQRs, setSelectedQRs] = useState([]);
+  const [modalImpresionMasivaOpen, setModalImpresionMasivaOpen] = useState(false);
+
+  const normalizeItemForQR = (rawItem, type = 'equipo') => {
+    if (!rawItem) return null;
+    let placa = '';
+    let nombre = '';
+    let serial = '—';
+    let sede = 'Medellín';
+    let area = 'Nuevas Tecnologías';
+    let categoria = '';
+
+    if (type === 'equipo') {
+      placa = rawItem.placa || rawItem.code || 'S-PLACA';
+      nombre = rawItem.parentName || rawItem.nombre || 'Equipo Tecnológico';
+      serial = rawItem.serial || '—';
+      sede = rawItem.sede || 'Medellín';
+      area = rawItem.area_asignada || rawItem.area || rawItem.programa || 'Nuevas Tecnologías';
+      categoria = rawItem.parentCategory || rawItem.categoria || 'Portátiles';
+    } else if (type === 'consumible') {
+      placa = rawItem.id || rawItem.code || 'S-COD';
+      nombre = rawItem.material || rawItem.name || rawItem.nombre || 'Material de Robótica';
+      serial = rawItem.serial || rawItem.categoria || '—';
+      sede = rawItem.ubicacion || rawItem.sede || 'Medellín';
+      area = rawItem.area_asignada || rawItem.area || rawItem.programa || rawItem.categoria || 'Robótica';
+      categoria = rawItem.categoria || rawItem.category || 'Robótica';
+    } else if (type === 'papeleria') {
+      placa = rawItem.id || rawItem.placa || 'S-COD';
+      nombre = rawItem.material || rawItem.name || rawItem.nombre || 'Insumo de Papelería';
+      serial = rawItem.serial || rawItem.categoria || '—';
+      sede = rawItem.ubicacion || rawItem.sede || 'Medellín';
+      area = rawItem.area_asignada || rawItem.area || rawItem.programa || 'TeachLabs';
+      categoria = rawItem.categoria || 'Papelería';
+    } else if (type === 'mobiliario') {
+      placa = rawItem.placa || rawItem.code || rawItem.id || 'S-PLACA';
+      nombre = rawItem.nombre || rawItem.material || rawItem.name || 'Mueble Modular';
+      serial = rawItem.serial || rawItem.material || '—';
+      sede = rawItem.sede || rawItem.ubicacion || 'Medellín';
+      area = rawItem.area_proceso || rawItem.area || 'General';
+      categoria = rawItem.categoria || 'Mobiliario';
+    }
+
+    const qrUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/activo/${encodeURIComponent(placa)}`
+        : `https://inventario.fundacionmarinaorth.org/activo/${encodeURIComponent(placa)}`;
+
+    return {
+      id: placa,
+      placa,
+      nombre,
+      serial,
+      sede,
+      area,
+      categoria,
+      qrUrl,
+      type,
+    };
+  };
+
+  const isQRSelected = (placa) => {
+    return selectedQRs.some((x) => x.placa === placa);
+  };
+
+  const toggleSelectQR = (rawItem, type) => {
+    const norm = normalizeItemForQR(rawItem, type);
+    if (!norm) return;
+    setSelectedQRs((prev) => {
+      const exists = prev.some((x) => x.placa === norm.placa);
+      if (exists) {
+        return prev.filter((x) => x.placa !== norm.placa);
+      } else {
+        return [...prev, norm];
+      }
+    });
+  };
+
+  const toggleSelectAllVisible = (visibleList, type) => {
+    const normalizedList = (visibleList || []).map((item) => normalizeItemForQR(item, type)).filter(Boolean);
+    const allVisibleSelected =
+      normalizedList.length > 0 &&
+      normalizedList.every((norm) => selectedQRs.some((x) => x.placa === norm.placa));
+
+    if (allVisibleSelected) {
+      const visiblePlacas = new Set(normalizedList.map((x) => x.placa));
+      setSelectedQRs((prev) => prev.filter((x) => !visiblePlacas.has(x.placa)));
+    } else {
+      setSelectedQRs((prev) => {
+        const existingPlacas = new Set(prev.map((x) => x.placa));
+        const toAdd = normalizedList.filter((x) => !existingPlacas.has(x.placa));
+        return [...prev, ...toAdd];
+      });
+    }
+  };
+
+  const clearQRSelection = () => {
+    setSelectedQRs([]);
+  };
+
+  const renderQRSelectionBanner = () => {
+    if (selectedQRs.length === 0) return null;
+    return (
+      <div className="mb-3.5 p-3 px-4 rounded-xl bg-[#013a52] border border-[#abd037]/60 flex flex-wrap items-center justify-between gap-3 shadow-md animate-fade-in no-print">
+        <div className="flex items-center gap-2.5">
+          <span className="w-6 h-6 rounded-full bg-[#abd037] text-[#013a52] font-black text-xs flex items-center justify-center">
+            {selectedQRs.length}
+          </span>
+          <span className="text-xs sm:text-sm text-white font-medium">
+            {selectedQRs.length === 1 ? '1 ítem seleccionado' : `${selectedQRs.length} ítems seleccionados`} para impresión QR
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setModalImpresionMasivaOpen(true)}
+            className="bg-[#013a52] hover:bg-[#0A3C63] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 border border-[#abd037] transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+            title="Abrir vista previa e impresión de etiquetas QR en cuadrícula"
+          >
+            <span>🖨️</span>
+            <span>Imprimir QRs Seleccionados</span>
+            <span className="bg-[#abd037] text-[#013a52] px-2 py-0.5 rounded-full text-xs font-black">
+              {selectedQRs.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={clearQRSelection}
+            className="text-xs text-[#6d6e71] hover:text-slate-200 font-semibold px-2 py-1 transition-colors cursor-pointer"
+            title="Deseleccionar todos los ítems"
+          >
+            Limpiar selección
+          </button>
+        </div>
+      </div>
+    );
+  };
   const [quickLoanUnit, setQuickLoanUnit] = useState(null); // Unidad para préstamo rápido
   const [loanPerson, setLoanPerson] = useState('');
   const [loanSede, setLoanSede] = useState('Medellín');
@@ -798,6 +937,22 @@ export default function InventarioView({
 
   // Total de equipos registrados sin filtrar
   const totalEquiposRegistrados = rawEquiposUnits.length;
+
+  const areAllVisibleEquiposSelected =
+    (paginatedEquiposUnits || []).length > 0 &&
+    (paginatedEquiposUnits || []).every((u) => isQRSelected(u.placa || u.code || 'S-PLACA'));
+
+  const areAllVisibleConsumiblesSelected =
+    (paginatedConsumibles || []).length > 0 &&
+    (paginatedConsumibles || []).every((it) => isQRSelected(it.id || it.code || 'S-COD'));
+
+  const areAllVisiblePapeleriaSelected =
+    (paginatedPapeleria || []).length > 0 &&
+    (paginatedPapeleria || []).every((it) => isQRSelected(it.id || it.placa || 'S-COD'));
+
+  const areAllVisibleMobiliarioSelected =
+    (paginatedMobiliario || []).length > 0 &&
+    (paginatedMobiliario || []).every((m) => isQRSelected(m.placa || m.code || m.id || 'S-PLACA'));
 
   // Render plano con filtros y buscador reactivo
   const allEquiposUnits = useMemo(() => {
@@ -2574,6 +2729,9 @@ export default function InventarioView({
             </div>
           </div>
 
+          {/* Banner de Selección Múltiple QR */}
+          {renderQRSelectionBanner()}
+
           {effectiveLoading ? (
             <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
@@ -2613,13 +2771,23 @@ export default function InventarioView({
               <table style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead>
                   <tr>
+                    <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={areAllVisibleEquiposSelected}
+                        onChange={() => toggleSelectAllVisible(paginatedEquiposUnits, 'equipo')}
+                        aria-label="Seleccionar todos los equipos visibles"
+                        className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                        title="Seleccionar o deseleccionar todos los equipos visibles"
+                      />
+                    </th>
                     <th style={{ width: '11%', padding: '10px 8px' }}>PLACA / CÓDIGO</th>
                     <th style={{ width: '20%', padding: '10px 8px' }}>EQUIPO & MODELO</th>
                     <th style={{ width: '12%', padding: '10px 8px' }}>SERIAL</th>
-                    <th style={{ width: '17%', padding: '10px 8px' }}>SEDE / UBICACIÓN</th>
+                    <th style={{ width: '16%', padding: '10px 8px' }}>SEDE / UBICACIÓN</th>
                     <th style={{ width: '13%', padding: '10px 8px' }}>RESPONSABLE ACTUAL</th>
-                    <th style={{ width: '12%', textAlign: 'center', padding: '10px 8px' }}>ESTADO</th>
-                    <th style={{ width: '15%', textAlign: 'center', padding: '10px 6px' }}>ACCIONES</th>
+                    <th style={{ width: '11%', textAlign: 'center', padding: '10px 8px' }}>ESTADO</th>
+                    <th style={{ width: '14%', textAlign: 'center', padding: '10px 6px' }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2638,9 +2806,24 @@ export default function InventarioView({
                     }
 
                     const placa = u.placa || u.code || 'S-PLACA';
+                    const isChecked = isQRSelected(placa);
 
                     return (
-                      <tr key={`${u.parentItemId}-${u.code}-${idx}`} className="h-auto">
+                      <tr
+                        key={`${u.parentItemId}-${u.code}-${idx}`}
+                        className={`h-auto transition-colors ${isChecked ? 'bg-lime-50/40 dark:bg-lime-950/20' : ''}`}
+                      >
+                        {/* Checkbox de selección individual */}
+                        <td className="py-2.5" style={{ width: '42px', padding: '10px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleSelectQR(u, 'equipo')}
+                            aria-label={`Seleccionar ${placa} para impresión QR`}
+                            className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                          />
+                        </td>
+
                         {/* 1. PLACA / CÓDIGO (Interactivo: abre detalle completo) */}
                         <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <button
@@ -2942,7 +3125,7 @@ export default function InventarioView({
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
                   {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedEquiposUnits.length) }).map((_, phIdx) => (
                     <tr key={`ph-equipos-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
-                      <td colSpan={7} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                      <td colSpan={8} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
                       </td>
                     </tr>
@@ -3073,6 +3256,9 @@ export default function InventarioView({
             </div>
           </div>
 
+          {/* Banner de Selección Múltiple QR */}
+          {renderQRSelectionBanner()}
+
           {effectiveLoading ? (
             <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
@@ -3112,11 +3298,21 @@ export default function InventarioView({
               <table className="w-full table-fixed" style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead>
                   <tr>
-                    <th className="w-[28%] text-left px-4" style={{ width: '28%', padding: '10px 14px', textAlign: 'left' }}>CÓDIGO / MATERIAL</th>
+                    <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={areAllVisibleConsumiblesSelected}
+                        onChange={() => toggleSelectAllVisible(paginatedConsumibles, 'consumible')}
+                        aria-label="Seleccionar todos los consumibles visibles"
+                        className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                        title="Seleccionar o deseleccionar todos los consumibles visibles"
+                      />
+                    </th>
+                    <th className="w-[27%] text-left px-3" style={{ width: '27%', padding: '10px 12px', textAlign: 'left' }}>CÓDIGO / MATERIAL</th>
                     <th className="w-[15%] text-center px-2" style={{ width: '15%', padding: '10px 8px', textAlign: 'center' }}>CATEGORÍA</th>
-                    <th className="w-[12%] text-center px-2" style={{ width: '12%', padding: '10px 8px', textAlign: 'center' }}>DISPONIBLE</th>
+                    <th className="w-[11%] text-center px-2" style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>DISPONIBLE</th>
                     <th className="w-[18%] text-left px-3" style={{ width: '18%', padding: '10px 12px', textAlign: 'left' }}>UBICACIÓN FÍSICA</th>
-                    <th className="w-[13%] text-center px-2" style={{ width: '13%', padding: '10px 8px', textAlign: 'center' }}>ESTADO DE STOCK</th>
+                    <th className="w-[12%] text-center px-2" style={{ width: '12%', padding: '10px 8px', textAlign: 'center' }}>ESTADO DE STOCK</th>
                     <th className="w-[14%] text-center px-2" style={{ width: '14%', padding: '10px 8px', textAlign: 'center' }}>ACCIONES</th>
                   </tr>
                 </thead>
@@ -3128,9 +3324,24 @@ export default function InventarioView({
                     const isLow = !isZero && disp <= min;
                     const matName = it.material || it.name || 'Sin nombre';
                     const ubi = it.ubicacion || it.location || 'Oficina FMO';
+                    const isChecked = isQRSelected(it.id || it.code || 'S-COD');
 
                     return (
-                      <tr key={it.id} className={`${isZero ? 'row-critical' : isLow ? 'row-warning' : ''} h-auto`}>
+                      <tr
+                        key={it.id}
+                        className={`${isZero ? 'row-critical' : isLow ? 'row-warning' : ''} ${isChecked ? 'bg-lime-50/40 dark:bg-lime-950/20' : ''} h-auto transition-colors`}
+                      >
+                        {/* Checkbox de selección individual */}
+                        <td className="py-2.5" style={{ width: '42px', padding: '10px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleSelectQR(it, 'consumible')}
+                            aria-label={`Seleccionar ${it.id} para impresión QR`}
+                            className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                          />
+                        </td>
+
                         {/* 1. CÓDIGO / MATERIAL: Badge con código y a debajo nombre en negrita */}
                         <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, overflow: 'hidden', gap: '3px' }}>
@@ -3382,7 +3593,7 @@ export default function InventarioView({
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
                   {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedConsumibles.length) }).map((_, phIdx) => (
                     <tr key={`ph-consumibles-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
-                      <td colSpan={6} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                      <td colSpan={7} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
                       </td>
                     </tr>
@@ -3539,6 +3750,9 @@ export default function InventarioView({
             </div>
           </div>
 
+          {/* Banner de Selección Múltiple QR */}
+          {renderQRSelectionBanner()}
+
           {papeleriaFiltrada.length === 0 ? (
             <div className="panel empty">
               <span>📄</span> No se encontraron insumos de papelería con los filtros seleccionados.
@@ -3548,12 +3762,22 @@ export default function InventarioView({
               <table style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead>
                   <tr>
+                    <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={areAllVisiblePapeleriaSelected}
+                        onChange={() => toggleSelectAllVisible(paginatedPapeleria, 'papeleria')}
+                        aria-label="Seleccionar todos los insumos de papelería visibles"
+                        className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                        title="Seleccionar o deseleccionar todos los insumos visibles"
+                      />
+                    </th>
                     <th style={{ width: '11%', padding: '10px 12px', textAlign: 'left' }}>CÓDIGO / PLACA</th>
-                    <th style={{ width: '25%', padding: '10px 12px', textAlign: 'left' }}>MATERIAL / NOMBRE</th>
+                    <th style={{ width: '24%', padding: '10px 12px', textAlign: 'left' }}>MATERIAL / NOMBRE</th>
                     <th style={{ width: '10%', padding: '10px 6px', textAlign: 'center' }}>CANTIDAD</th>
-                    <th style={{ width: '18%', padding: '10px 8px', textAlign: 'center' }}>CONDICIÓN</th>
+                    <th style={{ width: '17%', padding: '10px 8px', textAlign: 'center' }}>CONDICIÓN</th>
                     <th style={{ width: '19%', padding: '10px 14px', textAlign: 'left' }}>UBICACIÓN</th>
-                    <th style={{ width: '17%', padding: '10px 12px', textAlign: 'center' }}>ACCIONES</th>
+                    <th style={{ width: '16%', padding: '10px 12px', textAlign: 'center' }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3566,9 +3790,25 @@ export default function InventarioView({
                     const estante = it.ubicacion_estante || it.caja || 'Fuera de cajas';
                     const esNuevo = String(it.condicion || '').toLowerCase().includes('nuevo') && !String(it.condicion || '').toLowerCase().includes('usado');
                     const esUsado = String(it.condicion || '').toLowerCase().includes('usad') && !String(it.condicion || '').toLowerCase().includes('nuevo');
+                    const code = it.id || it.placa || 'S-COD';
+                    const isChecked = isQRSelected(code);
 
                     return (
-                      <tr key={it.id} className={`${isZero ? 'row-critical' : isLow ? 'row-warning' : ''} h-auto`}>
+                      <tr
+                        key={it.id}
+                        className={`${isZero ? 'row-critical' : isLow ? 'row-warning' : ''} ${isChecked ? 'bg-lime-50/40 dark:bg-lime-950/20' : ''} h-auto transition-colors`}
+                      >
+                        {/* Checkbox de selección individual */}
+                        <td className="py-2.5" style={{ width: '42px', padding: '10px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleSelectQR(it, 'papeleria')}
+                            aria-label={`Seleccionar ${code} para impresión QR`}
+                            className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                          />
+                        </td>
+
                         {/* 1. CÓDIGO / PLACA: Badge interactivo estándar */}
                         <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <button
@@ -3873,7 +4113,7 @@ export default function InventarioView({
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
                   {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedPapeleria.length) }).map((_, phIdx) => (
                     <tr key={`ph-papeleria-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
-                      <td colSpan={6} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                      <td colSpan={7} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
                       </td>
                     </tr>
@@ -3979,6 +4219,9 @@ export default function InventarioView({
             </div>
           </div>
 
+          {/* Banner de Selección Múltiple QR */}
+          {renderQRSelectionBanner()}
+
           {mobiliarioFiltrado.length === 0 ? (
             <div className="panel empty" style={{ padding: '36px 20px', textAlign: 'center' }}>
               <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>🪑</span>
@@ -3994,12 +4237,22 @@ export default function InventarioView({
               <table style={{ tableLayout: 'fixed', width: '100%' }}>
                 <thead>
                   <tr>
+                    <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={areAllVisibleMobiliarioSelected}
+                        onChange={() => toggleSelectAllVisible(paginatedMobiliario, 'mobiliario')}
+                        aria-label="Seleccionar todos los muebles visibles"
+                        className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                        title="Seleccionar o deseleccionar todos los muebles visibles"
+                      />
+                    </th>
                     <th style={{ width: '15%', padding: '10px 14px', textAlign: 'left' }}>PLACA / CÓDIGO</th>
-                    <th style={{ width: '27%', padding: '10px 12px', textAlign: 'left' }}>MOBILIARIO & DESCRIPCIÓN</th>
+                    <th style={{ width: '26%', padding: '10px 12px', textAlign: 'left' }}>MOBILIARIO & DESCRIPCIÓN</th>
                     <th style={{ width: '11%', padding: '10px 8px', textAlign: 'center' }}>CANTIDAD</th>
-                    <th style={{ width: '18%', padding: '10px 12px', textAlign: 'left' }}>SEDE / ESPACIO ASIGNADO</th>
+                    <th style={{ width: '17%', padding: '10px 12px', textAlign: 'left' }}>SEDE / ESPACIO ASIGNADO</th>
                     <th style={{ width: '12%', padding: '10px 8px', textAlign: 'center' }}>ESTADO</th>
-                    <th style={{ width: '17%', padding: '10px 16px', textAlign: 'right' }}>ACCIONES</th>
+                    <th style={{ width: '16%', padding: '10px 16px', textAlign: 'right' }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4008,9 +4261,21 @@ export default function InventarioView({
                     const nombre = m.nombre || m.material || m.name || 'Mueble Modular';
                     const sede = m.sede || m.ubicacion || 'Medellín';
                     const cant = Number(m.disponible ?? m.quantity ?? 1);
+                    const isChecked = isQRSelected(code);
 
                     return (
-                      <tr key={code} className="h-auto hover:bg-slate-500/5">
+                      <tr key={code} className={`h-auto transition-colors ${isChecked ? 'bg-lime-50/40 dark:bg-lime-950/20' : 'hover:bg-slate-500/5'}`}>
+                        {/* Checkbox de selección individual */}
+                        <td className="py-2.5" style={{ width: '42px', padding: '10px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleSelectQR(m, 'mobiliario')}
+                            aria-label={`Seleccionar ${code} para impresión QR`}
+                            className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                          />
+                        </td>
+
                         {/* 1. Placa / Código */}
                         <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <button
@@ -4213,7 +4478,7 @@ export default function InventarioView({
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
                   {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - paginatedMobiliario.length) }).map((_, phIdx) => (
                     <tr key={`ph-mobiliario-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
-                      <td colSpan={6} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                      <td colSpan={7} style={{ padding: '0 14px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
                       </td>
                     </tr>
@@ -4554,6 +4819,62 @@ export default function InventarioView({
             setModalDetalleOpen(true);
           }}
         />
+      )}
+
+      {/* =========================================================================
+          MODAL: IMPRESIÓN MASIVA DE ETIQUETAS QR EN CUADRÍCULA (SIGA-FMO)
+          ========================================================================= */}
+      {modalImpresionMasivaOpen && (
+        <ImpresionMasivaQRModal
+          items={selectedQRs}
+          onClose={() => setModalImpresionMasivaOpen(false)}
+        />
+      )}
+
+      {/* =========================================================================
+          BARRA FLOTANTE DE IMPRESIÓN QR (Visible en cualquier vista cuando hay selección)
+          ========================================================================= */}
+      {selectedQRs.length > 0 && (
+        <div
+          className="fixed bottom-6 right-6 z-40 bg-[#013a52] text-white px-5 py-3 rounded-2xl shadow-2xl border-2 border-[#abd037] flex items-center gap-4 animate-bounce-short no-print"
+          style={{ boxShadow: '0 10px 25px -5px rgba(1, 58, 82, 0.5), 0 8px 10px -6px rgba(171, 208, 55, 0.3)' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-full bg-[#abd037] text-[#013a52] font-black text-xs flex items-center justify-center">
+              {selectedQRs.length}
+            </span>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-white leading-tight">
+                {selectedQRs.length} {selectedQRs.length === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
+              </span>
+              <span className="text-[10px] text-slate-300 leading-tight">
+                Listos para imprimir en cuadrícula
+              </span>
+            </div>
+          </div>
+
+          <div className="h-6 w-px bg-slate-600/70" />
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setModalImpresionMasivaOpen(true)}
+              className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer hover:scale-[1.03]"
+              title="Abrir vista previa de impresión en cuadrícula"
+            >
+              <span>🖨️</span>
+              <span>Imprimir QRs</span>
+            </button>
+            <button
+              type="button"
+              onClick={clearQRSelection}
+              className="text-xs text-slate-300 hover:text-white font-semibold px-2 py-1 transition-colors cursor-pointer"
+              title="Deseleccionar todos los ítems"
+            >
+              Limpiar
+            </button>
+          </div>
+        </div>
       )}
 
       {/* =========================================================================
