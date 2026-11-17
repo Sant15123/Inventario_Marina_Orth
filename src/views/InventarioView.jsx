@@ -2690,7 +2690,7 @@ export default function InventarioView({
             type="button"
             className="btn small bg-[#013a52] hover:bg-[#0A3C63] text-white font-bold px-3 py-1.5 rounded-lg border border-[#abd037]/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer text-xs"
             onClick={() => setModalImpresionMasivaOpen(true)}
-            title="Imprimir etiquetas QR para rotulado de equipos (4 por hoja Carta 2×2)"
+            title="Imprimir etiquetas QR para rotulado de equipos (9 por hoja Carta 3×3)"
           >
             <span>🖨️</span>
             <span>Imprimir QRs</span>
@@ -5017,7 +5017,7 @@ export default function InventarioView({
                 {selectedQRs.length} {selectedQRs.length === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
               </span>
               <span className="text-[10px] text-slate-300 leading-tight">
-                4 QR por hoja Carta (Cuadrícula 2×2)
+                9 QR por hoja Carta (Cuadrícula 3×3)
               </span>
             </div>
           </div>

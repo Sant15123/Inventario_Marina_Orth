@@ -1,52 +1,49 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer, X, Copy, ListFilter, Hash, CheckCircle2 } from 'lucide-react';
+import { Printer, X, Copy, ListFilter, Hash } from 'lucide-react';
 
 /**
  * Componente individual de Etiqueta QR Institucional (SIGA-FMO)
- * Proporciones fijas calibradas para cuadrícula 2×2 (exactamente 4 por hoja Carta).
- * Tamaño físico en papel: ~9.5 cm de ancho × 12 cm de alto (ideal para rotular y pegar en equipos).
+ * Diseño oficial estandarizado en 3 columnas (9 etiquetas por hoja Carta).
  */
 function EtiquetaQRCard({ etiqueta, isPrint = false }) {
   return (
     <div
-      className={`border-2 border-dashed border-[#6d6e71]/60 rounded-xl p-3.5 flex flex-col items-center justify-between bg-white text-black break-inside-avoid box-border shadow-xs ${
-        isPrint
-          ? 'qr-card-2x2-print h-[12cm] min-h-[12cm] max-h-[12cm] print:shadow-none'
-          : 'h-[275px] max-h-[275px] w-full'
+      className={`bg-white border border-dashed border-[#6d6e71]/50 rounded-xl p-4 flex flex-col items-center text-center shadow-2xs break-inside-avoid w-full ${
+        isPrint ? 'qr-card-3x3-print p-3 justify-between' : ''
       }`}
       style={{
         breakInside: 'avoid',
         pageBreakInside: 'avoid',
-        ...(isPrint ? { height: '12cm', minHeight: '12cm', maxHeight: '12cm' } : {}),
+        ...(isPrint ? { height: '7.8cm', minHeight: '7.8cm', maxHeight: '8.0cm' } : {}),
       }}
     >
-      {/* 1. Encabezado FMO institucional */}
-      <div className="flex items-center justify-center gap-2.5 border-b-2 border-[#abd037] pb-2 w-full">
+      {/* 1. Encabezado de la etiqueta institucional */}
+      <div className="flex items-center gap-2 pb-2 mb-2 border-b-2 border-[#abd037] w-full justify-center">
         <img
           src="/logo-marina-orth.png"
           alt="FMO"
-          width="28"
-          height="28"
-          className="w-7 h-7 shrink-0 object-contain rounded-full shadow-2xs"
-          style={{ width: '28px', height: '28px', maxWidth: '28px', maxHeight: '28px', flexShrink: 0 }}
+          width="24"
+          height="24"
+          className="w-6 h-6 shrink-0 object-contain rounded-full"
+          style={{ width: '24px', height: '24px', maxWidth: '24px', maxHeight: '24px', flexShrink: 0 }}
         />
         <div className="flex flex-col text-left">
-          <span className="text-[11px] font-bold text-[#013a52] leading-tight font-sans tracking-wide uppercase">
-            Fundación Marina Orth
+          <span className="text-[10px] font-extrabold text-[#013a52] leading-none tracking-tight uppercase">
+            FUNDACIÓN MARINA ORTH
           </span>
-          <span className="text-[8px] text-[#6d6e71] uppercase tracking-wider font-semibold leading-tight">
-            Control de Activos Fijos
+          <span className="text-[7px] font-semibold text-[#6d6e71] tracking-wider mt-0.5 uppercase">
+            CONTROL DE ACTIVOS FIJOS
           </span>
         </div>
       </div>
 
-      {/* 2. Código QR grande y nítido para escaneo rápido con pistola o celular */}
-      <div className="my-auto py-1 flex items-center justify-center bg-white">
+      {/* 2. Código QR nítido */}
+      <div className="my-1 flex items-center justify-center bg-white">
         <QRCodeSVG
           value={etiqueta.qrUrl}
-          size={isPrint ? 132 : 118}
+          size={105}
           level="M"
           includeMargin={false}
           bgColor="#ffffff"
@@ -54,27 +51,27 @@ function EtiquetaQRCard({ etiqueta, isPrint = false }) {
         />
       </div>
 
-      {/* 3. Datos del Activo / Equipo */}
-      <div className="w-full flex flex-col items-center justify-center pt-2 border-t border-slate-200">
-        {/* Placa / Código en grande y destacado */}
-        <div className="text-sm font-black text-black tracking-wider font-mono bg-slate-100 px-3 py-0.5 rounded border border-slate-200 shadow-2xs">
+      {/* 3. Datos del Activo (espaciados y limpios) */}
+      <div className="w-full flex flex-col items-center justify-center mt-1">
+        {/* Placa / Código */}
+        <div className="font-mono font-black text-sm text-[#000000] tracking-widest mt-1">
           {etiqueta.placa}
         </div>
 
-        {/* Nombre / Modelo del activo */}
+        {/* Nombre del equipo */}
         <div
-          className="text-xs font-bold text-[#013a52] line-clamp-1 truncate max-w-full text-center mt-1 leading-snug"
+          className="text-xs font-semibold text-[#013a52] line-clamp-1 mt-0.5 max-w-full"
           title={etiqueta.nombre}
         >
           {etiqueta.nombre}
         </div>
 
-        {/* Serial y Ubicación */}
-        <div className="text-[9.5px] text-[#6d6e71] truncate max-w-full text-center mt-0.5 font-medium">
+        {/* Subtexto: S/N y Sede resaltada */}
+        <div className="text-[10px] text-[#6d6e71] mt-1 max-w-full truncate">
           {etiqueta.serial ? `S/N: ${etiqueta.serial} • ` : ''}
-          {etiqueta.sede || 'Oficina FMO'}
+          <span className="font-semibold text-[#659c1e]">{etiqueta.sede || 'OFICINA FMO'}</span>
           {etiqueta.totalCopias > 1 && (
-            <span className="no-print print:hidden font-semibold text-lime-700 ml-1">
+            <span className="text-[#6d6e71] font-normal ml-1 no-print">
               (c.{etiqueta.copiaNumero})
             </span>
           )}
@@ -85,26 +82,9 @@ function EtiquetaQRCard({ etiqueta, isPrint = false }) {
 }
 
 /**
- * Placeholder para casillas vacías en la vista previa de pantalla.
- * Mantiene la cuadrícula 2x2 simétrica para que los stickers reales jamás cambien de tamaño.
- */
-function SlotVacioCard({ index }) {
-  return (
-    <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col items-center justify-center text-slate-300 dark:text-slate-600 h-[275px] max-h-[275px] w-full bg-slate-50/50 dark:bg-slate-900/30 select-none">
-      <span className="text-2xl mb-1 opacity-40">🏷️</span>
-      <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-        Espacio disponible para etiqueta
-      </span>
-      <span className="text-[10px] text-slate-400/80 dark:text-slate-600 text-center mt-1">
-        (Cuadrícula fija 2×2 • 4 por hoja Carta)
-      </span>
-    </div>
-  );
-}
-
-/**
- * ImpresionMasivaQRModal - Vista atractiva y calibrada de impresión de QRs
- * Imprime exactamente 4 etiquetas por hoja Carta (cuadrícula 2×2), siempre del mismo tamaño.
+ * ImpresionMasivaQRModal - Rediseño Profesional (SIGA-FMO)
+ * Header y Footer fijos con scroll interno exclusivo en el área de etiquetas.
+ * Formato: 9 etiquetas por hoja Carta (3 columnas × 3 filas).
  */
 export default function ImpresionMasivaQRModal({
   items = [],
@@ -224,11 +204,11 @@ export default function ImpresionMasivaQRModal({
     return lista;
   }, [itemsBase, copiasPorItem]);
 
-  // Agrupar en bloques de EXACTAMENTE 4 etiquetas (2 columnas × 2 filas = 4 por hoja Carta)
+  // Agrupar en bloques de EXACTAMENTE 9 etiquetas (3 columnas × 3 filas) para hojas tamaño Carta
   const paginasDeEtiquetas = useMemo(() => {
     const paginas = [];
-    for (let i = 0; i < etiquetasParaImprimir.length; i += 4) {
-      paginas.push(etiquetasParaImprimir.slice(i, i + 4));
+    for (let i = 0; i < etiquetasParaImprimir.length; i += 9) {
+      paginas.push(etiquetasParaImprimir.slice(i, i + 9));
     }
     return paginas;
   }, [etiquetasParaImprimir]);
@@ -241,234 +221,189 @@ export default function ImpresionMasivaQRModal({
   return (
     <>
       {/* ==============================================================
-          1. MODAL EN PANTALLA (Visible solo en navegador, oculto en print)
+          1. MODAL FLOTANTE EN PANTALLA (Header & Footer Fijos, Scroll Interno)
           ============================================================== */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto no-print"
+        className="fixed inset-0 z-50 bg-[#013a52]/60 backdrop-blur-xs flex items-center justify-center p-4 md:p-6 no-print"
         role="dialog"
         aria-modal="true"
         onClick={onClose}
       >
         <div
-          className="bg-white dark:bg-[#0b1320] rounded-2xl shadow-2xl max-w-5xl w-full flex flex-col max-h-[94vh] overflow-hidden border border-slate-200 dark:border-slate-800"
+          className="flex flex-col max-h-[88vh] w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header del Modal */}
-          <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-[#013a52] text-white flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#abd037] text-[#013a52] flex items-center justify-center font-bold shadow-sm">
-                <Printer className="w-5 h-5" />
+          {/* HEADER FIJO */}
+          <div className="shrink-0 bg-white border-b border-slate-200 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#abd037]/20 text-[#013a52] p-2 rounded-xl">
+                  <Printer className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-[#013a52] m-0">
+                    Impresión Masiva de Etiquetas QR
+                  </h3>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2 m-0">
-                  Impresión de Etiquetas QR para Equipos
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/20 text-[#abd037] border border-white/20">
-                    Cuadrícula 2×2 (4 por hoja)
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-300 m-0 mt-0.5">
-                  Tamaño fijo uniforme (~9.5 cm × 12 cm) listo para recortar y pegar en los equipos físicos.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Selector de Copias por Ítem */}
-              <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-white font-semibold flex items-center gap-2 shadow-2xs">
-                <Copy className="w-4 h-4 text-[#abd037]" />
-                <label htmlFor="copias-item-input" className="text-xs font-semibold text-white">
-                  Copias:
-                </label>
-                <input
-                  id="copias-item-input"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={copiasPorItem}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    setCopiasPorItem(isNaN(val) ? 1 : Math.max(1, Math.min(10, val)));
-                  }}
-                  className="w-12 text-center text-xs font-bold font-mono bg-white text-[#013a52] border-none rounded py-0.5 focus:outline-none focus:ring-2 focus:ring-[#abd037]"
-                  title="Número de copias por cada etiqueta"
-                />
-              </div>
-
-              {/* Botón Principal Imprimir */}
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-black px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer hover:scale-[1.02] text-xs sm:text-sm active:scale-95"
-                title="Abrir diálogo de impresión para enviar a la impresora"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Imprimir Etiquetas</span>
-                <span className="bg-[#013a52] text-[#abd037] px-2 py-0.5 rounded-full text-xs font-black">
-                  {etiquetasParaImprimir.length}
-                </span>
-              </button>
-
-              {/* Botón Cerrar [X] */}
               <button
                 type="button"
                 onClick={onClose}
-                className="bg-white/10 hover:bg-white/20 text-white rounded-xl p-2 transition-colors cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                 aria-label="Cerrar modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Barra de filtros / acciones limpia debajo del título */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
+              {/* Píldoras de selección (Tabs) */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModoImpresion('seleccionados')}
+                  disabled={!items || items.length === 0}
+                  className={`cursor-pointer transition-all ${
+                    modoImpresion === 'seleccionados'
+                      ? 'bg-[#013a52] text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-xs'
+                      : 'bg-slate-100 text-[#6d6e71] hover:text-[#013a52] font-medium px-3.5 py-1.5 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed'
+                  }`}
+                >
+                  Solo seleccionados ({items.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModoImpresion('todos')}
+                  className={`cursor-pointer transition-all ${
+                    modoImpresion === 'todos'
+                      ? 'bg-[#013a52] text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-xs'
+                      : 'bg-slate-100 text-[#6d6e71] hover:text-[#013a52] font-medium px-3.5 py-1.5 rounded-lg text-xs'
+                  }`}
+                >
+                  Todos los de esta vista ({allFilteredItems.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModoImpresion('rango')}
+                  className={`cursor-pointer transition-all flex items-center gap-1 ${
+                    modoImpresion === 'rango'
+                      ? 'bg-[#013a52] text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-xs'
+                      : 'bg-slate-100 text-[#6d6e71] hover:text-[#013a52] font-medium px-3.5 py-1.5 rounded-lg text-xs'
+                  }`}
+                >
+                  <Hash className="w-3.5 h-3.5" />
+                  <span>Por rango de códigos</span>
+                </button>
+
+                {/* Filtro Rango inline si está activo */}
+                {modoImpresion === 'rango' && (
+                  <div className="flex items-center gap-1.5 ml-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg text-xs">
+                    <span className="text-slate-500 font-medium">De:</span>
+                    <input
+                      type="text"
+                      value={rangoDesde}
+                      onChange={(e) => setRangoDesde(e.target.value)}
+                      placeholder="ACT-FMO-001"
+                      className="w-24 px-1.5 py-0.5 border border-slate-300 rounded font-mono font-bold text-[#013a52] text-xs focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                    />
+                    <span className="text-slate-500 font-medium">A:</span>
+                    <input
+                      type="text"
+                      value={rangoHasta}
+                      onChange={(e) => setRangoHasta(e.target.value)}
+                      placeholder="ACT-FMO-050"
+                      className="w-24 px-1.5 py-0.5 border border-slate-300 rounded font-mono font-bold text-[#013a52] text-xs focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Controles derechos: Copias y Botón Imprimir */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <label htmlFor="copias-input" className="text-xs font-semibold text-[#6d6e71]">
+                    Copias:
+                  </label>
+                  <input
+                    id="copias-input"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={copiasPorItem}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setCopiasPorItem(isNaN(val) ? 1 : Math.max(1, Math.min(10, val)));
+                    }}
+                    className="w-16 text-center border border-slate-300 rounded-lg py-1 text-sm font-bold text-[#013a52] focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold px-5 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer text-xs sm:text-sm active:scale-95"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Imprimir ({etiquetasParaImprimir.length})</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* BARRA DE MODOS DE SELECCIÓN: Seleccionados vs Todos vs Por Rango */}
-          <div className="px-5 py-2.5 bg-slate-100/90 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-[#6d6e71] font-medium flex items-center gap-1">
-                <ListFilter className="w-3.5 h-3.5" />
-                <span>Selección:</span>
+          {/* BODY CON SCROLL INTERNO EXCLUSIVO */}
+          <div className="flex-1 overflow-y-auto bg-slate-50/70 p-6">
+            {/* Indicador discreto */}
+            <div className="text-xs text-[#6d6e71] mb-4 font-medium flex items-center justify-between">
+              <span>
+                Vista previa de impresión • <strong>{etiquetasParaImprimir.length}</strong> {etiquetasParaImprimir.length === 1 ? 'etiqueta' : 'etiquetas'} ({paginasDeEtiquetas.length} {paginasDeEtiquetas.length === 1 ? 'hoja Carta' : 'hojas Carta'})
               </span>
-
-              {/* Opción 1: Seleccionados */}
-              <button
-                type="button"
-                onClick={() => setModoImpresion('seleccionados')}
-                disabled={!items || items.length === 0}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                  modoImpresion === 'seleccionados'
-                    ? 'bg-[#013a52] text-white shadow-xs'
-                    : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed'
-                }`}
-              >
-                Solo seleccionados ({items.length})
-              </button>
-
-              {/* Opción 2: Todos los filtrados */}
-              <button
-                type="button"
-                onClick={() => setModoImpresion('todos')}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                  modoImpresion === 'todos'
-                    ? 'bg-[#013a52] text-white shadow-xs'
-                    : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
-                }`}
-              >
-                Todos los de esta vista ({allFilteredItems.length})
-              </button>
-
-              {/* Opción 3: Por rango de códigos */}
-              <button
-                type="button"
-                onClick={() => setModoImpresion('rango')}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                  modoImpresion === 'rango'
-                    ? 'bg-[#013a52] text-white shadow-xs'
-                    : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
-                }`}
-              >
-                <Hash className="w-3.5 h-3.5" />
-                <span>Por rango de códigos</span>
-              </button>
+              <span className="hidden sm:inline text-slate-400">
+                Formato: 3×3 (9 etiquetas por hoja)
+              </span>
             </div>
 
-            {/* Inputs de rango si está activo el modo Rango */}
-            {modoImpresion === 'rango' && (
-              <div className="flex items-center gap-2 animate-fade-in bg-white dark:bg-slate-800 px-3 py-1 rounded-lg border border-[#abd037]">
-                <label className="text-slate-600 dark:text-slate-300 font-medium">Desde:</label>
-                <input
-                  type="text"
-                  value={rangoDesde}
-                  onChange={(e) => setRangoDesde(e.target.value)}
-                  placeholder="ej. ACT-FMO-001"
-                  className="w-28 text-xs font-mono font-bold px-2 py-0.5 rounded border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
-                />
-                <label className="text-slate-600 dark:text-slate-300 font-medium">Hasta:</label>
-                <input
-                  type="text"
-                  value={rangoHasta}
-                  onChange={(e) => setRangoHasta(e.target.value)}
-                  placeholder="ej. ACT-FMO-050"
-                  className="w-28 text-xs font-mono font-bold px-2 py-0.5 rounded border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
-                />
-                <span className="text-[11px] font-bold text-[#013a52] dark:text-[#abd037]">
-                  ({itemsBase.length} ítems en rango)
-                </span>
+            {/* Cuadrícula limpia de 3 columnas (SIN cajas vacías placeholder) */}
+            {etiquetasParaImprimir.length === 0 ? (
+              <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-[#6d6e71]">
+                <p className="font-semibold text-sm">No hay etiquetas para mostrar en esta selección.</p>
+                <p className="text-xs mt-1 text-slate-400">Selecciona activos en la tabla o cambia al modo "Todos los de esta vista".</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {etiquetasParaImprimir.map((etiqueta) => (
+                  <EtiquetaQRCard
+                    key={etiqueta.uniqueKey}
+                    etiqueta={etiqueta}
+                    isPrint={false}
+                  />
+                ))}
               </div>
             )}
           </div>
 
-          {/* Área de Vista Previa Atractiva: Hojas Carta Simuladas */}
-          <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-200/60 dark:bg-slate-950/60 flex flex-col items-center">
-            {/* Banner Informativo */}
-            <div className="mb-5 w-full max-w-3xl p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 flex items-center justify-between text-xs text-blue-950 dark:text-blue-200 shadow-2xs">
-              <span className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-[#013a52] dark:text-[#abd037] shrink-0" />
-                <span>
-                  Mostrando <strong>{etiquetasParaImprimir.length}</strong> {etiquetasParaImprimir.length === 1 ? 'etiqueta' : 'etiquetas'} en <strong>{paginasDeEtiquetas.length}</strong> {paginasDeEtiquetas.length === 1 ? 'hoja Carta' : 'hojas Carta'} (formato exacto 2×2, 4 por hoja).
-                </span>
-              </span>
-              <span className="text-[11px] text-[#013a52] dark:text-[#abd037] font-bold hidden md:inline">
-                Tamaño de sticker fijo (~9.5 × 12 cm)
-              </span>
-            </div>
-
-            {/* Hojas físicas simuladas */}
-            <div className="w-full flex flex-col items-center gap-8 pb-4">
-              {paginasDeEtiquetas.map((pagina, pageIdx) => {
-                const emptySlotsCount = 4 - pagina.length;
-                return (
-                  <div
-                    key={`screen-page-${pageIdx}`}
-                    className="bg-white p-6 rounded-2xl border border-slate-300 shadow-xl w-full max-w-3xl flex flex-col transition-all hover:shadow-2xl"
-                  >
-                    {/* Encabezado de la Hoja Virtual */}
-                    <div className="text-xs font-bold text-[#013a52] mb-4 pb-2 border-b-2 border-slate-100 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <span>📄</span>
-                        <span>Hoja {pageIdx + 1} de {paginasDeEtiquetas.length} (Tamaño Carta - Cuadrícula 2×2)</span>
-                      </span>
-                      <span className="text-[11px] font-semibold text-[#6d6e71] bg-slate-100 px-2 py-0.5 rounded-full">
-                        {pagina.length} {pagina.length === 1 ? 'etiqueta activa' : 'etiquetas activas'}
-                      </span>
-                    </div>
-
-                    {/* Cuadrícula Fija 2×2 (Siempre 4 casillas del mismo tamaño) */}
-                    <div className="grid grid-cols-2 gap-4 w-full">
-                      {/* Etiquetas Reales */}
-                      {pagina.map((etiqueta) => (
-                        <EtiquetaQRCard key={etiqueta.uniqueKey} etiqueta={etiqueta} isPrint={false} />
-                      ))}
-
-                      {/* Casillas Vacías Guía para asegurar que el tamaño NO cambie */}
-                      {Array.from({ length: emptySlotsCount }).map((_, emptyIdx) => (
-                        <SlotVacioCard key={`empty-screen-${pageIdx}-${emptyIdx}`} index={pagina.length + emptyIdx + 1} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Footer en pantalla */}
-          <div className="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex items-center justify-between shrink-0">
-            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-              Total: <strong>{etiquetasParaImprimir.length}</strong> {etiquetasParaImprimir.length === 1 ? 'sticker listo' : 'stickers listos'} • <strong>{paginasDeEtiquetas.length}</strong> {paginasDeEtiquetas.length === 1 ? 'hoja Carta' : 'hojas Carta'}
+          {/* FOOTER FIJO */}
+          <div className="shrink-0 bg-white border-t border-slate-200 px-6 py-3.5 flex items-center justify-between">
+            <span className="text-xs text-[#6d6e71] font-medium">
+              Formato optimizado para papel Carta (9 etiquetas por hoja)
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={onClose}
-                className="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer text-xs"
+                className="px-4 py-2 rounded-xl border border-slate-300 text-[#6d6e71] hover:text-[#013a52] font-medium text-sm transition-colors cursor-pointer"
               >
                 Cerrar
               </button>
               <button
                 type="button"
                 onClick={handlePrint}
-                className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-black px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer hover:scale-[1.02] text-xs sm:text-sm active:scale-95"
+                className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold px-5 py-2 rounded-xl text-sm transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
               >
                 <Printer className="w-4 h-4" />
-                <span>Imprimir ({etiquetasParaImprimir.length})</span>
+                <span>Imprimir Ahora</span>
               </button>
             </div>
           </div>
@@ -478,38 +413,25 @@ export default function ImpresionMasivaQRModal({
       {/* ==============================================================
           2. PORTAL DE IMPRESIÓN DIRECTO EN document.body (#qr-print-portal)
           Montado fuera de #root para impresión 100% limpia sin hojas en blanco
-          Paginado en bloques de EXACTAMENTE 4 etiquetas (2 columnas × 2 filas)
+          Paginado en bloques de EXACTAMENTE 9 etiquetas (3 columnas × 3 filas)
           ============================================================== */}
       {typeof document !== 'undefined' &&
         createPortal(
           <div id="qr-print-portal" className="hidden print:block w-full bg-white m-0 p-0">
-            {paginasDeEtiquetas.map((pagina, pageIdx) => {
-              const emptySlotsCount = 4 - pagina.length;
-              return (
-                <div
-                  key={`qr-print-page-${pageIdx}`}
-                  className="qr-page-grid grid grid-cols-2 gap-4 w-full bg-white box-border"
-                  style={{
-                    pageBreakAfter: pageIdx < paginasDeEtiquetas.length - 1 ? 'always' : 'auto',
-                    breakAfter: pageIdx < paginasDeEtiquetas.length - 1 ? 'page' : 'auto',
-                  }}
-                >
-                  {/* Etiquetas Reales */}
-                  {pagina.map((etiqueta) => (
-                    <EtiquetaQRCard key={etiqueta.uniqueKey} etiqueta={etiqueta} isPrint={true} />
-                  ))}
-
-                  {/* Celdas invisibles para completar la cuadrícula 2x2 y evitar que un sticker solitario se agrande */}
-                  {Array.from({ length: emptySlotsCount }).map((_, emptyIdx) => (
-                    <div
-                      key={`empty-print-${pageIdx}-${emptyIdx}`}
-                      className="qr-card-2x2-print"
-                      style={{ visibility: 'hidden', border: 'none', background: 'transparent' }}
-                    />
-                  ))}
-                </div>
-              );
-            })}
+            {paginasDeEtiquetas.map((pagina, pageIdx) => (
+              <div
+                key={`qr-print-page-${pageIdx}`}
+                className="qr-page-grid grid grid-cols-3 gap-3 w-full bg-white box-border"
+                style={{
+                  pageBreakAfter: pageIdx < paginasDeEtiquetas.length - 1 ? 'always' : 'auto',
+                  breakAfter: pageIdx < paginasDeEtiquetas.length - 1 ? 'page' : 'auto',
+                }}
+              >
+                {pagina.map((etiqueta) => (
+                  <EtiquetaQRCard key={etiqueta.uniqueKey} etiqueta={etiqueta} isPrint={true} />
+                ))}
+              </div>
+            ))}
           </div>,
           document.body
         )}
