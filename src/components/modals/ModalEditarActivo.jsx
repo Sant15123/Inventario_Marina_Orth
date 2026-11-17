@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import ProgramAreaBadge, { ProgramAreaSelect } from '../common/ProgramAreaBadge';
 
 /**
  * ModalEditarActivo: Componente modal unificado para editar equipos tecnológicos.
@@ -492,25 +493,11 @@ export default function ModalEditarActivo({
 
                 {/* Fila 3: Área / Proceso y Sede / Ubicación Física en 2 Columnas */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Área / Proceso
-                    </label>
-                    <input
-                      type="text"
-                      name="area"
-                      maxLength={60}
-                      value={formData.area || ''}
-                      onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                      placeholder="Ej. Tecnología, Robótica, Formación..."
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+                  <ProgramAreaSelect
+                    label="Área Asignada / Programa FMO"
+                    value={formData.area || ''}
+                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                  />
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">

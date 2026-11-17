@@ -251,7 +251,12 @@ export default function ModalDetalleActivo({
             <div className="grid grid-cols-2 gap-y-3 gap-x-4">
               {renderKeyValue('Categoría', item.categoria || item.category)}
               {renderKeyValue('Condición', item.condicion || item.estado_fisico || 'Bueno')}
-              {renderKeyValue('Área / Proceso', item.area || 'Tecnología')}
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Área / Programa FMO:
+                </span>
+                <ProgramAreaBadge area={item.area_asignada || item.area || 'Nuevas Tecnologías'} iconSize={16} />
+              </div>
               {renderKeyValue(
                 'Stock Registrado',
                 `${item.cantidad || 1} und (${item.disponible !== undefined ? item.disponible : 1} disp.)`

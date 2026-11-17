@@ -1,4 +1,5 @@
 import FmoCobrandingBadge from '../components/common/FmoCobrandingBadge';
+import ProgramAreaBadge, { ProgramAreaSelect } from '../components/common/ProgramAreaBadge';
 import {
   FmoProgramBadge,
   RoboticaIcon,
@@ -2536,13 +2537,15 @@ export default function InventarioView({
                             >
                               {u.parentName}
                             </strong>
-                            <span
-                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#2CACD0]/15 text-[#013a52] border border-[#2CACD0]/30 dark:bg-[#2CACD0]/25 dark:text-[#2CACD0] mt-0.5"
-                              title={u.model || u.parentCategory || 'Nuevas Tecnologías'}
-                            >
-                              <NuevasTecnologiasIcon className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{u.model || u.parentCategory || 'Nuevas Tecnologías'}</span>
-                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '2px' }}>
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                                {u.model || 'Estándar'}
+                              </span>
+                              <ProgramAreaBadge
+                                area={u.area || u.area_asignada || u.programa || u.parentCategory || 'Nuevas Tecnologías'}
+                                iconSize={14}
+                              />
+                            </div>
                           </div>
                         </td>
 
@@ -3024,9 +3027,8 @@ export default function InventarioView({
 
                         {/* 2. CATEGORÍA: Tag redondeado */}
                         <td className="py-2.5" style={{ paddingLeft: '8px', paddingRight: '8px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <FmoProgramBadge
-                            program="robotica"
-                            label={it.categoria || it.category || 'Robótica'}
+                          <ProgramAreaBadge
+                            area={it.area_asignada || it.area || it.programa || it.categoria || it.category || 'Robótica'}
                             iconSize={15}
                           />
                         </td>
@@ -3472,9 +3474,8 @@ export default function InventarioView({
                               {matName}
                             </strong>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                              <FmoProgramBadge
-                                program="teachlabs"
-                                label={it.categoria || 'TeachLabs'}
+                              <ProgramAreaBadge
+                                area={it.area_asignada || it.area || it.programa || it.categoria || 'TeachLabs'}
                                 iconSize={13}
                               />
                             </div>
@@ -5016,6 +5017,14 @@ export default function InventarioView({
                           </>
                         )}
                       </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <ProgramAreaSelect
+                        label="Área Asignada / Programa FMO"
+                        value={formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica')}
+                        onChange={(e) => setFormDataNuevo({ ...formDataNuevo, area: e.target.value })}
+                      />
                     </div>
 
                     {/* Fila 3: Sede / Ubicación Física y Estante / Caja / Gaveta (en 2 columnas balanceadas) */}
@@ -6580,26 +6589,12 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 4: Área Asignada y Descripción */}
-                    <div>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Área Asignada
-                      </label>
-                      <input
-                        type="text"
-                        name="area"
-                        maxLength={60}
-                        value={formDataNuevoEquipo.area || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, area: e.target.value })}
-                        placeholder="Ej. Formación, Robótica, Administración..."
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
+                    {/* Fila 4: Área Asignada Oficial y Descripción */}
+                    <ProgramAreaSelect
+                      label="Área Asignada"
+                      value={formDataNuevoEquipo.area || ''}
+                      onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, area: e.target.value })}
+                    />
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
