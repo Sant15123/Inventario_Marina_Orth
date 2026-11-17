@@ -3413,8 +3413,9 @@ tbody tr:hover {
 
   .qr-page-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, 12cm) !important;
+    gap: 12px !important;
     width: 100% !important;
     box-sizing: border-box !important;
     page-break-after: always !important;
@@ -3426,17 +3427,18 @@ tbody tr:hover {
     break-after: auto !important;
   }
 
-  .qr-card-compact-print {
+  .qr-card-2x2-print {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    height: 5.8cm !important;
-    min-height: 5.8cm !important;
-    max-height: 5.85cm !important;
+    height: 12cm !important;
+    min-height: 12cm !important;
+    max-height: 12cm !important;
+    width: 100% !important;
     box-sizing: border-box !important;
     background: #ffffff !important;
     color: #000000 !important;
-    border: 1px dashed rgba(109, 110, 113, 0.7) !important;
-    border-radius: 8px !important;
+    border: 2px dashed rgba(109, 110, 113, 0.6) !important;
+    border-radius: 14px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

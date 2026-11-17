@@ -719,15 +719,15 @@ export default function InventarioView({
   const paginatedPapeleria = useMemo(() => {
     const start = (currentPapeleriaPage - 1) * ITEMS_PER_PAGE;
     return papeleriaFiltrada.slice(start, start + ITEMS_PER_PAGE);
-  }, [papeleriaFiltrada, currentPapeleriaPage]);
+  }, [papeleriaFiltrada, currentPapeleriaPage, ITEMS_PER_PAGE]);
 
-  // Paginación de Mobiliario (5 filas por página)
+  // Paginación de Mobiliario (filas configurables por página)
   const totalMobiliarioPages = Math.max(1, Math.ceil(mobiliarioFiltrado.length / ITEMS_PER_PAGE));
   const currentMobiliarioPage = Math.min(mobiliarioPage, totalMobiliarioPages);
   const paginatedMobiliario = useMemo(() => {
     const start = (currentMobiliarioPage - 1) * ITEMS_PER_PAGE;
     return mobiliarioFiltrado.slice(start, start + ITEMS_PER_PAGE);
-  }, [mobiliarioFiltrado, currentMobiliarioPage]);
+  }, [mobiliarioFiltrado, currentMobiliarioPage, ITEMS_PER_PAGE]);
 
   // Handlers para Nuevo Insumo de Papelería y Mobiliario
   const handleOpenCreatePapeleria = () => {
@@ -1262,7 +1262,7 @@ export default function InventarioView({
   const paginatedConsumibles = useMemo(() => {
     const start = (currentConsumiblesPage - 1) * ITEMS_PER_PAGE;
     return consumibles.slice(start, start + ITEMS_PER_PAGE);
-  }, [consumibles, currentConsumiblesPage]);
+  }, [consumibles, currentConsumiblesPage, ITEMS_PER_PAGE]);
 
   // Paginación para Equipos Tecnológicos (5 filas por página)
   const [equiposPage, setEquiposPage] = useState(1);
@@ -1272,7 +1272,7 @@ export default function InventarioView({
   const paginatedEquiposUnits = useMemo(() => {
     const start = (currentEquiposPage - 1) * ITEMS_PER_PAGE;
     return allEquiposUnits.slice(start, start + ITEMS_PER_PAGE);
-  }, [allEquiposUnits, currentEquiposPage]);
+  }, [allEquiposUnits, currentEquiposPage, ITEMS_PER_PAGE]);
 
   // Verificación de selección completa para encabezados de tablas (SIGA-FMO)
   const areAllVisibleEquiposSelected =
@@ -2685,23 +2685,12 @@ export default function InventarioView({
         </div>
 
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Botón Exportar Excel */}
-          <button
-            type="button"
-            className="btn small btn-secondary flex items-center gap-1.5 border border-slate-300 hover:border-slate-400 bg-white text-[#013a52] font-semibold shadow-xs"
-            onClick={handleDescargarReporteExcel}
-            title="Descargar libro maestro Excel (.xlsx)"
-          >
-            <span>📊</span>
-            <span>Exportar Excel</span>
-          </button>
-
           {/* Botón Directo Imprimir QRs */}
           <button
             type="button"
             className="btn small bg-[#013a52] hover:bg-[#0A3C63] text-white font-bold px-3 py-1.5 rounded-lg border border-[#abd037]/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer text-xs"
             onClick={() => setModalImpresionMasivaOpen(true)}
-            title="Imprimir etiquetas QR en stickers compactos (12 por hoja)"
+            title="Imprimir etiquetas QR para rotulado de equipos (4 por hoja Carta 2×2)"
           >
             <span>🖨️</span>
             <span>Imprimir QRs</span>
@@ -5028,7 +5017,7 @@ export default function InventarioView({
                 {selectedQRs.length} {selectedQRs.length === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
               </span>
               <span className="text-[10px] text-slate-300 leading-tight">
-                Stickers 3×4 (12 por hoja Carta)
+                4 QR por hoja Carta (Cuadrícula 2×2)
               </span>
             </div>
           </div>
