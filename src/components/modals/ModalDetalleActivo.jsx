@@ -1,5 +1,6 @@
 import React from 'react';
 import { QrCode, Pencil, X } from 'lucide-react';
+import ProgramAreaBadge from '../common/ProgramAreaBadge';
 
 /**
  * ModalDetalleActivo: Componente modal unificado para consultar la ficha técnica
