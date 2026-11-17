@@ -2326,7 +2326,7 @@ export default function PrestamosView({
                 )}
               </h2>
               <span className="section-subtitle">
-                Revisa requerimientos de préstamos y consumibles formulados por docentes y formadores STEAM, asigna placas y autoriza despachos
+                Acompaña a los docentes y formadores STEAM gestionando el préstamo de equipos y el despacho oportuno de materiales a cada territorio.
               </span>
             </div>
           </div>
@@ -2340,8 +2340,8 @@ export default function PrestamosView({
                 <span>⏳</span> Cargando solicitudes entrelazadas...
               </div>
             ) : solicitudesEstandar.length === 0 ? (
-              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span>📥</span> No se registran solicitudes entrantes en este momento.
+              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <span>✨</span> ¡Todo al día! En este momento no hay solicitudes pendientes por revisar.
               </div>
             ) : (
               <table style={{ width: '100%', tableLayout: 'auto' }}>
@@ -2680,7 +2680,7 @@ export default function PrestamosView({
               )}
             </div>
             <span className="section-subtitle">
-              Gestiona requerimientos de adquisición formulados por formadores, revisa enlaces de compra y recibe insumos directamente al inventario físico
+              Gestiona la adquisición de nuevos materiales e insumos sugeridos por el equipo pedagógico para seguir llevando innovación a nuestras sedes.
             </span>
           </div>
 
@@ -3290,8 +3290,8 @@ export default function PrestamosView({
                 <span>⏳</span> Cargando compras y adquisiciones...
               </div>
             ) : solicitudesCompras.length === 0 ? (
-              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span>🛒</span> No se registran sugerencias de compra en este momento.
+              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <span>✨</span> ¡Todo al día! En este momento no hay solicitudes pendientes por revisar.
               </div>
             ) : solicitudesComprasFiltradas.length === 0 ? (
               <div className="empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>

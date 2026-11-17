@@ -415,8 +415,8 @@ export default function ModalGestionSolicitud({
 
       if (showSuccess) {
         showSuccess(
-          '¡Material ingresado exitosamente!',
-          `"${nombre.trim()}" (${sku.trim()}) ha sido registrado en ${tabla === 'papeleria' ? 'Papelería' : 'Consumibles'} y auditado en historial.`
+          '¡Material incorporado al inventario!',
+          'Ya está disponible para apoyar los talleres de la Fundación.'
         );
       }
 

@@ -344,8 +344,8 @@ export default function ModalSolicitudMaterial({
 
         if (showSuccess) {
           showSuccess(
-            'Sugerencia de compra radicada exitosamente',
-            'Tu requerimiento ha sido radicado y enviado a la bandeja de Compras y Adquisiciones.'
+            '¡Solicitud radicada con éxito!',
+            'El equipo administrativo la revisará pronto.'
           );
         }
 
@@ -488,10 +488,8 @@ export default function ModalSolicitudMaterial({
 
       if (showSuccess) {
         showSuccess(
-          'Solicitud enviada exitosamente',
-          esCompra
-            ? 'Tu sugerencia de compra ha sido radicada para revisión y presupuesto administrativo.'
-            : 'Tu requerimiento ha sido radicado para revisión y aprobación administrativa.'
+          '¡Solicitud radicada con éxito!',
+          'El equipo administrativo la revisará pronto.'
         );
       }
 

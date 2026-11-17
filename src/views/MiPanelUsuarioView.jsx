@@ -571,9 +571,12 @@ export default function MiPanelUsuarioView({
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             Mis Solicitudes y Asignaciones
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-300 mt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+            Solicita las herramientas, kits de robótica e insumos que necesitas para crear experiencias de aprendizaje que dejan huella en tus estudiantes.
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Bienvenido(a), <strong className="text-slate-800 dark:text-white font-bold">{usuario?.nombre || 'Docente'}</strong> 
-            <span className="text-xs text-slate-400 dark:text-slate-300 ml-1.5">(Doc. {usuario?.documento || '—'})</span> · <span className="dark:text-slate-200">{usuario?.cargo || 'Formador STEAM'}</span>
+            <span className="ml-1">(Doc. {usuario?.documento || '—'})</span> · <span>{usuario?.cargo || 'Formador STEAM'}</span>
           </p>
         </div>
 
@@ -929,7 +932,7 @@ export default function MiPanelUsuarioView({
                 </span>
               </h2>
               <span className="section-subtitle" style={{ fontSize: '12.5px' }}>
-                Estado y seguimiento de tus solicitudes pedagógicas para aprobación administrativa
+                Solicita las herramientas, kits de robótica e insumos que necesitas para crear experiencias de aprendizaje que dejan huella en tus estudiantes.
               </span>
             </div>
 
@@ -954,13 +957,13 @@ export default function MiPanelUsuarioView({
             ) : solicitudes.length === 0 ? (
               <div className="empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <span>📋</span>
-                <p>No tienes solicitudes radicadas en este momento.</p>
+                <p>Aún no has radicado solicitudes. Usa el botón '+ Nueva Solicitud' cuando necesites equipos o materiales para tus talleres.</p>
                 <button
                   type="button"
                   onClick={() => setModalSolicitudOpen(true)}
                   className="btn btn-secondary btn-sm"
                 >
-                  Crear mi primera solicitud
+                  + Nueva Solicitud
                 </button>
               </div>
             ) : (
