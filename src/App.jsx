@@ -163,15 +163,24 @@ function App() {
 
       // Mapear consumibles directamente desde la base de datos
       if (Array.isArray(consumiblesData)) {
+        const customAreas = (() => {
+          try { return JSON.parse(localStorage.getItem('siga_custom_areas') || '{}'); } catch { return {}; }
+        })();
         consumiblesData.forEach((c) => {
           const disp = Number(c.disponible) || 0;
           const min = Number(c.minimo) ?? 5;
+          const isPape = c.categoria === 'Papelería' || c.subtipo === 'papeleria' || String(c.id || '').toLowerCase().startsWith('pape');
+          const defaultArea = isPape ? 'TeachLabs' : 'Robótica';
+          const savedArea = customAreas[c.id] || customAreas[c.codigo] || customAreas[c.placa];
+          const resolvedArea = savedArea || c.area_asignada || c.area || defaultArea;
           newItems.push({
             id: c.id,
             material: c.material || c.name || '',
             name: c.material || c.name || '',
-            categoria: c.categoria || 'Robótica',
-            category: c.categoria || 'Robótica',
+            categoria: c.categoria || (isPape ? 'Papelería' : 'Robótica'),
+            category: c.categoria || (isPape ? 'Papelería' : 'Robótica'),
+            area: resolvedArea,
+            area_asignada: resolvedArea,
             disponible: disp,
             quantity: disp,
             minimo: min,
@@ -775,12 +784,22 @@ function App() {
         }
       } else {
         // Consumible
+        const areaToSave = edited.area_asignada || edited.area;
+        if (typeof window !== 'undefined' && areaToSave) {
+          try {
+            const customAreas = JSON.parse(localStorage.getItem('siga_custom_areas') || '{}');
+            customAreas[edited.id] = areaToSave;
+            localStorage.setItem('siga_custom_areas', JSON.stringify(customAreas));
+          } catch (_) {}
+        }
         await inventoryApi.update(edited.id, {
           material: edited.name,
           categoria: edited.category,
           ubicacion: edited.location,
           disponible: edited.quantity,
           minimo: edited.minStock,
+          area: areaToSave,
+          area_asignada: areaToSave,
         });
       }
     } catch (err) {

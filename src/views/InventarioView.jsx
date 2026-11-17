@@ -33,7 +33,11 @@ const mapConsumibleItem = (c) => {
   const min = Number(c.minimo ?? c.minStock ?? 5);
   const isPape = c.categoria === 'Papelería' || c.category === 'Papelería' || c.subtipo === 'papeleria' || String(c.id || '').toLowerCase().startsWith('pape');
   const defaultArea = isPape ? 'TeachLabs' : 'Robótica';
-  const resolvedArea = c.area_asignada || c.area || defaultArea;
+  const customAreas = (() => {
+    try { return JSON.parse(localStorage.getItem('siga_custom_areas') || '{}'); } catch { return {}; }
+  })();
+  const savedArea = customAreas[c.id] || customAreas[c.codigo] || customAreas[c.placa];
+  const resolvedArea = savedArea || c.area_asignada || c.area || defaultArea;
   return {
     id: c.id,
     material: c.material || c.name || '',
@@ -617,6 +621,9 @@ export default function InventarioView({
 
   // Lista unificada de Papelería exclusivamente desde Supabase y catálogo verificado
   const rawPapeleria = useMemo(() => {
+    const customAreas = (() => {
+      try { return JSON.parse(localStorage.getItem('siga_custom_areas') || '{}'); } catch { return {}; }
+    })();
     const baseList = Array.isArray(papeleria) && papeleria.length > 0
       ? papeleria
       : effectiveItems.filter((it) => it.categoria === 'Papelería' || it.category === 'Papelería' || String(it.id).toUpperCase().startsWith('PAP') || it.subtipo === 'papeleria');
@@ -626,6 +633,12 @@ export default function InventarioView({
       const idStr = String(p.id || '').toLowerCase();
       const matStr = String(p.material || p.name || '').toLowerCase();
       return !idStr.includes('prueba') && !idStr.includes('pape5016') && !matStr.includes('prueba');
+    }).map((p) => {
+      const savedArea = customAreas[p.id] || customAreas[p.codigo] || customAreas[p.placa];
+      if (savedArea) {
+        return { ...p, area: savedArea, area_asignada: savedArea };
+      }
+      return p;
     });
   }, [papeleria, effectiveItems]);
 
@@ -1985,8 +1998,13 @@ export default function InventarioView({
   const handleOpenEditarConsumible = (item) => {
     setItemParaEditar(item);
     setPasoActual(1);
-    const esPapeleria = activeTab === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || item.subtipo === 'papeleria' || String(item.id || '').toLowerCase().startsWith('pape');
-    const areaInicial = item.area_asignada || item.area || (esPapeleria ? 'TeachLabs' : 'Robótica');
+    const customAreas = (() => {
+      try { return JSON.parse(localStorage.getItem('siga_custom_areas') || '{}'); } catch { return {}; }
+    })();
+    const itemId = item.id || item.codigo || item.placa || '';
+    const esPapeleria = activeTab === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || item.subtipo === 'papeleria' || String(itemId).toLowerCase().startsWith('pape');
+    const savedArea = customAreas[itemId];
+    const areaInicial = savedArea || item.area_asignada || item.area || (esPapeleria ? 'TeachLabs' : 'Robótica');
     setFormDataEditar({
       id: item.codigo || item.id_referencia || item.placa || item.id || '',
       material: item.material || item.name || '',
@@ -2073,7 +2091,25 @@ export default function InventarioView({
         observaciones: formDataEditar.observaciones?.trim() || null,
       };
 
-      // Si el ítem es de papelería, actualizar en localPapeleria (aislado por ID estricto)
+      // 1. Guardar permanentemente en localStorage para garantizar resistencia ante recargas
+      try {
+        const customAreas = JSON.parse(localStorage.getItem('siga_custom_areas') || '{}');
+        customAreas[idOriginal] = areaAsignada;
+        if (finalId) customAreas[finalId] = areaAsignada;
+        localStorage.setItem('siga_custom_areas', JSON.stringify(customAreas));
+
+        if (esPapeleria) {
+          const cachedPape = JSON.parse(localStorage.getItem('siga_papeleria') || '[]');
+          const updatedPape = cachedPape.map(p =>
+            String(p.id).toLowerCase() === String(idOriginal).toLowerCase()
+              ? { ...p, ...payload, area: areaAsignada, area_asignada: areaAsignada }
+              : p
+          );
+          localStorage.setItem('siga_papeleria', JSON.stringify(updatedPape));
+        }
+      } catch (_) {}
+
+      // 2. Si el ítem es de papelería, actualizar en localPapeleria (aislado por ID estricto)
       if (esPapeleria) {
         setPapeleria((prev) => {
           if (!Array.isArray(prev)) return [];
@@ -2097,7 +2133,7 @@ export default function InventarioView({
         });
       }
 
-      // Actualizar estado local inmediato optimista (aislado por ID / placa estricto)
+      // 3. Actualizar estado local inmediato optimista (aislado por ID / placa estricto)
       setLocalItems((prev) => {
         const base = Array.isArray(prev) && prev.length > 0 ? prev : (Array.isArray(items) ? items : []);
         return base.map((it) =>
@@ -2125,7 +2161,7 @@ export default function InventarioView({
         );
       });
 
-      // UPDATE en Supabase para consumibles / papelería filtrando estrictamente por id único
+      // 4. UPDATE en Supabase para consumibles / papelería filtrando estrictamente por id único
       if (supabase && idOriginal) {
         const payloadConsumibleSb = {
           material: payload.material,
@@ -2153,32 +2189,38 @@ export default function InventarioView({
         }
       }
 
+      // 5. UPDATE al backend vía inventoryApi con token de autorización
       try {
-        const primaryUrl = esPapeleria
-          ? `${API_BASE_URL}/api/papeleria/${encodeURIComponent(idOriginal)}`
-          : `${API_BASE_URL}/api/consumibles/${encodeURIComponent(idOriginal)}`;
-
-        let res = await fetch(primaryUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+        await inventoryApi.update(idOriginal, {
+          ...payload,
+          area: areaAsignada,
+          area_asignada: areaAsignada,
         });
+      } catch (apiErr) {
+        console.warn('Aviso API update consumible:', apiErr?.message);
+      }
 
-        // Si era papelería y falla el endpoint puntual de papelería, intentar fallback a consumibles
-        if (!res.ok && esPapeleria) {
-          const fallbackUrl = `${API_BASE_URL}/api/consumibles/${encodeURIComponent(idOriginal)}`;
-          res = await fetch(fallbackUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+      // 6. Notificar al gestor superior onEditItem si está disponible
+      if (onEditItem) {
+        try {
+          await onEditItem({
+            ...itemParaEditar,
+            id: finalId,
+            name: payload.material,
+            material: payload.material,
+            category: payload.categoria,
+            categoria: payload.categoria,
+            area: areaAsignada,
+            area_asignada: areaAsignada,
+            location: payload.ubicacion,
+            ubicacion: payload.ubicacion,
+            quantity: payload.disponible,
+            disponible: payload.disponible,
+            minStock: payload.minimo,
+            minimo: payload.minimo,
+            itemType: esPapeleria ? 'papeleria' : 'consumible',
           });
-        }
-
-        if (res.ok) {
-          await cargarConsumibles();
-        }
-      } catch (_) {
-        // En caso de que no exista tabla en backend o falle la red, ya se encuentra reflejado optimistamente
+        } catch (_) {}
       }
 
       setModalEditarOpen(false);

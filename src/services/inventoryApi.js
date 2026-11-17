@@ -140,8 +140,43 @@ export const inventoryApi = {
 
   // 2. Consumibles
   getConsumibles: async () => {
-    const json = await request('/consumibles');
-    return extraerArreglo(json);
+    let list = [];
+    try {
+      const json = await request('/consumibles');
+      list = extraerArreglo(json);
+    } catch (_) {}
+
+    // Fallback o enriquecimiento con Supabase si está disponible
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase.from('consumibles').select('*');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const sbMap = new Map(data.map(item => [item.id, item]));
+          if (list.length > 0) {
+            list = list.map(item => {
+              const sbItem = sbMap.get(item.id);
+              return sbItem ? { ...item, ...sbItem } : item;
+            });
+          } else {
+            list = data;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Enriquecer con customAreas guardadas en localStorage
+    try {
+      if (typeof window !== 'undefined') {
+        const customAreas = JSON.parse(localStorage.getItem('siga_custom_areas') || '{}');
+        list = list.map(c => {
+          const saved = customAreas[c.id] || customAreas[c.codigo] || customAreas[c.placa];
+          return saved ? { ...c, area: saved, area_asignada: saved } : c;
+        });
+      }
+    } catch (_) {}
+
+    return list;
   },
 
   getConsumibleById: async (id) => {
@@ -1212,6 +1247,16 @@ export const inventoryApi = {
     if (!id) return patch;
     const targetId = String(id).trim();
 
+    // Guardar en cache local persistente para resistencia inmediata
+    const areaVal = patch.area_asignada || patch.area;
+    if (typeof window !== 'undefined' && areaVal) {
+      try {
+        const customAreas = JSON.parse(localStorage.getItem('siga_custom_areas') || '{}');
+        customAreas[targetId] = areaVal;
+        localStorage.setItem('siga_custom_areas', JSON.stringify(customAreas));
+      } catch (_) {}
+    }
+
     // Actualizar en Supabase de forma segura filtrando estrictamente por id único
     try {
       const { supabase } = await import('./supabase');
@@ -1230,12 +1275,12 @@ export const inventoryApi = {
       console.warn('Aviso Supabase inventoryApi.update:', sbE?.message);
     }
 
-    // Actualizar consumible o activo
-    const json = await request(`/consumibles/${encodeURIComponent(targetId)}`, {
+    // Actualizar consumible o activo con token de autorización
+    const json = await request(/consumibles/, {
       method: 'PUT',
       body: JSON.stringify(patch),
     }).catch(async () => {
-      return await request(`/activos/${encodeURIComponent(targetId)}`, {
+      return await request(/activos/, {
         method: 'PUT',
         body: JSON.stringify(patch),
       });
