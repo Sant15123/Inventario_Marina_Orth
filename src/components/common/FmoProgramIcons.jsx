@@ -71,7 +71,7 @@ export const TeachLabsIcon = ({ className = 'w-5 h-5', size, style }) => (
   </svg>
 );
 
-// 3. Nuevas Tecnologías (#2CACD0) - Laptop con sonrisa y circuitos/nodos inferiores
+// 3. Nuevas Tecnologías (#2CACD0) - Circuitos arriba + Pantalla sonriente + Base laptop abajo
 export const NuevasTecnologiasIcon = ({ className = 'w-5 h-5', size, style }) => (
   <svg
     viewBox="0 0 100 100"
@@ -84,19 +84,36 @@ export const NuevasTecnologiasIcon = ({ className = 'w-5 h-5', size, style }) =>
     aria-label="Nuevas Tecnologías FMO"
   >
     <circle cx="50" cy="50" r="48" fill="#2CACD0" />
-    {/* Circuitos inferiores */}
-    <path d="M50 61V78M42 61V71L36 75M58 61V71L64 75" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="50" cy="80" r="2.5" fill="#FFFFFF" />
-    <circle cx="35" cy="76" r="2.5" fill="#FFFFFF" />
-    <circle cx="65" cy="76" r="2.5" fill="#FFFFFF" />
-    {/* Pantalla Laptop */}
-    <rect x="28" y="25" width="44" height="30" rx="5" stroke="#FFFFFF" strokeWidth="4.2" />
-    {/* Base Laptop */}
-    <path d="M22 57H78" stroke="#FFFFFF" strokeWidth="4.5" strokeLinecap="round" />
-    {/* Ojos y sonrisa */}
-    <circle cx="41" cy="37" r="2.8" fill="#FFFFFF" />
-    <circle cx="59" cy="37" r="2.8" fill="#FFFFFF" />
-    <path d="M44 44C46 47 54 47 56 44" stroke="#FFFFFF" strokeWidth="3.8" strokeLinecap="round" />
+    
+    {/* 5 Circuitos / Nodos saliendo hacia ARRIBA de la pantalla */}
+    <path
+      d="M50 38V21M42 38V29L36 24M58 38V29L64 24M33 38V34L27 32M67 38V34L73 32"
+      stroke="#FFFFFF"
+      strokeWidth="3.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="50" cy="18" r="2.8" stroke="#FFFFFF" strokeWidth="2.5" />
+    <circle cx="34" cy="22" r="2.8" stroke="#FFFFFF" strokeWidth="2.5" />
+    <circle cx="66" cy="22" r="2.8" stroke="#FFFFFF" strokeWidth="2.5" />
+    <circle cx="24" cy="32" r="2.8" stroke="#FFFFFF" strokeWidth="2.5" />
+    <circle cx="76" cy="32" r="2.8" stroke="#FFFFFF" strokeWidth="2.5" />
+
+    {/* Pantalla de Laptop */}
+    <rect x="28" y="42" width="44" height="28" rx="4" stroke="#FFFFFF" strokeWidth="4" />
+
+    {/* Ojitos arqueados felices y sonrisa */}
+    <path d="M37 53C38.5 50.5 41.5 50.5 43 53" stroke="#FFFFFF" strokeWidth="3.2" strokeLinecap="round" />
+    <path d="M57 53C58.5 50.5 61.5 50.5 63 53" stroke="#FFFFFF" strokeWidth="3.2" strokeLinecap="round" />
+    <path d="M43 60C45.5 63.5 54.5 63.5 57 60" stroke="#FFFFFF" strokeWidth="3.6" strokeLinecap="round" />
+
+    {/* Base de Laptop ABAJO con muesca central */}
+    <path
+      d="M21 70H44V72H56V70H79L76 76H24L21 70Z"
+      stroke="#FFFFFF"
+      strokeWidth="3.5"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
