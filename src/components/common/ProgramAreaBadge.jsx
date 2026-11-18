@@ -5,7 +5,17 @@ import {
   TeachLabsIcon,
   SocioemocionalIcon,
   InglesIcon,
+  BecasFmoIcon,
 } from './FmoProgramIcons';
+
+export {
+  RoboticaIcon,
+  NuevasTecnologiasIcon,
+  TeachLabsIcon,
+  SocioemocionalIcon,
+  InglesIcon,
+  BecasFmoIcon,
+};
 
 // Icono neutro institucional para General / Administración / Sin Asignar (Caja de inventario, nunca calendario)
 export const NeutralAreaIcon = ({ className = 'w-5 h-5', size = 20 }) => (
@@ -33,6 +43,7 @@ export const PROGRAM_OPTIONS = [
   'TeachLabs',
   'Habilidades Socioemocionales',
   'Inglés',
+  'Becas "Educando para el Futuro"',
   'Administración / General',
 ];
 
@@ -163,6 +174,20 @@ export function resolveAreaConfig(area, defaultProgram = null) {
     };
   }
 
+  // 6. Becas "Educando para el Futuro" (#abd037)
+  if (
+    norm.includes('beca') ||
+    norm.includes('futuro') ||
+    norm.includes('educando')
+  ) {
+    return {
+      id: 'becas',
+      label: 'Becas "Educando para el Futuro"',
+      badgeClass: 'bg-[#abd037]/15 text-[#013a52] border border-[#abd037]/35 dark:bg-[#abd037]/25 dark:text-[#abd037]',
+      Icon: BecasFmoIcon,
+    };
+  }
+
   // Si no coincide y se proporcionó un defaultProgram, recurrir a él
   if (defNorm) {
     if (defNorm.includes('robot')) {
@@ -205,9 +230,17 @@ export function resolveAreaConfig(area, defaultProgram = null) {
         Icon: InglesIcon,
       };
     }
+    if (defNorm.includes('beca') || defNorm.includes('futuro') || defNorm.includes('educando')) {
+      return {
+        id: 'becas',
+        label: 'Becas "Educando para el Futuro"',
+        badgeClass: 'bg-[#abd037]/15 text-[#013a52] border border-[#abd037]/35 dark:bg-[#abd037]/25 dark:text-[#abd037]',
+        Icon: BecasFmoIcon,
+      };
+    }
   }
 
-  // 6. Sin asignar o Administración / General
+  // 7. Sin asignar o Administración / General
   if (!area) {
     return {
       id: 'general',
@@ -217,7 +250,7 @@ export function resolveAreaConfig(area, defaultProgram = null) {
     };
   }
 
-  // 7. Cualquier otro valor explícito / Administración / General
+  // 8. Cualquier otro valor explícito / Administración / General
   return {
     id: 'general',
     label: area,
