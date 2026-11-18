@@ -5,6 +5,7 @@ import {
   ShoppingCart,
   Laptop,
   Package,
+  ClipboardList,
   Calendar,
   Clock,
   CheckCircle2,
@@ -621,46 +622,113 @@ export default function MiPanelUsuarioView({
         </div>
       </div>
 
-      {/* Pestañas de Navegación */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <button
-          type="button"
-          onClick={() => setPestanaActiva('equipos')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-            pestanaActiva === 'equipos'
-              ? 'bg-[#abd037] text-[#013a52] shadow-sm'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
-          }`}
-        >
-          <span>💻 Mis Equipos Asignados</span>
-          <span className="px-2 py-0.5 rounded-full text-xs bg-black/10 dark:bg-white/10">{equiposAsignados?.length || 0}</span>
-        </button>
+      {/* Pestañas de Navegación Institucionales FMO */}
+      <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+        {[
+          {
+            id: 'equipos',
+            label: 'Mis Equipos Asignados',
+            icon: Laptop,
+            count: equiposAsignados?.length || 0,
+            ariaLabel: 'Ver equipos asignados bajo mi responsabilidad',
+          },
+          {
+            id: 'consumibles',
+            label: 'Mis Consumibles Recibidos',
+            icon: Package,
+            count: remisiones?.length || 0,
+            ariaLabel: 'Ver consumibles y materiales recibidos',
+          },
+          {
+            id: 'solicitudes',
+            label: 'Mis Solicitudes',
+            icon: ClipboardList,
+            count: solicitudes?.length || 0,
+            ariaLabel: 'Ver historial de mis solicitudes',
+          },
+        ].map((tab) => {
+          const isActive = pestanaActiva === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setPestanaActiva(tab.id)}
+              aria-label={tab.ariaLabel}
+              className={`group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all duration-150 cursor-pointer ${
+                isActive
+                  ? 'shadow-sm'
+                  : 'hover:-translate-y-0.5'
+              }`}
+              style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '13.5px',
+                fontWeight: isActive ? 700 : 600,
+                backgroundColor: isActive ? '#abd037' : 'var(--surface-2, #ffffff)',
+                color: isActive ? '#013a52' : '#6d6e71',
+                border: isActive ? '1.5px solid #96b82d' : '1.5px solid var(--line, #e2e8f0)',
+                boxShadow: isActive ? '0 3px 12px rgba(171, 208, 55, 0.4)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.borderColor = '#abd037';
+                  e.currentTarget.style.color = '#013a52';
+                  e.currentTarget.style.backgroundColor = '#fafcf2';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.borderColor = 'var(--line, #e2e8f0)';
+                  e.currentTarget.style.color = '#6d6e71';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-2, #ffffff)';
+                }
+              }}
+            >
+              {/* Contenedor Micro-badge para el Icono Vectorial */}
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '7px',
+                  backgroundColor: isActive ? 'rgba(1, 58, 82, 0.12)' : 'rgba(109, 110, 113, 0.08)',
+                  color: isActive ? '#013a52' : '#6d6e71',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <Icon size={14.5} style={{ strokeWidth: 2.3 }} />
+              </span>
 
-        <button
-          type="button"
-          onClick={() => setPestanaActiva('consumibles')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-            pestanaActiva === 'consumibles'
-              ? 'bg-[#abd037] text-[#013a52] shadow-sm'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
-          }`}
-        >
-          <span>📦 Mis Consumibles Recibidos</span>
-          <span className="px-2 py-0.5 rounded-full text-xs bg-black/10 dark:bg-white/10">{remisiones?.length || 0}</span>
-        </button>
+              {/* Texto de la Pestaña */}
+              <span style={{ letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
+                {tab.label}
+              </span>
 
-        <button
-          type="button"
-          onClick={() => setPestanaActiva('solicitudes')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-            pestanaActiva === 'solicitudes'
-              ? 'bg-[#abd037] text-[#013a52] shadow-sm'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
-          }`}
-        >
-          <span>📋 Mis Solicitudes</span>
-          <span className="px-2 py-0.5 rounded-full text-xs bg-black/10 dark:bg-white/10">{solicitudes?.length || 0}</span>
-        </button>
+              {/* Badge Contador Oficial */}
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '1.5px 8px',
+                  minWidth: '20px',
+                  borderRadius: '9999px',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  backgroundColor: isActive ? '#013a52' : 'rgba(109, 110, 113, 0.12)',
+                  color: isActive ? '#ffffff' : '#6d6e71',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isActive ? '0 1px 3px rgba(1, 58, 82, 0.25)' : 'none',
+                }}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* =========================================================================
