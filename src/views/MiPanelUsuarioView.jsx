@@ -566,13 +566,56 @@ export default function MiPanelUsuarioView({
           </p>
         </div>
 
-        <div>
+        <div style={{ flexShrink: 0 }}>
           <button
             type="button"
             onClick={() => setModalSolicitudOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] text-sm font-black transition-all shadow-md hover:shadow-lime-500/20 active:scale-95"
+            className="btn btn-primary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '9px',
+              padding: '10px 18px',
+              borderRadius: '12px',
+              backgroundColor: '#abd037',
+              color: '#013a52',
+              border: 'none',
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: '13.5px',
+              fontWeight: 700,
+              letterSpacing: '0.01em',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 14px rgba(171, 208, 55, 0.45)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#96b82d';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(171, 208, 55, 0.55)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#abd037';
+              e.currentTarget.style.boxShadow = '0 4px 14px rgba(171, 208, 55, 0.45)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            title="Crear una nueva solicitud de equipos o materiales para tus actividades formativas"
           >
-            <PackagePlus size={18} />
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px',
+                height: '24px',
+                borderRadius: '7px',
+                backgroundColor: 'rgba(1, 58, 82, 0.12)',
+                color: '#013a52',
+                flexShrink: 0,
+              }}
+            >
+              <PackagePlus size={15} style={{ strokeWidth: 2.4, color: '#013a52' }} />
+            </span>
             <span>+ Solicitar Equipo o Material</span>
           </button>
         </div>
@@ -925,9 +968,34 @@ export default function MiPanelUsuarioView({
             <button
               type="button"
               onClick={() => setModalSolicitudOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] text-xs font-black transition-all shadow-sm"
+              className="btn btn-primary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                backgroundColor: '#abd037',
+                color: '#013a52',
+                border: 'none',
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '12.5px',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 10px rgba(171, 208, 55, 0.35)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#96b82d';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#abd037';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              <PackagePlus size={16} />
+              <PackagePlus size={15} style={{ strokeWidth: 2.4, color: '#013a52' }} />
               <span>+ Nueva Solicitud</span>
             </button>
           </div>
@@ -947,9 +1015,32 @@ export default function MiPanelUsuarioView({
                 <button
                   type="button"
                   onClick={() => setModalSolicitudOpen(true)}
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-primary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    backgroundColor: '#abd037',
+                    color: '#013a52',
+                    border: 'none',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    boxShadow: '0 2px 10px rgba(171, 208, 55, 0.35)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#96b82d';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#abd037';
+                  }}
                 >
-                  + Nueva Solicitud
+                  <PackagePlus size={15} style={{ strokeWidth: 2.4, color: '#013a52' }} />
+                  <span>+ Nueva Solicitud</span>
                 </button>
               </div>
             ) : (
