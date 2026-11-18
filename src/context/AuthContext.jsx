@@ -926,6 +926,75 @@ export function AuthProvider({ children }) {
     [currentUser, logout]
   );
 
+  const actualizarTelefono = useCallback(
+    async (nuevoTelefono) => {
+      if (!currentUser) throw new Error('No hay usuario autenticado');
+      const tel = String(nuevoTelefono || '').trim();
+
+      // 1. Actualizar en Supabase (tabla usuarios / perfiles)
+      try {
+        const { supabase } = await import('../services/supabase');
+        if (supabase) {
+          let updated = false;
+          if (currentUser.id) {
+            const resU = await supabase.from('usuarios').update({ telefono: tel }).eq('id', currentUser.id);
+            if (!resU.error) updated = true;
+            const resP = await supabase.from('perfiles').update({ telefono: tel }).eq('id', currentUser.id);
+            if (!resP.error) updated = true;
+          }
+          if (!updated && (currentUser.email || currentUser.correo)) {
+            const emailTarget = String(currentUser.email || currentUser.correo).toLowerCase();
+            await supabase.from('usuarios').update({ telefono: tel }).eq('email', emailTarget);
+            await supabase.from('perfiles').update({ telefono: tel }).eq('email', emailTarget);
+          }
+        }
+      } catch (errSupabase) {
+        console.warn('Error actualizando teléfono en Supabase:', errSupabase);
+      }
+
+      // 2. Intentar en backend API si estuviese configurado
+      try {
+        if (currentUser.id) {
+          await inventoryApi.updateUsuario(currentUser.id, { telefono: tel });
+        }
+      } catch (errApi) {
+        // Silencioso
+      }
+
+      // 3. Actualizar currentUser y sincronizar localStorage
+      const updatedUser = {
+        ...currentUser,
+        telefono: tel,
+      };
+      const newToken = generateToken(updatedUser);
+      localStorage.setItem('siga_token', newToken);
+      localStorage.setItem('siga_current_user', JSON.stringify(updatedUser));
+      setToken(newToken);
+      setCurrentUser(updatedUser);
+
+      // 4. Actualizar lista de usuarios en memoria y localStorage
+      setUsuarios((prev) => {
+        const updated = (prev || []).map((u) => {
+          if (
+            (currentUser.id && String(u.id) === String(currentUser.id)) ||
+            (currentUser.email && String(u.email || '').toLowerCase() === String(currentUser.email).toLowerCase()) ||
+            (currentUser.documento && String(u.documento) === String(currentUser.documento))
+          ) {
+            return { ...u, telefono: tel };
+          }
+          return u;
+        });
+        try {
+          localStorage.setItem('siga_usuarios', JSON.stringify(updated));
+        } catch (_) {}
+        return updated;
+      });
+
+      return updatedUser;
+    },
+    [currentUser]
+  );
+
   const isAuthenticated = !!token && !!currentUser;
   const isAdmin = currentUser?.rol === 'administrador';
   const isSupervisor = currentUser?.rol === 'supervisor';
@@ -948,6 +1017,7 @@ export function AuthProvider({ children }) {
         crearUsuario,
         editarUsuario,
         eliminarUsuario,
+        actualizarTelefono,
         refetchUsuarios,
         isAdmin,
         isSupervisor,
