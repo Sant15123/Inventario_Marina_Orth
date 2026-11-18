@@ -4,6 +4,7 @@ import { Phone, X, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../services/supabase';
+import UserAvatar from '../common/UserAvatar';
 
 export default function ActualizarTelefonoModal({ isOpen, onClose }) {
   const { currentUser, actualizarTelefono } = useAuth();
@@ -22,7 +23,7 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
     }
   }, [isOpen, currentUser?.telefono]);
 
-  // Cerrar con Escape
+  // Cerrar con tecla Escape
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e) => {
@@ -34,8 +35,7 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, submitting, onClose]);
 
-  // Validación: solo dígitos, espacios, guiones o signo +
-  // Longitud de dígitos entre 7 y 15
+  // Validación: longitud entre 7 y 15 dígitos numéricos
   const esValido = useMemo(() => {
     const raw = telefono.trim();
     if (!raw) return false;
@@ -47,7 +47,7 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
 
   const handleInputChange = (e) => {
     const val = e.target.value;
-    // Permitir dígitos, espacios, guiones y signo + inicial
+    // Permitir dígitos, espacios, guiones y signo +
     if (/^[0-9+\s-]*$/.test(val)) {
       setTelefono(val);
       if (errorValidacion) setErrorValidacion('');
@@ -60,12 +60,12 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
 
     const digitos = telefonoLimpio.replace(/\D/g, '');
     if (digitos.length < 7 || digitos.length > 15) {
-      setErrorValidacion('El número debe tener entre 7 y 15 dígitos (ej: 300 123 4567).');
+      setErrorValidacion('El número debe contener entre 7 y 15 dígitos (ej. 300 123 4567).');
       return;
     }
 
     if (!currentUser) {
-      setErrorValidacion('No hay una sesión activa para actualizar.');
+      setErrorValidacion('No se encontró una sesión activa de usuario.');
       return;
     }
 
@@ -73,7 +73,7 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
     setErrorValidacion('');
 
     try {
-      // 1. Actualización directa en Supabase según restricción estricta
+      // 1. Actualización directa y segura en Supabase (solo su propio registro)
       if (supabase) {
         let query = supabase.from('usuarios').update({ telefono: telefonoLimpio });
         if (currentUser.id) {
@@ -86,23 +86,29 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
         const { error: supaErr } = await query;
         if (supaErr) {
           console.warn('Nota de Supabase usuarios:', supaErr.message);
-          // Intentar en tabla perfiles por fallback
+          // Fallback en perfiles si la vista 'usuarios' no responde directamente
           if (currentUser.id) {
             await supabase.from('perfiles').update({ telefono: telefonoLimpio }).eq('id', currentUser.id);
           }
         }
       }
 
-      // 2. Sincronizar estado global AuthContext y localStorage
+      // 2. Sincronizar estado global AuthContext, localStorage y catálogo en memoria
       if (typeof actualizarTelefono === 'function') {
         await actualizarTelefono(telefonoLimpio);
       }
 
-      addToast('Teléfono de contacto actualizado con éxito.', 'success');
+      addToast({
+        type: 'success',
+        iconType: 'check',
+        title: '¡Teléfono actualizado!',
+        message: 'Tu número de contacto ha sido guardado con éxito en el sistema.',
+      });
+
       onClose();
     } catch (err) {
       console.error('Error al actualizar teléfono:', err);
-      setErrorValidacion(err.message || 'No fue posible guardar el teléfono. Intenta nuevamente.');
+      setErrorValidacion(err.message || 'No fue posible guardar el número. Intenta de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -113,10 +119,10 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 9999,
+        zIndex: 999999,
         backgroundColor: 'rgba(1, 58, 82, 0.65)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -127,106 +133,347 @@ export default function ActualizarTelefonoModal({ isOpen, onClose }) {
       }}
     >
       <div
-        className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-        style={{ fontFamily: "'Poppins', sans-serif" }}
+        style={{
+          width: '100%',
+          maxWidth: '430px',
+          backgroundColor: 'var(--surface, #ffffff)',
+          border: '1px solid var(--line, #e2e8f0)',
+          borderRadius: '18px',
+          boxShadow: '0 25px 50px -12px rgba(1, 58, 82, 0.35)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          fontFamily: "'Poppins', sans-serif",
+        }}
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-telefono-titulo"
       >
-        {/* ENCABEZADO */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#abd037]/20 flex items-center justify-center text-[#013a52] dark:text-[#abd037] shrink-0">
-              <Phone className="w-5 h-5 text-[#013a52] dark:text-[#abd037]" />
+        {/* LÍNEA DECORATIVA SUPERIOR CON IDENTIDAD DE MARCA FMO */}
+        <div
+          style={{
+            height: '4px',
+            width: '100%',
+            background: 'linear-gradient(90deg, #abd037 0%, #013a52 100%)',
+          }}
+        />
+
+        {/* CABECERA INSTITUCIONAL */}
+        <div
+          style={{
+            padding: '16px 20px',
+            backgroundColor: 'var(--surface-2, #f8fafc)',
+            borderBottom: '1px solid var(--line, #e2e8f0)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#013a52',
+                flexShrink: 0,
+              }}
+            >
+              <Phone size={18} style={{ width: '18px', height: '18px', color: '#013a52', strokeWidth: 2.2 }} />
             </div>
-            <div>
-              <h2
-                id="modal-telefono-titulo"
-                className="font-bold text-[#013a52] dark:text-white text-base sm:text-lg leading-tight m-0"
+            <div style={{ overflow: 'hidden' }}>
+              <span
+                style={{
+                  fontSize: '9.5px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  color: '#6d6e71',
+                  display: 'block',
+                  lineHeight: 1.2,
+                }}
               >
-                Actualizar Teléfono de Contacto
-              </h2>
-              <p className="text-xs text-[#6d6e71] dark:text-slate-400 m-0 mt-0.5">
-                {currentUser?.nombre || 'Usuario en sesión'}
-              </p>
+                Perfil Institucional FMO
+              </span>
+              <h3
+                id="modal-telefono-titulo"
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: 'var(--text-h, #013a52)',
+                  margin: '2px 0 0 0',
+                  lineHeight: 1.25,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                Actualizar Teléfono
+              </h3>
             </div>
           </div>
+
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            title="Cerrar"
+            title="Cerrar modal"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--text-dim, #94a3b8)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(1, 58, 82, 0.08)';
+              e.currentTarget.style.color = '#013a52';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--text-dim, #94a3b8)';
+            }}
           >
-            <X className="w-4 h-4" />
+            <X size={18} style={{ width: '18px', height: '18px' }} />
           </button>
         </div>
 
         {/* FORMULARIO */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <p className="text-xs text-[#6d6e71] dark:text-slate-300 leading-relaxed m-0">
-            Ingresa tu número de celular o teléfono institucional para facilitar la coordinación de préstamos, entregas y soporte técnico.
-          </p>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
-              Número de teléfono / celular <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Phone className="w-4 h-4 text-[#013a52]/60 dark:text-slate-400" />
-              </span>
-              <input
-                type="tel"
-                required
-                autoFocus
-                value={telefono}
-                onChange={handleInputChange}
-                placeholder="Ej: 300 123 4567"
-                maxLength={20}
-                className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium text-[#013a52] dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] transition-all"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
+        <form onSubmit={handleSubmit} style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '20px' }}>
+            {/* Tarjeta de usuario en sesión */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(1, 58, 82, 0.04)',
+                border: '1px solid rgba(1, 58, 82, 0.08)',
+                marginBottom: '16px',
+              }}
+            >
+              <UserAvatar
+                nombre={currentUser?.nombre}
+                avatarUrl={currentUser?.avatar_url || currentUser?.avatarUrl}
+                size="w-9 h-9 min-w-[36px] min-h-[36px]"
+                textSize="text-xs"
               />
+              <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {currentUser?.nombre}
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-dim, #6d6e71)',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {currentUser?.email}
+                </div>
+              </div>
             </div>
-            <p className="text-[11px] text-[#6d6e71] dark:text-slate-400 mt-1.5 m-0">
-              Acepta entre 7 y 15 dígitos. Solo tú puedes editar este dato desde tu perfil.
-            </p>
+
+            {/* Campo de Entrada de Teléfono */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'var(--text-h, #013a52)',
+                  marginBottom: '6px',
+                }}
+              >
+                Número de Celular o Teléfono <span style={{ color: '#e11d48' }}>*</span>
+              </label>
+
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '6px',
+                    backgroundColor: 'rgba(171, 208, 55, 0.25)',
+                    color: '#013a52',
+                    pointerEvents: 'none',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Phone size={12} style={{ width: '12px', height: '12px', strokeWidth: 2.2 }} />
+                </div>
+                <input
+                  type="tel"
+                  required
+                  autoFocus
+                  value={telefono}
+                  onChange={handleInputChange}
+                  placeholder="Ej: 300 123 4567"
+                  maxLength={20}
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    paddingLeft: '44px',
+                    paddingRight: '14px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    fontFamily: "'Poppins', sans-serif",
+                    color: 'var(--text-h, #013a52)',
+                    backgroundColor: 'var(--bg, #ffffff)',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    borderRadius: '10px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#013a52';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(171, 208, 55, 0.35)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--line, #cbd5e1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                />
+              </div>
+
+              <p
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-dim, #6d6e71)',
+                  marginTop: '6px',
+                  marginBottom: 0,
+                  lineHeight: 1.35,
+                }}
+              >
+                Acepta entre 7 y 15 dígitos. Este dato se usará para coordinar entregas y préstamos de activos institucionales.
+              </p>
+            </div>
+
+            {/* Mensaje de Error si aplica */}
+            {errorValidacion && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '9px 12px',
+                  marginTop: '14px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#dc2626',
+                  fontSize: '11.5px',
+                  fontWeight: 500,
+                }}
+              >
+                <AlertCircle size={15} style={{ width: '15px', height: '15px', flexShrink: 0 }} />
+                <span>{errorValidacion}</span>
+              </div>
+            )}
           </div>
 
-          {errorValidacion && (
-            <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl text-rose-700 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorValidacion}</span>
-            </div>
-          )}
-
-          {/* BOTONES INFERIORES */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+          {/* PIE DE PÁGINA CON BOTONES */}
+          <div
+            style={{
+              padding: '12px 20px',
+              backgroundColor: 'var(--surface-2, #f8fafc)',
+              borderTop: '1px solid var(--line, #e2e8f0)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+            }}
+          >
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="border border-slate-300 dark:border-slate-700 text-[#6d6e71] dark:text-slate-300 hover:text-[#013a52] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl px-4 py-2 font-medium text-sm transition-colors cursor-pointer"
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: '1px solid var(--line, #cbd5e1)',
+                backgroundColor: 'transparent',
+                color: 'var(--text-dim, #6d6e71)',
+                fontSize: '12.5px',
+                fontWeight: 600,
+                fontFamily: "'Poppins', sans-serif",
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#013a52';
+                e.currentTarget.style.borderColor = '#013a52';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-dim, #6d6e71)';
+                e.currentTarget.style.borderColor = 'var(--line, #cbd5e1)';
+              }}
             >
               Cancelar
             </button>
+
             <button
               type="submit"
               disabled={!esValido || submitting}
-              className={`rounded-xl px-5 py-2 font-bold text-sm shadow-sm transition-all flex items-center gap-2 cursor-pointer ${
-                esValido && !submitting
-                  ? 'bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] shadow-sm hover:shadow'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none'
-              }`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 20px',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                fontFamily: "'Poppins', sans-serif",
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: esValido && !submitting ? '#abd037' : '#e2e8f0',
+                color: esValido && !submitting ? '#013a52' : '#94a3b8',
+                cursor: esValido && !submitting ? 'pointer' : 'not-allowed',
+                boxShadow: esValido && !submitting ? '0 2px 8px rgba(171, 208, 55, 0.35)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
             >
               {submitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 size={14} className="animate-spin" style={{ width: '14px', height: '14px' }} />
                   <span>Guardando...</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4" />
+                  <Check size={14} style={{ width: '14px', height: '14px', strokeWidth: 2.5 }} />
                   <span>Guardar Teléfono</span>
                 </>
               )}

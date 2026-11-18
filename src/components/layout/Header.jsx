@@ -169,18 +169,37 @@ export default function Header({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '10.5px',
-                        color: currentUser?.telefono ? '#6d6e71' : 'var(--text-dim)',
-                        marginTop: '2px',
+                        gap: '6px',
+                        marginTop: '4px',
                         whiteSpace: 'nowrap',
                         textOverflow: 'ellipsis',
                         overflow: 'hidden',
                       }}
                       title={currentUser?.telefono || 'Sin teléfono registrado'}
                     >
-                      <Phone className="w-3 h-3 text-[#6d6e71] shrink-0" />
-                      <span className="truncate">
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '5px',
+                          backgroundColor: currentUser?.telefono ? 'rgba(171, 208, 55, 0.22)' : 'rgba(1, 58, 82, 0.08)',
+                          color: currentUser?.telefono ? '#4d7c0f' : '#6d6e71',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Phone size={10} style={{ width: '10px', height: '10px', strokeWidth: 2.2 }} />
+                      </span>
+                      <span
+                        className="truncate"
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: currentUser?.telefono ? 600 : 400,
+                          color: currentUser?.telefono ? 'var(--text-h, #013a52)' : 'var(--text-dim, #6d6e71)',
+                        }}
+                      >
                         {currentUser?.telefono || 'Sin teléfono registrado'}
                       </span>
                     </div>
@@ -204,33 +223,105 @@ export default function Header({
                   setUserDropdownOpen(false);
                   setModalTelefonoAbierto(true);
                 }}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 my-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-100 hover:border-[#013a52]/30 dark:hover:bg-slate-800 dark:hover:border-[#abd037]/40 hover:text-[#013a52] dark:hover:text-slate-100 transition-all cursor-pointer group"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--line, #e2e8f0)',
+                  backgroundColor: 'var(--surface-2, #f8fafc)',
+                  fontFamily: "'Poppins', sans-serif",
+                  cursor: 'pointer',
+                  width: '100%',
+                  margin: '6px 0 4px 0',
+                  transition: 'all 0.15s ease',
+                  boxSizing: 'border-box',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(171, 208, 55, 0.6)';
+                  e.currentTarget.style.backgroundColor = 'rgba(171, 208, 55, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--line, #e2e8f0)';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-2, #f8fafc)';
+                }}
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-[#abd037]/20 flex items-center justify-center text-[#013a52] dark:text-[#abd037] group-hover:scale-105 transition-transform">
-                    <Phone className="w-3.5 h-3.5" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(171, 208, 55, 0.22)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#013a52',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Phone size={13} style={{ width: '13px', height: '13px', strokeWidth: 2.2, color: '#013a52' }} />
                   </div>
-                  <span className="text-sm font-medium text-[#013a52] dark:text-slate-200">Actualizar Teléfono</span>
+                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-h, #013a52)' }}>
+                    Actualizar Teléfono
+                  </span>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#013a52] dark:group-hover:text-[#abd037] group-hover:translate-x-0.5 transition-all" />
+                <ChevronRight size={14} style={{ width: '14px', height: '14px', color: 'var(--text-dim, #94a3b8)' }} />
               </button>
 
+              {/* BOTÓN CAMBIAR MI CONTRASEÑA */}
               <button
                 type="button"
                 onClick={() => {
                   setUserDropdownOpen(false);
                   setModalPasswordAbierto(true);
                 }}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 my-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-lime-50 hover:border-lime-300 dark:hover:bg-slate-800 dark:hover:border-lime-500/40 hover:text-lime-800 dark:hover:text-lime-300 transition-all cursor-pointer group"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--line, #e2e8f0)',
+                  backgroundColor: 'var(--surface-2, #f8fafc)',
+                  fontFamily: "'Poppins', sans-serif",
+                  cursor: 'pointer',
+                  width: '100%',
+                  margin: '4px 0 6px 0',
+                  transition: 'all 0.15s ease',
+                  boxSizing: 'border-box',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(1, 58, 82, 0.4)';
+                  e.currentTarget.style.backgroundColor = 'rgba(1, 58, 82, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--line, #e2e8f0)';
+                  e.currentTarget.style.backgroundColor = 'var(--surface-2, #f8fafc)';
+                }}
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-lime-100 dark:bg-lime-950/60 flex items-center justify-center text-lime-700 dark:text-lime-400 group-hover:scale-105 transition-transform">
-                    <KeyRound className="w-3.5 h-3.5" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(1, 58, 82, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#013a52',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <KeyRound size={13} style={{ width: '13px', height: '13px', strokeWidth: 2.2, color: '#013a52' }} />
                   </div>
-                  <span>Cambiar mi Contraseña</span>
+                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-h, #013a52)' }}>
+                    Cambiar mi Contraseña
+                  </span>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-lime-600 group-hover:translate-x-0.5 transition-all" />
+                <ChevronRight size={14} style={{ width: '14px', height: '14px', color: 'var(--text-dim, #94a3b8)' }} />
               </button>
 
               {/* BOTÓN CERRAR SESIÓN */}
