@@ -66,7 +66,7 @@
   --surface-modal: var(--surface);
 
   --font-sans: 'Poppins', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-mono: 'Poppins', sans-serif;
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -451,8 +451,9 @@ h4 {
 }
 
 .mono-num {
-  font-family: var(--font-mono);
+  font-family: 'Poppins', sans-serif !important;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 /* Layout Principal */
@@ -1254,6 +1255,7 @@ html.dark .brand-divider {
   display: inline-block;
   padding: 1px 6px;
   border-radius: 999px;
+  font-family: 'Poppins', sans-serif !important;
   font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1759,7 +1761,7 @@ td.wrap {
   background: var(--surface-2, #1a2332);
   border: 1px solid rgba(6, 182, 212, 0.45);
   color: #38bdf8;
-  font-family: var(--font-mono, 'JetBrains Mono', ui-monospace, Consolas, monospace);
+  font-family: 'Poppins', sans-serif !important;
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -2262,6 +2264,7 @@ footer {
 }
 
 .sede-badge {
+  font-family: 'Poppins', sans-serif !important;
   font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
@@ -2433,7 +2436,7 @@ tbody tr:hover {
   background: rgba(15, 23, 42, 0.25);
   color: inherit;
   font-size: 11px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   padding: 2px 6px;
   border-radius: 999px;
   font-weight: 700;
@@ -4234,7 +4237,7 @@ html.dark .demo-role-card-email {
 }
 
 .font-mono {
-  font-family: var(--font-mono, monospace);
+  font-family: 'Poppins', sans-serif !important;
 }
 .tracking-tight {
   letter-spacing: -0.025em;
@@ -5404,4 +5407,12 @@ body, p, span, td {
 .filter-count strong {
   font-weight: 700 !important;
   color: #013a52 !important;
+}
+
+/* Estandarización Tipográfica Total FMO: Poppins exclusivo en controles y formularios */
+input,
+select,
+textarea,
+button {
+  font-family: 'Poppins', sans-serif !important;
 }

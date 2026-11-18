@@ -33,7 +33,7 @@
   --fmo-deep-blue: #013a52;
   --sans: 'Poppins', sans-serif;
   --heading: 'Poppins', sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --mono: 'Poppins', sans-serif;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -71,6 +71,15 @@ html.dark,
 
 body {
   margin: 0;
+  font-family: 'Poppins', sans-serif !important;
+}
+
+/* Estandarización Tipográfica Total FMO: Poppins exclusivo en controles y formularios */
+input,
+select,
+textarea,
+button {
+  font-family: 'Poppins', sans-serif !important;
 }
 
 #root {

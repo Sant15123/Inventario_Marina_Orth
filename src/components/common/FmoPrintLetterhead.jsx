@@ -169,10 +169,11 @@ export default function FmoPrintLetterhead({
             </span>
             <span
               style={{
-                fontFamily: 'monospace',
+                fontFamily: "'Poppins', sans-serif",
                 fontSize: '13.5px',
                 fontWeight: 800,
                 color: '#013a52',
+                letterSpacing: '0.03em',
               }}
             >
               {radicado}

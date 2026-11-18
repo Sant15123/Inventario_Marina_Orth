@@ -65,7 +65,7 @@ export default function ModalDetalleActivo({
               : isAccent
                 ? 'font-bold text-lime-600 dark:text-lime-400'
                 : 'font-semibold text-slate-900 dark:text-slate-100'
-          } ${isMono ? 'font-mono' : ''}`}
+          } ${isMono ? 'font-sans font-semibold tracking-wide' : ''}`}
           style={{ fontSize: '13.5px', lineHeight: 1.35 }}
         >
           {isEmpty ? '—' : val}
@@ -129,9 +129,9 @@ export default function ModalDetalleActivo({
           >
             {/* Badge de Placa / Identificador adaptado al tema institucional */}
             <span
-              className="px-3 py-1 rounded-md text-xs font-mono font-bold tracking-wider shrink-0 transition-colors"
+              className="px-3 py-1 rounded-md text-xs font-sans font-bold tracking-wide shrink-0 transition-colors"
               style={{
-                fontFamily: 'var(--font-mono, monospace)',
+                fontFamily: "'Poppins', sans-serif",
                 flexShrink: 0,
                 backgroundColor: esEquipo
                   ? 'rgba(56, 189, 248, 0.12)'
@@ -372,17 +372,17 @@ export default function ModalDetalleActivo({
                 style={{ paddingTop: '8px', borderTop: '1px solid var(--line, #1e293b)' }}
               >
                 {item.caracteristica_1 && (
-                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-mono text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                     💻 {item.caracteristica_1}
                   </span>
                 )}
                 {item.caracteristica_2 && (
-                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-mono text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                     ⚡ {item.caracteristica_2}
                   </span>
                 )}
                 {item.caracteristica_3 && (
-                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-mono text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                     💾 {item.caracteristica_3}
                   </span>
                 )}
@@ -440,7 +440,7 @@ export default function ModalDetalleActivo({
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em' }}>
                     Claves / Credenciales:
                   </span>
-                  <span className={`font-mono text-xs ${item.claves_otros ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`} style={{ fontSize: '12.5px' }}>
+                  <span className={`font-sans font-medium text-xs ${item.claves_otros ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`} style={{ fontSize: '12.5px' }}>
                     {item.claves_otros || '—'}
                   </span>
                 </div>

@@ -683,7 +683,7 @@ export default function ModalRegistroMobiliario({
                         onChange={handleChange}
                         placeholder="Ej: MOB-001"
                         disabled={isEditing}
-                        className={`w-full font-mono rounded-lg px-3 py-1.5 text-sm border focus:outline-none transition-colors ${
+                        className={`w-full font-sans tracking-wide rounded-lg px-3 py-1.5 text-sm border focus:outline-none transition-colors ${
                           isEditing
                             ? 'opacity-80 cursor-not-allowed text-slate-400'
                             : 'focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400'
@@ -741,7 +741,7 @@ export default function ModalRegistroMobiliario({
                       max={9999}
                       value={formData.disponible}
                       onChange={handleChange}
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',

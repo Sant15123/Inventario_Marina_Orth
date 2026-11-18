@@ -155,7 +155,9 @@ export default function SearchableUserSelect({
               <span
                 style={{
                   fontSize: '11px',
-                  fontFamily: 'var(--font-mono, monospace)',
+                  fontFamily: "'Poppins', sans-serif",
+                  letterSpacing: '0.02em',
+                  fontWeight: 600,
                   color: 'var(--text-dim, #64748b)',
                   background: 'var(--surface-2, #f1f5f9)',
                   border: '1px solid var(--line, #e2e8f0)',
@@ -351,7 +353,9 @@ export default function SearchableUserSelect({
                         <span
                           style={{
                             fontSize: '11px',
-                            fontFamily: 'var(--font-mono, monospace)',
+                            fontFamily: "'Poppins', sans-serif",
+                            letterSpacing: '0.02em',
+                            fontWeight: 600,
                             color: 'var(--text-dim, #64748b)',
                           }}
                         >

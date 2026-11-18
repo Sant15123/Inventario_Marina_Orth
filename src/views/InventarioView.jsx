@@ -5438,7 +5438,7 @@ export default function InventarioView({
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-mono font-semibold text-xs px-2.5 py-1 rounded-md"
+                  className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-sans tracking-wide font-semibold text-xs px-2.5 py-1 rounded-md"
                 >
                   {formDataEditar.id || formDataEditar.codigo || itemParaEditar.codigo || itemParaEditar.id_referencia || itemParaEditar.placa || itemParaEditar.id || ''}
                 </span>
@@ -5631,7 +5631,7 @@ export default function InventarioView({
                           value={formDataEditar.id || ''}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, id: e.target.value })}
                           placeholder={isPapeleriaEdit ? "Ej. Pape0036" : "Ej. Rob0043"}
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -5693,7 +5693,7 @@ export default function InventarioView({
                           name="disponible"
                           value={formDataEditar.disponible ?? 0}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, disponible: e.target.value })}
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -5861,7 +5861,7 @@ export default function InventarioView({
                           name="minimo"
                           value={formDataEditar.minimo ?? (isPapeleriaEdit ? 3 : 5)}
                           onChange={(e) => setFormDataEditar({ ...formDataEditar, minimo: e.target.value })}
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -5998,7 +5998,7 @@ export default function InventarioView({
                             });
                           }}
                           placeholder="Ej. 25000"
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -6287,7 +6287,7 @@ export default function InventarioView({
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-mono font-semibold text-xs px-2.5 py-1 rounded-md"
+                  className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-sans tracking-wide font-semibold text-xs px-2.5 py-1 rounded-md"
                 >
                   {formDataNuevo.id || '+ Nuevo'}
                 </span>
@@ -6486,7 +6486,7 @@ export default function InventarioView({
                           value={formDataNuevo.id || ''}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, id: e.target.value })}
                           placeholder={isPapeleriaNuevo ? "Ej. Pape2012" : "Ej. Rob0143"}
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -6549,7 +6549,7 @@ export default function InventarioView({
                           name="disponible"
                           value={formDataNuevo.disponible ?? 10}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, disponible: e.target.value })}
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -6718,7 +6718,7 @@ export default function InventarioView({
                           name="minimo"
                           value={formDataNuevo.minimo ?? (isPapeleriaNuevo ? 3 : 5)}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, minimo: e.target.value })}
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -6844,7 +6844,7 @@ export default function InventarioView({
                           value={formDataNuevo.valor_compra ?? ''}
                           onChange={(e) => setFormDataNuevo({ ...formDataNuevo, valor_compra: e.target.value })}
                           placeholder="Ej. 35000"
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -7338,7 +7338,7 @@ export default function InventarioView({
                           value={formDataNuevoEquipo.placa || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, placa: e.target.value.toUpperCase() })}
                           placeholder="Ej: P57 o PLA-901"
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -7536,7 +7536,7 @@ export default function InventarioView({
                           value={formDataNuevoEquipo.serial || ''}
                           onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, serial: e.target.value })}
                           placeholder="Ej. PF-42X89"
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -7744,7 +7744,7 @@ export default function InventarioView({
                             });
                           }}
                           placeholder="Ej. 2800000"
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',
@@ -7780,7 +7780,7 @@ export default function InventarioView({
                             });
                           }}
                           placeholder="Ej. 2800000"
-                          className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                           style={{
                             backgroundColor: 'var(--bg, #0f172a)',
                             color: 'var(--text, #f8fafc)',

@@ -583,7 +583,7 @@ export default function HistorialView({ movements = [] }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <strong style={{ fontSize: '13px', lineHeight: 1.3 }}>{m.itemName}</strong>
                           {m.itemId && (
-                            <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'monospace' }}>
+                            <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em', fontWeight: 600 }}>
                               ID: {m.itemId}
                             </span>
                           )}

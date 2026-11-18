@@ -412,7 +412,7 @@ export default function ModalActaPrestamo({
               <span style={{ fontSize: '9.5px', textTransform: 'uppercase', color: '#64748b', fontWeight: 800, display: 'block' }}>
                 DOCUMENTO DE IDENTIDAD
               </span>
-              <strong style={{ fontSize: '12px', color: '#0f172a', fontFamily: 'monospace' }}>{documento}</strong>
+              <strong style={{ fontSize: '12px', color: '#0f172a', fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em' }}>{documento}</strong>
             </div>
 
             <div>
@@ -501,7 +501,7 @@ export default function ModalActaPrestamo({
                     }}
                   >
                     <td style={{ padding: '6px 8px', textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
-                    <td style={{ padding: '6px 8px', fontFamily: 'monospace', fontWeight: 800, color: '#0369a1' }}>
+                    <td style={{ padding: '6px 8px', fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em', fontWeight: 800, color: '#0369a1' }}>
                       {eq.placa}
                     </td>
                     <td style={{ padding: '6px 8px' }}>
@@ -510,7 +510,7 @@ export default function ModalActaPrestamo({
                     <td style={{ padding: '6px 8px', color: '#334155' }}>
                       {eq.marcaModelo}
                     </td>
-                    <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: '#475569', fontSize: '10px' }}>
+                    <td style={{ padding: '6px 8px', fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em', color: '#475569', fontSize: '10px' }}>
                       {eq.serial}
                     </td>
                     <td style={{ padding: '6px 8px', textAlign: 'center' }}>
@@ -540,7 +540,7 @@ export default function ModalActaPrestamo({
                   <td colSpan="5" style={{ padding: '6px 8px', textAlign: 'right', fontSize: '10.5px' }}>
                     TOTAL EQUIPOS RETORNABLES ENTREGADOS:
                   </td>
-                  <td style={{ padding: '6px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: '11.5px', color: '#0f172a' }}>
+                  <td style={{ padding: '6px 8px', textAlign: 'center', fontFamily: "'Poppins', sans-serif", fontSize: '11.5px', fontWeight: 700, color: '#0f172a' }}>
                     {equiposConsolidados.length} und
                   </td>
                   <td></td>

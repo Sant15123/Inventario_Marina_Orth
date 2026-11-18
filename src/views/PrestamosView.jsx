@@ -1823,7 +1823,7 @@ export default function PrestamosView({
 
                         {/* 5. FECHA PRÉSTAMO (DD/MM/YYYY CENTRADO) */}
                         <td className="px-2 py-2.5 text-center whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-200 min-w-[95px]" style={{ textAlign: 'center', paddingLeft: '6px', paddingRight: '6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span className="mono-num text-xs font-medium text-slate-700 dark:text-slate-200" style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                          <span className="mono-num text-xs font-medium text-slate-700 dark:text-slate-200" style={{ fontFamily: "'Poppins', sans-serif", fontSize: '12px' }}>
                             {formatFecha(fechaSalida)}
                           </span>
                         </td>
@@ -1834,7 +1834,7 @@ export default function PrestamosView({
                             className="mono-num text-xs font-medium"
                             title={overdue ? 'Préstamo vencido' : 'En plazo'}
                             style={{
-                              fontFamily: 'monospace',
+                              fontFamily: "'Poppins', sans-serif",
                               fontSize: '12px',
                               color: overdue ? 'var(--red, #ef4444)' : undefined,
                               fontWeight: overdue ? 800 : 500,
@@ -4492,13 +4492,13 @@ export default function PrestamosView({
                         }}
                       >
                         <td style={{ padding: '8px 10px', textAlign: 'center', color: '#64748b' }}>{idx + 1}</td>
-                        <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>
+                        <td style={{ padding: '8px 10px', fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em', fontWeight: 700, color: '#0284c7' }}>
                           {item.material_id || item.id || '—'}
                         </td>
                         <td style={{ padding: '8px 10px' }}>
                           <strong style={{ color: '#0f172a' }}>{item.nombre || item.material}</strong>
                         </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, fontSize: '12px' }}>
+                        <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '12px' }}>
                           {item.cantidad || item.cantidadEntrega} und
                         </td>
                         <td style={{ padding: '8px 10px', textAlign: 'center', color: '#475569' }}>
@@ -4512,7 +4512,7 @@ export default function PrestamosView({
                       <td colSpan="3" style={{ padding: '8px 10px', textAlign: 'right' }}>
                         TOTAL UNIDADES ENTREGADAS:
                       </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: 'monospace', fontSize: '13px' }}>
+                      <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '13px' }}>
                         {remisionParaImprimir.total_unidades} und
                       </td>
                       <td></td>

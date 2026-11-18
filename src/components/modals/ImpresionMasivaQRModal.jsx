@@ -331,12 +331,13 @@ export default function ImpresionMasivaQRModal({
                       onChange={(e) => setRangoDesde(e.target.value)}
                       placeholder="ACT-FMO-001"
                       style={{
-                        width: '85px',
+                        width: '95px',
                         padding: '2px 6px',
                         border: '1px solid #cbd5e1',
                         borderRadius: '4px',
-                        fontFamily: 'monospace',
+                        fontFamily: "'Poppins', sans-serif",
                         fontWeight: 700,
+                        letterSpacing: '0.03em',
                         fontSize: '11px',
                         color: '#013a52',
                         outline: 'none',
@@ -349,12 +350,13 @@ export default function ImpresionMasivaQRModal({
                       onChange={(e) => setRangoHasta(e.target.value)}
                       placeholder="ACT-FMO-050"
                       style={{
-                        width: '85px',
+                        width: '95px',
                         padding: '2px 6px',
                         border: '1px solid #cbd5e1',
                         borderRadius: '4px',
-                        fontFamily: 'monospace',
+                        fontFamily: "'Poppins', sans-serif",
                         fontWeight: 700,
+                        letterSpacing: '0.03em',
                         fontSize: '11px',
                         color: '#013a52',
                         outline: 'none',

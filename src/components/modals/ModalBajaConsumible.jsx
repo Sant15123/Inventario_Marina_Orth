@@ -108,13 +108,13 @@ export const ModalBajaConsumible = ({ material, isOpen, onClose, onConfirmarBaja
           <div>
             <span
               style={{
-                fontFamily: 'var(--mono, monospace)',
+                fontFamily: "'Poppins', sans-serif",
                 color: '#e11d48',
                 fontSize: '12px',
                 fontWeight: 700,
                 display: 'block',
                 marginBottom: '2px',
-                letterSpacing: '0.05em',
+                letterSpacing: '0.04em',
               }}
             >
               {codigo} · MATERIAL / ROBÓTICA
@@ -276,7 +276,7 @@ export const ModalBajaConsumible = ({ material, isOpen, onClose, onConfirmarBaja
                   readOnly
                   type="text"
                   value={codigo}
-                  className="w-full font-mono bg-slate-100 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 font-semibold cursor-not-allowed outline-none"
+                  className="w-full font-sans tracking-wide bg-slate-100 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 font-semibold cursor-not-allowed outline-none"
                   style={{
                     backgroundColor: 'var(--bg, #0f172a)',
                     color: 'var(--text, #f8fafc)',
@@ -364,7 +364,7 @@ export const ModalBajaConsumible = ({ material, isOpen, onClose, onConfirmarBaja
                   }}
                 >
                   <span className="text-slate-600 dark:text-slate-400 font-medium">Existencias:</span>
-                  <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
+                  <span className="font-bold text-rose-600 dark:text-rose-400 font-sans tracking-wide">
                     {stockDisponible} {unidadMedida}
                   </span>
                 </div>

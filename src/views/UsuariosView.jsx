@@ -261,7 +261,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
           <p style={{ margin: 0 }}>
             ¿Estás seguro de que deseas dar de baja y revocar el acceso a{' '}
             <strong style={{ color: 'var(--text, #ffffff)' }}>{u.nombre}</strong> (Documento:{' '}
-            <span style={{ fontFamily: 'monospace', color: 'var(--copper, #84CC16)' }}>{u.documento}</span>)?
+            <span style={{ fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em', fontWeight: 600, color: 'var(--copper, #84CC16)' }}>{u.documento}</span>)?
           </p>
           <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>
             El usuario perderá inmediatamente sus privilegios de acceso y sus registros históricos quedarán archivados en auditoría.
@@ -584,7 +584,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
                           <Mail style={{ width: '12px', height: '12px', flexShrink: 0, color: 'var(--text-dim)' }} />
                           <span
                             className="truncate"
-                            style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '11px' }}
+                            style={{ fontFamily: "'Poppins', sans-serif", fontSize: '11px' }}
                             title={u.email}
                           >
                             {u.email || '—'}

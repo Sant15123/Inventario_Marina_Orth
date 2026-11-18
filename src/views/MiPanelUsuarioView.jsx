@@ -725,7 +725,7 @@ export default function MiPanelUsuarioView({
 
                         {/* 4. FECHA DE ENTREGA */}
                         <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text)' }}>
+                          <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: '12px', color: 'var(--text)' }}>
                             {formatFechaCompacta(eq.fechaEntrega)}
                           </span>
                         </td>
@@ -734,7 +734,7 @@ export default function MiPanelUsuarioView({
                         <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span
                             style={{
-                              fontFamily: 'monospace',
+                              fontFamily: "'Poppins', sans-serif",
                               fontSize: '12px',
                               color: 'var(--text)',
                             }}
@@ -832,7 +832,7 @@ export default function MiPanelUsuarioView({
                 {/* Barra superior de la tarjeta */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-sans font-semibold tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                       {rem.codigo_acta || rem.remision_id || rem.id || `REM-${idx + 1}`}
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-300 font-medium">

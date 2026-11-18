@@ -1517,8 +1517,9 @@ export default function ModalGestionSolicitud({
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span
                                               style={{
-                                                fontFamily: 'monospace',
+                                                fontFamily: "'Poppins', sans-serif",
                                                 fontWeight: 800,
+                                                letterSpacing: '0.03em',
                                                 fontSize: '11px',
                                                 color: '#0284c7',
                                                 backgroundColor: 'rgba(56, 189, 248, 0.14)',
@@ -1622,7 +1623,7 @@ export default function ModalGestionSolicitud({
                                           </div>
                                           <div>
                                             <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SERIAL DE FÁBRICA:</span>
-                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 700, fontFamily: 'monospace' }}>{unidadSeleccionada.serial || 'S/N'}</span>
+                                            <span style={{ color: 'var(--text, #f8fafc)', fontWeight: 700, fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em' }}>{unidadSeleccionada.serial || 'S/N'}</span>
                                           </div>
                                           <div>
                                             <span style={{ color: 'var(--text-dim, #94a3b8)', display: 'block', fontSize: '10.5px' }}>SEDE BASE:</span>
@@ -1963,7 +1964,8 @@ export default function ModalGestionSolicitud({
                       color: 'var(--text, #f8fafc)',
                       fontSize: '12.5px',
                       fontWeight: 700,
-                      fontFamily: 'monospace',
+                      fontFamily: "'Poppins', sans-serif",
+                      letterSpacing: '0.02em',
                       boxSizing: 'border-box',
                     }}
                   />

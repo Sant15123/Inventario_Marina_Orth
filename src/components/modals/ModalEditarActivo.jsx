@@ -480,7 +480,7 @@ export default function ModalEditarActivo({
                       value={formData.placa || ''}
                       onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase() })}
                       placeholder="Ej: FMO-EQ-005 o PLA-901"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -534,7 +534,7 @@ export default function ModalEditarActivo({
                       name="cantidad"
                       value={formData.cantidad ?? 1}
                       onChange={(e) => setFormData({ ...formData, cantidad: parseInt(e.target.value, 10) || 1 })}
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -690,7 +690,7 @@ export default function ModalEditarActivo({
                       value={formData.serial || ''}
                       onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
                       placeholder="Ej. PF-3X9011"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -898,7 +898,7 @@ export default function ModalEditarActivo({
                         });
                       }}
                       placeholder="Ej. 2800000"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -927,7 +927,7 @@ export default function ModalEditarActivo({
                         setFormData({ ...formData, valor_total: clamped });
                       }}
                       placeholder="Ej. 2800000"
-                      className="w-full font-mono bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
