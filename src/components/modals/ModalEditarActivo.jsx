@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Laptop, Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../services/supabase';
 import ProgramAreaBadge, { ProgramAreaSelect } from '../common/ProgramAreaBadge';
 
-/**
- * ModalEditarActivo: Componente modal unificado para editar equipos tecnológicos.
- * Se reutiliza tanto desde la tabla de inventario como desde la consulta de placa/detalle.
- * 
- * Props soportadas:
- * - isOpen (boolean)
- * - onClose (function)
- * - activo / equipo (object)
- * - onSaveSuccess / onSave / onSubmit (function)
- * - formData (opcional, para modo controlado)
- * - setFormData (opcional, para modo controlado)
- * - pasoActual (opcional)
- * - setPasoActual (opcional)
- * - submitting (opcional)
- */
+const CATEGORIAS_TECNOLOGICAS = [
+  'Portátiles',
+  'Tablets',
+  'Proyectores',
+  'Pantallas / Monitores',
+  'Computadores de Escritorio',
+  'Servidores & Redes',
+  'Accesorios Tecnológicos',
+  'Otro Equipo Tecnológico',
+];
+
+const CONDICIONES_TECNOLOGICAS = [
+  'Excelente / Nuevo',
+  'Bueno',
+  'Regular',
+  'Requiere Reparación',
+];
+
+const ESTADOS_OPERATIVOS = [
+  'Disponible',
+  'En campo / Prestado',
+  'En mantenimiento',
+  'De baja',
+];
+
 export default function ModalEditarActivo({
   isOpen,
   onClose,
@@ -28,8 +38,6 @@ export default function ModalEditarActivo({
   onSave,
   formData: externalFormData,
   setFormData: externalSetFormData,
-  pasoActual: externalPasoActual,
-  setPasoActual: externalSetPasoActual,
   onSubmit: externalOnSubmit,
   submitting: externalSubmitting,
   sedes: propSedes,
@@ -37,190 +45,160 @@ export default function ModalEditarActivo({
   const { showEditSuccess, showError } = useToast();
   const itemActivo = activo || equipo;
 
-  // Sedes dinámicas obtenidas de props o base de datos / catálogo
-  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Nacional']));
-
-  useEffect(() => {
-    if (Array.isArray(propSedes) && propSedes.length > 0) {
-      setSedesList(propSedes);
-    }
-  }, [propSedes]);
-
-  // Estado interno para uso autónomo
-  const [internalPasoActual, setInternalPasoActual] = useState(1);
+  const [sedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Santuario']));
   const [internalSubmitting, setInternalSubmitting] = useState(false);
   const [internalFormData, setInternalFormData] = useState({
     placa: '',
     nombre: '',
     categoria: 'Portátiles',
     condicion: 'Bueno',
-    area: 'Nuevas Tecnologías',
+    estado: 'Disponible',
     area_asignada: 'Nuevas Tecnologías',
-    ubicacion: 'Oficina Medellín',
-    ubicacion_estante: '',
-    cantidad: 1,
-    descripcion: '',
+    sede: 'Medellín',
+    ubicacion: 'Sala de Sistemas / Oficina Medellín',
+    responsable: 'Bodega Central',
     marca: '',
     modelo: '',
     serial: '',
-    caracteristica_1: '',
-    caracteristica_2: '',
-    caracteristica_3: '',
-    responsable: 'Bodega Central',
-    proveedor: '',
-    valor_compra: '',
-    valor_total: '',
-    fecha_compra: '',
-    fecha_vencimiento_garantia: '',
-    claves_otros: '',
+    cantidad: 1,
+    fecha_adquisicion: '',
+    valor_estimado: '',
     observaciones: '',
-    en_contabilidad: false,
   });
 
-  const pasoActual = externalPasoActual !== undefined ? externalPasoActual : internalPasoActual;
-  const setPasoActual = externalSetPasoActual || setInternalPasoActual;
   const isControlledForm = Boolean(externalFormData && externalSetFormData);
   const formData = isControlledForm ? externalFormData : internalFormData;
   const setFormData = isControlledForm ? externalSetFormData : setInternalFormData;
   const isSubmitting = externalSubmitting !== undefined ? externalSubmitting : internalSubmitting;
 
-  // Sincronizar datos si no está controlado externamente
   useEffect(() => {
-    if (!isControlledForm && itemActivo) {
-      setInternalFormData({
-        ...itemActivo,
-        placa: itemActivo.placa || itemActivo.codigo || itemActivo.code || itemActivo.id || '',
-        nombre: itemActivo.nombre || itemActivo.equipo || itemActivo.material || itemActivo.name || '',
-        categoria: itemActivo.categoria || itemActivo.category || 'Portátiles',
-        condicion: itemActivo.condicion || itemActivo.estado_fisico || itemActivo.estado || 'Bueno',
-        area: itemActivo.area_asignada || itemActivo.area || (
-          itemActivo.subtipo === 'papeleria' || itemActivo.categoria === 'Papelería' || itemActivo.category === 'Papelería' || String(itemActivo.id || '').toLowerCase().startsWith('pape')
-            ? 'TeachLabs'
-            : itemActivo.itemType === 'consumible' || itemActivo.subtipo === 'robotica' || String(itemActivo.id || '').toLowerCase().startsWith('rob')
-            ? 'Robótica'
-            : 'Nuevas Tecnologías'
-        ),
-        area_asignada: itemActivo.area_asignada || itemActivo.area || (
-          itemActivo.subtipo === 'papeleria' || itemActivo.categoria === 'Papelería' || itemActivo.category === 'Papelería' || String(itemActivo.id || '').toLowerCase().startsWith('pape')
-            ? 'TeachLabs'
-            : itemActivo.itemType === 'consumible' || itemActivo.subtipo === 'robotica' || String(itemActivo.id || '').toLowerCase().startsWith('rob')
-            ? 'Robótica'
-            : 'Nuevas Tecnologías'
-        ),
-        ubicacion: itemActivo.ubicacion || itemActivo.location || 'Oficina Medellín',
-        ubicacion_estante: itemActivo.ubicacion_estante || '',
-        cantidad: 1,
-        descripcion:
-          itemActivo.descripcion && itemActivo.descripcion !== 'Sin descripción general registrada.'
-            ? itemActivo.descripcion
-            : '',
-        marca: itemActivo.marca || '',
-        modelo: itemActivo.modelo || itemActivo.model || '',
-        serial: itemActivo.serial || '',
-        caracteristica_1: itemActivo.caracteristica_1 || '',
-        caracteristica_2: itemActivo.caracteristica_2 || '',
-        caracteristica_3: itemActivo.caracteristica_3 || '',
-        responsable: itemActivo.responsable || itemActivo.custodio || 'Bodega Central',
-        proveedor: itemActivo.proveedor || '',
-        valor_compra: itemActivo.valor_compra || '',
-        valor_total: itemActivo.valor_total || '',
-        fecha_compra: itemActivo.fecha_compra
-          ? itemActivo.fecha_compra.split('T')[0]
-          : itemActivo.fecha_ingreso
-            ? itemActivo.fecha_ingreso.split('T')[0]
-            : '',
-        fecha_vencimiento_garantia: itemActivo.fecha_vencimiento_garantia
-          ? itemActivo.fecha_vencimiento_garantia.split('T')[0]
-          : itemActivo.garantia
-            ? itemActivo.garantia.split('T')[0]
-            : '',
-        claves_otros: itemActivo.claves_otros || '',
-        observaciones: itemActivo.observaciones || itemActivo.notas || itemActivo.notes || '',
-        en_contabilidad: Boolean(itemActivo.en_contabilidad),
-      });
-      setInternalPasoActual(1);
+    if (!isOpen || !itemActivo) return;
+
+    const sedeReal = itemActivo.sede || itemActivo.ubicacion || 'Medellín';
+    const condicionReal = itemActivo.condicion || itemActivo.condicion_fisica || itemActivo.estado_fisico || 'Bueno';
+    const estadoReal = itemActivo.estado_operativo || itemActivo.estado || (itemActivo.status === 'prestado' ? 'En campo / Prestado' : 'Disponible');
+
+    const mapped = {
+      placa: itemActivo.placa || itemActivo.codigo || itemActivo.code || itemActivo.id || '',
+      nombre: itemActivo.nombre || itemActivo.elemento || itemActivo.equipo || itemActivo.material || itemActivo.name || '',
+      categoria: itemActivo.categoria || itemActivo.category || 'Portátiles',
+      condicion: condicionReal,
+      estado: estadoReal,
+      area_asignada: itemActivo.area_asignada || itemActivo.area_proceso || itemActivo.area || 'Nuevas Tecnologías',
+      sede: sedeReal,
+      ubicacion: itemActivo.ubicacion || itemActivo.ubicacion_estante || sedeReal,
+      responsable: itemActivo.responsable || itemActivo.custodio || 'Bodega Central',
+      marca: itemActivo.marca || '',
+      modelo: itemActivo.modelo || itemActivo.model || '',
+      serial: itemActivo.serial || '',
+      cantidad: Number(itemActivo.cantidad ?? 1),
+      fecha_adquisicion: itemActivo.fecha_compra
+        ? String(itemActivo.fecha_compra).split('T')[0]
+        : itemActivo.fecha_adquisicion
+        ? String(itemActivo.fecha_adquisicion).split('T')[0]
+        : '',
+      valor_estimado: itemActivo.valor_compra !== undefined && itemActivo.valor_compra !== null
+        ? String(itemActivo.valor_compra)
+        : itemActivo.valor_estimado !== undefined && itemActivo.valor_estimado !== null
+        ? String(itemActivo.valor_estimado)
+        : '',
+      observaciones: itemActivo.observaciones || itemActivo.descripcion || itemActivo.notas || '',
+    };
+
+    if (isControlledForm) {
+      setFormData((prev) => ({ ...prev, ...mapped }));
+    } else {
+      setInternalFormData(mapped);
     }
-  }, [itemActivo, isControlledForm]);
+  }, [isOpen, itemActivo, isControlledForm]);
 
   if (!isOpen || !itemActivo) return null;
 
-  // Manejador del submit autónomo si no hay externalOnSubmit
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData((prev) => {
+      const val = type === 'number'
+        ? (value === '' ? '' : Math.max(0, Number(value)))
+        : value;
+      return { ...prev, [name]: val };
+    });
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+
     if (externalOnSubmit) {
       return externalOnSubmit(e);
     }
 
-    // Validación paso 1
-    if (!formData.nombre?.trim()) {
-      showError('Validación', 'El Nombre del equipo es obligatorio.');
-      setPasoActual(1);
+    const nombreLimpio = (formData.nombre || '').trim();
+    const placaLimpia = (formData.placa || itemActivo.placa || itemActivo.id || '').trim().toUpperCase();
+    const serialLimpio = (formData.serial || '').trim();
+
+    if (!nombreLimpio) {
+      showError('Validación', 'El nombre del equipo tecnológico es obligatorio.');
       return;
     }
-    if (!formData.placa?.trim()) {
-      showError('Validación', 'La Placa / Código del equipo es obligatorio.');
-      setPasoActual(1);
+
+    if (!placaLimpia) {
+      showError('Validación', 'La placa o código del equipo es obligatoria.');
       return;
     }
-    // Validación paso 2
-    if (!formData.serial?.trim()) {
-      showError('Validación', 'El Serial del equipo es obligatorio.');
-      setPasoActual(2);
+
+    if (!serialLimpio) {
+      showError('Validación', 'El serial del fabricante es obligatorio.');
       return;
     }
 
     try {
       setInternalSubmitting(true);
-      if (supabase && itemActivo) {
+
+      const areaAsignada = formData.area_asignada || formData.area || 'Nuevas Tecnologías';
+      const payload = {
+        nombre: nombreLimpio,
+        placa: placaLimpia,
+        marca: formData.marca?.trim() || formData.categoria,
+        modelo: formData.modelo?.trim() || 'Estándar',
+        serial: serialLimpio,
+        categoria: formData.categoria || 'Portátiles',
+        condicion: formData.condicion || 'Bueno',
+        estado: formData.estado || 'Disponible',
+        area_asignada: areaAsignada,
+        area: areaAsignada,
+        ubicacion: formData.ubicacion?.trim() || 'Oficina Medellín',
+        sede: formData.sede || 'Medellín',
+        responsable: formData.responsable?.trim() || 'Bodega Central',
+        custodio: formData.responsable?.trim() !== 'Bodega Central' ? formData.responsable?.trim() : null,
+        fecha_compra: formData.fecha_adquisicion || null,
+        fecha_adquisicion: formData.fecha_adquisicion || null,
+        valor_compra: formData.valor_estimado !== '' ? Number(formData.valor_estimado) : null,
+        observaciones: formData.observaciones?.trim() || '',
+        descripcion: formData.observaciones?.trim() || '',
+      };
+
+      if (supabase) {
         try {
-          const areaAsignada = formData.area_asignada || formData.area || 'Nuevas Tecnologías';
-          const updatePayload = {
-            nombre: formData.nombre?.trim(),
-            marca: formData.marca?.trim(),
-            modelo: formData.modelo?.trim(),
-            serial: formData.serial?.trim(),
-            categoria: formData.categoria,
-            condicion: formData.condicion,
-            area_asignada: areaAsignada,
-            area: areaAsignada,
-            ubicacion: formData.ubicacion?.trim(),
-            ubicacion_estante: formData.ubicacion_estante?.trim(),
-            sede: formData.sede || formData.ubicacion,
-            responsable: formData.responsable?.trim(),
-            estado: formData.condicion,
-          };
           const targetId = itemActivo.dbId || (itemActivo.id && !String(itemActivo.id).startsWith('eq-') ? itemActivo.id : null);
-          const targetPlaca = (formData.placa || itemActivo.placa || '').trim();
-
-          const isPapeleriaItem = itemActivo.subtipo === 'papeleria' || itemActivo.categoria === 'Papelería' || String(targetPlaca || targetId || itemActivo.id || '').toLowerCase().startsWith('pape');
-          const isConsumibleItem = itemActivo.itemType === 'consumible' || itemActivo.subtipo === 'robotica' || String(targetPlaca || targetId || itemActivo.id || '').toLowerCase().startsWith('rob');
-
-          if (isPapeleriaItem) {
-            const papeId = targetId || targetPlaca || itemActivo.id;
-            if (papeId) await supabase.from('papeleria').update(updatePayload).eq('id', papeId);
-          } else if (isConsumibleItem) {
-            const robId = targetId || targetPlaca || itemActivo.id;
-            if (robId) await supabase.from('consumibles').update(updatePayload).eq('id', robId);
+          let query = supabase.from('activos').update(payload);
+          if (targetId) {
+            query = query.eq('id', targetId);
           } else {
-            if (targetId) {
-              await supabase.from('equipos').update(updatePayload).eq('id', targetId);
-              await supabase.from('activos').update(updatePayload).eq('id', targetId);
-            } else if (targetPlaca) {
-              await supabase.from('equipos').update(updatePayload).eq('placa', targetPlaca);
-              await supabase.from('activos').update(updatePayload).eq('placa', targetPlaca);
-            }
+            query = query.eq('placa', placaLimpia);
           }
+          await query;
         } catch (sbE) {
-          console.warn('Aviso Supabase update en modal:', sbE?.message);
+          console.warn('Aviso Supabase update activos:', sbE?.message);
         }
       }
+
       if (onSave) {
-        await onSave(formData);
+        await onSave({ ...itemActivo, ...payload });
       } else if (onSaveSuccess) {
-        await onSaveSuccess(formData);
+        await onSaveSuccess({ ...itemActivo, ...payload });
       }
+
       onClose();
-      showEditSuccess(formData.nombre || formData.placa);
+      showEditSuccess(nombreLimpio || placaLimpia);
     } catch (err) {
       console.error('Error al guardar equipo:', err);
       showError('Error al guardar cambios', err.message || 'Error desconocido');
@@ -231,1104 +209,630 @@ export default function ModalEditarActivo({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+      className="modal-backdrop"
+      onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
+        backgroundColor: 'rgba(1, 58, 82, 0.65)',
+        backdropFilter: 'blur(4px)',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
-        backgroundColor: 'rgba(15, 23, 42, 0.7)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
       }}
-      onClick={() => !isSubmitting && onClose()}
     >
       <div
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+        className="modal-dialog"
+        onClick={(e) => e.stopPropagation()}
         style={{
-          backgroundColor: 'var(--surface, #0b1320)',
-          border: '1px solid var(--line, #1e293b)',
-          borderRadius: '16px',
-          maxWidth: '56rem', width: '100%',
           width: '100%',
-          maxHeight: '90vh',
+          maxWidth: '780px',
+          backgroundColor: 'var(--surface-2, #ffffff)',
+          borderRadius: '20px',
+          boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
+          border: '1.5px solid rgba(171, 208, 55, 0.45)',
+          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          boxSizing: 'border-box',
-          position: 'relative',
-          overflow: 'hidden',
+          maxHeight: '92vh',
+          fontFamily: "'Poppins', sans-serif",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Fijo */}
+        {/* ENCABEZADO INSTITUCIONAL */}
         <div
-          className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
           style={{
-            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
-            borderBottom: '1px solid var(--line, #1e293b)',
-            padding: '16px 20px',
+            padding: '16px 22px',
+            backgroundColor: '#013a52',
+            color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            flexShrink: 0,
+            borderBottom: '3px solid #abd037',
           }}
         >
-          <div>
-            <span
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
               style={{
-                fontFamily: 'var(--mono)',
-                color: 'var(--text-dim, #94a3b8)',
-                fontSize: '12px',
-                fontWeight: 600,
-                display: 'block',
-                marginBottom: '2px',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(171, 208, 55, 0.22)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#abd037',
+                flexShrink: 0,
               }}
             >
-              {formData.placa || formData.codigo || itemActivo.placa || itemActivo.codigo || itemActivo.id_referencia || itemActivo.code || itemActivo.id || ''}
-            </span>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0" style={{ margin: 0, fontSize: '15px' }}>
-              Editar Equipo Tecnológico
-            </h3>
-            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0" style={{ margin: '2px 0 0 0', fontSize: '12px' }}>
-              Modifica los datos del equipo y sus especificaciones técnicas
-            </p>
+              <Laptop size={22} style={{ strokeWidth: 2.3 }} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, letterSpacing: '0.01em', color: '#ffffff' }}>
+                Editar Equipo Tecnológico
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#cbd5e1' }}>
+                Modifica los datos del equipo y sus especificaciones técnicas institucionales
+              </p>
+            </div>
           </div>
+
           <button
             type="button"
-            disabled={isSubmitting}
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
-            title="Cerrar ventana"
+            aria-label="Cerrar modal"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ffffff',
+              cursor: 'pointer',
+              padding: '6px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: 0.85,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            <X className="w-5 h-5" />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Stepper Fijo bajo el Header: Pastillas Redondeadas */}
-        <div
-          className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0f172a]/50 shrink-0"
-          style={{
-            padding: '10px 20px',
-            borderBottom: '1px solid var(--line, #1e293b)',
-            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
-            flexShrink: 0,
-          }}
-        >
+        {/* CUERPO DEL FORMULARIO CON GRILLA DE 2 CAMPOS POR FILA */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div
-            className="flex items-center justify-between gap-2 max-w-4xl mx-auto"
             style={{
+              padding: '18px 22px',
+              overflowY: 'auto',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              width: '100%',
+              flexDirection: 'column',
+              gap: '12px',
             }}
           >
-            {[
-              { paso: 1, label: 'Identificación', icono: '1' },
-              { paso: 2, label: 'Ficha Técnica', icono: '2' },
-              { paso: 3, label: 'Adquisición', icono: '3' },
-            ].map((item) => {
-              const isActive = pasoActual === item.paso;
-              const isDone = pasoActual > item.paso;
-              return (
-                <button
-                  key={item.paso}
-                  type="button"
-                  onClick={() => setPasoActual(item.paso)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-lime-400 hover:bg-lime-300 text-slate-950 border-lime-400 shadow-sm'
-                      : isDone
-                        ? 'bg-lime-950/40 text-lime-400 border-lime-500/40 hover:bg-lime-900/40'
-                        : 'bg-slate-200 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700/60 hover:bg-slate-300 dark:hover:bg-slate-800'
-                  }`}
+            {/* FILA 1: Nombre del Equipo | Código / Placa */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Nombre Del Equipo Tecnológico *
+                </label>
+                <input
+                  type="text"
+                  name="nombre"
+                  required
+                  placeholder="Ej. Computador Portátil Lenovo ThinkPad E14"
+                  value={formData.nombre || ''}
+                  onChange={handleChange}
                   style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    padding: '8px 10px',
-                    borderRadius: '8px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    backgroundColor: isActive
-                      ? '#84CC16'
-                      : isDone
-                        ? 'rgba(132, 204, 22, 0.12)'
-                        : 'rgba(30, 41, 59, 0.4)',
-                    color: isActive
-                      ? '#0f172a'
-                      : isDone
-                        ? '#84CC16'
-                        : 'var(--text-dim, #94a3b8)',
-                    border: isActive
-                      ? '1px solid #84CC16'
-                      : isDone
-                        ? '1px solid rgba(132, 204, 22, 0.35)'
-                        : '1px solid var(--line, #334155)',
-                    boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
                   }}
-                >
+                  onFocus={(e) => (e.target.style.borderColor = '#abd037')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--line, #cbd5e1)')}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)' }}>
+                    Código / Placa *
+                  </label>
                   <span
-                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                      isActive
-                        ? 'bg-slate-950/20 text-slate-950 font-extrabold'
-                        : isDone
-                          ? 'text-lime-400 font-bold'
-                          : 'bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold'
-                    }`}
                     style={{
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '10px',
-                      backgroundColor: isActive
-                        ? 'rgba(15, 23, 42, 0.2)'
-                        : isDone
-                          ? 'transparent'
-                          : 'rgba(148, 163, 184, 0.2)',
-                      color: isActive
-                        ? '#0f172a'
-                        : isDone
-                          ? '#84CC16'
-                          : 'var(--text-dim, #94a3b8)',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      backgroundColor: '#abd037',
+                      color: '#013a52',
+                      padding: '1px 7px',
+                      borderRadius: '9999px',
                     }}
                   >
-                    {isDone ? '✓' : item.icono}
+                    Activo institucional
                   </span>
-                  <span className="truncate">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Formulario Estructurado */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col flex-1 overflow-hidden"
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
-        >
-          {/* Cuerpo del Formulario */}
-          <div
-            className="p-5 text-sm overflow-y-auto flex-1"
-            style={{
-              padding: '16px 20px',
-              backgroundColor: 'var(--surface, #0b1320)',
-              overflowY: 'auto',
-              flex: 1,
-            }}
-          >
-            {/* ==========================================
-                PASO 1: Identificación y Clasificación
-                ========================================== */}
-            {pasoActual === 1 && (
-              <div className="animate-fade-in">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
-                  <h4
-                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
-                  >
-                    Identificación y Clasificación
-                  </h4>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
                 </div>
+                <input
+                  type="text"
+                  name="placa"
+                  required
+                  value={formData.placa || ''}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: '#013a52',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 700,
+                    letterSpacing: '0.03em',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = '#abd037')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--line, #cbd5e1)')}
+                />
+              </div>
+            </div>
 
-                {/* Fila 1: Nombre del Elemento / Equipo (Izquierda) + Código / Placa (Derecha) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Nombre Del Equipo *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="nombre"
-                      maxLength={90}
-                      value={formData.nombre || ''}
-                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                      placeholder="Ej. Computador portatil"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
+            {/* FILA 2: Categoría / Tipo | Cantidad y Condición */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Categoría / Tipo *
+                </label>
+                <select
+                  name="categoria"
+                  value={formData.categoria || 'Portátiles'}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = '#abd037')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--line, #cbd5e1)')}
+                >
+                  {CATEGORIAS_TECNOLOGICAS.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
 
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Código / Placa *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="placa"
-                      maxLength={25}
-                      value={formData.placa || ''}
-                      onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase() })}
-                      placeholder="Ej: FMO-EQ-005 o PLA-901"
-                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 2: Categoría (Izquierda) + Cantidad / Stock (Derecha) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Categoría *
-                    </label>
-                    <select
-                      name="categoria"
-                      value={formData.categoria || 'Portátiles'}
-                      onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {formData.categoria && ![
-                        'Portátiles', 'Tablets', 'Robótica y Sensores', 'Proyectores y Audio',
-                        'Cámaras y Video', 'Impresoras 3D', 'Redes y Servidores', 'Otros Equipos'
-                      ].includes(formData.categoria) && (
-                        <option value={formData.categoria}>{formData.categoria}</option>
-                      )}
-                      <option value="Portátiles">Portátiles / Laptops</option>
-                      <option value="Tablets">Tablets</option>
-                      <option value="Robótica y Sensores">Robótica y Sensores</option>
-                      <option value="Proyectores y Audio">Proyectores y Audio</option>
-                      <option value="Cámaras y Video">Cámaras y Video</option>
-                      <option value="Impresoras 3D">Impresoras 3D</option>
-                      <option value="Redes y Servidores">Redes y Servidores</option>
-                      <option value="Otros Equipos">Otros Equipos</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Cantidad / Stock *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      name="cantidad"
-                      value={formData.cantidad ?? 1}
-                      onChange={(e) => setFormData({ ...formData, cantidad: parseInt(e.target.value, 10) || 1 })}
-                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 3: Condición Física (Izquierda) + Área Asignada / Programa FMO con Badge en tabla (Derecha) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Condición Física
-                    </label>
-                    <select
-                      name="condicion"
-                      value={formData.condicion || 'Bueno'}
-                      onChange={(e) => setFormData({ ...formData, condicion: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      <option value="Bueno">Bueno</option>
-                      <option value="Nuevo">Nuevo</option>
-                      <option value="Regular">Regular</option>
-                      <option value="Malo">Malo</option>
-                      <option value="Usado">Usado</option>
-                      <option value="Donación">Donación</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <ProgramAreaSelect
-                      label="Área Asignada / Programa FMO"
-                      value={formData.area_asignada || formData.area || 'Nuevas Tecnologías'}
-                      defaultProgram="tecnologia"
-                      showPreview={false}
-                      onChange={(e) => setFormData({ ...formData, area: e.target.value, area_asignada: e.target.value })}
-                    />
-                    <div
-                      className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
-                      <ProgramAreaBadge
-                        area={formData.area_asignada || formData.area || 'Nuevas Tecnologías'}
-                        defaultProgram="tecnologia"
-                        iconSize={16}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Fila 4: Descripción General */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Descripción General
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                    Cantidad *
                   </label>
-                  <textarea
-                    name="descripcion"
-                    rows={2}
-                    maxLength={350}
-                    value={formData.descripcion || ''}
-                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                    placeholder="Descripción y detalles del equipo..."
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
+                  <input
+                    type="number"
+                    name="cantidad"
+                    min="1"
+                    required
+                    value={formData.cantidad || 1}
+                    onChange={handleChange}
                     style={{
-                      backgroundColor: 'var(--bg, #0f172a)',
-                      color: 'var(--text, #f8fafc)',
-                      borderColor: 'var(--line, #334155)',
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '9px',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      backgroundColor: 'var(--surface, #ffffff)',
+                      color: 'var(--text, #0f172a)',
+                      fontSize: '13px',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 600,
+                      outline: 'none',
                     }}
                   />
                 </div>
-              </div>
-            )}
 
-            {/* ==========================================
-                PASO 2: Ficha Técnica y Asignación
-                ========================================== */}
-            {pasoActual === 2 && (
-              <div className="animate-fade-in">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
-                  <h4
-                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                    Condición *
+                  </label>
+                  <select
+                    name="condicion"
+                    value={formData.condicion || 'Bueno'}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '9px',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      backgroundColor: 'var(--surface, #ffffff)',
+                      color: 'var(--text, #0f172a)',
+                      fontSize: '13px',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
                   >
-                    Especificaciones y Ficha Técnica
-                  </h4>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">* Campos obligatorios</span>
+                    {CONDICIONES_TECNOLOGICAS.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* FILA 3: Área Asignada / Programa FMO | Sede y Ubicación Física */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)' }}>
+                    Área Asignada / Programa FMO *
+                  </label>
+                  <ProgramAreaBadge area={formData.area_asignada || 'Nuevas Tecnologías'} size="sm" />
+                </div>
+                <ProgramAreaSelect
+                  value={formData.area_asignada || 'Nuevas Tecnologías'}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, area_asignada: val }))}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.2fr', gap: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                    Sede *
+                  </label>
+                  <select
+                    name="sede"
+                    value={formData.sede || 'Medellín'}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '9px',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      backgroundColor: 'var(--surface, #ffffff)',
+                      color: 'var(--text, #0f172a)',
+                      fontSize: '13px',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  >
+                    {sedesList.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Fila 1: Marca | Modelo */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Marca
-                    </label>
-                    <input
-                      type="text"
-                      name="marca"
-                      maxLength={50}
-                      value={formData.marca || ''}
-                      onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                      placeholder="Ej. Lenovo, Dell, HP..."
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Modelo
-                    </label>
-                    <input
-                      type="text"
-                      name="modelo"
-                      maxLength={60}
-                      value={formData.modelo || ''}
-                      onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
-                      placeholder="Ej. ThinkPad L14"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 2: Serial * | Sede / Ubicación Física */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Serial *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="serial"
-                      maxLength={60}
-                      value={formData.serial || ''}
-                      onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
-                      placeholder="Ej. PF-3X9011"
-                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Sede / Ubicación Física
-                    </label>
-                    <select
-                      name="ubicacion"
-                      value={formData.ubicacion || formData.sede || sedesList[0] || 'Medellín'}
-                      onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value, sede: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    >
-                      {formData.ubicacion && !sedesList.includes(formData.ubicacion) && (
-                        <option value={formData.ubicacion}>{formData.ubicacion}</option>
-                      )}
-                      {sedesList.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Fila 3: Estante / Gaveta | Responsable / Asignado */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Estante / Caja / Gaveta
-                    </label>
-                    <input
-                      type="text"
-                      name="ubicacion_estante"
-                      maxLength={70}
-                      value={formData.ubicacion_estante || ''}
-                      onChange={(e) => setFormData({ ...formData, ubicacion_estante: e.target.value })}
-                      placeholder="Ej. Estante A-2, Caja 05"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Responsable / Asignado
-                    </label>
-                    <input
-                      type="text"
-                      name="responsable"
-                      maxLength={90}
-                      value={formData.responsable || ''}
-                      onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
-                      placeholder="Ej. Bodega Central o Custodio"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 4: Característica 1 | Característica 2 */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Característica 1 (CPU)
-                    </label>
-                    <input
-                      type="text"
-                      name="caracteristica_1"
-                      maxLength={120}
-                      value={formData.caracteristica_1 || ''}
-                      onChange={(e) => setFormData({ ...formData, caracteristica_1: e.target.value })}
-                      placeholder="Ej. RAM 16GB / i5"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Característica 2 (RAM)
-                    </label>
-                    <input
-                      type="text"
-                      name="caracteristica_2"
-                      maxLength={120}
-                      value={formData.caracteristica_2 || ''}
-                      onChange={(e) => setFormData({ ...formData, caracteristica_2: e.target.value })}
-                      placeholder="Ej. SSD 512GB"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 5: Característica 3 */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Característica 3 (Disco)
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                    Ubicación Física
                   </label>
                   <input
                     type="text"
-                    name="caracteristica_3"
-                    maxLength={120}
-                    value={formData.caracteristica_3 || ''}
-                    onChange={(e) => setFormData({ ...formData, caracteristica_3: e.target.value })}
-                    placeholder="Ej. Pantalla 14 FHD"
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    name="ubicacion"
+                    placeholder="Ej. Sala de Cómputo"
+                    value={formData.ubicacion || ''}
+                    onChange={handleChange}
                     style={{
-                      backgroundColor: 'var(--bg, #0f172a)',
-                      color: 'var(--text, #f8fafc)',
-                      borderColor: 'var(--line, #334155)',
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '9px',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      backgroundColor: 'var(--surface, #ffffff)',
+                      color: 'var(--text, #0f172a)',
+                      fontSize: '13px',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
+                      outline: 'none',
                     }}
                   />
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* ==========================================
-                PASO 3: Adquisición, Garantía y Credenciales
-                ========================================== */}
-            {pasoActual === 3 && (
-              <div className="animate-fade-in">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
-                  <h4
-                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
-                  >
-                    Adquisición, Garantía y Credenciales
-                  </h4>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Datos de compra y credenciales</span>
-                </div>
+            {/* FILA 4: Marca | Modelo y Serial */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Marca / Fabricante
+                </label>
+                <input
+                  type="text"
+                  name="marca"
+                  placeholder="Ej. Lenovo, HP, Dell, Apple, Epson"
+                  value={formData.marca || ''}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
+                  }}
+                />
+              </div>
 
-                {/* Fila 1: Proveedor | Valor Unitario ($) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Proveedor
-                    </label>
-                    <input
-                      type="text"
-                      name="proveedor"
-                      maxLength={90}
-                      value={formData.proveedor || ''}
-                      onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
-                      placeholder="Ej. Lenovo Colombia"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Valor Unitario ($)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="999999999"
-                      step="any"
-                      name="valor_compra"
-                      value={formData.valor_compra ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          setFormData({ ...formData, valor_compra: '', valor_total: '' });
-                          return;
-                        }
-                        const clamped = Math.max(0, Math.min(999999999, Number(val)));
-                        const qty = Number(formData.cantidad) || 1;
-                        setFormData({
-                          ...formData,
-                          valor_compra: clamped,
-                          valor_total: clamped * qty,
-                        });
-                      }}
-                      placeholder="Ej. 2800000"
-                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 2: Valor Total ($) | Fecha de Compra */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Valor Total ($)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="999999999"
-                      step="any"
-                      name="valor_total"
-                      value={formData.valor_total ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const clamped = val === '' ? '' : Math.max(0, Math.min(999999999, Number(val)));
-                        setFormData({ ...formData, valor_total: clamped });
-                      }}
-                      placeholder="Ej. 2800000"
-                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Fecha de Compra
-                    </label>
-                    <input
-                      type="date"
-                      name="fecha_compra"
-                      value={formData.fecha_compra || ''}
-                      onChange={(e) => setFormData({ ...formData, fecha_compra: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 3: Vencimiento Garantía | Claves / Credenciales */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Vencimiento Garantía
-                    </label>
-                    <input
-                      type="date"
-                      name="fecha_vencimiento_garantia"
-                      value={formData.fecha_vencimiento_garantia || ''}
-                      onChange={(e) => setFormData({ ...formData, fecha_vencimiento_garantia: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                      Claves / Credenciales
-                    </label>
-                    <textarea
-                      name="claves_otros"
-                      rows={2}
-                      maxLength={350}
-                      value={formData.claves_otros || ''}
-                      onChange={(e) => setFormData({ ...formData, claves_otros: e.target.value })}
-                      placeholder="PIN de acceso, usuario administrador o credenciales..."
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
-                      style={{
-                        backgroundColor: 'var(--bg, #0f172a)',
-                        color: 'var(--text, #f8fafc)',
-                        borderColor: 'var(--line, #334155)',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Fila 4: Observaciones */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                    Observaciones
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                    Modelo
                   </label>
-                  <textarea
-                    name="observaciones"
-                    rows={2}
-                    maxLength={350}
-                    value={formData.observaciones || ''}
-                    onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-                    placeholder="Comentarios adicionales, estado del paquete, donante..."
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
+                  <input
+                    type="text"
+                    name="modelo"
+                    placeholder="Ej. ThinkPad E14"
+                    value={formData.modelo || ''}
+                    onChange={handleChange}
                     style={{
-                      backgroundColor: 'var(--bg, #0f172a)',
-                      color: 'var(--text, #f8fafc)',
-                      borderColor: 'var(--line, #334155)',
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '9px',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      backgroundColor: 'var(--surface, #ffffff)',
+                      color: 'var(--text, #0f172a)',
+                      fontSize: '13px',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
+                      outline: 'none',
                     }}
                   />
                 </div>
 
-                {/* Fila 5: Control de Seguimiento Contable */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label
-                    className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                      padding: '12px 16px',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'all 0.2s ease',
-                      backgroundColor: formData.en_contabilidad
-                        ? 'rgba(132, 204, 22, 0.08)'
-                        : 'var(--surface-2, #f8fafc)',
-                      borderColor: formData.en_contabilidad
-                        ? '#84CC16'
-                        : 'var(--line, #cbd5e1)',
-                      boxShadow: formData.en_contabilidad
-                        ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
-                        : 'none',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      name="en_contabilidad"
-                      checked={Boolean(formData.en_contabilidad)}
-                      onChange={(e) => setFormData({ ...formData, en_contabilidad: e.target.checked })}
-                      style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                      <div
-                        style={{
-                          width: '38px',
-                          height: '38px',
-                          borderRadius: '10px',
-                          backgroundColor: formData.en_contabilidad
-                            ? 'rgba(132, 204, 22, 0.22)'
-                            : 'rgba(148, 163, 184, 0.15)',
-                          border: formData.en_contabilidad
-                            ? '1px solid rgba(132, 204, 22, 0.45)'
-                            : '1px solid var(--line, #e2e8f0)',
-                          color: formData.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '18px',
-                          flexShrink: 0,
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        🏛️
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span
-                            style={{
-                              fontSize: '13px',
-                              fontWeight: 700,
-                              color: 'var(--text-h, #0f172a)',
-                              lineHeight: 1.2,
-                            }}
-                          >
-                            Registrado en Contabilidad
-                          </span>
-                          {formData.en_contabilidad ? (
-                            <span
-                              style={{
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                padding: '1.5px 7px',
-                                borderRadius: '9999px',
-                                backgroundColor: '#84CC16',
-                                color: '#0f172a',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.04em',
-                              }}
-                            >
-                              Activo
-                            </span>
-                          ) : (
-                            <span
-                              style={{
-                                fontSize: '10px',
-                                fontWeight: 600,
-                                padding: '1.5px 7px',
-                                borderRadius: '9999px',
-                                backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                                color: 'var(--text-dim, #64748b)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.04em',
-                              }}
-                            >
-                              Pendiente
-                            </span>
-                          )}
-                        </div>
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: '11.5px',
-                            color: 'var(--text-dim, #64748b)',
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          Marcar si este bien ya cuenta con registro y soporte en el área contable
-                        </p>
-                      </div>
-                    </div>
-
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        width: '44px',
-                        height: '24px',
-                        borderRadius: '9999px',
-                        backgroundColor: formData.en_contabilidad ? '#84CC16' : '#cbd5e1',
-                        position: 'relative',
-                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                        flexShrink: 0,
-                        boxShadow: formData.en_contabilidad
-                          ? '0 0 10px rgba(132, 204, 22, 0.4)'
-                          : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          backgroundColor: '#ffffff',
-                          position: 'absolute',
-                          top: '3px',
-                          left: formData.en_contabilidad ? '23px' : '3px',
-                          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {formData.en_contabilidad && (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                    Serial (S/N) *
                   </label>
+                  <input
+                    type="text"
+                    name="serial"
+                    required
+                    placeholder="Ej. PF2B3XYZ"
+                    value={formData.serial || ''}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '9px',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      backgroundColor: 'var(--surface, #ffffff)',
+                      color: 'var(--text, #0f172a)',
+                      fontSize: '13px',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* FILA 5: Responsable / Custodio | Estado Operativo */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Responsable / Custodio Asignado
+                </label>
+                <input
+                  type="text"
+                  name="responsable"
+                  placeholder="Ej. Bodega Central o Nombre de Docente"
+                  value={formData.responsable || ''}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Estado Operativo *
+                </label>
+                <select
+                  name="estado"
+                  value={formData.estado || 'Disponible'}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
+                  }}
+                >
+                  {ESTADOS_OPERATIVOS.map((est) => (
+                    <option key={est} value={est}>{est}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* FILA 6: Fecha de Adquisición | Valor Estimado (COP) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Fecha De Adquisición
+                </label>
+                <input
+                  type="date"
+                  name="fecha_adquisicion"
+                  value={formData.fecha_adquisicion || ''}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Valor / Costo Estimado (COP)
+                </label>
+                <input
+                  type="text"
+                  name="valor_estimado"
+                  placeholder="Ej. 2800000"
+                  value={formData.valor_estimado || ''}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* FILA 7: Observaciones / Especificaciones (RAM, Disco, Procesador) */}
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                Especificaciones Técnicas / Observaciones
+              </label>
+              <textarea
+                name="observaciones"
+                rows="2"
+                placeholder="Ej. Procesador Intel Core i5 12va Gen, 16GB RAM DDR4, 512GB SSD NVMe. Incluye cargador original."
+                value={formData.observaciones || ''}
+                onChange={handleChange}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '9px',
+                  border: '1.5px solid var(--line, #cbd5e1)',
+                  backgroundColor: 'var(--surface, #ffffff)',
+                  color: 'var(--text, #0f172a)',
+                  fontSize: '12.5px',
+                  fontFamily: "'Poppins', sans-serif",
+                  resize: 'none',
+                  outline: 'none',
+                }}
+              />
+            </div>
           </div>
 
-          {/* Footer Fijo Abajo */}
+          {/* BOTONES INFERIORES */}
           <div
-            className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] flex items-center justify-between shrink-0"
             style={{
-              backgroundColor: 'var(--surface-2, #0f172a)',
-              borderTop: '1px solid var(--line, #1e293b)',
-              padding: '14px 20px',
+              padding: '14px 22px',
+              backgroundColor: 'var(--surface-2, #f8fafc)',
+              borderTop: '1px solid var(--line, #e2e8f0)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              flexShrink: 0,
+              justifyContent: 'flex-end',
+              gap: '12px',
             }}
           >
-            {/* Botón Cancelar (Izquierda) */}
             <button
               type="button"
-              disabled={isSubmitting}
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
+              disabled={isSubmitting}
               style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
+                padding: '9px 18px',
+                borderRadius: '11px',
+                border: '1.5px solid var(--line, #cbd5e1)',
                 backgroundColor: 'transparent',
-                border: '1px solid var(--line, #334155)',
-                color: 'var(--text-dim, #94a3b8)',
+                color: 'var(--text-dim, #6d6e71)',
                 fontSize: '13px',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                fontFamily: "'Poppins', sans-serif",
                 transition: 'all 0.15s ease',
               }}
             >
               Cancelar
             </button>
 
-            {/* Botones de Navegación del Asistente (Derecha) */}
-            <div
-              className="flex items-center gap-2.5"
-              style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 22px',
+                borderRadius: '11px',
+                backgroundColor: '#abd037',
+                color: '#013a52',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+                fontFamily: "'Poppins', sans-serif",
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!isSubmitting) {
+                  e.currentTarget.style.backgroundColor = '#96b82d';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSubmitting) {
+                  e.currentTarget.style.backgroundColor = '#abd037';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
+              }}
             >
-              {pasoActual > 1 && (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setPasoActual(pasoActual - 1)}
-                  className="cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-xs font-semibold transition-all"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--surface, #1e293b)',
-                    border: '1px solid var(--line, #334155)',
-                    color: 'var(--text, #f8fafc)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <span>←</span> Anterior
-                </button>
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin text-[#013a52]" />
+                  <span>Guardando...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={16} style={{ strokeWidth: 2.3 }} />
+                  <span>Guardar Cambios</span>
+                </>
               )}
-
-              {pasoActual < 3 && (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    // Validación paso 1
-                    if (pasoActual === 1) {
-                      if (!formData.nombre?.trim()) {
-                        showError('Validación', 'El Nombre del equipo es obligatorio.');
-                        return;
-                      }
-                      if (!formData.placa?.trim()) {
-                        showError('Validación', 'La Placa / Código del equipo es obligatorio.');
-                        return;
-                      }
-                    }
-                    // Validación paso 2
-                    if (pasoActual === 2) {
-                      if (!formData.serial?.trim()) {
-                        showError('Validación', 'El Serial del equipo es obligatorio.');
-                        return;
-                      }
-                    }
-                    setPasoActual(pasoActual + 1);
-                  }}
-                  className="bg-lime-500 hover:bg-lime-600 dark:bg-[#84CC16] dark:hover:bg-[#65A30D] text-slate-950 font-bold px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer text-xs"
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '8px',
-                    backgroundColor: '#84CC16',
-                    border: '1px solid #84CC16',
-                    color: '#020617',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 2px 10px rgba(132, 204, 22, 0.3)',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <span>Siguiente</span>
-                  <span>→</span>
-                </button>
-              )}
-
-              {pasoActual === 3 && (
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md bg-[#84CC16] hover:bg-[#65A30D] text-slate-950"
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: '8px',
-                    backgroundColor: '#84CC16',
-                    border: '1px solid #65A30D',
-                    color: '#0f172a',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span
-                        className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin"
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          borderRadius: '50%',
-                          border: '2px solid rgba(15, 23, 42, 0.2)',
-                          borderTopColor: '#0f172a',
-                          display: 'inline-block',
-                        }}
-                      />
-                      <span>Guardando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>✓</span>
-                      <span>Guardar Cambios</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            </button>
           </div>
         </form>
       </div>

@@ -15,6 +15,7 @@ import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalRegistroMobiliario from '../components/modals/ModalRegistroMobiliario';
 import ModalRegistroElectronica from '../components/modals/ModalRegistroElectronica';
+import ModalRegistroEquipoTecnologico from '../components/modals/ModalRegistroEquipoTecnologico';
 import ModalBajaConsumible from '../components/modals/ModalBajaConsumible';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -3169,8 +3170,8 @@ export default function InventarioView({
               <span>📦</span> {equipos.length === 0 ? 'No hay registros en Supabase.' : 'No se encontraron equipos con los filtros seleccionados.'}
             </div>
           ) : (
-            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
-              <table style={{ tableLayout: 'fixed', width: '100%' }}>
+            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1050px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
@@ -3698,11 +3699,11 @@ export default function InventarioView({
               </p>
             </div>
           ) : (
-            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)' }}>
-              <table style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)', backgroundColor: 'var(--surface, #ffffff)' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1080px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #abd037' }}>
-                    <th style={{ width: '40px', padding: '10px 4px', textAlign: 'center' }}>
+                    <th style={{ width: '44px', minWidth: '44px', padding: '10px 4px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
                         checked={areAllVisibleElectronicaSelected}
@@ -3712,25 +3713,25 @@ export default function InventarioView({
                         title="Seleccionar o deseleccionar todos los equipos visibles"
                       />
                     </th>
-                    <th style={{ width: '12%', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '120px', minWidth: '120px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       PLACA / CÓDIGO
                     </th>
-                    <th style={{ width: '23%', padding: '10px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '250px', minWidth: '220px', padding: '10px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       EQUIPO & MODELO
                     </th>
-                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '150px', minWidth: '140px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       SUBCATEGORÍA
                     </th>
-                    <th style={{ width: '12%', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '140px', minWidth: '135px', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       PROGRAMA FMO
                     </th>
-                    <th style={{ width: '14%', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '160px', minWidth: '150px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       SEDE / UBICACIÓN
                     </th>
-                    <th style={{ width: '11%', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '110px', minWidth: '105px', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       ESTADO
                     </th>
-                    <th style={{ width: '15%', padding: '10px 6px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '140px', minWidth: '135px', padding: '10px 6px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       ACCIONES
                     </th>
                   </tr>
@@ -4199,8 +4200,8 @@ export default function InventarioView({
               <span>📦</span> No hay registros en Supabase.
             </div>
           ) : (
-            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
-              <table className="w-full table-fixed" style={{ tableLayout: 'fixed', width: '100%' }}>
+            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)' }}>
+              <table className="w-full table-fixed" style={{ tableLayout: 'fixed', width: '100%', minWidth: '1000px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
@@ -4686,8 +4687,8 @@ export default function InventarioView({
               <span>📄</span> No se encontraron insumos de papelería con los filtros seleccionados.
             </div>
           ) : (
-            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
-              <table style={{ tableLayout: 'fixed', width: '100%' }}>
+            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '980px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
@@ -5184,8 +5185,8 @@ export default function InventarioView({
               </p>
             </div>
           ) : (
-            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
-              <table style={{ tableLayout: 'fixed', width: '100%' }}>
+            <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '980px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
@@ -7847,1110 +7848,43 @@ export default function InventarioView({
           MODAL: REGISTRO DE NUEVO EQUIPO TECNOLÓGICO (DISEÑO FIEL A IMAGEN 1)
           ========================================================================= */}
       {modalNuevoEquipoOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-            backgroundColor: 'rgba(15, 23, 42, 0.7)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
+        <ModalRegistroEquipoTecnologico
+          isOpen={modalNuevoEquipoOpen}
+          onClose={() => setModalNuevoEquipoOpen(false)}
+          equiposExistentes={rawEquiposUnits}
+          sedes={sedesList}
+          onEquipoCreated={async (nuevoEquipo) => {
+            if (onAddItem) {
+              await onAddItem({
+                name: nuevoEquipo.nombre,
+                category: nuevoEquipo.categoria,
+                location: nuevoEquipo.ubicacion,
+                sede: nuevoEquipo.sede,
+                notes: nuevoEquipo.observaciones,
+                minStock: 1,
+                itemType: 'equipo',
+                quantity: 0,
+                unidades: [
+                  {
+                    code: nuevoEquipo.placa,
+                    placa: nuevoEquipo.placa,
+                    model: nuevoEquipo.modelo || 'Estándar',
+                    serial: nuevoEquipo.serial,
+                    sede: nuevoEquipo.sede,
+                    status: 'disponible',
+                    responsable: nuevoEquipo.responsable,
+                  }
+                ],
+                unitsText: nuevoEquipo.placa + ', ' + (nuevoEquipo.modelo || 'Estándar') + ', ' + nuevoEquipo.serial,
+              });
+            }
+            if (onRetry) {
+              await onRetry();
+            } else {
+              await cargarConsumibles();
+            }
           }}
-          onClick={() => !newEquipoSubmitting && setModalNuevoEquipoOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
-            style={{
-              backgroundColor: 'var(--surface, #0b1320)',
-              border: '1px solid var(--line, #1e293b)',
-              borderRadius: '16px',
-              maxWidth: '56rem',
-              width: '100%',
-              maxHeight: '92vh',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-              boxSizing: 'border-box',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header Fijo Idéntico a la Imagen 1 */}
-            <div
-              className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
-              style={{
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
-                borderBottom: '1px solid var(--line, #1e293b)',
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexShrink: 0,
-              }}
-            >
-              <div>
-                <span
-                  style={{
-                    fontFamily: 'var(--mono)',
-                    color: 'var(--text-dim, #94a3b8)',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    display: 'block',
-                    marginBottom: '2px',
-                  }}
-                >
-                  {formDataNuevoEquipo.placa ? formDataNuevoEquipo.placa : '+ Activo'}
-                </span>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0" style={{ margin: 0, fontSize: '15px' }}>
-                  Registro de Nuevo Equipo Tecnológico
-                </h3>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0" style={{ margin: '2px 0 0 0', fontSize: '12px' }}>
-                  Ingresa los datos del equipo y sus especificaciones técnicas
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={newEquipoSubmitting}
-                onClick={() => setModalNuevoEquipoOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
-                title="Cerrar ventana"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Stepper Fijo bajo el Header Idéntico a la Imagen 1 */}
-            <div
-              className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0f172a]/50 shrink-0"
-              style={{
-                padding: '10px 20px',
-                borderBottom: '1px solid var(--line, #1e293b)',
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
-                flexShrink: 0,
-              }}
-            >
-              <div
-                className="flex items-center justify-between gap-2 max-w-4xl mx-auto"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  width: '100%',
-                }}
-              >
-                {[
-                  { paso: 1, label: 'Identificación', icono: '1' },
-                  { paso: 2, label: 'Ficha Técnica', icono: '2' },
-                  { paso: 3, label: 'Adquisición y Notas', icono: '3' },
-                ].map((item) => {
-                  const isActive = pasoActualEquipo === item.paso;
-                  const isDone = pasoActualEquipo > item.paso;
-                  return (
-                    <button
-                      key={item.paso}
-                      type="button"
-                      onClick={() => setPasoActualEquipo(item.paso)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isActive
-                        ? 'bg-lime-400 hover:bg-lime-300 text-slate-950 border-lime-400 shadow-sm'
-                        : isDone
-                          ? 'bg-lime-950/40 text-lime-400 border-lime-500/40 hover:bg-lime-900/40'
-                          : 'bg-slate-800/40 text-slate-400 border-slate-700/60 hover:bg-slate-800'
-                        }`}
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        fontSize: '11.5px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        backgroundColor: isActive
-                          ? '#84CC16'
-                          : isDone
-                            ? 'rgba(132, 204, 22, 0.12)'
-                            : 'rgba(30, 41, 59, 0.4)',
-                        color: isActive
-                          ? '#0f172a'
-                          : isDone
-                            ? '#84CC16'
-                            : 'var(--text-dim, #94a3b8)',
-                        border: isActive
-                          ? '1px solid #84CC16'
-                          : isDone
-                            ? '1px solid rgba(132, 204, 22, 0.35)'
-                            : '1px solid var(--line, #334155)',
-                        boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
-                      }}
-                    >
-                      <span
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${isActive
-                          ? 'bg-slate-950/20 text-slate-950 font-extrabold'
-                          : isDone
-                            ? 'text-lime-400 font-bold'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold'
-                          }`}
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '10px',
-                          backgroundColor: isActive
-                            ? 'rgba(15, 23, 42, 0.2)'
-                            : isDone
-                              ? 'transparent'
-                              : 'rgba(148, 163, 184, 0.2)',
-                          color: isActive
-                            ? '#0f172a'
-                            : isDone
-                              ? '#84CC16'
-                              : 'var(--text-dim, #94a3b8)',
-                        }}
-                      >
-                        {isDone ? '✓' : item.icono}
-                      </span>
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Formulario Estructurado sin scroll innecesario */}
-            <form
-              onSubmit={handleSubmitNuevoEquipo}
-              className="flex flex-col flex-1 overflow-hidden"
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
-            >
-              {/* Cuerpo del Formulario */}
-              <div
-                className="p-4 sm:p-5 text-sm overflow-y-auto flex-1"
-                style={{
-                  padding: '16px 20px',
-                  backgroundColor: 'var(--surface, #0b1320)',
-                  overflowY: 'auto',
-                  flex: 1,
-                }}
-              >
-                {/* ==========================================
-                    PASO 1: Identificación y Clasificación
-                    ========================================== */}
-                {pasoActualEquipo === 1 && (
-                  <div className="animate-fade-in">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
-                      <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
-                      >
-                        Identificación y Clasificación
-                      </h4>
-                      <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
-                    </div>
-
-                    {/* Fila 1: Nombre del Elemento / Equipo (Izquierda) + Código / Placa (Derecha) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Nombre Del Elemento / Equipo *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          name="nombre"
-                          maxLength={90}
-                          value={formDataNuevoEquipo.nombre || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, nombre: e.target.value })}
-                          placeholder="Ej. Portátil Lenovo ThinkPad L14"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                            Código / Placa *
-                          </label>
-                          <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
-                            Consecutivo oficial
-                          </span>
-                        </div>
-                        <input
-                          required
-                          type="text"
-                          name="placa"
-                          maxLength={25}
-                          readOnly={false}
-                          disabled={false}
-                          value={formDataNuevoEquipo.placa || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, placa: e.target.value.toUpperCase() })}
-                          placeholder="Ej: P57 o PLA-901"
-                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 2: Categoría (Izquierda) + Cantidad (Derecha) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Categoría *
-                        </label>
-                        <select
-                          name="categoria"
-                          value={formDataNuevoEquipo.categoria || 'Portátiles'}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, categoria: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        >
-                          <option value="Portátiles">Portátiles / Laptops</option>
-                          <option value="Tablets">Tablets</option>
-                          <option value="Robótica y Sensores">Robótica y Sensores</option>
-                          <option value="Proyectores y Audio">Proyectores y Audio</option>
-                          <option value="Cámaras y Video">Cámaras y Video</option>
-                          <option value="Impresoras 3D">Impresoras 3D</option>
-                          <option value="Redes y Servidores">Redes y Servidores</option>
-                          <option value="Otros Equipos">Otros Equipos</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Cantidad
-                        </label>
-                        <input
-                          type="number"
-                          name="cantidad"
-                          value={1}
-                          readOnly
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 cursor-not-allowed opacity-90"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 3: Condición (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Condición
-                        </label>
-                        <select
-                          name="condicion"
-                          value={formDataNuevoEquipo.condicion || 'Nuevo'}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, condicion: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        >
-                          <option value="Nuevo">Nuevo</option>
-                          <option value="Usado">Usado</option>
-                          <option value="Donación">Donación</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <ProgramAreaSelect
-                          label="Área Asignada / Programa FMO"
-                          value={formDataNuevoEquipo.area || ''}
-                          showPreview={false}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, area: e.target.value })}
-                        />
-                        <div
-                          className="h-[36px] px-3 py-1 bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        >
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Distintivo en tabla:</span>
-                          <ProgramAreaBadge
-                            area={formDataNuevoEquipo.area || 'Robótica'}
-                            iconSize={16}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Fila 4: Descripción General */}
-                    <div style={{ marginBottom: '12px' }}>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Descripción General
-                      </label>
-                      <textarea
-                        name="descripcion"
-                        rows={2}
-                        maxLength={350}
-                        value={formDataNuevoEquipo.descripcion || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, descripcion: e.target.value })}
-                        placeholder="Descripción general del equipo o propósito institucional..."
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ==========================================
-                    PASO 2: Ficha Técnica y Asignación
-                    ========================================== */}
-                {pasoActualEquipo === 2 && (
-                  <div className="animate-fade-in">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
-                      <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
-                      >
-                        Especificaciones y Ficha Técnica
-                      </h4>
-                      <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
-                    </div>
-
-                    {/* Fila 1: Marca | Modelo */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Marca
-                        </label>
-                        <input
-                          type="text"
-                          name="marca"
-                          maxLength={50}
-                          value={formDataNuevoEquipo.marca || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, marca: e.target.value })}
-                          placeholder="Ej. Lenovo, Dell, HP..."
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Modelo
-                        </label>
-                        <input
-                          type="text"
-                          name="modelo"
-                          maxLength={60}
-                          value={formDataNuevoEquipo.modelo || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, modelo: e.target.value })}
-                          placeholder="Ej. ThinkPad L14"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 2: Serial * | Sede / Ubicación Física */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Serial *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          name="serial"
-                          maxLength={60}
-                          value={formDataNuevoEquipo.serial || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, serial: e.target.value })}
-                          placeholder="Ej. PF-42X89"
-                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Sede / Ubicación Física
-                        </label>
-                        <select
-                          name="ubicacion"
-                          value={formDataNuevoEquipo.ubicacion || formDataNuevoEquipo.sede || sedesList[0] || 'Medellín'}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion: e.target.value, sede: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        >
-                          {formDataNuevoEquipo.ubicacion && !sedesList.includes(formDataNuevoEquipo.ubicacion) && (
-                            <option value={formDataNuevoEquipo.ubicacion}>{formDataNuevoEquipo.ubicacion}</option>
-                          )}
-                          {sedesList.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Fila 3: Estante / Caja / Gaveta | Responsable / Custodio */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Estante / Caja / Gaveta
-                        </label>
-                        <input
-                          type="text"
-                          name="ubicacion_estante"
-                          maxLength={70}
-                          value={formDataNuevoEquipo.ubicacion_estante || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, ubicacion_estante: e.target.value })}
-                          placeholder="Ej. Estante A-2, Caja 05, Gaveta 3"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Responsable / Custodio
-                        </label>
-                        <input
-                          type="text"
-                          name="responsable"
-                          maxLength={90}
-                          value={formDataNuevoEquipo.responsable || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, responsable: e.target.value })}
-                          placeholder="Ej. Bodega Central o Custodio"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 4: Característica 1 | Característica 2 */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Característica 1
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristica_1"
-                          maxLength={120}
-                          value={formDataNuevoEquipo.caracteristica_1 || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_1: e.target.value })}
-                          placeholder="Ej. Core i5-1135G7"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Característica 2
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristica_2"
-                          maxLength={120}
-                          value={formDataNuevoEquipo.caracteristica_2 || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_2: e.target.value })}
-                          placeholder="Ej. 16GB RAM DDR4"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 5: Característica 3 */}
-                    <div style={{ marginBottom: '12px' }}>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Característica 3
-                      </label>
-                      <input
-                        type="text"
-                        name="caracteristica_3"
-                        maxLength={120}
-                        value={formDataNuevoEquipo.caracteristica_3 || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, caracteristica_3: e.target.value })}
-                        placeholder="Ej. Pantalla 14 FHD"
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ==========================================
-                    PASO 3: Adquisición, Garantía y Accesos
-                    ========================================== */}
-                {pasoActualEquipo === 3 && (
-                  <div className="animate-fade-in">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
-                      <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
-                      >
-                        Adquisición, Garantía y Notas
-                      </h4>
-                      <span className="text-[11px] text-slate-400">Datos de compra y observaciones</span>
-                    </div>
-
-                    {/* Fila 1: Proveedor | Valor Unitario ($) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Proveedor
-                        </label>
-                        <input
-                          type="text"
-                          name="proveedor"
-                          maxLength={90}
-                          value={formDataNuevoEquipo.proveedor || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, proveedor: e.target.value })}
-                          placeholder="Ej. Lenovo Colombia"
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Valor Unitario ($)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="999999999"
-                          step="any"
-                          name="valor_compra"
-                          value={formDataNuevoEquipo.valor_compra ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '') {
-                              setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_compra: '', valor_total: '' });
-                              return;
-                            }
-                            const clamped = Math.max(0, Math.min(999999999, Number(val)));
-                            const qty = Number(formDataNuevoEquipo.cantidad) || 1;
-                            setFormDataNuevoEquipo({
-                              ...formDataNuevoEquipo,
-                              valor_compra: clamped,
-                              valor_total: clamped * qty,
-                            });
-                          }}
-                          placeholder="Ej. 2800000"
-                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 2: Valor Total ($) | Fecha Compra */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Valor Total ($)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="999999999"
-                          step="any"
-                          name="valor_total"
-                          value={formDataNuevoEquipo.valor_total ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '') {
-                              setFormDataNuevoEquipo({ ...formDataNuevoEquipo, valor_total: '' });
-                              return;
-                            }
-                            const clamped = Math.min(999999999, Math.max(0, Number(val)));
-                            setFormDataNuevoEquipo({
-                              ...formDataNuevoEquipo,
-                              valor_total: clamped,
-                            });
-                          }}
-                          placeholder="Ej. 2800000"
-                          className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Fecha Compra
-                        </label>
-                        <input
-                          type="date"
-                          name="fecha_compra"
-                          value={formDataNuevoEquipo.fecha_compra || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, fecha_compra: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 3: Vencimiento Garantía | Claves / Credenciales de Acceso */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Vencimiento Garantía
-                        </label>
-                        <input
-                          type="date"
-                          name="fecha_vencimiento_garantia"
-                          value={formDataNuevoEquipo.fecha_vencimiento_garantia || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, fecha_vencimiento_garantia: e.target.value })}
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Claves / Credenciales de Acceso
-                        </label>
-                        <textarea
-                          name="claves_otros"
-                          rows={2}
-                          maxLength={350}
-                          value={formDataNuevoEquipo.claves_otros || ''}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, claves_otros: e.target.value })}
-                          placeholder="PIN de acceso, usuario administrador o credenciales..."
-                          className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
-                          style={{
-                            backgroundColor: 'var(--bg, #0f172a)',
-                            color: 'var(--text, #f8fafc)',
-                            borderColor: 'var(--line, #334155)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Fila 4: Notas u Observaciones */}
-                    <div style={{ marginBottom: '12px' }}>
-                      <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                        Notas u Observaciones
-                      </label>
-                      <textarea
-                        name="observaciones"
-                        rows={2}
-                        maxLength={350}
-                        value={formDataNuevoEquipo.observaciones || ''}
-                        onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, observaciones: e.target.value })}
-                        placeholder="Comentarios adicionales, estado del paquete, donante..."
-                        className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
-                        style={{
-                          backgroundColor: 'var(--bg, #0f172a)',
-                          color: 'var(--text, #f8fafc)',
-                          borderColor: 'var(--line, #334155)',
-                        }}
-                      />
-                    </div>
-
-                    {/* Fila 5: Control de Seguimiento Contable Institucional */}
-                    <div style={{ marginBottom: '12px' }}>
-                      <label
-                        className="relative flex items-center justify-between gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-200 select-none border group"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '12px',
-                          padding: '12px 16px',
-                          borderRadius: '12px',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          transition: 'all 0.2s ease',
-                          backgroundColor: formDataNuevoEquipo.en_contabilidad
-                            ? 'rgba(132, 204, 22, 0.08)'
-                            : 'var(--surface-2, #f8fafc)',
-                          borderColor: formDataNuevoEquipo.en_contabilidad
-                            ? '#84CC16'
-                            : 'var(--line, #cbd5e1)',
-                          boxShadow: formDataNuevoEquipo.en_contabilidad
-                            ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
-                            : 'none',
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          name="en_contabilidad"
-                          checked={Boolean(formDataNuevoEquipo.en_contabilidad)}
-                          onChange={(e) => setFormDataNuevoEquipo({ ...formDataNuevoEquipo, en_contabilidad: e.target.checked })}
-                          style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
-                        />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                          <div
-                            style={{
-                              width: '38px',
-                              height: '38px',
-                              borderRadius: '10px',
-                              backgroundColor: formDataNuevoEquipo.en_contabilidad
-                                ? 'rgba(132, 204, 22, 0.22)'
-                                : 'rgba(148, 163, 184, 0.15)',
-                              border: formDataNuevoEquipo.en_contabilidad
-                                ? '1px solid rgba(132, 204, 22, 0.45)'
-                                : '1px solid var(--line, #e2e8f0)',
-                              color: formDataNuevoEquipo.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '18px',
-                              flexShrink: 0,
-                              transition: 'all 0.2s ease',
-                            }}
-                          >
-                            🏛️
-                          </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span
-                                style={{
-                                  fontSize: '13px',
-                                  fontWeight: 700,
-                                  color: 'var(--text-h, #0f172a)',
-                                  lineHeight: 1.2,
-                                }}
-                              >
-                                Registrado en Contabilidad
-                              </span>
-                              {formDataNuevoEquipo.en_contabilidad ? (
-                                <span
-                                  style={{
-                                    fontSize: '10px',
-                                    fontWeight: 700,
-                                    padding: '1.5px 7px',
-                                    borderRadius: '9999px',
-                                    backgroundColor: '#84CC16',
-                                    color: '#0f172a',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.04em',
-                                  }}
-                                >
-                                  Activo
-                                </span>
-                              ) : (
-                                <span
-                                  style={{
-                                    fontSize: '10px',
-                                    fontWeight: 600,
-                                    padding: '1.5px 7px',
-                                    borderRadius: '9999px',
-                                    backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                                    color: 'var(--text-dim, #64748b)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.04em',
-                                  }}
-                                >
-                                  Pendiente
-                                </span>
-                              )}
-                            </div>
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: '11.5px',
-                                color: 'var(--text-dim, #64748b)',
-                                lineHeight: 1.35,
-                              }}
-                            >
-                              Marcar si este bien ya cuenta con registro y soporte en el área contable
-                            </p>
-                          </div>
-                        </div>
-
-                        <div
-                          aria-hidden="true"
-                          style={{
-                            width: '44px',
-                            height: '24px',
-                            borderRadius: '9999px',
-                            backgroundColor: formDataNuevoEquipo.en_contabilidad ? '#84CC16' : '#cbd5e1',
-                            position: 'relative',
-                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                            flexShrink: 0,
-                            boxShadow: formDataNuevoEquipo.en_contabilidad
-                              ? '0 0 10px rgba(132, 204, 22, 0.4)'
-                              : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: '18px',
-                              height: '18px',
-                              borderRadius: '50%',
-                              backgroundColor: '#ffffff',
-                              position: 'absolute',
-                              top: '3px',
-                              left: formDataNuevoEquipo.en_contabilidad ? '23px' : '3px',
-                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {formDataNuevoEquipo.en_contabilidad && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            )}
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer Fijo Abajo Idéntico a la Imagen 1 */}
-              <div
-                className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] flex items-center justify-between shrink-0"
-                style={{
-                  backgroundColor: 'var(--surface-2, #0f172a)',
-                  borderTop: '1px solid var(--line, #1e293b)',
-                  padding: '14px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexShrink: 0,
-                }}
-              >
-                {/* Botón Cancelar (Izquierda) */}
-                <button
-                  type="button"
-                  disabled={newEquipoSubmitting}
-                  onClick={() => setModalNuevoEquipoOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--line, #334155)',
-                    color: 'var(--text-dim, #94a3b8)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  Cancelar
-                </button>
-
-                {/* Botones de Navegación del Asistente (Derecha) */}
-                <div
-                  className="flex items-center gap-2.5"
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
-                >
-                  {pasoActualEquipo > 1 && (
-                    <button
-                      type="button"
-                      disabled={newEquipoSubmitting}
-                      onClick={() => setPasoActualEquipo((prev) => prev - 1)}
-                      className="cursor-pointer hover:bg-slate-800 text-slate-200 px-4 py-2 rounded-lg text-xs font-semibold transition-all"
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        backgroundColor: 'var(--surface, #1e293b)',
-                        border: '1px solid var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <span>←</span> Anterior
-                    </button>
-                  )}
-
-                  {pasoActualEquipo < 3 && (
-                    <button
-                      type="button"
-                      disabled={newEquipoSubmitting}
-                      onClick={() => {
-                        // Validación de paso 1
-                        if (pasoActualEquipo === 1) {
-                          if (!formDataNuevoEquipo.nombre?.trim()) {
-                            showError('Validación', 'El Nombre del equipo es obligatorio.');
-                            return;
-                          }
-                          if (!formDataNuevoEquipo.placa?.trim()) {
-                            showError('Validación', 'La Placa / Código del equipo es obligatorio (ej: FMO-EQ-005).');
-                            return;
-                          }
-                        }
-                        // Validación de paso 2
-                        if (pasoActualEquipo === 2) {
-                          if (!formDataNuevoEquipo.serial?.trim()) {
-                            showError('Validación', 'El Serial del equipo es obligatorio.');
-                            return;
-                          }
-                        }
-                        setPasoActualEquipo((prev) => prev + 1);
-                      }}
-                      className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-bold px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer text-xs"
-                      style={{
-                        padding: '8px 18px',
-                        borderRadius: '8px',
-                        backgroundColor: '#84CC16',
-                        border: '1px solid #84CC16',
-                        color: '#020617',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 2px 10px rgba(132, 204, 22, 0.3)',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <span>Siguiente</span>
-                      <span>→</span>
-                    </button>
-                  )}
-
-                  {pasoActualEquipo === 3 && (
-                    <button
-                      type="submit"
-                      disabled={newEquipoSubmitting}
-                      className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md"
-                      style={{
-                        padding: '8px 20px',
-                        borderRadius: '8px',
-                        backgroundColor: '#84CC16',
-                        border: '1px solid #96c412',
-                        color: '#0f172a',
-                        fontSize: '13px',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {newEquipoSubmitting ? (
-                        <>
-                          <span
-                            className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin"
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              borderRadius: '50%',
-                              border: '2px solid rgba(15, 23, 42, 0.2)',
-                              borderTopColor: '#0f172a',
-                              display: 'inline-block',
-                            }}
-                          />
-                          <span>Registrando...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>✓</span>
-                          <span>Registrar Equipo</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
+        />
       )}
 
       {/* =========================================================================
