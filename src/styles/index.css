@@ -2448,6 +2448,23 @@ tbody tr:hover {
   gap: 10px;
 }
 
+.btn-icon-crud {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-crud:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
 .btn-primary {
   background: var(--copper);
   color: #0f172a;

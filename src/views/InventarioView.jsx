@@ -8,7 +8,7 @@ import {
 } from '../components/common/FmoProgramIcons';
 import { useState, useMemo, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { QrCode, Eye, Pencil, Trash2, X, Laptop, Cpu, Plug, FileText, Armchair } from 'lucide-react';
+import { QrCode, Eye, Pencil, Trash2, X, Laptop, Cpu, Plug, FileText, Armchair, Printer, Plus } from 'lucide-react';
 import ModalQR from '../components/modals/ModalQR';
 import ImpresionMasivaQRModal from '../components/modals/ImpresionMasivaQRModal';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
@@ -2814,114 +2814,253 @@ export default function InventarioView({
   return (
     <div className="inventario-view">
       {/* HEADER DE LA SECCIÓN CON SELECTOR DE PESTAÑAS Y BOTONES */}
-      <div className="inventory-topbar">
-        <div className="tab-buttons">
-          <button
-            type="button"
-            className={`tab-btn tab-equipos ${activeTab === 'equipos' ? 'active' : ''}`}
-            onClick={() => setActiveTab('equipos')}
-          >
-            <span className="tab-icon"><Laptop size={15} /></span>
-            <span>Equipos Tecnológicos</span>
-            <span className="tab-badge">{equipos.length}</span>
-          </button>
-          <button
-            type="button"
-            className={`tab-btn tab-electronica ${activeTab === 'electronica' ? 'active' : ''}`}
-            onClick={() => setActiveTab('electronica')}
-          >
-            <span className="tab-icon"><Cpu size={15} /></span>
-            <span>Equipos de Electrónica</span>
-            <span className="tab-badge">{rawElectronica.length}</span>
-          </button>
-          <button
-            type="button"
-            className={`tab-btn tab-consumibles ${activeTab === 'consumibles' ? 'active' : ''}`}
-            onClick={() => setActiveTab('consumibles')}
-          >
-            <span className="tab-icon"><Plug size={15} /></span>
-            <span>Consumibles de Robótica</span>
-            <span className="tab-badge">{consumibles.length}</span>
-          </button>
-          <button
-            type="button"
-            className={`tab-btn tab-papeleria ${activeTab === 'papeleria' ? 'active' : ''}`}
-            onClick={() => setActiveTab('papeleria')}
-          >
-            <span className="tab-icon"><FileText size={15} /></span>
-            <span>Papelería</span>
-            <span className="tab-badge">{rawPapeleria.length}</span>
-          </button>
-          <button
-            type="button"
-            className={`tab-btn tab-mobiliario ${activeTab === 'mobiliario' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mobiliario')}
-          >
-            <span className="tab-icon"><Armchair size={15} /></span>
-            <span>Mobiliario</span>
-            <span className="tab-badge">{mobiliarioFiltrado.length}</span>
-          </button>
+      <div
+        className="inventory-topbar"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          flexWrap: 'wrap',
+          marginBottom: '20px',
+        }}
+      >
+        <div
+          className="tab-buttons"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexWrap: 'wrap',
+            background: 'transparent',
+            padding: 0,
+            border: 'none',
+          }}
+        >
+          {[
+            { id: 'equipos', label: 'Equipos Tecnológicos', icon: Laptop, count: equipos.length },
+            { id: 'electronica', label: 'Equipos de Electrónica', icon: Cpu, count: rawElectronica.length },
+            { id: 'consumibles', label: 'Consumibles de Robótica', icon: Plug, count: consumibles.length },
+            { id: 'papeleria', label: 'Papelería', icon: FileText, count: rawPapeleria.length },
+            { id: 'mobiliario', label: 'Mobiliario', icon: Armchair, count: mobiliarioFiltrado.length },
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all duration-150 cursor-pointer ${
+                  isActive ? 'shadow-sm' : 'hover:-translate-y-0.5'
+                }`}
+                style={{
+                  fontFamily: "'Poppins', sans-serif",
+                  fontSize: '13px',
+                  fontWeight: isActive ? 700 : 600,
+                  backgroundColor: isActive ? '#abd037' : 'var(--surface-2, #ffffff)',
+                  color: isActive ? '#013a52' : '#6d6e71',
+                  border: isActive ? '1.5px solid #96b82d' : '1.5px solid var(--line, #e2e8f0)',
+                  boxShadow: isActive ? '0 3px 12px rgba(171, 208, 55, 0.4)' : '0 1px 3px rgba(0, 0, 0, 0.03)',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = '#abd037';
+                    e.currentTarget.style.color = '#013a52';
+                    e.currentTarget.style.backgroundColor = '#fafcf2';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = 'var(--line, #e2e8f0)';
+                    e.currentTarget.style.color = '#6d6e71';
+                    e.currentTarget.style.backgroundColor = 'var(--surface-2, #ffffff)';
+                  }
+                }}
+              >
+                {/* Micro-badge para Icono */}
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '7px',
+                    backgroundColor: isActive ? 'rgba(1, 58, 82, 0.12)' : 'rgba(109, 110, 113, 0.08)',
+                    color: isActive ? '#013a52' : '#6d6e71',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={14} style={{ strokeWidth: 2.2 }} />
+                </span>
+
+                {/* Texto de la pestaña */}
+                <span style={{ letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
+                  {tab.label}
+                </span>
+
+                {/* Badge contador reactivo */}
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '1px 7px',
+                    minWidth: '20px',
+                    borderRadius: '9999px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: isActive ? '#013a52' : 'rgba(109, 110, 113, 0.12)',
+                    color: isActive ? '#ffffff' : '#6d6e71',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isActive ? '0 1px 3px rgba(1, 58, 82, 0.25)' : 'none',
+                  }}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Botón Directo Imprimir QRs */}
+        <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Botón Imprimir QRs */}
           <button
             type="button"
-            className="btn small bg-[#013a52] hover:bg-[#0A3C63] text-white font-bold px-3 py-1.5 rounded-lg border border-[#abd037]/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer text-xs"
             onClick={() => setModalImpresionMasivaOpen(true)}
-            title="Imprimir etiquetas QR para rotulado de equipos (9 por hoja Carta 3×3)"
+            title="Imprimir etiquetas QR para rotulado institucional (9 por hoja Carta 3×3)"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              backgroundColor: '#013a52',
+              color: '#ffffff',
+              border: '1.5px solid rgba(171, 208, 55, 0.5)',
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: '13px',
+              fontWeight: 700,
+              boxShadow: '0 3px 10px rgba(1, 58, 82, 0.25)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#0A3C63';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 5px 14px rgba(1, 58, 82, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#013a52';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(1, 58, 82, 0.25)';
+            }}
           >
-            <span>🖨️</span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px',
+                height: '24px',
+                borderRadius: '7px',
+                backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                color: '#ffffff',
+                flexShrink: 0,
+              }}
+            >
+              <Printer size={14} style={{ strokeWidth: 2.2 }} />
+            </span>
             <span>Imprimir QRs</span>
             {selectedQRs.length > 0 && (
-              <span className="bg-[#abd037] text-[#013a52] px-1.5 py-0.2 rounded-full text-[10px] font-black">
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '1.5px 7px',
+                  borderRadius: '9999px',
+                  backgroundColor: '#abd037',
+                  color: '#013a52',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                }}
+              >
                 {selectedQRs.length}
               </span>
             )}
           </button>
 
+          {/* Botón Dinámico "+ Nuevo [Elemento]" */}
           {isAdmin && (
-            activeTab === 'equipos' ? (
-              <button
-                type="button"
-                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
-                onClick={() => handleOpenCreate('equipo')}
+            <button
+              type="button"
+              onClick={() => {
+                if (activeTab === 'equipos') handleOpenCreate('equipo');
+                else if (activeTab === 'electronica') handleOpenCreateElectronica();
+                else if (activeTab === 'papeleria') handleOpenCreatePapeleria();
+                else if (activeTab === 'mobiliario') handleOpenCreateMobiliario();
+                else handleOpenCreate('consumible');
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '12px',
+                backgroundColor: '#abd037',
+                color: '#013a52',
+                border: 'none',
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: '13px',
+                fontWeight: 700,
+                boxShadow: '0 4px 14px rgba(171, 208, 55, 0.45)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#96b82d';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(171, 208, 55, 0.55)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#abd037';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(171, 208, 55, 0.45)';
+              }}
+            >
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '7px',
+                  backgroundColor: 'rgba(1, 58, 82, 0.12)',
+                  color: '#013a52',
+                  flexShrink: 0,
+                }}
               >
-                + Nuevo Equipo Tecnológico
-              </button>
-            ) : activeTab === 'electronica' ? (
-              <button
-                type="button"
-                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
-                onClick={handleOpenCreateElectronica}
-              >
-                + Nuevo Equipo de Electrónica
-              </button>
-            ) : activeTab === 'papeleria' ? (
-              <button
-                type="button"
-                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
-                onClick={handleOpenCreatePapeleria}
-              >
-                + Nueva Papelería
-              </button>
-            ) : activeTab === 'mobiliario' ? (
-              <button
-                type="button"
-                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
-                onClick={handleOpenCreateMobiliario}
-              >
-                + Nuevo Mobiliario
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
-                onClick={() => handleOpenCreate('consumible')}
-              >
-                + Nuevo Consumible
-              </button>
-            )
+                <Plus size={15} style={{ strokeWidth: 2.6 }} />
+              </span>
+              <span>
+                {activeTab === 'equipos'
+                  ? 'Nuevo Equipo Tecnológico'
+                  : activeTab === 'electronica'
+                  ? 'Nuevo Equipo de Electrónica'
+                  : activeTab === 'papeleria'
+                  ? 'Nueva Papelería'
+                  : activeTab === 'mobiliario'
+                  ? 'Nuevo Mobiliario'
+                  : 'Nuevo Consumible'}
+              </span>
+            </button>
           )}
         </div>
       </div>
@@ -3480,32 +3619,35 @@ export default function InventarioView({
           PESTAÑA 2: EQUIPOS DE ELECTRÓNICA & INSTRUMENTACIÓN (Reutilizables / FMO)
           ========================================================================= */}
       {activeTab === 'electronica' && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div className="section-header" style={{ marginBottom: '4px', paddingBottom: '2px' }}>
-            <h2>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="section-header" style={{ marginBottom: '6px', paddingBottom: '2px' }}>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem', color: '#013a52' }}>
               <span>Control de Equipos de Electrónica & Instrumentación</span>
-              <span className="pill default" style={{ fontSize: '11px', padding: '2px 8px' }}>
+              <span className="pill default" style={{ fontSize: '11px', padding: '2px 8px', fontWeight: 700, backgroundColor: 'rgba(1, 58, 82, 0.08)', color: '#013a52', border: '1px solid rgba(1, 58, 82, 0.15)' }}>
                 {rawElectronica.length} equipos en catálogo
               </span>
             </h2>
-            <span className="section-subtitle" style={{ fontSize: '12.5px', marginTop: '2px' }}>
+            <span className="section-subtitle" style={{ fontSize: '12.5px', marginTop: '2px', color: '#6d6e71' }}>
               Multímetros, osciloscopios, fuentes regulables, estaciones de soldadura, tarjetas programables y kits reutilizables
             </span>
           </div>
 
           {/* Barra de Filtros reactiva */}
-          <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
+          <div className="filter-bar" style={{ marginBottom: '6px', padding: '10px 14px', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)', backgroundColor: 'var(--surface, #ffffff)' }}>
             <div className="flex items-center gap-3 flex-wrap">
               {/* Filtro Sede */}
               <div className="filter-group flex items-center gap-2">
-                <label className="text-[#6d6e71] font-medium text-sm">Sede / Ubicación:</label>
+                <label className="text-[#6d6e71] font-semibold text-xs" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                  Sede / Ubicación:
+                </label>
                 <select
                   value={filterSedeElectronica}
                   onChange={(e) => {
                     setFilterSedeElectronica(e.target.value);
                     setElectronicaPage(1);
                   }}
-                  className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
+                  className="rounded-lg text-xs font-semibold px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   <option value="todas">Todas las sedes ({rawElectronica.length})</option>
                   {sedesList.map((s) => (
@@ -3516,14 +3658,17 @@ export default function InventarioView({
 
               {/* Filtro Estado */}
               <div className="filter-group flex items-center gap-2">
-                <label className="text-[#6d6e71] font-medium text-sm">Estado:</label>
+                <label className="text-[#6d6e71] font-semibold text-xs" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                  Estado:
+                </label>
                 <select
                   value={filterStatusElectronica}
                   onChange={(e) => {
                     setFilterStatusElectronica(e.target.value);
                     setElectronicaPage(1);
                   }}
-                  className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
+                  className="rounded-lg text-xs font-semibold px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   <option value="todos">Todos los estados</option>
                   <option value="disponible">Disponible</option>
@@ -3534,7 +3679,7 @@ export default function InventarioView({
               </div>
             </div>
 
-            <div className="filter-count text-[#6d6e71] text-sm">
+            <div className="filter-count text-[#6d6e71] text-xs font-medium" style={{ fontFamily: "'Poppins', sans-serif" }}>
               Mostrando <strong className="font-bold text-[#013a52]">{electronicaFiltrada.length}</strong> de <strong className="font-bold text-[#013a52]">{rawElectronica.length}</strong> equipos registrados
             </div>
           </div>
@@ -3543,21 +3688,21 @@ export default function InventarioView({
           {renderQRSelectionBanner()}
 
           {electronicaFiltrada.length === 0 ? (
-            <div className="panel empty" style={{ padding: '36px 20px', textAlign: 'center' }}>
+            <div className="panel empty" style={{ padding: '36px 20px', textAlign: 'center', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)' }}>
               <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>⚡</span>
-              <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--text, #f8fafc)', fontWeight: 600 }}>
+              <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--text-h, #013a52)', fontWeight: 600 }}>
                 No hay equipos de electrónica registrados con los filtros seleccionados.
               </p>
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-dim, #94a3b8)' }}>
+              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-dim, #6d6e71)' }}>
                 Registra uno nuevo con el botón superior "+ Nuevo Equipo de Electrónica".
               </p>
             </div>
           ) : (
-            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
-              <table style={{ tableLayout: 'fixed', width: '100%' }}>
+            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr>
-                    <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
+                  <tr style={{ borderBottom: '2px solid #abd037' }}>
+                    <th style={{ width: '40px', padding: '10px 4px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
                         checked={areAllVisibleElectronicaSelected}
@@ -3567,13 +3712,27 @@ export default function InventarioView({
                         title="Seleccionar o deseleccionar todos los equipos visibles"
                       />
                     </th>
-                    <th style={{ width: '15%', padding: '10px 14px', textAlign: 'left' }}>PLACA / CÓDIGO</th>
-                    <th style={{ width: '25%', padding: '10px 12px', textAlign: 'left' }}>EQUIPO & MODELO</th>
-                    <th style={{ width: '14%', padding: '10px 10px', textAlign: 'left' }}>SUBCATEGORÍA</th>
-                    <th style={{ width: '13%', padding: '10px 10px', textAlign: 'center' }}>PROGRAMA FMO</th>
-                    <th style={{ width: '12%', padding: '10px 10px', textAlign: 'left' }}>SEDE / UBICACIÓN</th>
-                    <th style={{ width: '9%', padding: '10px 8px', textAlign: 'center' }}>ESTADO</th>
-                    <th style={{ width: '12%', padding: '10px 14px', textAlign: 'right' }}>ACCIONES</th>
+                    <th style={{ width: '12%', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                      PLACA / CÓDIGO
+                    </th>
+                    <th style={{ width: '23%', padding: '10px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                      EQUIPO & MODELO
+                    </th>
+                    <th style={{ width: '13%', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                      SUBCATEGORÍA
+                    </th>
+                    <th style={{ width: '12%', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                      PROGRAMA FMO
+                    </th>
+                    <th style={{ width: '14%', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                      SEDE / UBICACIÓN
+                    </th>
+                    <th style={{ width: '11%', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                      ESTADO
+                    </th>
+                    <th style={{ width: '15%', padding: '10px 6px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                      ACCIONES
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3587,8 +3746,9 @@ export default function InventarioView({
                     const isSelected = isQRSelected(code);
 
                     return (
-                      <tr key={code} className={isSelected ? 'bg-[#abd037]/10' : ''}>
-                        <td style={{ textAlign: 'center', padding: '8px 4px' }}>
+                      <tr key={code} className={isSelected ? 'bg-[#abd037]/10' : ''} style={{ borderBottom: '1px solid var(--line, #e2e8f0)' }}>
+                        {/* Checkbox */}
+                        <td style={{ textAlign: 'center', padding: '8px 4px', verticalAlign: 'middle' }}>
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -3596,82 +3756,277 @@ export default function InventarioView({
                             className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
                           />
                         </td>
-                        <td style={{ padding: '8px 14px' }}>
-                          <span className="card-placa font-sans font-bold text-xs tracking-wide text-[#013a52] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">
+
+                        {/* Placa / Código */}
+                        <td style={{ padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <button
+                            type="button"
+                            onClick={() => setItemParaDetalle(normalizeItemForQR(e, 'electronica'))}
+                            className="badge-placa"
+                            title={`Ver ficha técnica de ${code}`}
+                            style={{
+                              fontFamily: "'Poppins', sans-serif",
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              letterSpacing: '0.02em',
+                              color: '#013a52',
+                              backgroundColor: 'rgba(1, 58, 82, 0.08)',
+                              border: '1px solid rgba(1, 58, 82, 0.18)',
+                              padding: '2.5px 7px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'inline-block',
+                              maxWidth: '100%',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             {code}
-                          </span>
+                          </button>
                         </td>
-                        <td style={{ padding: '8px 12px' }}>
-                          <strong className="block text-sm text-[#013a52] dark:text-slate-100">{nombre}</strong>
-                          <span className="text-xs text-[#6d6e71] dark:text-slate-400">
-                            {[e.marca, e.modelo].filter(Boolean).join(' ') || 'Equipo institucional'}
-                            {e.serial ? ` · S/N: ${e.serial}` : ''}
-                          </span>
+
+                        {/* Equipo & Modelo */}
+                        <td style={{ padding: '8px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                            <strong
+                              title={nombre}
+                              style={{
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                color: 'var(--text-h, #013a52)',
+                                lineHeight: '1.25',
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                display: 'block',
+                              }}
+                            >
+                              {nombre}
+                            </strong>
+                            <span
+                              title={[e.marca, e.modelo, e.serial ? `S/N: ${e.serial}` : ''].filter(Boolean).join(' · ')}
+                              style={{
+                                fontSize: '11px',
+                                color: 'var(--text-dim, #6d6e71)',
+                                marginTop: '2px',
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                display: 'block',
+                              }}
+                            >
+                              {[e.marca, e.modelo].filter(Boolean).join(' ') || 'Equipo institucional'}
+                              {e.serial ? ` · S/N: ${e.serial}` : ''}
+                            </span>
+                          </div>
                         </td>
-                        <td style={{ padding: '8px 10px' }}>
-                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-[#013a52] dark:text-slate-200 border border-slate-200/80">
+
+                        {/* Subcategoría */}
+                        <td style={{ padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <span
+                            title={subcat}
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '9999px',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              backgroundColor: 'var(--surface-2, #f1f5f9)',
+                              color: 'var(--text-h, #013a52)',
+                              border: '1px solid var(--line, #e2e8f0)',
+                              maxWidth: '100%',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             {subcat}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'center', padding: '8px 10px' }}>
-                          <ProgramAreaBadge area={e.area_asignada || 'Robótica'} size="sm" />
+
+                        {/* Programa FMO */}
+                        <td style={{ textAlign: 'center', padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+                            <ProgramAreaBadge area={e.area_asignada || 'Robótica'} size="sm" />
+                          </div>
                         </td>
-                        <td style={{ padding: '8px 10px' }}>
-                          <span className="sede-badge municipal block text-xs">{sede}</span>
-                          {e.ubicacion && (
-                            <span className="text-[11px] text-[#6d6e71] block truncate max-w-[140px]">{e.ubicacion}</span>
-                          )}
+
+                        {/* Sede / Ubicación */}
+                        <td style={{ padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
+                            <span
+                              className="sede-badge municipal truncate"
+                              title={`Sede: ${sede}`}
+                              style={{
+                                maxWidth: '100%',
+                                fontSize: '11px',
+                                padding: '2px 7px',
+                                display: 'inline-block',
+                                lineHeight: '1.25',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {sede}
+                            </span>
+                            {e.ubicacion && (
+                              <span
+                                title={`Ubicación física: ${e.ubicacion}`}
+                                style={{
+                                  fontSize: '11px',
+                                  color: 'var(--text-dim, #6d6e71)',
+                                  maxWidth: '100%',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  display: 'block',
+                                }}
+                              >
+                                {e.ubicacion}
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td style={{ textAlign: 'center', padding: '8px 8px' }}>
+
+                        {/* Estado */}
+                        <td style={{ textAlign: 'center', padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
                           <span
-                            className={`status-badge text-xs px-2 py-0.5 rounded-full font-bold inline-block ${
+                            className={`pill ${
                               estadoLower.includes('dispon')
-                                ? 'status-active bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                ? 'ok'
                                 : estadoLower.includes('prest')
-                                ? 'status-warning bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-                                : 'status-danger bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                                ? 'prestado'
+                                : estadoLower.includes('manten')
+                                ? 'alerta'
+                                : 'low'
                             }`}
+                            style={{
+                              fontWeight: 700,
+                              fontSize: '11px',
+                              padding: '2.5px 8px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              whiteSpace: 'nowrap',
+                            }}
                           >
                             {estado}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'right', padding: '8px 14px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+
+                        {/* Acciones */}
+                        <td style={{ textAlign: 'center', padding: '8px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              padding: '0 2px',
+                            }}
+                          >
+                            {/* 📷 QR */}
                             <button
                               type="button"
-                              className="action-btn"
-                              title="Ver código QR"
+                              className="btn-icon-crud shrink-0"
+                              title="Ver e Imprimir Código QR"
                               onClick={() => setQrModalItem(normalizeItemForQR(e, 'electronica'))}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'rgba(6, 182, 212, 0.12)',
+                                border: '1px solid rgba(6, 182, 212, 0.35)',
+                                borderRadius: '7px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#06b6d4',
+                                transition: 'all 0.15s ease',
+                              }}
                             >
-                              <QrCode size={15} />
+                              <QrCode size={14} />
                             </button>
+
+                            {/* 👁️ Ver Detalle */}
                             <button
                               type="button"
-                              className="action-btn"
-                              title="Ver ficha técnica"
+                              className="btn-icon-crud shrink-0"
+                              title="Ver ficha técnica completa"
                               onClick={() => setItemParaDetalle(normalizeItemForQR(e, 'electronica'))}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                background: 'var(--surface-2, #f8fafc)',
+                                border: '1px solid var(--line, #e2e8f0)',
+                                borderRadius: '7px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--text-h, #013a52)',
+                                transition: 'all 0.15s ease',
+                              }}
                             >
-                              <Eye size={15} />
+                              <Eye size={14} />
                             </button>
+
+                            {/* ✏️ Editar */}
                             {isAdmin && (
-                              <>
-                                <button
-                                  type="button"
-                                  className="action-btn"
-                                  title="Editar equipo de electrónica"
-                                  onClick={() => handleOpenEditElectronica(e)}
-                                >
-                                  <Pencil size={15} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="action-btn delete"
-                                  title="Dar de baja equipo de electrónica"
-                                  onClick={() => handleDeleteElectronica(e)}
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </>
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Editar equipo de electrónica"
+                                onClick={() => handleOpenEditElectronica(e)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(245, 158, 11, 0.12)',
+                                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                                  borderRadius: '7px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: '#d97706',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <Pencil size={14} />
+                              </button>
+                            )}
+
+                            {/* 🗑️ Baja / Eliminar */}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="btn-icon-crud shrink-0"
+                                title="Dar de baja equipo de electrónica"
+                                onClick={() => handleDeleteElectronica(e)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  flexShrink: 0,
+                                  background: 'rgba(239, 68, 68, 0.12)',
+                                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                                  borderRadius: '7px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: '#ef4444',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             )}
                           </div>
                         </td>
@@ -3693,18 +4048,19 @@ export default function InventarioView({
                   color: 'var(--text-dim, #6d6e71)',
                   flexWrap: 'wrap',
                   gap: '8px',
+                  fontFamily: "'Poppins', sans-serif",
                 }}
               >
                 <div>
                   Mostrando{' '}
-                  <strong style={{ color: 'var(--text-h)' }}>
+                  <strong style={{ color: 'var(--text-h, #013a52)', fontWeight: 700 }}>
                     {electronicaFiltrada.length === 0 ? 0 : (currentElectronicaPage - 1) * ITEMS_PER_PAGE + 1}
                   </strong>{' '}
                   -{' '}
-                  <strong style={{ color: 'var(--text-h)' }}>
+                  <strong style={{ color: 'var(--text-h, #013a52)', fontWeight: 700 }}>
                     {Math.min(currentElectronicaPage * ITEMS_PER_PAGE, electronicaFiltrada.length)}
                   </strong>{' '}
-                  de <strong style={{ color: 'var(--text-h)' }}>{electronicaFiltrada.length}</strong>{' '}
+                  de <strong style={{ color: 'var(--text-h, #013a52)', fontWeight: 700 }}>{electronicaFiltrada.length}</strong>{' '}
                   {electronicaFiltrada.length !== rawElectronica.length
                     ? `(filtrados de ${rawElectronica.length} registrados)`
                     : 'equipos registrados'}
@@ -3715,18 +4071,20 @@ export default function InventarioView({
                     type="button"
                     disabled={currentElectronicaPage <= 1}
                     onClick={() => setElectronicaPage((p) => Math.max(1, p - 1))}
-                    className="px-2.5 py-1 rounded border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold"
+                    className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-[#013a52] dark:text-slate-100 transition-colors cursor-pointer"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     Anterior
                   </button>
-                  <span className="font-bold text-[#013a52] dark:text-slate-200">
+                  <span className="font-bold text-[#013a52] dark:text-slate-200 text-xs" style={{ fontFamily: "'Poppins', sans-serif" }}>
                     Pág. {currentElectronicaPage} de {totalElectronicaPages}
                   </span>
                   <button
                     type="button"
                     disabled={currentElectronicaPage >= totalElectronicaPages}
                     onClick={() => setElectronicaPage((p) => Math.min(totalElectronicaPages, p + 1))}
-                    className="px-2.5 py-1 rounded border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold"
+                    className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-[#013a52] dark:text-slate-100 transition-colors cursor-pointer"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     Siguiente
                   </button>
