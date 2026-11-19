@@ -5250,6 +5250,11 @@ html.dark .badge-programa-general {
   color: #FFFFFF !important;
   border-color: #2CACD0 !important;
 }
+.tab-btn.active.tab-electronica {
+  background: #013a52 !important;
+  color: #FFFFFF !important;
+  border-color: #013a52 !important;
+}
 .tab-btn.active.tab-consumibles {
   background: #0A3C63 !important;
   color: #FFFFFF !important;
@@ -5259,6 +5264,11 @@ html.dark .badge-programa-general {
   background: #7b2cbf !important;
   color: #FFFFFF !important;
   border-color: #7b2cbf !important;
+}
+.tab-btn.active.tab-mobiliario {
+  background: #475569 !important;
+  color: #FFFFFF !important;
+  border-color: #475569 !important;
 }
 
 /* ==========================================================================

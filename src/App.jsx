@@ -131,8 +131,12 @@ function App() {
       setLoading(true);
       setApiError(null);
 
-      const [activosData, consumiblesData, prestamosData, entregasData, remisionesData, historialData, sedesData] = await Promise.all([
+      const [activosData, electronicaData, consumiblesData, prestamosData, entregasData, remisionesData, historialData, sedesData] = await Promise.all([
         inventoryApi.getActivos(),
+        inventoryApi.getEquiposElectronica().catch((err) => {
+          console.warn('Aviso: no se pudieron cargar equipos de electrónica:', err.message);
+          return [];
+        }),
         inventoryApi.getConsumibles(),
         inventoryApi.getPrestamos(),
         inventoryApi.getEntregas().catch((err) => {
@@ -237,6 +241,42 @@ function App() {
               dateAdded: a.created_at ? a.created_at.split('T')[0] : today(),
             });
           }
+        });
+      }
+
+      // Mapear equipos de electrónica reutilizables e instrumentación (SIGA-FMO)
+      if (Array.isArray(electronicaData)) {
+        electronicaData.forEach((e) => {
+          const unitObj = {
+            code: e.placa,
+            placa: e.placa,
+            model: `${e.marca || ''} ${e.modelo || ''}`.trim() || e.nombre,
+            serial: e.serial || '—',
+            status: String(e.estado || '').toLowerCase().includes('prest') ? 'prestado' : (e.estado || 'disponible').toLowerCase(),
+            responsable: e.responsable || (String(e.estado || '').toLowerCase().includes('prest') ? 'En Préstamo' : 'Bodega Central'),
+            area: e.area_asignada || 'Robótica',
+            area_asignada: e.area_asignada || 'Robótica',
+            sede: e.sede || 'Medellín',
+          };
+
+          newItems.push({
+            id: `ele-${e.id || e.placa}`,
+            dbId: e.id,
+            placa: e.placa,
+            name: e.nombre,
+            category: e.subcategoria || 'Instrumentación',
+            categoria: e.subcategoria || 'Instrumentación',
+            subcategoria: e.subcategoria || 'Instrumentación',
+            itemType: 'electronica',
+            location: e.ubicacion || e.sede || 'Medellín',
+            sede: e.sede || 'Medellín',
+            area: e.area_asignada || 'Robótica',
+            area_asignada: e.area_asignada || 'Robótica',
+            minStock: 1,
+            units: [unitObj],
+            quantity: 1,
+            dateAdded: e.fecha_adquisicion || (e.created_at ? e.created_at.split('T')[0] : today()),
+          });
         });
       }
 

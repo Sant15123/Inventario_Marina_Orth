@@ -121,7 +121,8 @@ export default function DetalleActivoPublico({ items = [], movements = [] }) {
     const isMobiliario = itemData.__tipo === 'mobiliario' || itemData.tipo === 'mobiliario' || codeLower.startsWith('mob');
     const isPapeleria = itemData.__tipo === 'papeleria' || itemData.tipo === 'papeleria' || codeLower.startsWith('pape') || itemData.categoria === 'Papelería';
     const isRobotica = itemData.__tipo === 'robotica' || itemData.tipo === 'robotica' || codeLower.startsWith('rob') || itemData.categoria === 'Robótica';
-    const isTecnologia = !isMobiliario && !isPapeleria && !isRobotica;
+    const isElectronica = itemData.__tipo === 'electronica' || itemData.tipo === 'electronica' || codeLower.startsWith('ele') || itemData.categoria === 'Electrónica';
+    const isTecnologia = !isMobiliario && !isPapeleria && !isRobotica && !isElectronica;
 
     // Componente de encabezado común
     const HeaderPublico = ({ subtitulo }) => (
@@ -509,14 +510,14 @@ export default function DetalleActivoPublico({ items = [], movements = [] }) {
     return (
       <div className="public-asset-container">
         <div className="public-asset-card">
-          <HeaderPublico subtitulo="Ficha Técnica de Equipo Tecnológico" />
+          <HeaderPublico subtitulo={isElectronica ? "Ficha Técnica de Equipos de Electrónica & Taller" : "Ficha Técnica de Equipo Tecnológico"} />
 
           {/* Encabezado: Placa, Nombre del equipo */}
           <div className="public-hero">
             <div className="placa-highlight mono-num">{rawCode}</div>
-            <h2 className="hero-title">{itemData.nombre || itemData.name || 'Equipo Tecnológico'}</h2>
+            <h2 className="hero-title">{itemData.nombre || itemData.name || (isElectronica ? 'Equipo de Electrónica' : 'Equipo Tecnológico')}</h2>
             <div className="hero-category">
-              <span className="category-tag">💻 {itemData.categoria || 'Tecnología'}</span>
+              <span className="category-tag">{isElectronica ? '⚡' : '💻'} {itemData.subcategoria || itemData.categoria || (isElectronica ? 'Electrónica' : 'Tecnología')}</span>
               <span className="sede-badge municipal">{sedeActual}</span>
             </div>
           </div>

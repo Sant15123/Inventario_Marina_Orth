@@ -752,8 +752,8 @@ export default function PrestamosView({
 
   const recentDeliveries = movements.filter((m) => m.type === 'entrega');
 
-  // Listados de items disponibles
-  const equipos = items.filter((it) => it.itemType === 'equipo');
+  // Listados de items disponibles (Equipos Tecnológicos y Equipos de Electrónica Retornables)
+  const equipos = items.filter((it) => it.itemType === 'equipo' || it.itemType === 'electronica');
   const consumibles = items.filter((it) => it.itemType === 'consumible');
 
   // Equipo seleccionado para el formulario
@@ -3663,7 +3663,7 @@ export default function PrestamosView({
                       .filter((it) => available(it) > 0)
                       .map((it) => (
                         <option key={it.id} value={it.id}>
-                          {it.name} (Disponibles: {available(it)})
+                          {it.name} {it.itemType === 'electronica' ? '⚡ [Electrónica]' : '💻 [Tecnología]'} (Disponibles: {available(it)})
                         </option>
                       ))}
                   </select>

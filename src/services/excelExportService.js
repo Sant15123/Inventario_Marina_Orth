@@ -101,9 +101,18 @@ function autoFitColumns(worksheet, minCol = 1, startRow = 5, margin = 4) {
  * @param {Object} options - Parámetros opcionales para precarga o filtros
  */
 export async function exportarLibroMaestroExcelFMO(options = {}) {
-  // 1. Consulta paralela de datos de las 5 colecciones
-  let [activosRaw, consumiblesRaw, prestamosRaw, mobiliarioRaw, papeleriaRaw] = await Promise.all([
+  // 1. Consulta paralela de datos de las 5 colecciones oficiales
+  let [activosRaw, electronicaRaw, consumiblesRaw, prestamosRaw, mobiliarioRaw, papeleriaRaw] = await Promise.all([
     options.activos ? Promise.resolve(options.activos) : inventoryApi.getActivos().catch(() => []),
+    options.electronica ? Promise.resolve(options.electronica) : (async () => {
+      try {
+        if (supabase) {
+          const { data, error } = await supabase.from('equipos_electronica').select('*').order('created_at', { ascending: false });
+          if (!error && Array.isArray(data) && data.length > 0) return data;
+        }
+      } catch (_) {}
+      return inventoryApi.getEquiposElectronica().catch(() => []);
+    })(),
     options.consumibles ? Promise.resolve(options.consumibles) : inventoryApi.getConsumibles().catch(() => []),
     options.prestamos ? Promise.resolve(options.prestamos) : inventoryApi.getPrestamos().catch(() => []),
     options.mobiliario ? Promise.resolve(options.mobiliario) : (async () => {
@@ -127,6 +136,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
   ]);
 
   const activos = Array.isArray(activosRaw) ? activosRaw : (activosRaw?.data || []);
+  const electronica = Array.isArray(electronicaRaw) ? electronicaRaw : (electronicaRaw?.data || []);
   const consumibles = Array.isArray(consumiblesRaw) ? consumiblesRaw : (consumiblesRaw?.data || []);
   const prestamos = Array.isArray(prestamosRaw) ? prestamosRaw : (prestamosRaw?.data || []);
   const mobiliario = Array.isArray(mobiliarioRaw) ? mobiliarioRaw : (mobiliarioRaw?.data || []);
@@ -147,12 +157,21 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
 
   // Cálculos de métricas globales precalculadas
   const totalActivos = activos.length;
+  const totalElectronica = electronica.length;
   const totalMobiliario = mobiliario.length;
   const totalConsumibles = consumibles.length;
   const totalPapeleria = papeleria.length;
 
   const totalValorActivos = activos.reduce((acc, a) => {
     return acc + Number(a.valor_unitario ?? a.valor_compra ?? a.precio ?? 0);
+  }, 0);
+
+  const totalValorElectronica = electronica.reduce((acc, e) => {
+    return acc + Number(e.valor_estimado ?? e.valor ?? 0);
+  }, 0);
+
+  const totalCantidadElectronica = electronica.reduce((acc, e) => {
+    return acc + Number(e.cantidad ?? 1);
   }, 0);
 
   const totalCantidadConsumibles = consumibles.reduce((acc, c) => {
@@ -323,9 +342,10 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
 
   const existenciasData = [
     ['Equipos Tecnológicos (Cómputo / Robótica)', 'Placa ACT-FMO / Serial', totalActivos, `${activos.filter(a => (a.estado||'').toLowerCase() === 'disponible').length} en bodega`, 'Operativo'],
-    ['Muebles y Enseres de Sedes', 'Placa MOB-XXXX', totalMobiliario, `${mobiliario.filter(m => (m.estado||'').toLowerCase() === 'bueno' || (m.estado_conservacion||'').toLowerCase() === 'bueno').length} operativos`, 'Dotación'],
-    ['Referencias Materiales de Robótica STEAM', 'Código Rob-XXXX', totalConsumibles, `${roboticaAlertas.length} en alerta`, roboticaAlertas.length > 0 ? 'Reabastecer' : 'Óptimo'],
+    ['Equipos de Electrónica & Instrumentación', 'Placa ELE-FMO / Serial', totalElectronica, `${electronica.filter(e => (e.estado||'').toLowerCase() === 'disponible').length} en bodega`, 'Reutilizable'],
+    ['Consumibles de Robótica STEAM', 'Código Rob-XXXX', totalConsumibles, `${roboticaAlertas.length} en alerta`, roboticaAlertas.length > 0 ? 'Reabastecer' : 'Óptimo'],
     ['Referencias de Papelería e Insumos', 'Código Pape-XXXX', totalPapeleria, `${papeleriaAlertas.length} en alerta`, papeleriaAlertas.length > 0 ? 'Reabastecer' : 'Óptimo'],
+    ['Mobiliario y Enseres de Sedes', 'Placa MOB-XXXX', totalMobiliario, `${mobiliario.filter(m => (m.estado||'').toLowerCase() === 'bueno' || (m.estado_conservacion||'').toLowerCase() === 'bueno').length} operativos`, 'Dotación'],
   ];
 
   existenciasData.forEach((rowVals, idx) => {
@@ -623,6 +643,134 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     wsActivos.autoFilter = `A5:L${rAIdx - 1}`;
   }
   autoFitColumns(wsActivos, 1, 5, 4);
+
+  // =========================================================================
+  // HOJA: "Equipos de Electronica"
+  // =========================================================================
+  const wsElectronica = workbook.addWorksheet('Equipos de Electronica', {
+    pageSetup: { orientation: 'landscape', paperSize: 9 },
+    views: [{ state: 'frozen', ySplit: 5 }],
+    properties: { tabColor: { argb: 'FF2CACD0' } },
+  });
+
+  wsElectronica.mergeCells('A1:O1');
+  const eT1 = wsElectronica.getCell('A1');
+  eT1.value = 'FUNDACIÓN MARINA ORTH - EQUIPOS DE ELECTRÓNICA & INSTRUMENTACIÓN';
+  eT1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: COLORS.titleDark } };
+  eT1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limePrimary } };
+  eT1.alignment = { horizontal: 'center', vertical: 'middle' };
+  wsElectronica.getRow(1).height = 28;
+
+  wsElectronica.mergeCells('A2:O2');
+  const eT2 = wsElectronica.getCell('A2');
+  eT2.value = `Instrumentación, Herramientas y Placas Reutilizables - Emisión: ${fechaEmisionDDMMAAAA} | Total: ${electronica.length} equipos`;
+  eT2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: COLORS.white } };
+  eT2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeMedium } };
+  eT2.alignment = { horizontal: 'center', vertical: 'middle' };
+  wsElectronica.getRow(2).height = 20;
+
+  wsElectronica.mergeCells('A3:O3');
+  const eT3 = wsElectronica.getCell('A3');
+  eT3.value = '';
+  eT3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeLight } };
+  wsElectronica.getRow(3).height = 4;
+  wsElectronica.getRow(4).height = 8;
+
+  const colsElectronicaDef = [
+    { key: 'placa', header: 'Placa / Código', align: 'center' },
+    { key: 'nombre', header: 'Nombre del Equipo', align: 'left' },
+    { key: 'subcategoria', header: 'Subcategoría', align: 'left' },
+    { key: 'marca', header: 'Marca', align: 'left' },
+    { key: 'modelo', header: 'Modelo', align: 'left' },
+    { key: 'serial', header: 'Serial (S/N)', align: 'left' },
+    { key: 'cantidad', header: 'Cantidad', align: 'center' },
+    { key: 'condicion', header: 'Condición', align: 'center' },
+    { key: 'estado', header: 'Estado', align: 'center' },
+    { key: 'area', header: 'Programa / Área', align: 'left' },
+    { key: 'sede', header: 'Sede', align: 'left' },
+    { key: 'ubicacion', header: 'Ubicación Física', align: 'left' },
+    { key: 'fecha_adquisicion', header: 'Fecha Adquisición', align: 'center' },
+    { key: 'valor', header: 'Valor Estimado (COP)', align: 'right' },
+    { key: 'observaciones', header: 'Observaciones', align: 'left' },
+  ];
+
+  const headerEleRow = wsElectronica.getRow(5);
+  headerEleRow.values = colsElectronicaDef.map((c) => c.header);
+  headerEleRow.height = 26;
+  headerEleRow.eachCell((cell, colNumber) => {
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.white } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF013A52' } };
+    cell.alignment = { horizontal: colsElectronicaDef[colNumber - 1]?.align || 'center', vertical: 'middle', wrapText: true };
+    cell.border = {
+      top: { style: 'medium', color: { argb: COLORS.borderDark } },
+      bottom: { style: 'medium', color: { argb: COLORS.borderDark } },
+      left: { style: 'thin', color: { argb: COLORS.borderDark } },
+      right: { style: 'thin', color: { argb: COLORS.borderDark } },
+    };
+  });
+
+  let rEIdx = 6;
+  electronica.forEach((e, idx) => {
+    const bg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
+    const row = wsElectronica.addRow([
+      sanitizarCelda(e.placa || e.code || e.id, 'ELE-FMO-000'),
+      sanitizarCelda(e.nombre || e.material || e.name, 'Equipo de Electrónica'),
+      sanitizarCelda(e.subcategoria || e.categoria, 'Instrumentación'),
+      sanitizarCelda(e.marca, '—'),
+      sanitizarCelda(e.modelo, '—'),
+      sanitizarCelda(e.serial, '—'),
+      Number(e.cantidad || 1),
+      sanitizarCelda(e.condicion, 'Bueno'),
+      sanitizarCelda(e.estado, 'Disponible'),
+      sanitizarCelda(e.area_asignada || e.area, 'Robótica'),
+      sanitizarCelda(e.sede, 'Medellín'),
+      sanitizarCelda(e.ubicacion, 'Laboratorio'),
+      e.fecha_adquisicion ? String(e.fecha_adquisicion).split('T')[0] : '—',
+      Number(e.valor_estimado || 0),
+      sanitizarCelda(e.observaciones, ''),
+    ]);
+    row.height = 21;
+    row.eachCell((cell, colNumber) => {
+      const colDef = colsElectronicaDef[colNumber - 1];
+      cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textPrimary } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      cell.alignment = { horizontal: colDef?.align || 'left', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: COLORS.borderLight } },
+        bottom: { style: 'thin', color: { argb: COLORS.borderLight } },
+        left: { style: 'thin', color: { argb: COLORS.borderLight } },
+        right: { style: 'thin', color: { argb: COLORS.borderLight } },
+      };
+      if (colDef?.key === 'valor') {
+        cell.numFmt = '"$"#,##0';
+      }
+    });
+    rEIdx++;
+  });
+
+  const totEleRow = wsElectronica.getRow(rEIdx);
+  totEleRow.getCell(1).value = 'TOTAL:';
+  totEleRow.getCell(2).value = `${electronica.length} equipos de electrónica registrados`;
+  totEleRow.getCell(7).value = electronica.reduce((acc, e) => acc + (Number(e.cantidad) || 1), 0);
+  totEleRow.getCell(14).value = totalValorElectronica;
+  totEleRow.getCell(14).numFmt = '"$"#,##0';
+  totEleRow.height = 24;
+  totEleRow.eachCell((cell) => {
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.titleDark } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.limeLight } };
+    cell.border = {
+      top: { style: 'medium', color: { argb: COLORS.borderDark } },
+      bottom: { style: 'medium', color: { argb: COLORS.borderDark } },
+      left: { style: 'thin', color: { argb: COLORS.borderDark } },
+      right: { style: 'thin', color: { argb: COLORS.borderDark } },
+    };
+  });
+  rEIdx++;
+
+  if (rEIdx > 7) {
+    wsElectronica.autoFilter = `A5:O${rEIdx - 2}`;
+  }
+  autoFitColumns(wsElectronica, 1, 5, 4);
 
   // =========================================================================
   // HOJA 3: "Robotica y Consumibles"

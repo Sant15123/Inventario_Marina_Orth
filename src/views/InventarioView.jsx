@@ -8,12 +8,13 @@ import {
 } from '../components/common/FmoProgramIcons';
 import { useState, useMemo, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { QrCode, Eye, Pencil, Trash2, X } from 'lucide-react';
+import { QrCode, Eye, Pencil, Trash2, X, Laptop, Cpu, Plug, FileText, Armchair } from 'lucide-react';
 import ModalQR from '../components/modals/ModalQR';
 import ImpresionMasivaQRModal from '../components/modals/ImpresionMasivaQRModal';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalRegistroMobiliario from '../components/modals/ModalRegistroMobiliario';
+import ModalRegistroElectronica from '../components/modals/ModalRegistroElectronica';
 import ModalBajaConsumible from '../components/modals/ModalBajaConsumible';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -318,6 +319,13 @@ export default function InventarioView({
       sede = rawItem.sede || 'Medellín';
       area = rawItem.area_asignada || rawItem.area || rawItem.programa || 'Nuevas Tecnologías';
       categoria = rawItem.parentCategory || rawItem.categoria || 'Portátiles';
+    } else if (type === 'electronica') {
+      placa = rawItem.placa || rawItem.code || rawItem.id || 'S-PLACA';
+      nombre = rawItem.nombre || rawItem.material || rawItem.name || 'Equipo de Electrónica';
+      serial = rawItem.serial || rawItem.modelo || '—';
+      sede = rawItem.sede || rawItem.ubicacion || 'Medellín';
+      area = rawItem.area_asignada || rawItem.area || rawItem.programa || 'Robótica';
+      categoria = rawItem.subcategoria || rawItem.categoria || 'Electrónica';
     } else if (type === 'consumible') {
       placa = rawItem.id || rawItem.code || 'S-COD';
       nombre = rawItem.material || rawItem.name || rawItem.nombre || 'Material de Robótica';
@@ -401,6 +409,9 @@ export default function InventarioView({
   const getCurrentTabFilteredItems = () => {
     if (activeTab === 'equipos') {
       return (allEquiposUnits || []).map((u) => normalizeItemForQR(u, 'equipo'));
+    }
+    if (activeTab === 'electronica') {
+      return (electronicaFiltrada || []).map((e) => normalizeItemForQR(e, 'electronica'));
     }
     if (activeTab === 'consumibles') {
       return (consumibles || []).map((c) => normalizeItemForQR(c, 'consumible'));
@@ -610,6 +621,60 @@ export default function InventarioView({
     cargarMobiliario();
   }, []);
 
+  // Estados y consulta directa a Supabase/API para EQUIPOS DE ELECTRÓNICA & INSTRUMENTACIÓN (SIGA-FMO)
+  const [electronica, setElectronica] = useState([]);
+  const [loadingElectronica, setLoadingElectronica] = useState(false);
+  const [modalRegistroElectronicaOpen, setModalRegistroElectronicaOpen] = useState(false);
+  const [electronicaSeleccionada, setElectronicaSeleccionada] = useState(null);
+  const [filterSedeElectronica, setFilterSedeElectronica] = useState('todas');
+  const [filterStatusElectronica, setFilterStatusElectronica] = useState('todos');
+  const [electronicaPage, setElectronicaPage] = useState(1);
+
+  const cargarElectronica = async () => {
+    try {
+      setLoadingElectronica(true);
+      const data = await inventoryApi.getEquiposElectronica();
+      setElectronica(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn('Excepción al cargar equipos de electrónica:', err.message);
+      setElectronica([]);
+    } finally {
+      setLoadingElectronica(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarElectronica();
+  }, []);
+
+  const handleOpenCreateElectronica = () => {
+    setElectronicaSeleccionada(null);
+    setModalRegistroElectronicaOpen(true);
+  };
+
+  const handleOpenEditElectronica = (item) => {
+    setElectronicaSeleccionada(item);
+    setModalRegistroElectronicaOpen(true);
+  };
+
+  const handleDeleteElectronica = (item) => {
+    const placa = item.placa || item.id || item.code;
+    const nombre = item.nombre || item.material || item.name || 'Equipo de Electrónica';
+    showConfirmBaja({
+      codigo: placa,
+      nombre,
+      onConfirm: async () => {
+        try {
+          await inventoryApi.deleteEquipoElectronica(placa, 'Baja técnica registrada por el usuario');
+          setElectronica((prev) => prev.filter((e) => (e.placa || e.id) !== placa));
+          showEditSuccess(nombre, `Equipo con placa ${placa} dado de baja exitosamente.`);
+        } catch (err) {
+          showError('Error', err.message || 'No se pudo dar de baja el equipo.');
+        }
+      },
+    });
+  };
+
   // Filtros y paginación para Papelería
   const [filterStockPapeleria, setFilterStockPapeleria] = useState('todos');
   const [filterCajaPapeleria, setFilterCajaPapeleria] = useState('todas');
@@ -741,6 +806,68 @@ export default function InventarioView({
     const start = (currentMobiliarioPage - 1) * ITEMS_PER_PAGE;
     return mobiliarioFiltrado.slice(start, start + ITEMS_PER_PAGE);
   }, [mobiliarioFiltrado, currentMobiliarioPage, ITEMS_PER_PAGE]);
+
+  // Lista unificada y filtrado para EQUIPOS DE ELECTRÓNICA & INSTRUMENTACIÓN
+  const rawElectronica = electronica;
+
+  const electronicaFiltrada = useMemo(() => {
+    const term = normalizeText(searchTerm);
+    return rawElectronica.filter((e) => {
+      // 1. Buscador global reactivo
+      if (term) {
+        const placa = normalizeText(e.placa || e.id || e.code || '');
+        const nombre = normalizeText(e.nombre || e.material || e.name || '');
+        const subcat = normalizeText(e.subcategoria || e.categoria || '');
+        const marca = normalizeText(e.marca || '');
+        const modelo = normalizeText(e.modelo || '');
+        const serial = normalizeText(e.serial || '');
+        const sede = normalizeText(e.sede || e.ubicacion || '');
+        const area = normalizeText(e.area_asignada || e.area || '');
+
+        const match =
+          placa.includes(term) ||
+          nombre.includes(term) ||
+          subcat.includes(term) ||
+          marca.includes(term) ||
+          modelo.includes(term) ||
+          serial.includes(term) ||
+          sede.includes(term) ||
+          area.includes(term);
+
+        if (!match) return false;
+      }
+
+      // 2. Filtro Sede
+      if (filterSedeElectronica !== 'todas') {
+        const itemSede = normalizeSedeName(e.sede || e.ubicacion || 'Medellín');
+        if (itemSede !== normalizeSedeName(filterSedeElectronica)) {
+          return false;
+        }
+      }
+
+      // 3. Filtro Estado Operativo
+      if (filterStatusElectronica !== 'todos') {
+        const itemStatus = String(e.estado || 'disponible').toLowerCase().trim();
+        if (itemStatus !== filterStatusElectronica.toLowerCase().trim()) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [rawElectronica, filterSedeElectronica, filterStatusElectronica, searchTerm]);
+
+  // Paginación de Equipos de Electrónica
+  const totalElectronicaPages = Math.max(1, Math.ceil(electronicaFiltrada.length / ITEMS_PER_PAGE));
+  const currentElectronicaPage = Math.min(electronicaPage, totalElectronicaPages);
+  const paginatedElectronica = useMemo(() => {
+    const start = (currentElectronicaPage - 1) * ITEMS_PER_PAGE;
+    return electronicaFiltrada.slice(start, start + ITEMS_PER_PAGE);
+  }, [electronicaFiltrada, currentElectronicaPage, ITEMS_PER_PAGE]);
+
+  const areAllVisibleElectronicaSelected =
+    (paginatedElectronica || []).length > 0 &&
+    (paginatedElectronica || []).every((e) => isQRSelected(e.placa || e.code || e.id || 'S-PLACA'));
 
   // Handlers para Nuevo Insumo de Papelería y Mobiliario
   const handleOpenCreatePapeleria = () => {
@@ -1357,6 +1484,7 @@ export default function InventarioView({
       const dataActivos = allEquiposUnits && allEquiposUnits.length > 0 ? allEquiposUnits : rawEquiposUnits;
       await exportarLibroMaestroExcelFMO({
         activos: dataActivos && dataActivos.length > 0 ? dataActivos : undefined,
+        electronica: rawElectronica && rawElectronica.length > 0 ? rawElectronica : undefined,
         papeleria: rawPapeleria && rawPapeleria.length > 0 ? rawPapeleria : undefined,
         mobiliario: rawMobiliario && rawMobiliario.length > 0 ? rawMobiliario : undefined,
       });
@@ -2693,17 +2821,26 @@ export default function InventarioView({
             className={`tab-btn tab-equipos ${activeTab === 'equipos' ? 'active' : ''}`}
             onClick={() => setActiveTab('equipos')}
           >
-            <span className="tab-icon">💻</span>
+            <span className="tab-icon"><Laptop size={15} /></span>
             <span>Equipos Tecnológicos</span>
             <span className="tab-badge">{equipos.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`tab-btn tab-electronica ${activeTab === 'electronica' ? 'active' : ''}`}
+            onClick={() => setActiveTab('electronica')}
+          >
+            <span className="tab-icon"><Cpu size={15} /></span>
+            <span>Equipos de Electrónica</span>
+            <span className="tab-badge">{rawElectronica.length}</span>
           </button>
           <button
             type="button"
             className={`tab-btn tab-consumibles ${activeTab === 'consumibles' ? 'active' : ''}`}
             onClick={() => setActiveTab('consumibles')}
           >
-            <span className="tab-icon">🔌</span>
-            <span>Consumibles y Robótica</span>
+            <span className="tab-icon"><Plug size={15} /></span>
+            <span>Consumibles de Robótica</span>
             <span className="tab-badge">{consumibles.length}</span>
           </button>
           <button
@@ -2711,16 +2848,16 @@ export default function InventarioView({
             className={`tab-btn tab-papeleria ${activeTab === 'papeleria' ? 'active' : ''}`}
             onClick={() => setActiveTab('papeleria')}
           >
-            <span className="tab-icon">📄</span>
+            <span className="tab-icon"><FileText size={15} /></span>
             <span>Papelería</span>
             <span className="tab-badge">{rawPapeleria.length}</span>
           </button>
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'mobiliario' ? 'active' : ''}`}
+            className={`tab-btn tab-mobiliario ${activeTab === 'mobiliario' ? 'active' : ''}`}
             onClick={() => setActiveTab('mobiliario')}
           >
-            <span className="tab-icon">🪑</span>
+            <span className="tab-icon"><Armchair size={15} /></span>
             <span>Mobiliario</span>
             <span className="tab-badge">{mobiliarioFiltrado.length}</span>
           </button>
@@ -2750,7 +2887,15 @@ export default function InventarioView({
                 className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
                 onClick={() => handleOpenCreate('equipo')}
               >
-                + Nuevo Equipo
+                + Nuevo Equipo Tecnológico
+              </button>
+            ) : activeTab === 'electronica' ? (
+              <button
+                type="button"
+                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
+                onClick={handleOpenCreateElectronica}
+              >
+                + Nuevo Equipo de Electrónica
               </button>
             ) : activeTab === 'papeleria' ? (
               <button
@@ -2758,7 +2903,7 @@ export default function InventarioView({
                 className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
                 onClick={handleOpenCreatePapeleria}
               >
-                + Nuevo Insumo
+                + Nueva Papelería
               </button>
             ) : activeTab === 'mobiliario' ? (
               <button
@@ -3332,7 +3477,268 @@ export default function InventarioView({
       )}
 
       {/* =========================================================================
-          PESTAÑA 2: CONSUMIBLES Y ROBÓTICA (Insumos, motores, placas, sensores)
+          PESTAÑA 2: EQUIPOS DE ELECTRÓNICA & INSTRUMENTACIÓN (Reutilizables / FMO)
+          ========================================================================= */}
+      {activeTab === 'electronica' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="section-header" style={{ marginBottom: '4px', paddingBottom: '2px' }}>
+            <h2>
+              <span>Control de Equipos de Electrónica & Instrumentación</span>
+              <span className="pill default" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                {rawElectronica.length} equipos en catálogo
+              </span>
+            </h2>
+            <span className="section-subtitle" style={{ fontSize: '12.5px', marginTop: '2px' }}>
+              Multímetros, osciloscopios, fuentes regulables, estaciones de soldadura, tarjetas programables y kits reutilizables
+            </span>
+          </div>
+
+          {/* Barra de Filtros reactiva */}
+          <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Filtro Sede */}
+              <div className="filter-group flex items-center gap-2">
+                <label className="text-[#6d6e71] font-medium text-sm">Sede / Ubicación:</label>
+                <select
+                  value={filterSedeElectronica}
+                  onChange={(e) => {
+                    setFilterSedeElectronica(e.target.value);
+                    setElectronicaPage(1);
+                  }}
+                  className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
+                >
+                  <option value="todas">Todas las sedes ({rawElectronica.length})</option>
+                  {sedesList.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filtro Estado */}
+              <div className="filter-group flex items-center gap-2">
+                <label className="text-[#6d6e71] font-medium text-sm">Estado:</label>
+                <select
+                  value={filterStatusElectronica}
+                  onChange={(e) => {
+                    setFilterStatusElectronica(e.target.value);
+                    setElectronicaPage(1);
+                  }}
+                  className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
+                >
+                  <option value="todos">Todos los estados</option>
+                  <option value="disponible">Disponible</option>
+                  <option value="en préstamo">En Préstamo</option>
+                  <option value="en mantenimiento">En Mantenimiento</option>
+                  <option value="baja">Baja</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="filter-count text-[#6d6e71] text-sm">
+              Mostrando <strong className="font-bold text-[#013a52]">{electronicaFiltrada.length}</strong> de <strong className="font-bold text-[#013a52]">{rawElectronica.length}</strong> equipos registrados
+            </div>
+          </div>
+
+          {/* Banner de Selección Múltiple QR */}
+          {renderQRSelectionBanner()}
+
+          {electronicaFiltrada.length === 0 ? (
+            <div className="panel empty" style={{ padding: '36px 20px', textAlign: 'center' }}>
+              <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>⚡</span>
+              <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--text, #f8fafc)', fontWeight: 600 }}>
+                No hay equipos de electrónica registrados con los filtros seleccionados.
+              </p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-dim, #94a3b8)' }}>
+                Registra uno nuevo con el botón superior "+ Nuevo Equipo de Electrónica".
+              </p>
+            </div>
+          ) : (
+            <div className="panel" style={{ paddingBottom: '4px', overflow: 'hidden' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '42px', padding: '10px 4px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={areAllVisibleElectronicaSelected}
+                        onChange={() => toggleSelectAllVisible(paginatedElectronica, 'electronica')}
+                        aria-label="Seleccionar todos los equipos visibles"
+                        className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                        title="Seleccionar o deseleccionar todos los equipos visibles"
+                      />
+                    </th>
+                    <th style={{ width: '15%', padding: '10px 14px', textAlign: 'left' }}>PLACA / CÓDIGO</th>
+                    <th style={{ width: '25%', padding: '10px 12px', textAlign: 'left' }}>EQUIPO & MODELO</th>
+                    <th style={{ width: '14%', padding: '10px 10px', textAlign: 'left' }}>SUBCATEGORÍA</th>
+                    <th style={{ width: '13%', padding: '10px 10px', textAlign: 'center' }}>PROGRAMA FMO</th>
+                    <th style={{ width: '12%', padding: '10px 10px', textAlign: 'left' }}>SEDE / UBICACIÓN</th>
+                    <th style={{ width: '9%', padding: '10px 8px', textAlign: 'center' }}>ESTADO</th>
+                    <th style={{ width: '12%', padding: '10px 14px', textAlign: 'right' }}>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(paginatedElectronica || []).map((e) => {
+                    const code = e.placa || e.code || e.id;
+                    const nombre = e.nombre || e.material || e.name || 'Equipo de Electrónica';
+                    const sede = e.sede || e.ubicacion || 'Medellín';
+                    const subcat = e.subcategoria || e.categoria || 'Instrumentación';
+                    const estado = e.estado || 'Disponible';
+                    const estadoLower = estado.toLowerCase();
+                    const isSelected = isQRSelected(code);
+
+                    return (
+                      <tr key={code} className={isSelected ? 'bg-[#abd037]/10' : ''}>
+                        <td style={{ textAlign: 'center', padding: '8px 4px' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectQR(normalizeItemForQR(e, 'electronica'))}
+                            className="w-4 h-4 rounded cursor-pointer accent-[#abd037] focus:ring-1 focus:ring-[#013a52]"
+                          />
+                        </td>
+                        <td style={{ padding: '8px 14px' }}>
+                          <span className="card-placa font-sans font-bold text-xs tracking-wide text-[#013a52] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">
+                            {code}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <strong className="block text-sm text-[#013a52] dark:text-slate-100">{nombre}</strong>
+                          <span className="text-xs text-[#6d6e71] dark:text-slate-400">
+                            {[e.marca, e.modelo].filter(Boolean).join(' ') || 'Equipo institucional'}
+                            {e.serial ? ` · S/N: ${e.serial}` : ''}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 10px' }}>
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-[#013a52] dark:text-slate-200 border border-slate-200/80">
+                            {subcat}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'center', padding: '8px 10px' }}>
+                          <ProgramAreaBadge area={e.area_asignada || 'Robótica'} size="sm" />
+                        </td>
+                        <td style={{ padding: '8px 10px' }}>
+                          <span className="sede-badge municipal block text-xs">{sede}</span>
+                          {e.ubicacion && (
+                            <span className="text-[11px] text-[#6d6e71] block truncate max-w-[140px]">{e.ubicacion}</span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: 'center', padding: '8px 8px' }}>
+                          <span
+                            className={`status-badge text-xs px-2 py-0.5 rounded-full font-bold inline-block ${
+                              estadoLower.includes('dispon')
+                                ? 'status-active bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                : estadoLower.includes('prest')
+                                ? 'status-warning bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                                : 'status-danger bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                            }`}
+                          >
+                            {estado}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right', padding: '8px 14px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <button
+                              type="button"
+                              className="action-btn"
+                              title="Ver código QR"
+                              onClick={() => setQrModalItem(normalizeItemForQR(e, 'electronica'))}
+                            >
+                              <QrCode size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="action-btn"
+                              title="Ver ficha técnica"
+                              onClick={() => setItemParaDetalle(normalizeItemForQR(e, 'electronica'))}
+                            >
+                              <Eye size={15} />
+                            </button>
+                            {isAdmin && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="action-btn"
+                                  title="Editar equipo de electrónica"
+                                  onClick={() => handleOpenEditElectronica(e)}
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="action-btn delete"
+                                  title="Dar de baja equipo de electrónica"
+                                  onClick={() => handleDeleteElectronica(e)}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* Paginación de Electrónica */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderTop: '1px solid var(--line, #e2e8f0)',
+                  fontSize: '12px',
+                  color: 'var(--text-dim, #6d6e71)',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div>
+                  Mostrando{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {electronicaFiltrada.length === 0 ? 0 : (currentElectronicaPage - 1) * ITEMS_PER_PAGE + 1}
+                  </strong>{' '}
+                  -{' '}
+                  <strong style={{ color: 'var(--text-h)' }}>
+                    {Math.min(currentElectronicaPage * ITEMS_PER_PAGE, electronicaFiltrada.length)}
+                  </strong>{' '}
+                  de <strong style={{ color: 'var(--text-h)' }}>{electronicaFiltrada.length}</strong>{' '}
+                  {electronicaFiltrada.length !== rawElectronica.length
+                    ? `(filtrados de ${rawElectronica.length} registrados)`
+                    : 'equipos registrados'}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    disabled={currentElectronicaPage <= 1}
+                    onClick={() => setElectronicaPage((p) => Math.max(1, p - 1))}
+                    className="px-2.5 py-1 rounded border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold"
+                  >
+                    Anterior
+                  </button>
+                  <span className="font-bold text-[#013a52] dark:text-slate-200">
+                    Pág. {currentElectronicaPage} de {totalElectronicaPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentElectronicaPage >= totalElectronicaPages}
+                    onClick={() => setElectronicaPage((p) => Math.min(totalElectronicaPages, p + 1))}
+                    className="px-2.5 py-1 rounded border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* =========================================================================
+          PESTAÑA 3: CONSUMIBLES DE ROBÓTICA (Insumos, motores, cables, sensores)
           ========================================================================= */}
       {activeTab === 'consumibles' && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -8359,6 +8765,44 @@ export default function InventarioView({
           }
           setModalRegistroMobiliarioOpen(false);
           setMuebleSeleccionado(null);
+        }}
+      />
+      {/* =========================================================================
+          MODAL: REGISTRO Y EDICIÓN DE EQUIPOS DE ELECTRÓNICA & INSTRUMENTACIÓN (SIGA-FMO)
+          ========================================================================= */}
+      <ModalRegistroElectronica
+        isOpen={modalRegistroElectronicaOpen}
+        onClose={() => {
+          setModalRegistroElectronicaOpen(false);
+          setElectronicaSeleccionada(null);
+        }}
+        sedes={sedesList}
+        equipoAEditar={electronicaSeleccionada}
+        onEquipoSaved={(equipoActualizado) => {
+          if (equipoActualizado) {
+            setElectronica((prev) => {
+              const existe = prev.some((e) => e.placa === equipoActualizado.placa || e.id === equipoActualizado.id);
+              if (existe) {
+                return prev.map((e) => (e.placa === equipoActualizado.placa || e.id === equipoActualizado.id ? { ...e, ...equipoActualizado } : e));
+              }
+              return [equipoActualizado, ...prev];
+            });
+          }
+          if (typeof cargarElectronica === 'function') {
+            cargarElectronica();
+          }
+          setModalRegistroElectronicaOpen(false);
+          setElectronicaSeleccionada(null);
+        }}
+        onEquipoCreated={(nuevoEquipo) => {
+          if (nuevoEquipo) {
+            setElectronica((prev) => [nuevoEquipo, ...prev.filter((e) => e.placa !== nuevoEquipo.placa && e.id !== nuevoEquipo.id)]);
+          }
+          if (typeof cargarElectronica === 'function') {
+            cargarElectronica();
+          }
+          setModalRegistroElectronicaOpen(false);
+          setElectronicaSeleccionada(null);
         }}
       />
       {/* =========================================================================

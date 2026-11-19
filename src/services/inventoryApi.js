@@ -73,6 +73,136 @@ export const extraerArreglo = (res) => {
   return []; // Fallback seguro para no romper la interfaz
 };
 
+// Catálogo semilla oficial de Equipos de Electrónica & Instrumentación Reutilizables (SIGA-FMO)
+export const DEFAULT_EQUIPOS_ELECTRONICA = [
+  {
+    id: 1,
+    placa: 'ELE-FMO-001',
+    nombre: 'Multímetro Digital Automotriz True RMS',
+    subcategoria: 'Instrumentación',
+    marca: 'Uni-T',
+    modelo: 'UT61E+',
+    serial: 'UT2026-001',
+    cantidad: 1,
+    condicion: 'Excelente / Nuevo',
+    estado: 'Disponible',
+    area_asignada: 'Robótica',
+    sede: 'Medellín',
+    ubicacion: 'Taller de Electrónica - Estante A1',
+    fecha_adquisicion: '2026-01-15',
+    valor_estimado: 380000,
+    observaciones: 'Equipo de alta precisión para talleres STEAM y medición de circuitos.',
+  },
+  {
+    id: 2,
+    placa: 'ELE-FMO-002',
+    nombre: 'Estación de Soldadura y Cautín Digital 60W',
+    subcategoria: 'Herramienta Electrónica',
+    marca: 'Yihua',
+    modelo: '936B',
+    serial: 'YH-936-042',
+    cantidad: 1,
+    condicion: 'Bueno',
+    estado: 'Disponible',
+    area_asignada: 'Robótica',
+    sede: 'Medellín',
+    ubicacion: 'Mesa de Trabajo 3',
+    fecha_adquisicion: '2026-02-01',
+    valor_estimado: 240000,
+    observaciones: 'Control térmico ESD Safe con soporte y esponja limpiadora.',
+  },
+  {
+    id: 3,
+    placa: 'ELE-FMO-003',
+    nombre: 'Fuente de Poder Regulable DC 30V 10A',
+    subcategoria: 'Instrumentación',
+    marca: 'Wanptek',
+    modelo: 'DPS3010U',
+    serial: 'WP-3010-88',
+    cantidad: 1,
+    condicion: 'Bueno',
+    estado: 'Disponible',
+    area_asignada: 'Robótica',
+    sede: 'Medellín',
+    ubicacion: 'Laboratorio de Robótica',
+    fecha_adquisicion: '2026-02-10',
+    valor_estimado: 450000,
+    observaciones: 'Display digital de 4 dígitos con protección contra sobrecorriente.',
+  },
+  {
+    id: 4,
+    placa: 'ELE-FMO-004',
+    nombre: 'Osciloscopio Digital Portátil 100MHz 2CH',
+    subcategoria: 'Instrumentación',
+    marca: 'Hantek',
+    modelo: 'DSO2D10',
+    serial: 'HT-2D10-15',
+    cantidad: 1,
+    condicion: 'Bueno',
+    estado: 'Disponible',
+    area_asignada: 'Robótica',
+    sede: 'Carmen de Viboral',
+    ubicacion: 'Laboratorio STEAM Sede Carmen',
+    fecha_adquisicion: '2026-01-20',
+    valor_estimado: 1250000,
+    observaciones: 'Incluye 2 sondas x1/x10 y generador de funciones integrado.',
+  },
+  {
+    id: 5,
+    placa: 'ELE-FMO-005',
+    nombre: 'Kit Educativo Arduino UNO R3 Reutilizable',
+    subcategoria: 'Placas de Desarrollo',
+    marca: 'Arduino',
+    modelo: 'UNO R3 Oficial',
+    serial: 'ARD-UNO-501',
+    cantidad: 1,
+    condicion: 'Excelente / Nuevo',
+    estado: 'Disponible',
+    area_asignada: 'Robótica',
+    sede: 'Medellín',
+    ubicacion: 'Caja Organizadora 12',
+    fecha_adquisicion: '2026-02-15',
+    valor_estimado: 115000,
+    observaciones: 'Microcontrolador ATmega328P para semilleros y clubes formativos.',
+  },
+  {
+    id: 6,
+    placa: 'ELE-FMO-006',
+    nombre: 'Tarjeta de Desarrollo ESP32 Wi-Fi + BT',
+    subcategoria: 'Placas de Desarrollo',
+    marca: 'Espressif',
+    modelo: 'NodeMCU-32S',
+    serial: 'ESP32-WROOM-09',
+    cantidad: 1,
+    condicion: 'Excelente / Nuevo',
+    estado: 'Disponible',
+    area_asignada: 'Robótica',
+    sede: 'Medellín',
+    ubicacion: 'Gaveta E-02',
+    fecha_adquisicion: '2026-02-18',
+    valor_estimado: 55000,
+    observaciones: 'Módulo IoT dual-core para proyectos conectados.',
+  },
+  {
+    id: 7,
+    placa: 'ELE-FMO-007',
+    nombre: 'Generador de Señales DDS Arbitrario 60MHz',
+    subcategoria: 'Instrumentación',
+    marca: 'FeelTech',
+    modelo: 'FY6900',
+    serial: 'FT-6900-22',
+    cantidad: 1,
+    condicion: 'Bueno',
+    estado: 'Disponible',
+    area_asignada: 'Robótica',
+    sede: 'Medellín',
+    ubicacion: 'Taller Central',
+    fecha_adquisicion: '2026-02-22',
+    valor_estimado: 520000,
+    observaciones: 'Generador de onda senoidal, cuadrada, rampa y pulsos.',
+  },
+];
+
 export const inventoryApi = {
   // 1. Activos
   getActivos: async () => {
@@ -126,9 +256,11 @@ export const inventoryApi = {
         if (targetId) {
           await supabase.from('equipos').update(patch).eq('id', targetId);
           await supabase.from('activos').update(patch).eq('id', targetId);
+          await supabase.from('equipos_electronica').update(patch).eq('id', targetId);
         } else if (targetPlaca) {
           await supabase.from('equipos').update(patch).eq('placa', targetPlaca);
           await supabase.from('activos').update(patch).eq('placa', targetPlaca);
+          await supabase.from('equipos_electronica').update(patch).eq('placa', targetPlaca);
         }
       }
     } catch (sbE) {
@@ -204,6 +336,24 @@ export const inventoryApi = {
   getItemUniversal: async (id) => {
     const rawId = String(id || '').trim();
     const idLower = rawId.toLowerCase();
+
+    // 0. Si es Equipo de Electrónica (ELE-XXXX)
+    if (idLower.startsWith('ele')) {
+      try {
+        const { supabase } = await import('./supabase');
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('equipos_electronica')
+            .select('*')
+            .or(`placa.ilike.${rawId},id.ilike.${rawId}`)
+            .limit(1)
+            .maybeSingle();
+          if (!error && data) {
+            return { ...data, __tipo: 'electronica', tipo: 'electronica' };
+          }
+        }
+      } catch (_) {}
+    }
 
     // 1. Si es Mobiliario (MOB-XXXX)
     if (idLower.startsWith('mob')) {
@@ -442,6 +592,169 @@ export const inventoryApi = {
       body: JSON.stringify(data),
     });
     return json?.data !== undefined ? json.data : json;
+  },
+
+  // 2.3 Equipos de Electrónica & Instrumentación Reutilizables (SIGA-FMO)
+  getEquiposElectronica: async () => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('equipos_electronica')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (_) {}
+
+    // Intentar en endpoint REST o fallback local
+    try {
+      const json = await request('/equipos-electronica');
+      const arr = extraerArreglo(json);
+      if (arr && arr.length > 0) return arr;
+    } catch (_) {}
+
+    // Fallback inicial con catálogo oficial de semillas
+    return DEFAULT_EQUIPOS_ELECTRONICA;
+  },
+
+  getSiguientePlacaElectronica: async () => {
+    let maxNum = 0;
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('equipos_electronica')
+          .select('placa');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          data.forEach((it) => {
+            const m = String(it.placa || '').match(/ELE-FMO-(\d+)/i);
+            if (m && m[1]) {
+              const n = parseInt(m[1], 10);
+              if (n > maxNum) maxNum = n;
+            }
+          });
+        }
+      }
+    } catch (_) {}
+
+    if (maxNum === 0) {
+      DEFAULT_EQUIPOS_ELECTRONICA.forEach((it) => {
+        const m = String(it.placa || '').match(/ELE-FMO-(\d+)/i);
+        if (m && m[1]) {
+          const n = parseInt(m[1], 10);
+          if (n > maxNum) maxNum = n;
+        }
+      });
+    }
+
+    const nextNum = maxNum + 1;
+    const formattedNum = String(nextNum).padStart(3, '0');
+    return { placa: `ELE-FMO-${formattedNum}`, numero: nextNum };
+  },
+
+  createEquipoElectronica: async (data) => {
+    const payload = {
+      placa: data.placa,
+      nombre: data.nombre,
+      subcategoria: data.subcategoria || 'Instrumentación',
+      marca: data.marca || '',
+      modelo: data.modelo || '',
+      serial: data.serial || '',
+      cantidad: Number(data.cantidad) || 1,
+      condicion: data.condicion || 'Bueno',
+      estado: data.estado || 'Disponible',
+      area_asignada: data.area_asignada || data.area || 'Robótica',
+      sede: data.sede || 'Medellín',
+      ubicacion: data.ubicacion || 'Laboratorio de Robótica',
+      responsable: data.responsable || null,
+      fecha_adquisicion: data.fecha_adquisicion || new Date().toISOString().split('T')[0],
+      valor_estimado: Number(data.valor_estimado) || 0,
+      observaciones: data.observaciones || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    let result = null;
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data: inserted, error } = await supabase
+          .from('equipos_electronica')
+          .insert(payload)
+          .select()
+          .single();
+        if (!error && inserted) {
+          result = inserted;
+        }
+      }
+    } catch (err) {
+      console.warn('Aviso insert equipos_electronica Supabase:', err.message);
+    }
+
+    // Registrar en auditoría / movimientos
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        await supabase.from('historial_movimientos').insert({
+          tipo: 'ingreso_activo',
+          titulo: `Ingreso de Equipo de Electrónica: ${payload.nombre}`,
+          detalles: `Registro de activo ${payload.placa} (${payload.subcategoria}) en sede ${payload.sede}`,
+          sede: payload.sede,
+          placa: payload.placa,
+          fecha: new Date().toISOString(),
+        });
+      }
+    } catch (_) {}
+
+    return result || payload;
+  },
+
+  updateEquipoElectronica: async (placa, updates) => {
+    const patch = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase && placa) {
+        await supabase
+          .from('equipos_electronica')
+          .update(patch)
+          .eq('placa', placa);
+        await supabase
+          .from('activos')
+          .update(patch)
+          .eq('placa', placa);
+      }
+    } catch (err) {
+      console.warn('Aviso update equipos_electronica:', err.message);
+    }
+    return { placa, ...updates };
+  },
+
+  deleteEquipoElectronica: async (placa, motivo = 'Baja de equipo') => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase && placa) {
+        await supabase
+          .from('equipos_electronica')
+          .update({ estado: 'Baja', observaciones: motivo, updated_at: new Date().toISOString() })
+          .eq('placa', placa);
+        await supabase.from('historial_movimientos').insert({
+          tipo: 'baja',
+          titulo: `Baja de Equipo de Electrónica: ${placa}`,
+          detalles: `Motivo: ${motivo}`,
+          placa,
+          fecha: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      console.warn('Aviso delete equipos_electronica:', err.message);
+    }
+    return { ok: true, placa };
   },
 
   // 4. Historial Universal y Auditoría
@@ -1264,6 +1577,9 @@ export const inventoryApi = {
         const idLower = targetId.toLowerCase();
         if (idLower.startsWith('pape')) {
           await supabase.from('papeleria').update(patch).eq('id', targetId);
+        } else if (idLower.startsWith('ele')) {
+          await supabase.from('equipos_electronica').update(patch).eq('placa', targetId);
+          await supabase.from('activos').update(patch).eq('placa', targetId);
         } else if (idLower.startsWith('rob')) {
           await supabase.from('consumibles').update(patch).eq('id', targetId);
         } else {

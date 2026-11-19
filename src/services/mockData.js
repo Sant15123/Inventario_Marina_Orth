@@ -769,7 +769,7 @@ export function fmtDate(d) {
  * Calcula las unidades disponibles reales
  */
 export function available(item) {
-  if (item.itemType === 'equipo') {
+  if (item.itemType === 'equipo' || item.itemType === 'electronica') {
     return (item.units || []).filter((u) => u.status === 'disponible').length;
   }
   return item.quantity ?? 0;

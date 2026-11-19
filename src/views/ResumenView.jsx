@@ -60,8 +60,9 @@ export default function ResumenView({
         if (onRetry) {
           await onRetry();
         } else {
-          const [activosData, consumiblesData, prestamosData] = await Promise.all([
+          const [activosData, electronicaData, consumiblesData, prestamosData] = await Promise.all([
             inventoryApi.getActivos(),
+            inventoryApi.getEquiposElectronica().catch(() => []),
             inventoryApi.getConsumibles(),
             inventoryApi.getPrestamos(),
           ]);
@@ -114,6 +115,33 @@ export default function ResumenView({
                   },
                 ],
                 dateAdded: a.created_at ? a.created_at.split('T')[0] : today(),
+              });
+            });
+          }
+
+          if (Array.isArray(electronicaData)) {
+            electronicaData.forEach((e) => {
+              loadedItems.push({
+                id: `ele-${e.id || e.placa}`,
+                name: e.nombre,
+                category: e.subcategoria || 'Instrumentación',
+                itemType: 'electronica',
+                location: e.ubicacion || e.sede || 'Medellín',
+                sede: e.sede || 'Medellín',
+                minStock: 1,
+                quantity: 1,
+                units: [
+                  {
+                    code: e.placa,
+                    placa: e.placa,
+                    model: e.modelo || e.marca || 'Estándar',
+                    serial: e.serial || '—',
+                    sede: e.sede || 'Medellín',
+                    status: (e.estado || 'disponible').toLowerCase(),
+                    responsable: e.responsable || 'Bodega Central',
+                  },
+                ],
+                dateAdded: e.fecha_adquisicion || today(),
               });
             });
           }
