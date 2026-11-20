@@ -1206,22 +1206,82 @@ export default function MiPanelUsuarioView({
                             )}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            {estadoUpper === 'APROBADO' || estadoUpper === 'APROBADA' ? (
-                              <span
-                                className="badge-estado-aprobado"
-                                title="Aprobado por administración"
-                              >
-                                <CheckCircle2 size={13} />
-                                <span>Aprobado</span>
-                              </span>
-                            ) : estadoUpper === 'RECHAZADO' || estadoUpper === 'RECHAZADA' ? (
-                              (() => {
+                            {(() => {
+                              const est = estadoUpper;
+                              const obsCoord = sol.observaciones_coordinador || sol.observaciones_admin || sol.motivo_rechazo || '';
+
+                              // 1. COMPRADA (Etapa 4 final)
+                              if (est === 'COMPRADA' || est === 'COMPRADO') {
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                    <span
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-100 text-cyan-900 border border-cyan-400 dark:bg-cyan-950/40 dark:text-cyan-300"
+                                      title="Adquisición efectuada por la Fundación. Ítems en proceso de entrega o ingreso a inventario."
+                                    >
+                                      <CheckCircle2 size={13} className="text-cyan-600 dark:text-cyan-400" />
+                                      <span>Comprada</span>
+                                    </span>
+                                    <span style={{ fontSize: '10.5px', color: '#0284c7', fontWeight: 600 }}>
+                                      En camino / Bodega
+                                    </span>
+                                  </div>
+                                );
+                              }
+
+                              // 2. APROBADA PARA COMPRA (Etapa 3)
+                              if (est === 'APROBADA' || est === 'APROBADO') {
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                    <span
+                                      className="badge-estado-aprobado"
+                                      title="Aprobada por la Coordinación STEAM para adquisición."
+                                    >
+                                      <CheckCircle2 size={13} />
+                                      <span>Aprobada para Compra</span>
+                                    </span>
+                                    {obsCoord && (
+                                      <span
+                                        style={{
+                                          fontSize: '10.5px',
+                                          color: 'var(--text-dim, #6d6e71)',
+                                          maxWidth: '160px',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                        title={`Observación Coordinador: ${obsCoord}`}
+                                      >
+                                        Coord: {obsCoord}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+
+                              // 3. EN EVALUACIÓN (Etapa 2)
+                              if (est === 'EN EVALUACION' || est === 'EN EVALUACIÓN') {
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                    <span
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950/40 dark:text-purple-300"
+                                      title="En revisión técnica por el Coordinador STEAM y cruce con bodega."
+                                    >
+                                      <Hourglass size={13} className="text-purple-600 dark:text-purple-400" />
+                                      <span>En Evaluación</span>
+                                    </span>
+                                    <span style={{ fontSize: '10.5px', color: '#7b2cbf', fontWeight: 600 }}>
+                                      Revisión técnica
+                                    </span>
+                                  </div>
+                                );
+                              }
+
+                              // 4. RECHAZADA
+                              if (est === 'RECHAZADO' || est === 'RECHAZADA') {
                                 const textoRechazo =
-                                  sol.motivo_rechazo ||
+                                  obsCoord ||
                                   sol.nota_rechazo ||
-                                  sol.observaciones_admin ||
                                   sol.justificacion_rechazo ||
-                                  sol.justificacion ||
                                   '';
                                 return (
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
@@ -1231,10 +1291,10 @@ export default function MiPanelUsuarioView({
                                       onClick={() => {
                                         if (textoRechazo) setModalMotivoRechazo({ solicitud: sol, motivo: textoRechazo });
                                       }}
-                                      title={textoRechazo ? `Motivo: ${textoRechazo} (Click para leer completo)` : 'Solicitud rechazada por administración'}
+                                      title={textoRechazo ? `Motivo: ${textoRechazo} (Click para leer completo)` : 'Solicitud no autorizada por Coordinación'}
                                     >
                                       <XCircle size={13} />
-                                      <span>Rechazado</span>
+                                      <span>Rechazada</span>
                                       {textoRechazo && <Info size={11} style={{ marginLeft: '2px', opacity: 0.9 }} />}
                                     </span>
                                     {textoRechazo ? (
@@ -1267,16 +1327,24 @@ export default function MiPanelUsuarioView({
                                     )}
                                   </div>
                                 );
-                              })()
-                            ) : (
-                              <span
-                                className="badge-estado-pendiente"
-                                title="En revisión administrativa"
-                              >
-                                <Hourglass size={13} />
-                                <span>En revisión</span>
-                              </span>
-                            )}
+                              }
+
+                              // 5. SOLICITADA / PENDIENTE (Etapa 1 por defecto)
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                  <span
+                                    className="badge-estado-pendiente"
+                                    title="Solicitud radicada, pendiente de revisión por el Coordinador."
+                                  >
+                                    <Hourglass size={13} />
+                                    <span>Solicitada</span>
+                                  </span>
+                                  <span style={{ fontSize: '10.5px', color: '#b45309', fontWeight: 600 }}>
+                                    Pendiente Coord.
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </td>
                         </tr>
                       );

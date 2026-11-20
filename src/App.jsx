@@ -12,6 +12,7 @@ import HistorialView from './views/HistorialView';
 import DetalleActivoPublico from './views/DetalleActivoPublico';
 import UsuariosView from './views/UsuariosView';
 import MiPanelUsuarioView from './views/MiPanelUsuarioView';
+import GestionComprasView from './views/GestionComprasView';
 import LoginView from './views/LoginView';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -47,7 +48,7 @@ function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario } = useAuth();
+  const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario, isCoordinador } = useAuth();
 
   // Estado simple de navegación para las vistas
   const [currentView, setCurrentView] = useState(() => {
@@ -56,7 +57,10 @@ function App() {
         const p = new URLSearchParams(window.location.search);
         const tab = p.get('tab');
         const solId = p.get('solicitudId');
-        if (tab === 'compras' || tab === 'entrantes' || tab === 'solicitudes' || solId) {
+        if (tab === 'compras' && (isCoordinador || isAdmin)) {
+          return 'compras';
+        }
+        if (tab === 'entrantes' || tab === 'solicitudes' || solId) {
           return 'prestamos';
         }
       }
@@ -73,12 +77,16 @@ function App() {
     }
   }, [isUsuario, currentView]);
 
-  // Proteger vista de usuarios: solo accesible para Administradores y Supervisores (Operador y Usuario redirigidos)
+  // Proteger vista de usuarios: solo accesible para Administradores y Supervisores (Operador, Coordinador y Usuario redirigidos)
   useEffect(() => {
     if (!isAdmin && !isSupervisor && currentView === 'usuarios') {
       setCurrentView(isUsuario ? 'mi-panel' : 'resumen');
     }
-  }, [isAdmin, isSupervisor, isUsuario, currentView]);
+    // Proteger prestamos para rol Coordinador (solo tiene acceso a resumen, compras, inventario y historial)
+    if (isCoordinador && currentView === 'prestamos') {
+      setCurrentView('compras');
+    }
+  }, [isAdmin, isSupervisor, isCoordinador, isUsuario, currentView]);
 
   // Parámetros de navegación inicial para transferir filtros desde Resumen
   const [inventarioParams, setInventarioParams] = useState({ tab: 'equipos', stockFilter: 'todos' });
@@ -1224,6 +1232,14 @@ function App() {
                   {/* VISTA HISTORIAL */}
                   {currentView === 'historial' && (
                     <HistorialView movements={filteredMovements} />
+                  )}
+
+                  {/* VISTA GESTIÓN DE COMPRAS (COORDINADOR / ADMINISTRADOR) */}
+                  {!isUsuario && (isAdmin || isCoordinador) && currentView === 'compras' && (
+                    <GestionComprasView
+                      itemsInventario={items}
+                      onNavigate={handleNavigateFromSummary}
+                    />
                   )}
 
                   {/* VISTA MODULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}

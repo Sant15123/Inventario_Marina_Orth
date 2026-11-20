@@ -107,6 +107,7 @@ export default function ModalNuevoUsuarioRapido({ isOpen, onClose, onUserCreated
               >
                 <option value="usuario">Usuario / Formador</option>
                 <option value="operador">Operador de Bodega</option>
+                <option value="coordinador">Coordinador de Proyectos</option>
                 <option value="supervisor">Supervisor</option>
                 <option value="administrador">Administrador</option>
               </select>

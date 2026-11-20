@@ -7,6 +7,7 @@ import {
   History,
   Users,
   Laptop,
+  ShoppingCart,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -16,7 +17,7 @@ import { useAuth } from '../../context/AuthContext';
  * y la navegación según el rol del usuario autenticado (incluyendo el módulo de Usuarios para Administradores).
  */
 export default function Sidebar({ currentView, onViewChange }) {
-  const { currentUser, isAdmin, isSupervisor, isUsuario } = useAuth();
+  const { currentUser, isAdmin, isSupervisor, isUsuario, isCoordinador } = useAuth();
 
   // Elementos de navegación según el rol
   const navItems = isUsuario
@@ -29,6 +30,29 @@ export default function Sidebar({ currentView, onViewChange }) {
         {
           id: 'historial',
           label: 'Historial Personal',
+          icon: <History className="w-4 h-4" />,
+        },
+      ]
+    : isCoordinador
+    ? [
+        {
+          id: 'resumen',
+          label: 'Resumen',
+          icon: <LayoutDashboard className="w-4 h-4" />,
+        },
+        {
+          id: 'compras',
+          label: 'Gestión de Compras',
+          icon: <ShoppingCart className="w-4 h-4" />,
+        },
+        {
+          id: 'inventario',
+          label: 'Inventario',
+          icon: <Box className="w-4 h-4" />,
+        },
+        {
+          id: 'historial',
+          label: 'Historial',
           icon: <History className="w-4 h-4" />,
         },
       ]
@@ -48,6 +72,15 @@ export default function Sidebar({ currentView, onViewChange }) {
           label: 'Préstamos y entregas',
           icon: <HandCoins className="w-4 h-4" />,
         },
+        ...(isAdmin
+          ? [
+              {
+                id: 'compras',
+                label: 'Gestión de Compras',
+                icon: <ShoppingCart className="w-4 h-4" />,
+              },
+            ]
+          : []),
         {
           id: 'historial',
           label: 'Historial',

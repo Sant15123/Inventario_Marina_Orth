@@ -1,6 +1,6 @@
 import React from 'react';
 import UserAvatar from '../common/UserAvatar';
-import { X, User, Mail, Phone, MapPin, Briefcase, ShieldCheck, FileText, Calendar, Edit3, Shield, UserCheck, Package } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, Briefcase, ShieldCheck, FileText, Calendar, Edit3, Shield, UserCheck, Package, Compass } from 'lucide-react';
 
 export default function DetalleUsuarioModal({
   isOpen,
@@ -42,6 +42,30 @@ export default function DetalleUsuarioModal({
           >
             <Shield style={{ width: '12px', height: '12px', flexShrink: 0 }} />
             <span>Administrador</span>
+          </span>
+        );
+      case 'coordinador':
+        return (
+          <span
+            className="badge-role coordinador"
+            title="Rol: Coordinador"
+            style={{
+              fontSize: '11px',
+              padding: '3px 9px',
+              borderRadius: '6px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontWeight: 700,
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              backgroundColor: 'rgba(44, 172, 208, 0.15)',
+              color: '#0284c7',
+              border: '1px solid rgba(44, 172, 208, 0.35)',
+            }}
+          >
+            <Compass style={{ width: '12px', height: '12px', flexShrink: 0 }} />
+            <span>Coordinador</span>
           </span>
         );
       case 'supervisor':

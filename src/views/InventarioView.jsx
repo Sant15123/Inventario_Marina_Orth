@@ -227,7 +227,8 @@ export default function InventarioView({
   const [filterStockConsumibles, setFilterStockConsumibles] = useState(initialStockFilter);
 
   // Hook de autenticación y roles de usuario
-  const { currentUser, isAdmin, isSupervisor, isOperador } = useAuth();
+  const { currentUser, isAdmin, isSupervisor, isOperador, isCoordinador } = useAuth();
+  const canEditInventory = !isSupervisor && !isCoordinador;
 
   // Hook del sistema de notificaciones/alertas personalizadas FMO
   const { showEditSuccess, showConfirmBaja, showConfirmAction, showNewItemSuccess, showLoanSuccess, showError, showInfo, showSuccess } = useToast();
@@ -3462,7 +3463,7 @@ export default function InventarioView({
                             </button>
 
                             {/* ✏️ Editar (Oculto para Supervisor) */}
-                            {!isSupervisor && (
+                            {canEditInventory && (
                               <button
                                 type="button"
                                 className="btn-icon-crud shrink-0"
@@ -3714,10 +3715,10 @@ export default function InventarioView({
             </div>
           ) : (
             <div className="table-responsive" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', borderRadius: '14px', border: '1px solid var(--line, #e2e8f0)', backgroundColor: 'var(--surface, #ffffff)' }}>
-              <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1080px', borderCollapse: 'collapse' }}>
+              <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1150px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #abd037' }}>
-                    <th style={{ width: '44px', minWidth: '44px', padding: '10px 4px', textAlign: 'center' }}>
+                    <th style={{ width: '42px', minWidth: '42px', maxWidth: '42px', padding: '10px 4px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
                         checked={areAllVisibleElectronicaSelected}
@@ -3727,25 +3728,25 @@ export default function InventarioView({
                         title="Seleccionar o deseleccionar todos los equipos visibles"
                       />
                     </th>
-                    <th style={{ width: '120px', minWidth: '120px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '12%', minWidth: '110px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       PLACA / CÓDIGO
                     </th>
-                    <th style={{ width: '250px', minWidth: '220px', padding: '10px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '22%', minWidth: '210px', padding: '10px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       EQUIPO & MODELO
                     </th>
-                    <th style={{ width: '150px', minWidth: '140px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '14%', minWidth: '130px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       SUBCATEGORÍA
                     </th>
-                    <th style={{ width: '140px', minWidth: '135px', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '13%', minWidth: '125px', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       PROGRAMA FMO
                     </th>
-                    <th style={{ width: '160px', minWidth: '150px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '16%', minWidth: '150px', padding: '10px 8px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       SEDE / UBICACIÓN
                     </th>
-                    <th style={{ width: '110px', minWidth: '105px', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '10%', minWidth: '95px', padding: '10px 8px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       ESTADO
                     </th>
-                    <th style={{ width: '140px', minWidth: '135px', padding: '10px 6px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                    <th style={{ width: '13%', minWidth: '130px', padding: '10px 6px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                       ACCIONES
                     </th>
                   </tr>
@@ -3763,7 +3764,7 @@ export default function InventarioView({
                     return (
                       <tr key={code} className={isSelected ? 'bg-[#abd037]/10' : ''} style={{ borderBottom: '1px solid var(--line, #e2e8f0)' }}>
                         {/* Checkbox */}
-                        <td style={{ textAlign: 'center', padding: '8px 4px', verticalAlign: 'middle' }}>
+                        <td style={{ width: '42px', minWidth: '42px', maxWidth: '42px', textAlign: 'center', padding: '8px 4px', verticalAlign: 'middle' }}>
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -3773,7 +3774,7 @@ export default function InventarioView({
                         </td>
 
                         {/* Placa / Código */}
-                        <td style={{ padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                        <td style={{ width: '12%', minWidth: '110px', maxWidth: 0, padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
                           <button
                             type="button"
                             onClick={() => setItemParaDetalle(normalizeItemForQR(e, 'electronica'))}
@@ -3802,9 +3803,10 @@ export default function InventarioView({
                         </td>
 
                         {/* Equipo & Modelo */}
-                        <td style={{ padding: '8px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                        <td style={{ width: '22%', minWidth: '210px', maxWidth: 0, padding: '8px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, overflow: 'hidden' }}>
                             <strong
+                              className="item-title truncate block"
                               title={nombre}
                               style={{
                                 fontSize: '13px',
@@ -3821,6 +3823,7 @@ export default function InventarioView({
                               {nombre}
                             </strong>
                             <span
+                              className="truncate block"
                               title={[e.marca, e.modelo, e.serial ? `S/N: ${e.serial}` : ''].filter(Boolean).join(' · ')}
                               style={{
                                 fontSize: '11px',
@@ -3840,40 +3843,43 @@ export default function InventarioView({
                         </td>
 
                         {/* Subcategoría */}
-                        <td style={{ padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                          <span
-                            title={subcat}
-                            style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: '9999px',
-                              fontSize: '11.5px',
-                              fontWeight: 600,
-                              backgroundColor: 'var(--surface-2, #f1f5f9)',
-                              color: 'var(--text-h, #013a52)',
-                              border: '1px solid var(--line, #e2e8f0)',
-                              maxWidth: '100%',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {subcat}
-                          </span>
+                        <td style={{ width: '14%', minWidth: '130px', maxWidth: 0, padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', width: '100%', minWidth: 0, overflow: 'hidden' }}>
+                            <span
+                              className="truncate inline-block"
+                              title={subcat}
+                              style={{
+                                display: 'inline-block',
+                                padding: '2.5px 8px',
+                                borderRadius: '9999px',
+                                fontSize: '11.5px',
+                                fontWeight: 600,
+                                backgroundColor: 'var(--surface-2, #f1f5f9)',
+                                color: 'var(--text-h, #013a52)',
+                                border: '1px solid var(--line, #e2e8f0)',
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {subcat}
+                            </span>
+                          </div>
                         </td>
 
                         {/* Programa FMO */}
-                        <td style={{ textAlign: 'center', padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+                        <td style={{ width: '13%', minWidth: '125px', maxWidth: 0, textAlign: 'center', padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minWidth: 0, overflow: 'hidden' }}>
                             <ProgramAreaBadge area={e.area_asignada || 'Robótica'} size="sm" />
                           </div>
                         </td>
 
                         {/* Sede / Ubicación */}
-                        <td style={{ padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
+                        <td style={{ width: '16%', minWidth: '150px', maxWidth: 0, padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%', minWidth: 0, overflow: 'hidden' }}>
                             <span
-                              className="sede-badge municipal truncate"
+                              className="sede-badge municipal truncate block"
                               title={`Sede: ${sede}`}
                               style={{
                                 maxWidth: '100%',
@@ -3890,6 +3896,7 @@ export default function InventarioView({
                             </span>
                             {e.ubicacion && (
                               <span
+                                className="truncate block"
                                 title={`Ubicación física: ${e.ubicacion}`}
                                 style={{
                                   fontSize: '11px',
@@ -3908,33 +3915,35 @@ export default function InventarioView({
                         </td>
 
                         {/* Estado */}
-                        <td style={{ textAlign: 'center', padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                          <span
-                            className={`pill ${
-                              estadoLower.includes('dispon')
-                                ? 'ok'
-                                : estadoLower.includes('prest')
-                                ? 'prestado'
-                                : estadoLower.includes('manten')
-                                ? 'alerta'
-                                : 'low'
-                            }`}
-                            style={{
-                              fontWeight: 700,
-                              fontSize: '11px',
-                              padding: '2.5px 8px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {estado}
-                          </span>
+                        <td style={{ width: '10%', minWidth: '95px', maxWidth: 0, textAlign: 'center', padding: '8px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minWidth: 0 }}>
+                            <span
+                              className={`pill ${
+                                estadoLower.includes('dispon')
+                                  ? 'ok'
+                                  : estadoLower.includes('prest')
+                                  ? 'prestado'
+                                  : estadoLower.includes('manten')
+                                  ? 'alerta'
+                                  : 'low'
+                              }`}
+                              style={{
+                                fontWeight: 700,
+                                fontSize: '11px',
+                                padding: '2.5px 8px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {estado}
+                            </span>
+                          </div>
                         </td>
 
                         {/* Acciones */}
-                        <td style={{ textAlign: 'center', padding: '8px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td style={{ width: '13%', minWidth: '130px', maxWidth: '140px', textAlign: 'center', padding: '8px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <div
                             style={{
                               display: 'flex',
@@ -3993,7 +4002,7 @@ export default function InventarioView({
                             </button>
 
                             {/* ✏️ Editar */}
-                            {isAdmin && (
+                            {canEditInventory && (
                               <button
                                 type="button"
                                 className="btn-icon-crud shrink-0"
@@ -4019,7 +4028,7 @@ export default function InventarioView({
                             )}
 
                             {/* 🗑️ Baja / Eliminar */}
-                            {isAdmin && (
+                            {canEditInventory && (
                               <button
                                 type="button"
                                 className="btn-icon-crud shrink-0"
@@ -4432,7 +4441,7 @@ export default function InventarioView({
                             </button>
 
                             {/* ✏️ Editar (Oculto para Supervisor) */}
-                            {!isSupervisor && (
+                            {canEditInventory && (
                               <button
                                 type="button"
                                 className="btn-icon-crud shrink-0"
@@ -4988,7 +4997,7 @@ export default function InventarioView({
                             </button>
 
                             {/* ✏️ Editar (Oculto para Supervisor) */}
-                            {!isSupervisor && (
+                            {canEditInventory && (
                               <button
                                 type="button"
                                 className="btn-icon-crud shrink-0"
@@ -5376,7 +5385,7 @@ export default function InventarioView({
                             </button>
 
                             {/* ✏️ Editar (Oculto para Supervisor) */}
-                            {!isSupervisor && (
+                            {canEditInventory && (
                               <button
                                 type="button"
                                 className="btn-icon-crud shrink-0"

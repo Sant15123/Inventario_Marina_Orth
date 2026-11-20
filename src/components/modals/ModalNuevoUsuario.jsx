@@ -528,6 +528,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
               >
                 <option value="usuario">Usuario (Consulta y Solicitudes)</option>
                 <option value="operador">Operador (Inventario y Préstamos)</option>
+                <option value="coordinador">Coordinador (Gestión de Compras y Proyectos)</option>
                 <option value="supervisor">Supervisor (Auditoría y Sedes)</option>
                 <option value="administrador">Administrador (Control Total)</option>
               </select>

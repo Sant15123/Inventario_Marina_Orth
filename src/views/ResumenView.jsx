@@ -5,6 +5,7 @@ import { getCategoryBadgeClass } from '../services/fmoBranding';
 import { useState, useEffect } from 'react';
 import { fmtDate, available, isOverdue, getDaysDiff, today } from '../services/mockData';
 import inventoryApi from '../services/inventoryApi';
+import { useAuth } from '../context/AuthContext';
 
 export default function ResumenView({
   items = [],
@@ -17,6 +18,37 @@ export default function ResumenView({
   // Estado para KPIs rápidos desde /api/dashboard/kpis o cálculo paralelo
   const [kpisData, setKpisData] = useState(null);
   const [kpisLoading, setKpisLoading] = useState(true);
+
+  // Hook de autenticación para rol Coordinador
+  const { isCoordinador } = useAuth();
+  const [comprasCount, setComprasCount] = useState({ pendientes: 0, aprobadas: 0, compradasMes: 0 });
+
+  useEffect(() => {
+    const fetchComprasCounts = async () => {
+      try {
+        let list = await inventoryApi.getSolicitudesCompra();
+        if (!Array.isArray(list) || list.length === 0) {
+          const cached = localStorage.getItem('siga_solicitudes_compra');
+          if (cached) list = JSON.parse(cached);
+        }
+        if (Array.isArray(list)) {
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          const pendientes = list.filter((s) => s.estado === 'Pendiente' || s.estado === 'En Evaluación').length;
+          const aprobadas = list.filter((s) => s.estado === 'Aprobada').length;
+          const compradasMes = list.filter((s) => {
+            if (s.estado !== 'Comprada') return false;
+            const f = new Date(s.fecha_compra || s.creado_en || Date.now());
+            return f.getMonth() === currentMonth && f.getFullYear() === currentYear;
+          }).length;
+          setComprasCount({ pendientes, aprobadas, compradasMes });
+        }
+      } catch (e) {
+        console.warn('Error al cargar conteos compras en resumen:', e);
+      }
+    };
+    fetchComprasCounts();
+  }, []);
 
   // Estados locales para consulta de tablas (alertas de stock y préstamos)
   const [localItems, setLocalItems] = useState(null);
@@ -252,6 +284,90 @@ export default function ResumenView({
     <div className="resumen-container">
       {/* 4 TARJETAS KPI SUPERIORES */}
       <div className="stats">
+        {isCoordinador ? (
+          <>
+            {/* KPI 1 Coordinador: Solicitudes Pendientes por Evaluar */}
+            <div
+              className={`stat fmo-impact-featured ${comprasCount.pendientes > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl relative overflow-hidden`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onNavigate && onNavigate('compras', { tab: 'pendientes' })}
+              title="Ver solicitudes pendientes por evaluar"
+            >
+              <FmoSignatureMotif color="#7B2CBF" opacity={0.18} className="absolute -right-6 -bottom-6 pointer-events-none" width={180} height={110} variant="ribbon" />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true" style={{ background: 'rgba(123, 44, 191, 0.2)', color: '#7B2CBF', borderRadius: '10px', padding: '4px 6px' }}>⏳</span>
+                <span className="pill default" style={{ backgroundColor: '#7B2CBF', color: '#ffffff', fontWeight: 800 }}>Etapa 1</span>
+              </div>
+              <div className="num mono-num relative z-10" style={{ color: '#7B2CBF', fontWeight: 900, fontFamily: "'Poppins', sans-serif", fontSize: '32px' }}>
+                {comprasCount.pendientes}
+              </div>
+              <div className="lbl relative z-10" style={{ color: 'var(--text-h, #013a52)', fontWeight: 600 }}>Solicitudes por Evaluar</div>
+            </div>
+
+            {/* KPI 2 Coordinador: Aprobadas Pendientes de Compra */}
+            <div
+              className="stat fmo-card-robotica cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden"
+              role="button"
+              tabIndex={0}
+              onClick={() => onNavigate && onNavigate('compras', { tab: 'aprobadas' })}
+              title="Ver solicitudes aprobadas listas para cotizar y comprar"
+            >
+              <FmoSignatureMotif color="#2CACD0" opacity={0.12} className="absolute -right-6 -bottom-6 pointer-events-none" width={160} height={100} variant="flourish" />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true" style={{ background: 'rgba(44, 172, 208, 0.2)', color: '#0284c7', borderRadius: '10px', padding: '4px 6px' }}>📝</span>
+                <span className="pill ok" style={{ backgroundColor: '#2CACD0', color: '#ffffff', fontWeight: 800 }}>Etapa 2</span>
+              </div>
+              <div className="num mono-num relative z-10" style={{ color: '#0284c7', fontWeight: 900, fontFamily: "'Poppins', sans-serif", fontSize: '32px' }}>
+                {comprasCount.aprobadas}
+              </div>
+              <div className="lbl relative z-10" style={{ color: 'var(--text-h, #013a52)', fontWeight: 600 }}>Aprobadas para Compra</div>
+            </div>
+
+            {/* KPI 3 Coordinador: Compradas en el Mes */}
+            <div
+              className="stat fmo-card-computo cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden"
+              role="button"
+              tabIndex={0}
+              onClick={() => onNavigate && onNavigate('compras', { tab: 'compradas' })}
+              title="Ver historial de compras realizadas en el mes"
+            >
+              <FmoSignatureMotif color="#abd037" opacity={0.15} className="absolute -right-6 -bottom-6 pointer-events-none" width={160} height={100} variant="curve" />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true" style={{ background: 'rgba(171, 208, 55, 0.25)', color: '#013a52', borderRadius: '10px', padding: '4px 6px' }}>🛒</span>
+                <span className="pill ok" style={{ backgroundColor: '#abd037', color: '#013a52', fontWeight: 800 }}>Etapa 3</span>
+              </div>
+              <div className="num mono-num relative z-10" style={{ color: '#013a52', fontWeight: 900, fontFamily: "'Poppins', sans-serif", fontSize: '32px' }}>
+                {comprasCount.compradasMes}
+              </div>
+              <div className="lbl relative z-10" style={{ color: 'var(--text-h, #013a52)', fontWeight: 600 }}>Compradas en el Mes</div>
+            </div>
+
+            {/* KPI 4 Coordinador: Alertas de Stock Bajo en Bodega */}
+            <div
+              className={`stat fmo-card-teachlabs ${stockCriticoCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onNavigate && onNavigate('inventario', { tab: 'consumibles', stockFilter: 'minimo' })}
+              title="Ver ítems en stock mínimo en bodega"
+            >
+              <FmoSignatureMotif color="#E0321C" opacity={0.10} className="absolute -right-6 -bottom-6 pointer-events-none" width={160} height={100} variant="flourish" />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true">⚠️</span>
+                {stockCriticoCount > 0 ? (
+                  <span className="pill low">{stockCriticoCount} crítico{stockCriticoCount !== 1 ? 's' : ''}</span>
+                ) : (
+                  <span className="pill ok">Óptimo</span>
+                )}
+              </div>
+              <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif", fontSize: '32px' }}>
+                {stockCriticoCount}
+              </div>
+              <div className="lbl relative z-10" style={{ color: 'var(--text-h, #013a52)', fontWeight: 600 }}>Alertas de Stock Bajo</div>
+            </div>
+          </>
+        ) : (
+          <>
         {/* KPI 1: Materiales y Equipos (Tarjeta Destacada de Impacto FMO) */}
         <div
           className="stat fmo-impact-featured cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl relative overflow-hidden"
@@ -427,6 +543,8 @@ export default function ResumenView({
           </div>
           <div className="lbl relative z-10">Préstamos vencidos</div>
         </div>
+          </>
+        )}
       </div>
 
       {/* TABLA 1: ALERTAS DE STOCK */}

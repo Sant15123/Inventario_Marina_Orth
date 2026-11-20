@@ -1307,6 +1307,25 @@ html.dark .badge-role.administrador {
   color: #4d7c0f;
 }
 
+/* Rol: Coordinador (FMO Azul Claro #2CACD0 / Morado #7B2CBF) */
+.badge-role.coordinador {
+  background: rgba(44, 172, 208, 0.16);
+  border-color: rgba(44, 172, 208, 0.35);
+  color: #0284c7;
+  font-weight: 700;
+}
+[data-theme="light"] .badge-role.coordinador {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+[data-theme="dark"] .badge-role.coordinador,
+html.dark .badge-role.coordinador {
+  background: rgba(44, 172, 208, 0.25);
+  border-color: rgba(44, 172, 208, 0.5);
+  color: #38bdf8;
+}
+
 /* Rol: Usuario (FMO Cyan Institucional #2CACD0 & Azul Complementario #013a52) */
 .badge-role.usuario {
   background: rgba(44, 172, 208, 0.15);

@@ -26,7 +26,7 @@ export default function Header({
   const isDark = theme === 'dark';
   const navigate = useNavigate();
   const { showInfo } = useToast();
-  const { currentUser, usuarios, logout, isUsuario, isSupervisor } = useAuth();
+  const { currentUser, usuarios, logout, isUsuario, isSupervisor, isCoordinador } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const [modalTelefonoAbierto, setModalTelefonoAbierto] = useState(false);
@@ -74,6 +74,8 @@ export default function Header({
     switch (rol?.toLowerCase()) {
       case 'administrador':
         return 'bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/25 font-bold';
+      case 'coordinador':
+        return 'bg-[#2CACD0]/20 text-[#0284c7] border border-[#2CACD0]/40 font-bold dark:bg-[#2CACD0]/30 dark:text-[#38bdf8]';
       case 'supervisor':
         return 'bg-amber-100 text-amber-800 border border-amber-300 font-bold dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60';
       case 'operador':

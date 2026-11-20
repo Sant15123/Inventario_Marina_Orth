@@ -11,6 +11,7 @@ import {
   Package,
   User,
   Eye,
+  Compass,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -102,6 +103,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
 
   // Conteo reactivo por roles para las pestañas superiores
   const adminCount = useMemo(() => usuarios.filter((u) => u.rol === 'administrador').length, [usuarios]);
+  const coordCount = useMemo(() => usuarios.filter((u) => u.rol === 'coordinador').length, [usuarios]);
   const supCount = useMemo(() => usuarios.filter((u) => u.rol === 'supervisor').length, [usuarios]);
   const opCount = useMemo(() => usuarios.filter((u) => u.rol === 'operador').length, [usuarios]);
   const userCount = useMemo(() => usuarios.filter((u) => u.rol === 'usuario').length, [usuarios]);
@@ -302,6 +304,30 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
             <span>Admin</span>
           </span>
         );
+      case 'coordinador':
+        return (
+          <span
+            className="badge-role coordinador"
+            title="Rol: Coordinador"
+            style={{
+              fontSize: '11px',
+              padding: '2.5px 7px',
+              borderRadius: '6px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontWeight: 700,
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              backgroundColor: 'rgba(44, 172, 208, 0.15)',
+              color: '#0284c7',
+              border: '1px solid rgba(44, 172, 208, 0.35)',
+            }}
+          >
+            <Compass style={{ width: '11px', height: '11px', flexShrink: 0 }} />
+            <span>Coordinador</span>
+          </span>
+        );
       case 'supervisor':
         return (
           <span
@@ -396,6 +422,17 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
           >
             <span>🛡️ Admins</span>
             <span className="tab-badge">{adminCount}</span>
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'coordinador' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('coordinador');
+              setCurrentPage(1);
+            }}
+          >
+            <span>🧭 Coordinadores</span>
+            <span className="tab-badge">{coordCount}</span>
           </button>
           <button
             type="button"

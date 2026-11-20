@@ -49,6 +49,20 @@ export const DEMO_ACCOUNTS = [
     cargo: 'Operadora de Inventario & Bodega',
   },
   {
+    role: 'coordinador',
+    title: 'Coordinador',
+    email: 'carolina.gomez@fmo.org',
+    alternateEmail: 'coordinador@fmo.org',
+    password: 'coord123',
+    documento: '1004567890',
+    name: 'Carolina Gómez',
+    badge: 'Gestión Compras',
+    description: 'Gestión del flujo de compras, evaluación pedagógica y proyectos STEAM.',
+    scope: 'Resumen, Gestión de Compras, Inventario, Historial',
+    sede: 'Medellín',
+    cargo: 'Coordinadora de Proyectos & Adquisiciones',
+  },
+  {
     role: 'usuario',
     title: 'Docente / Formador',
     email: 'yury.torres@fmo.org',
@@ -75,6 +89,24 @@ export const USUARIOS_DEMO = {
     rol: 'administrador',
     sede: 'Medellín',
     cargo: 'Formador de Semilleros STEAM',
+  },
+  'coordinador@fmo.org': {
+    id: 'c819a1bc-70e4-4401-bb6e-fe3e280575e9',
+    nombre: 'Carolina Gómez',
+    email: 'carolina.gomez@fmo.org',
+    documento: '1004567890',
+    rol: 'coordinador',
+    sede: 'Medellín',
+    cargo: 'Coordinadora de Proyectos & Adquisiciones',
+  },
+  'carolina.gomez@fmo.org': {
+    id: 'c819a1bc-70e4-4401-bb6e-fe3e280575e9',
+    nombre: 'Carolina Gómez',
+    email: 'carolina.gomez@fmo.org',
+    documento: '1004567890',
+    rol: 'coordinador',
+    sede: 'Medellín',
+    cargo: 'Coordinadora de Proyectos & Adquisiciones',
   },
   '1064123987': {
     id: '834a1bc6-60e3-4401-bb6e-fe3e280575e3',
@@ -298,6 +330,18 @@ const USUARIOS_INICIALES = [
     telefono: '3129876543',
     rol: 'usuario',
     cargo: 'Formadora STEAM & Electrónica',
+    sede: 'Medellín',
+  },
+  {
+    id: 'c819a1bc-70e4-4401-bb6e-fe3e280575e9',
+    documento: '1004567890',
+    nombre: 'Carolina Gómez',
+    email: 'carolina.gomez@fmo.org',
+    alternateEmails: ['coordinador@fmo.org', 'coord@fmo.org'],
+    password: 'coord123',
+    telefono: '3157778899',
+    rol: 'coordinador',
+    cargo: 'Coordinadora de Proyectos & Adquisiciones',
     sede: 'Medellín',
   },
   {
@@ -650,6 +694,8 @@ export function AuthProvider({ children }) {
           user.password ||
           (user.rol === 'administrador'
             ? 'admin123'
+            : user.rol === 'coordinador'
+            ? 'coord123'
             : user.rol === 'supervisor'
             ? 'super123'
             : user.rol === 'operador'
@@ -997,6 +1043,7 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!token && !!currentUser;
   const isAdmin = currentUser?.rol === 'administrador';
+  const isCoordinador = currentUser?.rol === 'coordinador';
   const isSupervisor = currentUser?.rol === 'supervisor';
   const isOperador = currentUser?.rol === 'operador';
   const isUsuario = currentUser?.rol === 'usuario';
@@ -1020,6 +1067,7 @@ export function AuthProvider({ children }) {
         actualizarTelefono,
         refetchUsuarios,
         isAdmin,
+        isCoordinador,
         isSupervisor,
         isOperador,
         isUsuario,
