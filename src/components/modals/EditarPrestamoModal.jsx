@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Laptop, Sparkles, Building2, User, FileText, Calendar, Pencil } from 'lucide-react';
 import inventoryApi from '../../services/inventoryApi';
+import { useProyectos } from '../../hooks/useProyectos';
+import { formatProyectoLabel, normalizeProyectoNombre } from '../../constants/proyectos';
 
 export const EditarPrestamoModal = ({
   prestamo,
@@ -18,7 +20,8 @@ export const EditarPrestamoModal = ({
   const [observaciones, setObservaciones] = useState('');
   const [custodioId, setCustodioId] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [listaProyectos, setListaProyectos] = useState(proyectos);
+  const { proyectos: proyectosFromHook } = useProyectos();
+  const [listaProyectos, setListaProyectos] = useState(() => (Array.isArray(proyectos) && proyectos.length > 0 ? proyectos : proyectosFromHook));
 
   // Fecha mínima permitida: hoy (YYYY-MM-DD)
   const hoyStr = new Date().toISOString().split('T')[0];
@@ -27,18 +30,10 @@ export const EditarPrestamoModal = ({
   useEffect(() => {
     if (Array.isArray(proyectos) && proyectos.length > 0) {
       setListaProyectos(proyectos);
-    } else {
-      let isMounted = true;
-      inventoryApi.getProyectos?.()
-        .then((data) => {
-          if (isMounted && Array.isArray(data) && data.length > 0) {
-            setListaProyectos(data);
-          }
-        })
-        .catch(() => {});
-      return () => { isMounted = false; };
+    } else if (Array.isArray(proyectosFromHook) && proyectosFromHook.length > 0) {
+      setListaProyectos(proyectosFromHook);
     }
-  }, [proyectos]);
+  }, [proyectos, proyectosFromHook]);
 
   useEffect(() => {
     if (prestamo) {
@@ -50,7 +45,8 @@ export const EditarPrestamoModal = ({
       setFechaDevolucion(fechaVal ? String(fechaVal).split('T')[0] : '');
 
       setSede(prestamo.sede || prestamo.destination || prestamo.destino || '');
-      setProyectoSteam(prestamo.proyecto_steam || prestamo.proyecto || prestamo.project || '');
+      const rawProj = prestamo.proyecto_steam || prestamo.proyecto || prestamo.project || '';
+      setProyectoSteam(normalizeProyectoNombre(rawProj));
       setObservaciones(prestamo.observaciones || prestamo.motivo || prestamo.motive || '');
       setCustodioId(
         prestamo.custodio_id ||

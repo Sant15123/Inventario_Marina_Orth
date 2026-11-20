@@ -28,6 +28,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import inventoryApi from '../services/inventoryApi';
 import { fmtDate, today } from '../services/mockData';
+import { useProyectos } from '../hooks/useProyectos';
+import { normalizeProyectoNombre } from '../constants/proyectos';
 import ExcelJS from 'exceljs';
 
 // Muestras de prueba para el flujo de compras en caso de arranque sin datos en Supabase
@@ -40,7 +42,7 @@ const SOLICITUDES_COMPRA_DEMO = [
     solicitante_correo: 'santiago.suarez@fundaorth.org',
     solicitante_telefono: '300 123 4567',
     sede_destino: 'Medellín',
-    proyecto_steam: 'Robótica',
+    proyecto_steam: 'Semilleros de Robótica Educativa',
     fecha_requerida: '2026-11-25',
     justificacion: 'Requerido para taller de programación de microcontroladores y sensores con jóvenes de secundaria.',
     items: [
@@ -80,7 +82,7 @@ const SOLICITUDES_COMPRA_DEMO = [
     solicitante_correo: 'carolina.gomez@fundaorth.org',
     solicitante_telefono: '312 987 6543',
     sede_destino: 'El Carmen de Viboral',
-    proyecto_steam: 'TeachLabs',
+    proyecto_steam: 'Aulas Conectadas STEAM',
     fecha_requerida: '2026-11-28',
     justificacion: 'Materiales didácticos de papelería e insumos para el arranque del ciclo de laboratorios TeachLabs.',
     items: [
@@ -120,7 +122,7 @@ const SOLICITUDES_COMPRA_DEMO = [
     solicitante_correo: 'juan.perez@fundaorth.org',
     solicitante_telefono: '315 444 8899',
     sede_destino: 'Medellín',
-    proyecto_steam: 'Nuevas Tecnologías',
+    proyecto_steam: 'Clubes de Innovación y Electrónica',
     fecha_requerida: '2026-11-20',
     justificacion: 'Adquisición de hubs USB multipuerto tipo C para salas de cómputo y formación docente.',
     items: [
@@ -164,6 +166,7 @@ export default function GestionComprasView({
   const [busqueda, setBusqueda] = useState('');
   const [filtroSede, setFiltroSede] = useState('todas');
   const [filtroProyecto, setFiltroProyecto] = useState('todos');
+  const { proyectos: proyectosSteamList, formatLabel: formatProyectoLabel } = useProyectos();
 
   useEffect(() => {
     if (initialTab) {
@@ -282,9 +285,13 @@ export default function GestionComprasView({
         return false;
       }
 
-      // Filtro Proyecto STEAM
-      if (filtroProyecto !== 'todos' && sol.proyecto_steam !== filtroProyecto) {
-        return false;
+      // Filtro Proyecto STEAM (Unificado)
+      if (filtroProyecto !== 'todos') {
+        const canonicalSol = normalizeProyectoNombre(sol.proyecto_steam);
+        const canonicalFiltro = normalizeProyectoNombre(filtroProyecto);
+        if (canonicalSol !== canonicalFiltro && sol.proyecto_steam !== filtroProyecto) {
+          return false;
+        }
       }
 
       // Búsqueda libre
@@ -820,12 +827,15 @@ export default function GestionComprasView({
             className="rounded-lg px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
           >
             <option value="todos">Todos los proyectos</option>
-            <option value="Robótica">Robótica</option>
-            <option value="TeachLabs">TeachLabs</option>
-            <option value="Nuevas Tecnologías">Nuevas Tecnologías</option>
-            <option value="Habilidades Socioemocionales">Habilidades Socioemocionales</option>
-            <option value="Inglés">Inglés</option>
-            <option value="Becas 'Educando para el Futuro'">Becas "Educando para el Futuro"</option>
+            {(proyectosSteamList || []).map((p) => {
+              const val = typeof p === 'string' ? p : p.nombre;
+              const label = formatProyectoLabel ? formatProyectoLabel(p) : val;
+              return (
+                <option key={val} value={val}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
         </div>
 

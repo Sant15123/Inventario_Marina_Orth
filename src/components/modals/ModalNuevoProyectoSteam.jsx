@@ -39,6 +39,17 @@ export default function ModalNuevoProyectoSteam({ isOpen, onClose, onProyectoCre
         };
       }
 
+      if (creado || payload) {
+        const itemToSave = creado || payload;
+        try {
+          const cached = JSON.parse(localStorage.getItem('siga_proyectos_steam') || '[]');
+          if (Array.isArray(cached)) {
+            const updated = [itemToSave, ...cached.filter(p => p.id !== itemToSave.id && p.nombre !== itemToSave.nombre)];
+            localStorage.setItem('siga_proyectos_steam', JSON.stringify(updated));
+          }
+        } catch (e) {}
+      }
+
       if (onProyectoCreated) {
         onProyectoCreated(creado || payload);
       }

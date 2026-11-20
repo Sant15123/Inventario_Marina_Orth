@@ -719,12 +719,12 @@ export const SEDES = [
   'Nacional'
 ];
 
-// Proyectos institucionales
+// Proyectos institucionales oficiales FMO (Fuente única de verdad)
 export const PROYECTOS = [
-  'Clubes de Robótica',
-  'Ratón de Biblioteca',
-  'Semillero STEAM',
-  'Siembra de Colores'
+  'Aulas Conectadas STEAM',
+  'Clubes de Innovación y Electrónica',
+  'Semilleros de Robótica Educativa',
+  'Siembra de colores'
 ];
 
 /**

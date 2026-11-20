@@ -4,6 +4,7 @@ import FmoPrintLetterhead from '../components/common/FmoPrintLetterhead';
 import FmoPrintFooter from '../components/common/FmoPrintFooter';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { fmtDate, formatearFechaSegura, EMPLOYEES, SEDES, PROYECTOS, available, isOverdue, esPrestamoVencido, today } from '../services/mockData';
+import { PROYECTOS_STEAM_OFICIALES, formatProyectoLabel } from '../constants/proyectos';
 import { supabase } from '../services/supabase';
 import ModalQR from '../components/modals/ModalQR';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
@@ -124,8 +125,8 @@ export default function PrestamosView({
     };
   }, []);
 
-  // Catálogo dinámico de Proyectos STEAM poblado desde /api/proyectos
-  const [proyectosList, setProyectosList] = useState([]);
+  // Catálogo dinámico de Proyectos STEAM poblado desde /api/proyectos (con respaldo oficial unificado)
+  const [proyectosList, setProyectosList] = useState(() => PROYECTOS_STEAM_OFICIALES);
   const [showProyectoModal, setShowProyectoModal] = useState(false);
 
   // Catálogo dinámico de Sedes poblado desde /api/sedes y propSedes
@@ -151,14 +152,17 @@ export default function PrestamosView({
         const data = await inventoryApi.getProyectos();
         if (isMounted) {
           if (Array.isArray(data) && data.length > 0) {
-            setProyectosList(data);
+            const sorted = [...data].sort((a, b) =>
+              (a.nombre || '').localeCompare(b.nombre || '', 'es')
+            );
+            setProyectosList(sorted);
           } else {
-            setProyectosList(PROYECTOS.map((p, idx) => ({ id: idx + 1, nombre: p, municipio: 'Medellín' })));
+            setProyectosList(PROYECTOS_STEAM_OFICIALES);
           }
         }
       } catch {
         if (isMounted) {
-          setProyectosList(PROYECTOS.map((p, idx) => ({ id: idx + 1, nombre: p, municipio: 'Medellín' })));
+          setProyectosList(PROYECTOS_STEAM_OFICIALES);
         }
       }
     };

@@ -19,6 +19,7 @@ import {
 import { today, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
+import { useProyectos } from '../../hooks/useProyectos';
 
 export default function ModalSolicitudMaterial({
   isOpen,
@@ -55,10 +56,12 @@ export default function ModalSolicitudMaterial({
   const esPrestamo = tipoSolicitud === 'PRESTAMO_EQUIPO';
   const esConsumibles = tipoSolicitud === 'CONSUMIBLES' || tipoSolicitud.includes('CONSUMIB');
 
-  // Lista de proyectos STEAM asegurando respaldo institucional
+  // Proyectos STEAM unificados (Fuente única de verdad)
+  const { proyectos: proyectosFromHook, formatLabel } = useProyectos();
   const listaProyectos = useMemo(() => {
-    return Array.isArray(proyectos) && proyectos.length > 0 ? proyectos : PROYECTOS;
-  }, [proyectos]);
+    if (Array.isArray(proyectos) && proyectos.length > 0) return proyectos;
+    return proyectosFromHook;
+  }, [proyectos, proyectosFromHook]);
 
   // Catálogo disponible filtrado por tipo de solicitud
   const catalogoDisponible = useMemo(() => {
@@ -1400,9 +1403,14 @@ export default function ModalSolicitudMaterial({
                   <option value="" disabled>
                     -- Selecciona un proyecto STEAM --
                   </option>
+                  {proyectoId && !listaProyectos.some((p) => (typeof p === 'string' ? p : p.nombre) === proyectoId) && (
+                    <option value={proyectoId}>
+                      {proyectoId}
+                    </option>
+                  )}
                   {listaProyectos.map((p) => {
-                    const val = typeof p === 'string' ? p : p.nombre || p.id;
-                    const label = typeof p === 'string' ? p : p.nombre || p.id;
+                    const val = typeof p === 'string' ? p : p.nombre;
+                    const label = formatLabel ? formatLabel(p) : val;
                     return (
                       <option key={val} value={val}>
                         {label}

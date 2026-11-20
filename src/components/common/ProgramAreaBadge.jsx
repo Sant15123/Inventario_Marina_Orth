@@ -153,6 +153,7 @@ export function resolveAreaConfig(area, defaultProgram = null) {
   if (
     norm.includes('socio') ||
     norm.includes('emocion') ||
+    norm.includes('siembra') ||
     norm.includes('vida') ||
     norm.includes('habilidad') ||
     norm.includes('bienestar') ||
