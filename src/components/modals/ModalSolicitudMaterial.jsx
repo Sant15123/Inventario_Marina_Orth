@@ -1024,81 +1024,49 @@ export default function ModalSolicitudMaterial({
                 </div>
 
                 {/* Directorio de Proveedores Recomendados por la Fundación */}
-                <div
-                  className="rounded-xl border p-3.5 space-y-2.5"
-                  style={{
-                    backgroundColor: 'rgba(1, 58, 82, 0.25)',
-                    borderColor: 'rgba(171, 208, 55, 0.35)',
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                        style={{
-                          backgroundColor: '#abd037',
-                          color: '#013a52',
-                        }}
-                      >
-                        <Store size={15} strokeWidth={2.4} />
+                <div className="bg-[#F7F9FA] border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-[#abd037]/20 text-[#013a52] dark:text-[#abd037]">
+                        <Store size={18} strokeWidth={2.4} />
                       </div>
                       <div>
                         <div
-                          className="text-xs font-bold text-white flex items-center gap-1.5"
+                          className="text-sm font-bold text-[#013a52] dark:text-white"
                           style={{ fontFamily: "'Poppins', sans-serif" }}
                         >
-                          <span>Proveedores Recomendados por la Fundación</span>
+                          Proveedores Recomendados por la Fundación
                         </div>
-                        <div className="text-[11px] text-slate-300">
+                        <div className="text-xs text-[#6d6e71] dark:text-slate-300">
                           Consulta estas tiendas confiables para buscar el enlace de referencia de tu producto
                         </div>
                       </div>
                     </div>
-                    <span
-                      style={{
-                        fontSize: '10.5px',
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        backgroundColor: 'rgba(171, 208, 55, 0.2)',
-                        color: '#abd037',
-                        border: '1px solid rgba(171, 208, 55, 0.5)',
-                      }}
-                    >
-                      {proveedoresRecomendados.length} sugeridos
+                    <span className="bg-[#abd037]/20 text-[#013a52] dark:text-[#abd037] text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                      {proveedoresRecomendados.length} {proveedoresRecomendados.length === 1 ? 'sugerido' : 'sugeridos'}
                     </span>
                   </div>
 
-                  {/* Listado con scroll suave max-h-56 */}
-                  <div
-                    className="max-h-56 overflow-y-auto space-y-2 pr-1"
-                    style={{
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: '#abd037 transparent',
-                    }}
-                  >
+                  {/* Listado con scroll suave max-h-52 */}
+                  <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
                     {loadingProveedores ? (
-                      <div className="p-3 text-center text-xs text-slate-400">
+                      <div className="p-4 text-center text-xs text-[#6d6e71] dark:text-slate-400">
                         Cargando proveedores recomendados...
                       </div>
                     ) : proveedoresRecomendados.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-slate-400 border border-dashed border-slate-700 rounded-lg">
+                      <div className="p-4 text-center text-xs text-[#6d6e71] dark:text-slate-400 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
                         No hay proveedores registrados en el directorio en este momento.
                       </div>
                     ) : (
                       proveedoresRecomendados.map((prov) => (
                         <div
                           key={prov.id}
-                          className="p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all hover:border-slate-500"
-                          style={{
-                            backgroundColor: 'rgba(11, 17, 32, 0.7)',
-                            borderColor: 'rgba(51, 65, 85, 0.8)',
-                          }}
+                          className="bg-white border border-slate-200 hover:border-[#abd037] dark:bg-slate-900 dark:border-slate-700 dark:hover:border-[#abd037] rounded-xl p-3.5 shadow-sm transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span
-                                className="font-bold text-xs text-white"
+                                className="text-sm font-bold text-[#013a52] dark:text-white"
                                 style={{ fontFamily: "'Poppins', sans-serif" }}
                               >
                                 {prov.nombre}
@@ -1107,32 +1075,27 @@ export default function ModalSolicitudMaterial({
                                 href={prov.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300 hover:underline"
-                                title="Abrir enlace en pestaña nueva"
+                                className="text-xs font-medium text-[#2CACD0] hover:underline inline-flex items-center gap-1"
+                                title="Abrir tienda en nueva pestaña"
                               >
                                 <span>{prov.url.replace(/^https?:\/\/(www\.)?/, '')}</span>
-                                <ExternalLink size={11} strokeWidth={2.4} />
+                                <ExternalLink size={12} strokeWidth={2} />
                               </a>
                             </div>
-                            <p className="text-[11px] text-slate-300 mt-0.5 line-clamp-2">
+                            <p className="text-xs text-[#6d6e71] dark:text-slate-300 mt-1 line-clamp-2">
                               {prov.descripcion}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <a
                               href={prov.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-2.5 py-1 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all"
-                              style={{
-                                backgroundColor: '#013a52',
-                                color: '#ffffff',
-                                border: '1px solid rgba(171, 208, 55, 0.4)',
-                              }}
+                              className="border border-[#013a52]/30 text-[#013a52] hover:bg-[#013a52]/5 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 text-xs font-semibold px-3 py-1.5 rounded-lg no-underline inline-flex items-center gap-1.5 transition-colors"
                             >
                               <span>Visitar Tienda</span>
-                              <ExternalLink size={11} />
+                              <ExternalLink size={12} strokeWidth={2} />
                             </a>
                             <button
                               type="button"
@@ -1140,16 +1103,10 @@ export default function ModalSolicitudMaterial({
                                 setCompraForm((prev) => ({ ...prev, url: prov.url }));
                                 if (validationError) setValidationError('');
                               }}
-                              className="px-2.5 py-1 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all"
-                              style={{
-                                backgroundColor: '#abd037',
-                                color: '#013a52',
-                                border: 'none',
-                                cursor: 'pointer',
-                              }}
+                              className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
                               title="Copiar el enlace de esta tienda en el formulario"
                             >
-                              <span>Usar Tienda</span>
+                              Usar Tienda
                             </button>
                           </div>
                         </div>
