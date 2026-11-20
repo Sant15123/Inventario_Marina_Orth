@@ -1903,7 +1903,10 @@ export default function InventarioView({
     const placaNueva = (formDataEditarEquipo.placa || placaIdentificador).trim();
     const nombre = formDataEditarEquipo.nombre?.trim();
     const serial = formDataEditarEquipo.serial?.trim();
-    const areaAsignada = formDataEditarEquipo.area_asignada || formDataEditarEquipo.area?.trim() || 'Nuevas Tecnologías';
+    const rawArea = typeof formDataEditarEquipo.area_asignada === 'string'
+      ? formDataEditarEquipo.area_asignada
+      : (typeof formDataEditarEquipo.area === 'string' ? formDataEditarEquipo.area : '');
+    const areaAsignada = rawArea.trim() || 'Nuevas Tecnologías';
 
     if (!placaNueva) {
       showError('Validación', 'La Placa / Código del equipo es obligatoria.');
@@ -2116,7 +2119,7 @@ export default function InventarioView({
       setEquipoParaEditar(null);
 
       // Notificación Toast de Edición Exitosa Institucional
-      showEditSuccess(formDataEditarEquipo.nombre || formDataEditarEquipo.placa || placaNueva);
+      showEditSuccess(String(formDataEditarEquipo.nombre || formDataEditarEquipo.placa || placaNueva || 'Equipo'));
     } catch (err) {
       showError('Error al guardar cambios', err.message || 'Error del servidor');
     } finally {

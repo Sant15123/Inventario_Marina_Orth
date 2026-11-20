@@ -220,8 +220,8 @@ export default function ModalRegistroEquipoTecnologico({
         cantidad: Number(formData.cantidad) || 1,
         condicion: formData.condicion,
         estado: formData.estado,
-        area_asignada: formData.area_asignada || 'Nuevas Tecnologías',
-        area: formData.area_asignada || 'Nuevas Tecnologías',
+        area_asignada: (typeof formData.area_asignada === 'string' && formData.area_asignada) ? formData.area_asignada : 'Nuevas Tecnologías',
+        area: (typeof formData.area_asignada === 'string' && formData.area_asignada) ? formData.area_asignada : 'Nuevas Tecnologías',
         sede: formData.sede || 'Medellín',
         ubicacion: formData.ubicacion?.trim() || 'Oficina Medellín',
         responsable: formData.responsable?.trim() || 'Bodega Central',
@@ -279,7 +279,10 @@ export default function ModalRegistroEquipoTecnologico({
     }
   };
 
-  const currentTheme = getProgramTheme(formData.area_asignada || 'Nuevas Tecnologías', 'Nuevas Tecnologías');
+  const currentTheme = getProgramTheme(
+    typeof formData.area_asignada === 'string' ? formData.area_asignada : 'Nuevas Tecnologías',
+    'Nuevas Tecnologías'
+  );
 
   return (
     <div
@@ -562,15 +565,23 @@ export default function ModalRegistroEquipoTecnologico({
             {/* FILA 3: Área Asignada / Programa FMO | Sede y Ubicación Física */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)' }}>
-                    Área Asignada / Programa FMO *
+                    Área Asignada / Programa FMO <span style={{ color: '#e11d48' }}>*</span>
                   </label>
-                  <ProgramAreaBadge area={formData.area_asignada} size="sm" />
+                  <ProgramAreaBadge
+                    area={typeof formData.area_asignada === 'string' ? formData.area_asignada : 'Nuevas Tecnologías'}
+                    size="sm"
+                  />
                 </div>
                 <ProgramAreaSelect
-                  value={formData.area_asignada}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, area_asignada: val }))}
+                  label={null}
+                  showPreview={false}
+                  value={typeof formData.area_asignada === 'string' ? formData.area_asignada : 'Nuevas Tecnologías'}
+                  onChange={(e) => {
+                    const val = typeof e === 'string' ? e : e?.target?.value || '';
+                    setFormData((prev) => ({ ...prev, area_asignada: val, area: val }));
+                  }}
                   required
                 />
               </div>

@@ -118,8 +118,8 @@ export const PROGRAM_THEMES = {
  * Normaliza cadenas de texto eliminando acentos, tildes y pasando a minúsculas
  */
 export function normalizeProgramName(str) {
-  if (!str && str !== 0) return '';
-  return String(str)
+  if (typeof str !== 'string') return '';
+  return str
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -131,7 +131,7 @@ export function normalizeProgramName(str) {
  * con resolución inteligente para variaciones de nombres, tildes y casos de respaldo.
  */
 export function getProgramTheme(areaName, fallbackKey = 'default') {
-  if (!areaName) {
+  if (!areaName || typeof areaName !== 'string') {
     return PROGRAM_THEMES[fallbackKey] || PROGRAM_THEMES.default;
   }
 

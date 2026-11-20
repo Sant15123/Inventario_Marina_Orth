@@ -65,8 +65,16 @@ export function normalizeAreaText(str) {
  * con opción de programa predeterminado de respaldo.
  */
 export function resolveAreaConfig(area, defaultProgram = null) {
-  const norm = normalizeAreaText(area);
-  const defNorm = normalizeAreaText(defaultProgram);
+  // Blinda contra SyntheticEvent, objetos o valores no-string
+  const safeArea = typeof area === 'string'
+    ? area
+    : (area && typeof area.target?.value === 'string' ? area.target.value : '');
+  const safeDefault = typeof defaultProgram === 'string'
+    ? defaultProgram
+    : '';
+
+  const norm = normalizeAreaText(safeArea);
+  const defNorm = normalizeAreaText(safeDefault);
 
   // 1. Robótica (#0A3C63)
   if (
@@ -241,7 +249,7 @@ export function resolveAreaConfig(area, defaultProgram = null) {
   }
 
   // 7. Sin asignar o Administración / General
-  if (!area) {
+  if (!safeArea) {
     return {
       id: 'general',
       label: 'Sin asignar',
@@ -253,7 +261,7 @@ export function resolveAreaConfig(area, defaultProgram = null) {
   // 8. Cualquier otro valor explícito / Administración / General
   return {
     id: 'general',
-    label: area,
+    label: safeArea,
     badgeClass: 'bg-slate-50 text-[#6d6e71] border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
     Icon: NeutralAreaIcon,
   };
@@ -290,7 +298,7 @@ export default function ProgramAreaBadge({
           <IconComponent size={iconSize} className="w-full h-full" />
         </span>
       )}
-      <span className="truncate">{config.label}</span>
+      <span className="truncate">{typeof config.label === 'string' ? config.label : 'Sin asignar'}</span>
     </span>
   );
 }
@@ -305,11 +313,21 @@ export function ProgramAreaSelect({
   name = 'area',
   id,
   className = '',
-  showPreview = true,
+  showPreview = false,
   required = false,
-  label = 'Área Asignada',
+  label = null,
   defaultProgram = null,
 }) {
+  const cleanValue = typeof value === 'string' 
+    ? value 
+    : (value && typeof value.target?.value === 'string' ? value.target.value : '');
+
+  const handleChange = (e) => {
+    if (typeof onChange === 'function') {
+      onChange(e);
+    }
+  };
+
   return (
     <div className="program-area-select-container">
       {label && (
@@ -321,8 +339,8 @@ export function ProgramAreaSelect({
         id={id}
         name={name}
         required={required}
-        value={value || ''}
-        onChange={onChange}
+        value={cleanValue}
+        onChange={handleChange}
         className={`w-full bg-white text-[#013a52] font-semibold border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-xl px-3 py-2 text-sm outline-none transition-all dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 ${className}`}
         style={{ fontFamily: "'Poppins', sans-serif" }}
       >
@@ -333,12 +351,12 @@ export function ProgramAreaSelect({
           </option>
         ))}
       </select>
-      {showPreview && value && (
+      {showPreview && cleanValue && (
         <div className="mt-2 flex items-center gap-2">
           <span className="text-[11px] text-[#6d6e71] dark:text-slate-400 font-medium">
             Previsualización en inventario:
           </span>
-          <ProgramAreaBadge area={value} defaultProgram={defaultProgram} />
+          <ProgramAreaBadge area={cleanValue} defaultProgram={defaultProgram} />
         </div>
       )}
     </div>

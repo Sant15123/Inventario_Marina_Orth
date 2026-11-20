@@ -155,7 +155,9 @@ export default function ModalEditarActivo({
     try {
       setInternalSubmitting(true);
 
-      const areaAsignada = formData.area_asignada || formData.area || 'Nuevas Tecnologías';
+      const areaAsignada = (typeof formData.area_asignada === 'string' && formData.area_asignada)
+        ? formData.area_asignada
+        : ((typeof formData.area === 'string' && formData.area) ? formData.area : 'Nuevas Tecnologías');
       const payload = {
         nombre: nombreLimpio,
         placa: placaLimpia,
@@ -209,7 +211,12 @@ export default function ModalEditarActivo({
     }
   };
 
-  const currentTheme = getProgramTheme(formData.area_asignada || formData.area || 'Nuevas Tecnologías', 'Nuevas Tecnologías');
+  const currentTheme = getProgramTheme(
+    typeof formData.area_asignada === 'string'
+      ? formData.area_asignada
+      : (typeof formData.area === 'string' ? formData.area : 'Nuevas Tecnologías'),
+    'Nuevas Tecnologías'
+  );
 
   return (
     <div
@@ -483,15 +490,23 @@ export default function ModalEditarActivo({
             {/* FILA 3: Área Asignada / Programa FMO | Sede y Ubicación Física */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)' }}>
-                    Área Asignada / Programa FMO *
+                    Área Asignada / Programa FMO <span style={{ color: '#e11d48' }}>*</span>
                   </label>
-                  <ProgramAreaBadge area={formData.area_asignada || 'Nuevas Tecnologías'} size="sm" />
+                  <ProgramAreaBadge
+                    area={typeof formData.area_asignada === 'string' ? formData.area_asignada : (formData.area || 'Nuevas Tecnologías')}
+                    size="sm"
+                  />
                 </div>
                 <ProgramAreaSelect
-                  value={formData.area_asignada || 'Nuevas Tecnologías'}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, area_asignada: val }))}
+                  label={null}
+                  showPreview={false}
+                  value={typeof formData.area_asignada === 'string' ? formData.area_asignada : (formData.area || 'Nuevas Tecnologías')}
+                  onChange={(e) => {
+                    const val = typeof e === 'string' ? e : e?.target?.value || '';
+                    setFormData((prev) => ({ ...prev, area_asignada: val, area: val }));
+                  }}
                   required
                 />
               </div>
