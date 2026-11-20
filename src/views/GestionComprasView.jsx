@@ -222,7 +222,8 @@ export const getSolItems = (sol) => {
     return [
       {
         nombre: sol.nombre_producto,
-        categoria_sugerida: sol.categoria_destino || 'Consumibles de Robótica',
+        categoria_sugerida: formatCategoriaDestino(sol.categoria_destino || 'consumibles'),
+        categoria_destino: getCategoriaSlug(sol.categoria_destino || 'consumibles'),
         cantidad_solicitada: Number(sol.cantidad) || 1,
         cantidad_aprobada: sol.cantidad_aprobada !== undefined ? Number(sol.cantidad_aprobada) : Number(sol.cantidad) || 1,
         precio_estimado_unitario: Number(sol.precio_estimado) || 0,
@@ -243,6 +244,52 @@ export const getSolItems = (sol) => {
     ];
   }
   return [];
+};
+
+// Formateador y mapeador estricto para las 3 Categorías Destino (SIGA-FMO)
+export const formatCategoriaDestino = (cat) => {
+  const norm = String(cat || '').toLowerCase().trim();
+  if (norm === 'electronica' || norm.includes('electrónica') || norm.includes('electronica')) {
+    return 'Equipos de Electrónica';
+  }
+  if (norm === 'papeleria' || norm.includes('papelería') || norm.includes('papeleria')) {
+    return 'Papelería';
+  }
+  return 'Consumibles de Robótica';
+};
+
+export const getCategoriaSlug = (cat) => {
+  const norm = String(cat || '').toLowerCase().trim();
+  if (norm === 'electronica' || norm.includes('electrónica') || norm.includes('electronica')) {
+    return 'electronica';
+  }
+  if (norm === 'papeleria' || norm.includes('papelería') || norm.includes('papeleria')) {
+    return 'papeleria';
+  }
+  return 'consumibles';
+};
+
+export const getCategoriaBadgeStyle = (cat) => {
+  const slug = getCategoriaSlug(cat);
+  if (slug === 'electronica') {
+    return {
+      backgroundColor: 'rgba(0, 180, 216, 0.12)',
+      color: '#0284c7',
+      border: '1px solid rgba(0, 180, 216, 0.35)',
+    };
+  }
+  if (slug === 'papeleria') {
+    return {
+      backgroundColor: 'rgba(245, 158, 11, 0.12)',
+      color: '#b45309',
+      border: '1px solid rgba(245, 158, 11, 0.35)',
+    };
+  }
+  return {
+    backgroundColor: 'rgba(171, 208, 55, 0.15)',
+    color: '#4d7c0f',
+    border: '1px solid rgba(171, 208, 55, 0.35)',
+  };
 };
 
 // Configuración visual y semántica de estados según Sistema de Marca FMO
@@ -474,19 +521,24 @@ export default function GestionComprasView({
               invList = invData
                 .filter(esSolicitudCompra)
                 .map((s) => {
-                  const solItems = (s.items_solicitud || []).map((it) => ({
-                    id: it.id,
-                    nombre: it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido',
-                    nombre_sugerido: it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido',
-                    cantidad_solicitada: Number(it.cantidad) || 1,
-                    cantidad: Number(it.cantidad) || 1,
-                    cantidad_aprobada: it.cantidad_aprobada !== undefined ? it.cantidad_aprobada : Number(it.cantidad) || 1,
-                    categoria_sugerida: it.categoria_sugerida || 'Consumibles',
-                    precio_estimado_unitario: Number(it.precio_estimado) || 0,
-                    precio_estimado: Number(it.precio_estimado) || 0,
-                    url_compra: it.url_compra || '',
-                    ingresado_inventario: Boolean(it.ingresado_inventario),
-                  }));
+                  const solItems = (s.items_solicitud || []).map((it) => {
+                    const cDest = getCategoriaSlug(it.categoria_sugerida || it.categoria_destino || s.categoria_destino);
+                    const cNom = formatCategoriaDestino(it.categoria_sugerida || it.categoria_destino || s.categoria_destino);
+                    return {
+                      id: it.id,
+                      nombre: it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido',
+                      nombre_sugerido: it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido',
+                      cantidad_solicitada: Number(it.cantidad) || 1,
+                      cantidad: Number(it.cantidad) || 1,
+                      cantidad_aprobada: it.cantidad_aprobada !== undefined ? it.cantidad_aprobada : Number(it.cantidad) || 1,
+                      categoria_sugerida: cNom,
+                      categoria_destino: cDest,
+                      precio_estimado_unitario: Number(it.precio_estimado) || 0,
+                      precio_estimado: Number(it.precio_estimado) || 0,
+                      url_compra: it.url_compra || '',
+                      ingresado_inventario: Boolean(it.ingresado_inventario),
+                    };
+                  });
 
                   const itemsFinales = solItems.length > 0 ? solItems : (
                     s.motivo || s.justificacion ? [{
@@ -496,7 +548,8 @@ export default function GestionComprasView({
                       cantidad_solicitada: 1,
                       cantidad_aprobada: 1,
                       precio_estimado_unitario: 0,
-                      categoria_sugerida: 'Consumibles',
+                      categoria_sugerida: formatCategoriaDestino(s.categoria_destino || 'consumibles'),
+                      categoria_destino: getCategoriaSlug(s.categoria_destino || 'consumibles'),
                       url_compra: '',
                       ingresado_inventario: false,
                     }] : []
@@ -514,6 +567,8 @@ export default function GestionComprasView({
                     sede: s.sede_destino || s.sede || 'Medellín',
                     sede_destino: s.sede_destino || s.sede || 'Medellín',
                     proyecto_steam: s.proyecto_steam || s.proyecto_steam_id || s.proyecto || 'Robótica',
+                    categoria_destino: getCategoriaSlug(s.categoria_destino || itemsFinales[0]?.categoria_destino),
+                    categoria_nombre: formatCategoriaDestino(s.categoria_destino || itemsFinales[0]?.categoria_sugerida),
                     justificacion: s.justificacion || s.motivo || 'Requerimiento pedagógico institucional STEAM',
                     motivo: s.motivo || s.justificacion || 'Requerimiento pedagógico institucional STEAM',
                     fecha_requerida: s.fecha_requerida || s.fecha_devolucion_estimada || s.creado_en || today(),
@@ -537,7 +592,8 @@ export default function GestionComprasView({
 
             if (!cErr && Array.isArray(cData)) {
               compList = cData.map((sc) => {
-                const catDestino = String(sc.categoria_destino || 'consumibles').toLowerCase();
+                const catDestinoSlug = getCategoriaSlug(sc.categoria_destino);
+                const catDestinoNombre = formatCategoriaDestino(sc.categoria_destino);
                 const singleItem = {
                   id: sc.id,
                   solicitud_id: sc.id,
@@ -546,8 +602,8 @@ export default function GestionComprasView({
                   nombre: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
                   nombre_item: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
                   nombre_sugerido: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
-                  categoria_sugerida: catDestino,
-                  categoria_destino: catDestino,
+                  categoria_sugerida: catDestinoNombre,
+                  categoria_destino: catDestinoSlug,
                   url_compra: sc.url_compra || '',
                   precio_estimado_unitario: Number(sc.precio_estimado) || 0,
                   precio_estimado: Number(sc.precio_estimado) || 0,
@@ -566,7 +622,8 @@ export default function GestionComprasView({
                     cantidad_solicitada: Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
                     cantidad_aprobada: it.cantidad_aprobada !== undefined ? Number(it.cantidad_aprobada) : Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
                     precio_estimado_unitario: Number(it.precio_estimado_unitario || it.precio_estimado || sc.precio_estimado) || 0,
-                    categoria_sugerida: it.categoria_sugerida || sc.categoria_destino || 'Consumibles',
+                    categoria_sugerida: formatCategoriaDestino(it.categoria_sugerida || it.categoria_destino || sc.categoria_destino),
+                    categoria_destino: getCategoriaSlug(it.categoria_destino || it.categoria_sugerida || sc.categoria_destino),
                     url_compra: it.url_compra || sc.url_compra || '',
                     ingresado_inventario: Boolean(it.ingresado_inventario || sc.ingresado_inventario),
                   }));
@@ -581,7 +638,8 @@ export default function GestionComprasView({
                         cantidad_solicitada: Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
                         cantidad_aprobada: it.cantidad_aprobada !== undefined ? Number(it.cantidad_aprobada) : Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
                         precio_estimado_unitario: Number(it.precio_estimado_unitario || it.precio_estimado || sc.precio_estimado) || 0,
-                        categoria_sugerida: it.categoria_sugerida || sc.categoria_destino || 'Consumibles',
+                        categoria_sugerida: formatCategoriaDestino(it.categoria_sugerida || it.categoria_destino || sc.categoria_destino),
+                        categoria_destino: getCategoriaSlug(it.categoria_destino || it.categoria_sugerida || sc.categoria_destino),
                         url_compra: it.url_compra || sc.url_compra || '',
                         ingresado_inventario: Boolean(it.ingresado_inventario || sc.ingresado_inventario),
                       }));
@@ -608,7 +666,8 @@ export default function GestionComprasView({
                   tipo: 'SUGERENCIA_COMPRA',
                   tipo_solicitud: 'SUGERENCIA_COMPRA',
                   tipoSolicitud: 'SUGERENCIA_COMPRA',
-                  categoria_destino: catDestino,
+                  categoria_destino: catDestinoSlug,
+                  categoria_nombre: catDestinoNombre,
                   fecha_requerida: sc.fecha_requerida || sc.creado_en || today(),
                   fecha_devolucion_estimada: sc.fecha_requerida || sc.creado_en || today(),
                   motivo: sc.justificacion || 'Sugerencia de compra',
@@ -961,10 +1020,18 @@ export default function GestionComprasView({
       const actualizadas = solicitudes.map((s) => (s.id === sol.id ? { ...s, ingresado_inventario: true } : s));
       syncLocal(actualizadas);
 
+      const primerItem = getSolItems(sol)[0];
+      const catSlug = getCategoriaSlug(primerItem?.categoria_destino || sol.categoria_destino || primerItem?.categoria_sugerida);
+      const catNombre = formatCategoriaDestino(primerItem?.categoria_destino || sol.categoria_destino || primerItem?.categoria_sugerida);
+
       showSuccess(
         'Ingreso a Bodega Confirmado',
-        `Los ítems de ${formatRadicado(sol.id, sol.radicado)} fueron precargados en el inventario oficial de la Fundación Marina Orth.`
+        `Los ítems de ${formatRadicado(sol.id, sol.radicado)} fueron precargados en la sección "${catNombre}" del inventario oficial FMO.`
       );
+
+      if (typeof onNavigate === 'function') {
+        onNavigate('inventario', { tab: catSlug });
+      }
     } catch (err) {
       showError('Error al ingresar a inventario', err.message);
     }
@@ -1980,6 +2047,23 @@ export default function GestionComprasView({
                     <td style={{ width: '21%', minWidth: '170px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {primerItem ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                ...getCategoriaBadgeStyle(primerItem.categoria_destino || sol.categoria_destino || primerItem.categoria_sugerida),
+                                padding: '1.5px 6px',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                letterSpacing: '0.01em',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              {formatCategoriaDestino(primerItem.categoria_destino || sol.categoria_destino || primerItem.categoria_sugerida)}
+                            </span>
+                          </div>
                           <strong
                             style={{
                               display: 'block',
@@ -2158,25 +2242,40 @@ export default function GestionComprasView({
                         {/* Botón + Ingresar a Inventario (Etapa 3: Comprada) */}
                         {normalizeEstado(sol.estado) === 'compradas' && (isCoordinador || isAdmin) && (
                           sol.ingresado_inventario ? (
-                            <span
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const catSlug = getCategoriaSlug(primerItem?.categoria_destino || sol.categoria_destino || primerItem?.categoria_sugerida);
+                                if (typeof onNavigate === 'function') {
+                                  onNavigate('inventario', { tab: catSlug });
+                                }
+                              }}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '4px',
-                                padding: '4px 8px',
+                                padding: '5px 10px',
                                 borderRadius: '8px',
                                 fontSize: '11px',
                                 fontWeight: 700,
                                 backgroundColor: 'rgba(171, 208, 55, 0.2)',
                                 color: '#4d7c0f',
                                 border: '1px solid rgba(171, 208, 55, 0.45)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
                                 flexShrink: 0,
                               }}
-                              title="Los ítems ya están registrados en el inventario oficial"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(171, 208, 55, 0.35)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(171, 208, 55, 0.2)';
+                              }}
+                              title="Los ítems ya están registrados en el inventario oficial. Haz clic para verlos"
                             >
                               <PackageCheck size={13} />
                               <span>Ingresado</span>
-                            </span>
+                            </button>
                           ) : (
                             <button
                               type="button"
@@ -2531,8 +2630,19 @@ export default function GestionComprasView({
                                 Sol: {it.cantidad_solicitada || it.cantidad || 1}
                               </span>
                             </div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', marginTop: '4px' }}>
-                              Categoría sugerida: <span style={{ fontWeight: 600 }}>{it.categoria_sugerida || 'Consumibles'}</span>
+                            <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>Categoría sugerida:</span>
+                              <span
+                                style={{
+                                  ...getCategoriaBadgeStyle(it.categoria_destino || it.categoria_sugerida || solicitudAEvaluar.categoria_destino),
+                                  padding: '1px 6px',
+                                  borderRadius: '5px',
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {formatCategoriaDestino(it.categoria_sugerida || it.categoria_destino || solicitudAEvaluar.categoria_destino)}
+                              </span>
                             </div>
                             {it.url_compra && (
                               <div style={{ marginTop: '6px' }}>
@@ -3094,9 +3204,23 @@ export default function GestionComprasView({
                       Ítems Autorizados para Compra:
                     </span>
                     {itemsAComprar.map((it, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--text-h, #013a52)' }}>{it.nombre}</span>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(171, 208, 55, 0.2)', color: '#365314', fontWeight: 700 }}>
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                          <span
+                            style={{
+                              ...getCategoriaBadgeStyle(it.categoria_destino || it.categoria_sugerida || solicitudAComprar?.categoria_destino),
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              fontSize: '9.5px',
+                              fontWeight: 700,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {formatCategoriaDestino(it.categoria_destino || it.categoria_sugerida || solicitudAComprar?.categoria_destino)}
+                          </span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-h, #013a52)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.nombre}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(171, 208, 55, 0.2)', color: '#365314', fontWeight: 700, flexShrink: 0 }}>
                           Cant: {it.cantidad_aprobada ?? it.cantidad_solicitada ?? 1}
                         </span>
                       </div>
@@ -3536,8 +3660,19 @@ export default function GestionComprasView({
                       >
                         <div>
                           <strong style={{ color: 'var(--text-h, #013a52)' }}>{it.nombre}</strong>
-                          <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)' }}>
-                            Cat: {it.categoria_sugerida || 'Consumibles'}
+                          <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>Cat:</span>
+                            <span
+                              style={{
+                                ...getCategoriaBadgeStyle(it.categoria_destino || it.categoria_sugerida || solicitudDetalle?.categoria_destino),
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                fontSize: '10px',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {formatCategoriaDestino(it.categoria_sugerida || it.categoria_destino || solicitudDetalle?.categoria_destino)}
+                            </span>
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>

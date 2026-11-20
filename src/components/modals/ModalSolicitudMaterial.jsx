@@ -46,7 +46,7 @@ export default function ModalSolicitudMaterial({
   const [selectedItemId, setSelectedItemId] = useState('');
   const [cantidadInput, setCantidadInput] = useState(1);
   const [compraForm, setCompraForm] = useState({
-    categoria: 'consumibles', // 'consumibles' | 'papeleria'
+    categoria: 'consumibles', // 'consumibles' | 'electronica' | 'papeleria'
     nombre: '',
     url: '',
     cantidad: 1,
@@ -229,14 +229,17 @@ export default function ModalSolicitudMaterial({
       return;
     }
 
-    const catDestino = compraForm.categoria === 'papeleria' ? 'papeleria' : 'consumibles';
+    const rawCat = compraForm.categoria || 'consumibles';
+    const catDestino = ['consumibles', 'electronica', 'papeleria'].includes(rawCat)
+      ? rawCat
+      : (rawCat.includes('electron') ? 'electronica' : (rawCat.includes('pape') ? 'papeleria' : 'consumibles'));
 
     const nuevoItem = {
       tipo_item: 'compra',
       item_id: null,
       nombre_item: compraForm.nombre.trim(),
       nombre_sugerido: compraForm.nombre.trim(),
-      categoria_sugerida: catDestino, // 'consumibles' | 'papeleria'
+      categoria_sugerida: catDestino, // 'consumibles' | 'electronica' | 'papeleria'
       url_compra: urlTrimmed,
       precio_estimado: precioNum || 0,
       cantidad: qty,
@@ -284,7 +287,10 @@ export default function ModalSolicitudMaterial({
         }
         const qty = parseInt(compraForm.cantidad, 10) || 1;
         const precioNum = compraForm.precio ? parseFloat(compraForm.precio) : 0;
-        const catDestino = compraForm.categoria === 'papeleria' ? 'papeleria' : 'consumibles';
+        const rawCat = compraForm.categoria || 'consumibles';
+        const catDestino = ['consumibles', 'electronica', 'papeleria'].includes(rawCat)
+          ? rawCat
+          : (rawCat.includes('electron') ? 'electronica' : (rawCat.includes('pape') ? 'papeleria' : 'consumibles'));
         const nuevoItem = {
           tipo_item: 'compra',
           item_id: null,
@@ -389,7 +395,10 @@ export default function ModalSolicitudMaterial({
       // FLUJO EXCLUSIVO PARA SUGERENCIA DE COMPRA -> TABLA DEDICADA 'solicitudes_compra'
       if (tipoSolicitud === 'SUGERENCIA_COMPRA') {
         const registrosCompra = itemsParaEnviar.map((item) => {
-          const catDestino = (item.categoria_sugerida || item.categoria_destino || item.categoria) === 'papeleria' ? 'papeleria' : 'consumibles';
+          const rawCat = String(item.categoria_sugerida || item.categoria_destino || item.categoria || 'consumibles').toLowerCase();
+          const catDestino = ['consumibles', 'electronica', 'papeleria'].includes(rawCat)
+            ? rawCat
+            : (rawCat.includes('electron') ? 'electronica' : (rawCat.includes('pape') ? 'papeleria' : 'consumibles'));
           const urlValida = (item.url_compra || '').trim();
           return {
             usuario_id: currentUser?.id || currentUser?.documento || null,
@@ -414,14 +423,20 @@ export default function ModalSolicitudMaterial({
             prioridad: 'Media',
             estado: 'Pendiente',
             ingresado_inventario: false,
-            items: itemsParaEnviar.map((i) => ({
-              nombre: i.nombre_sugerido || i.nombre_producto || i.nombre_item || 'Producto sugerido',
-              categoria_sugerida: i.categoria_sugerida || i.categoria_destino || 'Consumibles',
-              cantidad_solicitada: Number(i.cantidad) || 1,
-              cantidad_aprobada: Number(i.cantidad) || 1,
-              precio_estimado_unitario: Number(i.precio_estimado) || 0,
-              url_compra: (i.url_compra || '').trim(),
-            })),
+            items: itemsParaEnviar.map((i) => {
+              const rCat = String(i.categoria_sugerida || i.categoria_destino || catDestino).toLowerCase();
+              const cDest = ['consumibles', 'electronica', 'papeleria'].includes(rCat)
+                ? rCat
+                : (rCat.includes('electron') ? 'electronica' : (rCat.includes('pape') ? 'papeleria' : 'consumibles'));
+              return {
+                nombre: i.nombre_sugerido || i.nombre_producto || i.nombre_item || 'Producto sugerido',
+                categoria_sugerida: cDest,
+                cantidad_solicitada: Number(i.cantidad) || 1,
+                cantidad_aprobada: Number(i.cantidad) || 1,
+                precio_estimado_unitario: Number(i.precio_estimado) || 0,
+                url_compra: (i.url_compra || '').trim(),
+              };
+            }),
             creado_en: new Date().toISOString(),
           };
         });
@@ -506,14 +521,17 @@ export default function ModalSolicitudMaterial({
       // 2. Normalizar ítems a insertar
       const itemsParaInsertar = itemsParaEnviar.map((item) => {
         if (tipoSolicitud === 'SUGERENCIA_COMPRA') {
-          const cat = (item.categoria_sugerida || item.categoria) === 'papeleria' ? 'papeleria' : 'consumibles';
+          const rawCat = String(item.categoria_sugerida || item.categoria || 'consumibles').toLowerCase();
+          const cat = ['consumibles', 'electronica', 'papeleria'].includes(rawCat)
+            ? rawCat
+            : (rawCat.includes('electron') ? 'electronica' : (rawCat.includes('pape') ? 'papeleria' : 'consumibles'));
           return {
             tipo_item: 'compra',
             item_id: null,
             nombre_item: item.nombre_sugerido || item.nombre_item || 'Artículo sugerido',
             cantidad: Number(item.cantidad) || 1,
             nombre_sugerido: item.nombre_sugerido || item.nombre_item || 'Artículo sugerido',
-            categoria_sugerida: cat, // 'consumibles' o 'papeleria'
+            categoria_sugerida: cat, // 'consumibles' | 'electronica' | 'papeleria'
             url_compra: (item.url_compra || '').trim(),
             precio_estimado: Number(item.precio_estimado) || 0,
             ingresado_inventario: false,
@@ -959,7 +977,8 @@ export default function ModalSolicitudMaterial({
                         color: 'var(--text, #f8fafc)',
                       }}
                     >
-                      <option value="consumibles">Consumibles y Robótica</option>
+                      <option value="consumibles">Consumibles de Robótica</option>
+                      <option value="electronica">Equipos de Electrónica</option>
                       <option value="papeleria">Papelería</option>
                     </select>
                   </div>
@@ -1403,12 +1422,32 @@ export default function ModalSolicitudMaterial({
                                 <span
                                   className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide"
                                   style={{
-                                    backgroundColor: it.categoria_sugerida === 'papeleria' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                                    color: it.categoria_sugerida === 'papeleria' ? '#fbbf24' : '#a5b4fc',
-                                    border: `1px solid ${it.categoria_sugerida === 'papeleria' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`,
+                                    backgroundColor:
+                                      it.categoria_sugerida === 'electronica'
+                                        ? 'rgba(0, 180, 216, 0.15)'
+                                        : it.categoria_sugerida === 'papeleria'
+                                        ? 'rgba(245, 158, 11, 0.15)'
+                                        : 'rgba(99, 102, 241, 0.15)',
+                                    color:
+                                      it.categoria_sugerida === 'electronica'
+                                        ? '#38bdf8'
+                                        : it.categoria_sugerida === 'papeleria'
+                                        ? '#fbbf24'
+                                        : '#a5b4fc',
+                                    border: `1px solid ${
+                                      it.categoria_sugerida === 'electronica'
+                                        ? 'rgba(0, 180, 216, 0.3)'
+                                        : it.categoria_sugerida === 'papeleria'
+                                        ? 'rgba(245, 158, 11, 0.3)'
+                                        : 'rgba(99, 102, 241, 0.3)'
+                                    }`,
                                   }}
                                 >
-                                  {it.categoria_sugerida === 'papeleria' ? 'Papelería' : 'Consumibles & Robótica'}
+                                  {it.categoria_sugerida === 'electronica'
+                                    ? 'Equipos de Electrónica'
+                                    : it.categoria_sugerida === 'papeleria'
+                                    ? 'Papelería'
+                                    : 'Consumibles de Robótica'}
                                 </span>
                                 <strong className="text-xs truncate text-slate-100 font-semibold">
                                   {it.nombre_sugerido || it.nombre_item}
