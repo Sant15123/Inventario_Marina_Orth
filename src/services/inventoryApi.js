@@ -1771,18 +1771,27 @@ export const inventoryApi = {
 
   updateSolicitudCompra: async (id, patch) => {
     let updated = null;
+    const rawId = String(id || '');
+    const uuidMatch = rawId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const targetId = uuidMatch ? uuidMatch[0] : id;
+
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
         const { data, error } = await supabase
           .from('solicitudes_compra')
           .update(patch)
-          .eq('id', id)
+          .eq('id', targetId)
           .select();
-        if (!error && data) updated = data[0];
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error(`No se encontró registro con ID ${targetId} en solicitudes_compra`);
+        }
+        updated = data[0];
       }
     } catch (e) {
-      console.warn('Error updateSolicitudCompra:', e);
+      console.error('Error updateSolicitudCompra:', e);
+      throw e;
     }
     try {
       const cached = localStorage.getItem('siga_solicitudes_compra');

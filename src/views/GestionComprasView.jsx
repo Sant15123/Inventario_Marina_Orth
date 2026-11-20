@@ -779,33 +779,75 @@ export default function GestionComprasView({
     };
   }, []);
 
+  // Extraer UUID puro (36 caracteres) para evitar colisiones con radicados formateados
+  const getCleanUuid = (val) => {
+    if (!val) return '';
+    const str = String(val).trim();
+    const match = str.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    return match ? match[0] : str;
+  };
+
   // Persistir actualización en la tabla adecuada de Supabase (solicitudes_compra o solicitudes_inventario)
   const persistirCambioSolicitud = async (sol, patch) => {
-    try {
-      const { supabase } = await import('../services/supabase');
-      if (supabase) {
-        if (sol.is_solicitud_compra !== false) {
-          const { error } = await supabase
-            .from('solicitudes_compra')
-            .update(patch)
-            .eq('id', sol.id);
-          if (error) console.warn('Aviso persistencia solicitudes_compra:', error.message);
-        } else {
-          const invPatch = {
-            estado: patch.estado,
-            observaciones_admin: patch.observaciones_coordinador || patch.observaciones_compra || null,
-          };
-          const { error } = await supabase
-            .from('solicitudes_inventario')
-            .update(invPatch)
-            .eq('id', sol.id);
-          if (error) console.warn('Aviso persistencia solicitudes_inventario:', error.message);
-        }
-      }
-    } catch (e) {
-      console.warn('Aviso persistencia Supabase compras:', e.message);
+    const targetUuid = getCleanUuid(sol.id || sol.solicitud_id);
+    if (!targetUuid) {
+      throw new Error('Identificador único inválido para actualizar la solicitud en Supabase.');
     }
-    return inventoryApi.updateSolicitudCompra(sol.id, patch);
+
+    const { supabase } = await import('../services/supabase');
+    if (!supabase) {
+      throw new Error('No se pudo inicializar la conexión con Supabase.');
+    }
+
+    if (sol.is_solicitud_compra !== false) {
+      const { data, error } = await supabase
+        .from('solicitudes_compra')
+        .update(patch)
+        .eq('id', targetUuid)
+        .select();
+
+      if (error) {
+        console.error('[GestionCompras] Error persistencia solicitudes_compra:', error);
+        throw new Error(error.message || 'Error al persistir cambios en Supabase');
+      }
+
+      if (!data || data.length === 0) {
+        console.error('[GestionCompras] 0 filas afectadas en solicitudes_compra para id:', targetUuid);
+        throw new Error(`No se encontró el registro con ID ${targetUuid} en Supabase o no hubo cambios aplicados.`);
+      }
+
+      try {
+        await inventoryApi.updateSolicitudCompra(targetUuid, patch);
+      } catch (_) {}
+
+      return data[0];
+    } else {
+      const invPatch = {
+        estado: patch.estado,
+        observaciones_admin: patch.observaciones_coordinador || patch.observaciones_compra || null,
+      };
+      const { data, error } = await supabase
+        .from('solicitudes_inventario')
+        .update(invPatch)
+        .eq('id', targetUuid)
+        .select();
+
+      if (error) {
+        console.error('[GestionCompras] Error persistencia solicitudes_inventario:', error);
+        throw new Error(error.message || 'Error al persistir cambios en solicitudes_inventario');
+      }
+
+      if (!data || data.length === 0) {
+        console.error('[GestionCompras] 0 filas afectadas en solicitudes_inventario para id:', targetUuid);
+        throw new Error(`No se encontró el registro con ID ${targetUuid} en solicitudes_inventario.`);
+      }
+
+      try {
+        await inventoryApi.updateSolicitudCompra(targetUuid, patch);
+      } catch (_) {}
+
+      return data[0];
+    }
   };
 
   // Guardar en caché local ante cada cambio
@@ -942,9 +984,11 @@ export default function GestionComprasView({
         items: itemsActualizados,
       };
 
-      await persistirCambioSolicitud(solicitudAEvaluar, patch);
+      // 1. Persistir estrictamente en Supabase primero (blindado con .select() y verificación de filas afectadas)
+      const filaActualizada = await persistirCambioSolicitud(solicitudAEvaluar, patch);
 
-      const actualizadas = solicitudes.map((s) => (s.id === solicitudAEvaluar.id ? { ...s, ...patch } : s));
+      // 2. Solo tras confirmación de éxito en Supabase (data.length > 0) se actualiza el estado local
+      const actualizadas = solicitudes.map((s) => (s.id === solicitudAEvaluar.id ? { ...s, ...patch, ...filaActualizada } : s));
       syncLocal(actualizadas);
 
       const tipoAuditoria = decisionFinal === 'Aprobada' || decisionFinal === 'Aprobada para Compra'
@@ -977,7 +1021,8 @@ export default function GestionComprasView({
       setModalEvaluarOpen(false);
       setSolicitudAEvaluar(null);
     } catch (err) {
-      showError('Error al guardar evaluación', err.message || 'No se pudo actualizar la solicitud.');
+      console.error('[handleGuardarEvaluacion] Error al persistir evaluación:', err);
+      showError('Error al guardar evaluación', err.message || 'No se pudo actualizar la solicitud en Supabase. El estado anterior se mantiene intacto.');
     } finally {
       setEvalSubmitting(false);
     }
@@ -1017,9 +1062,11 @@ export default function GestionComprasView({
         observaciones_compra: compraNotas.trim(),
       };
 
-      await persistirCambioSolicitud(solicitudAComprar, patch);
+      // 1. Persistir estrictamente en Supabase primero (blindado con .select() y verificación de filas afectadas)
+      const filaActualizada = await persistirCambioSolicitud(solicitudAComprar, patch);
 
-      const actualizadas = solicitudes.map((s) => (s.id === solicitudAComprar.id ? { ...s, ...patch } : s));
+      // 2. Solo tras confirmación de éxito en Supabase (data.length > 0) se actualiza el estado local
+      const actualizadas = solicitudes.map((s) => (s.id === solicitudAComprar.id ? { ...s, ...patch, ...filaActualizada } : s));
       syncLocal(actualizadas);
 
       const rad = formatRadicado(solicitudAComprar.id, solicitudAComprar.radicado);
@@ -1050,7 +1097,8 @@ export default function GestionComprasView({
       setModalRegistrarCompraOpen(false);
       setSolicitudAComprar(null);
     } catch (err) {
-      showError('Error al registrar compra', err.message || 'No se pudo guardar la compra.');
+      console.error('[handleGuardarCompra] Error al persistir compra:', err);
+      showError('Error al registrar compra', err.message || 'No se pudo guardar la compra en Supabase. El estado anterior se mantiene intacto.');
     } finally {
       setCompraSubmitting(false);
     }
