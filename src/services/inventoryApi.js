@@ -1739,19 +1739,75 @@ export const inventoryApi = {
 
   createSolicitudesCompra: async (registros) => {
     const arr = Array.isArray(registros) ? registros : [registros];
+
+    // Sanitizar y mapear estrictamente los campos al esquema oficial de Supabase
+    const sanitized = arr.map((r) => {
+      const cant = Number(r.cantidad || r.cantidad_solicitada) || 1;
+      const nowIso = new Date().toISOString();
+      const cat = r.categoria_destino || r.categoria || r.categoria_sugerida || 'consumibles';
+
+      const payload = {
+        usuario_id: r.usuario_id ? String(r.usuario_id).trim() : null,
+        usuario_nombre: r.usuario_nombre || r.solicitante_nombre || 'Docente FMO',
+        solicitante_nombre: r.solicitante_nombre || r.usuario_nombre || 'Docente FMO',
+        solicitante_documento: r.solicitante_documento ? String(r.solicitante_documento).trim() : '',
+        solicitante_correo: r.solicitante_correo || r.email || '',
+        solicitante_telefono: r.solicitante_telefono || r.telefono || '',
+        sede: r.sede || r.sede_destino || 'Medellín',
+        sede_destino: r.sede_destino || r.sede || 'Medellín',
+        proyecto_steam: r.proyecto_steam || r.proyecto_steam_id || 'Robótica',
+        proyecto_steam_id: r.proyecto_steam_id || r.proyecto_steam || 'Robótica',
+        categoria_destino: cat,
+        categoria: cat,
+        nombre_producto: r.nombre_producto || r.nombre || r.justificacion || 'Producto sugerido',
+        url_compra: r.url_compra || '',
+        cantidad: cant,
+        cantidad_solicitada: cant,
+        cantidad_aprobada: r.cantidad_aprobada !== undefined ? Number(r.cantidad_aprobada) : cant,
+        precio_estimado: Number(r.precio_estimado) || 0,
+        valor_estimado_compra: Number(r.valor_estimado_compra) || (Number(r.precio_estimado || 0) * cant),
+        fecha_requerida: r.fecha_requerida || null,
+        justificacion: r.justificacion || r.motivo || '',
+        prioridad: r.prioridad || 'Media',
+        estado: r.estado || 'Pendiente',
+        ingresado_inventario: Boolean(r.ingresado_inventario),
+        items: Array.isArray(r.items) ? r.items : (Array.isArray(r.items_solicitud) ? r.items_solicitud : []),
+        creado_en: r.creado_en || r.created_at || nowIso,
+        created_at: r.created_at || r.creado_en || nowIso,
+      };
+
+      if (r.radicado) payload.radicado = r.radicado;
+      if (r.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(r.id)) {
+        payload.id = r.id;
+      }
+      return payload;
+    });
+
     let created = null;
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
         const { data, error } = await supabase
           .from('solicitudes_compra')
-          .insert(arr)
+          .insert(sanitized)
           .select();
-        if (!error && data) created = data;
-        if (error) throw error;
+        if (!error && data) {
+          created = data;
+        }
+        if (error) {
+          console.error('[inventoryApi.createSolicitudesCompra] Error Supabase insert solicitudes_compra:', {
+            mensaje: error.message,
+            detalles: error.details,
+            pista: error.hint,
+            codigo: error.code,
+          });
+          throw error;
+        }
       }
     } catch (e) {
-      console.warn('Error createSolicitudesCompra:', e);
+      console.warn(
+        `Error createSolicitudesCompra: ${e?.message || e}${e?.details ? ` | Detalles: ${e.details}` : ''}${e?.hint ? ` | Pista: ${e.hint}` : ''}`
+      );
     }
     const finalArr = created || arr;
     try {

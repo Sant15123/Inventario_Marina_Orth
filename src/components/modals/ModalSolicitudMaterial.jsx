@@ -444,27 +444,13 @@ export default function ModalSolicitudMaterial({
 
         let resultadoCompra = null;
         try {
-          if (supabase) {
-            const { data: cData, error: cErr } = await supabase
-              .from('solicitudes_compra')
-              .insert(registrosCompra)
-              .select();
-            if (!cErr && cData) {
-              resultadoCompra = cData;
-            } else if (cErr) {
-              console.warn('Error Supabase insert solicitudes_compra:', cErr);
-            }
-          }
+          resultadoCompra = await inventoryApi.createSolicitudesCompra(registrosCompra);
         } catch (errSup) {
-          console.warn('Excepción Supabase solicitudes_compra:', errSup);
-        }
-
-        if (!resultadoCompra) {
-          try {
-            resultadoCompra = await inventoryApi.createSolicitudesCompra(registrosCompra);
-          } catch (eApi) {
-            console.warn('Fallback inventoryApi createSolicitudesCompra error:', eApi);
-          }
+          console.error('[ModalSolicitudMaterial] Error al radicar compra:', {
+            mensaje: errSup?.message || errSup,
+            detalles: errSup?.details,
+            pista: errSup?.hint,
+          });
         }
 
         const primerReg = registrosCompra[0] || {};

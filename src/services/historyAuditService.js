@@ -62,7 +62,9 @@ export async function registrarAuditoria({
         .single();
 
       if (error) {
-        console.warn('Aviso insert en historial_movimientos Supabase:', error.message);
+        console.warn(
+          `Aviso insert en historial_movimientos Supabase: ${error.message}${error.details ? ` | Detalles: ${error.details}` : ''}${error.hint ? ` | Pista: ${error.hint}` : ''}`
+        );
       }
     }
   } catch (err) {
