@@ -164,20 +164,17 @@ export const normalizeEstado = (st) => {
   return 'pendientes';
 };
 
-// Formato amigable y consistente de código radicado
+// Formato amigable y consistente de código radicado (conciso, sin desbordamiento de UUIDs)
 export const formatRadicado = (id, radicado) => {
-  if (radicado && String(radicado).trim()) {
-    const s = String(radicado).trim();
-    if (s.startsWith('#') || s.startsWith('SC-') || s.startsWith('SOL-')) return s;
-    return `SC-${s}`;
-  }
-  if (id && String(id).trim()) {
-    const s = String(id).trim();
-    if (s.startsWith('SC-') || s.startsWith('SOL-') || s.startsWith('#')) return s;
-    if (s.length > 8) return `SC-${s.slice(0, 6).toUpperCase()}`;
-    return `SC-${s.toUpperCase()}`;
-  }
-  return 'SC-FMO';
+  const val = String(radicado || id || '').trim();
+  if (!val) return 'SC-FMO';
+  // Formatos ya humanizados de catálogo o series (ej. SC-2026-001 o #001)
+  if (/^SC-\d{4}-\d+/i.test(val)) return val.toUpperCase();
+  if (/^#?[A-Z]{2,4}-\d{3,4}$/i.test(val)) return val.toUpperCase();
+  // Limpiar prefijos para recortar hash/UUID a 8 caracteres legibles
+  const clean = val.replace(/^#|^SC-|^SOL-/i, '').replace(/-/g, '');
+  const shortHash = clean.length > 8 ? clean.slice(0, 8) : clean;
+  return `SC-${shortHash.toUpperCase()}`;
 };
 
 // 100% Robust extractors de datos de solicitud (compatibles con Supabase, mockData y modales)
@@ -1686,7 +1683,7 @@ export default function GestionComprasView({
           <table
             style={{
               width: '100%',
-              minWidth: '980px',
+              minWidth: '850px',
               borderCollapse: 'collapse',
               tableLayout: 'fixed',
               fontFamily: "'Poppins', sans-serif",
@@ -1716,8 +1713,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '16%',
-                    minWidth: '140px',
+                    width: '17%',
+                    minWidth: '145px',
                     padding: '12px 12px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -1731,7 +1728,7 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '13%',
+                    width: '14%',
                     minWidth: '120px',
                     padding: '12px 10px',
                     textAlign: 'center',
@@ -1746,8 +1743,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '18%',
-                    minWidth: '150px',
+                    width: '21%',
+                    minWidth: '170px',
                     padding: '12px 12px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -1761,8 +1758,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '13%',
-                    minWidth: '125px',
+                    width: '20%',
+                    minWidth: '165px',
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontSize: '11.5px',
@@ -1772,27 +1769,11 @@ export default function GestionComprasView({
                     textTransform: 'uppercase',
                   }}
                 >
-                  ESTADO
+                  ESTADO & COMPRA
                 </th>
                 <th
                   style={{
-                    width: '14%',
-                    minWidth: '135px',
-                    padding: '12px 14px',
-                    textAlign: 'left',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    color: 'var(--text-h, #013a52)',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  COMPRA & FACTURA
-                </th>
-                <th
-                  style={{
-                    width: '14%',
+                    width: '16%',
                     minWidth: '135px',
                     padding: '12px 14px',
                     textAlign: 'center',
@@ -1870,7 +1851,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 2. Solicitante & Sede */}
-                    <td style={{ width: '16%', minWidth: '140px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '17%', minWidth: '145px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
                         <strong
                           style={{
@@ -1906,14 +1887,14 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 3. Proyecto STEAM */}
-                    <td style={{ width: '13%', minWidth: '120px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
+                    <td style={{ width: '14%', minWidth: '120px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
                         <ProgramAreaBadge area={solProyecto} size="sm" />
                       </div>
                     </td>
 
                     {/* 4. Detalle de Ítems */}
-                    <td style={{ width: '18%', minWidth: '150px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '21%', minWidth: '170px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {primerItem ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <strong
@@ -1947,81 +1928,57 @@ export default function GestionComprasView({
                       )}
                     </td>
 
-                    {/* 5. Estado */}
-                    <td style={{ width: '13%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                    {/* 5. Estado & Adquisición */}
+                    <td style={{ width: '20%', minWidth: '165px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', gap: '4px' }}>
                         <span
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '6px',
-                            padding: '4px 10px',
+                            padding: '4px 11px',
                             borderRadius: '999px',
                             fontSize: '11.5px',
                             fontWeight: 700,
                             fontFamily: "'Poppins', sans-serif",
                             whiteSpace: 'nowrap',
                             maxWidth: '100%',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
                             boxSizing: 'border-box',
                             ...estadoConfig.badgeStyle,
                           }}
                         >
                           <EstadoIcon style={{ width: '13px', height: '13px', flexShrink: 0 }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{estadoConfig.label}</span>
+                          <span>{estadoConfig.label}</span>
                         </span>
+
+                        {/* Subtexto fiscal / orden según etapa */}
+                        {sol.proveedor ? (
+                          <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${sol.proveedor} ${sol.numero_factura_orden ? `(Fact: ${sol.numero_factura_orden})` : ''}`}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-h, #013a52)' }}>{sol.proveedor}</span>
+                            {sol.numero_factura_orden && <span> · Fact: {sol.numero_factura_orden}</span>}
+                          </div>
+                        ) : normalizeEstado(sol.estado) === 'aprobadas' ? (
+                          <span style={{ fontSize: '10.5px', color: '#0284c7', fontWeight: 600, fontStyle: 'italic' }}>
+                            Pendiente orden de compra
+                          </span>
+                        ) : normalizeEstado(sol.estado) === 'compradas' ? (
+                          <span style={{ fontSize: '10.5px', color: '#15803d', fontWeight: 600 }}>
+                            Compra efectuada
+                          </span>
+                        ) : normalizeEstado(sol.estado) === 'rechazadas' ? (
+                          <span style={{ fontSize: '10.5px', color: '#e11d48', fontStyle: 'italic' }}>
+                            Requerimiento declinado
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '10.5px', color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic' }}>
+                            En evaluación técnica
+                          </span>
+                        )}
                       </div>
                     </td>
 
-                    {/* 6. Compra & Factura */}
-                    <td style={{ width: '14%', minWidth: '135px', padding: '12px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                      {sol.proveedor ? (
-                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                          <strong
-                            style={{
-                              display: 'block',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              color: 'var(--text-h, #013a52)',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                            title={sol.proveedor}
-                          >
-                            {sol.proveedor}
-                          </strong>
-                          <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            Fact: {sol.numero_factura_orden || 'S/N'}
-                          </div>
-                          {Number(sol.valor_final_compra) > 0 && (
-                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#4d7c0f' }}>
-                              ${Number(sol.valor_final_compra).toLocaleString('es-CO')}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            color: 'var(--text-muted, #94a3b8)',
-                            fontStyle: 'italic',
-                            display: 'inline-block',
-                            padding: '3px 10px',
-                            borderRadius: '8px',
-                            backgroundColor: 'var(--surface-2, #f1f5f9)',
-                            border: '1px solid var(--line, #e2e8f0)',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {normalizeEstado(sol.estado) === 'aprobadas' ? 'Pendiente orden' : 'No registrada'}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* 7. Acciones */}
-                    <td style={{ width: '14%', minWidth: '135px', padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    {/* 6. Acciones */}
+                    <td style={{ width: '16%', minWidth: '135px', padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         {/* Botón Ver Detalle */}
                         <button
