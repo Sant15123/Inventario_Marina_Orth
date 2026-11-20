@@ -22,6 +22,11 @@ import {
   Layers,
   ArrowRight,
   Sparkles,
+  User,
+  MapPin,
+  Calendar,
+  FolderKanban,
+  Quote,
 } from 'lucide-react';
 import ProgramAreaBadge from '../components/common/ProgramAreaBadge';
 import { useAuth } from '../context/AuthContext';
@@ -159,18 +164,85 @@ export const normalizeEstado = (st) => {
   return 'pendientes';
 };
 
-// Formato amigable de código radicado
+// Formato amigable y consistente de código radicado
 export const formatRadicado = (id, radicado) => {
   if (radicado && String(radicado).trim()) {
-    const radStr = String(radicado).trim();
-    if (radStr.length <= 14) return radStr;
-    return `#${radStr.slice(0, 8).toUpperCase()}`;
+    const s = String(radicado).trim();
+    if (s.startsWith('#') || s.startsWith('SC-') || s.startsWith('SOL-')) return s;
+    return `SC-${s}`;
   }
   if (id && String(id).trim()) {
-    const idStr = String(id).trim();
-    return `#${idStr.slice(0, 8).toUpperCase()}`;
+    const s = String(id).trim();
+    if (s.startsWith('SC-') || s.startsWith('SOL-') || s.startsWith('#')) return s;
+    if (s.length > 8) return `SC-${s.slice(0, 6).toUpperCase()}`;
+    return `SC-${s.toUpperCase()}`;
   }
-  return '#SOL-FMO';
+  return 'SC-FMO';
+};
+
+// 100% Robust extractors de datos de solicitud (compatibles con Supabase, mockData y modales)
+export const getSolNombre = (sol) => {
+  if (!sol) return 'Docente FMO';
+  const val = sol.solicitante_nombre || sol.usuario_nombre || sol.solicitante || sol.nombre || sol.docente;
+  if (val && String(val).trim()) return String(val).trim();
+  return 'Docente FMO';
+};
+
+export const getSolSede = (sol) => {
+  if (!sol) return 'Medellín';
+  const val = sol.sede_destino || sol.sede || sol.ubicacion;
+  if (val && String(val).trim()) return String(val).trim();
+  return 'Medellín';
+};
+
+export const getSolProyecto = (sol) => {
+  if (!sol) return 'Robótica Educativa';
+  const val = sol.proyecto_steam || sol.proyecto_steam_id || sol.proyecto;
+  if (val && String(val).trim()) return String(val).trim();
+  return 'Robótica Educativa';
+};
+
+export const getSolFecha = (sol) => {
+  if (!sol) return today();
+  return sol.fecha_requerida || sol.fecha_devolucion_estimada || sol.creado_en || today();
+};
+
+export const getSolJustificacion = (sol) => {
+  if (!sol) return 'Requerimiento pedagógico para proyectos de formación formativa STEAM.';
+  const val = sol.justificacion || sol.motivo || sol.descripcion;
+  if (val && String(val).trim()) return String(val).trim();
+  return 'Requerimiento pedagógico para proyectos de formación formativa STEAM.';
+};
+
+export const getSolItems = (sol) => {
+  if (!sol) return [];
+  if (Array.isArray(sol.items) && sol.items.length > 0) return sol.items;
+  if (Array.isArray(sol.items_solicitud) && sol.items_solicitud.length > 0) return sol.items_solicitud;
+  if (sol.nombre_producto) {
+    return [
+      {
+        nombre: sol.nombre_producto,
+        categoria_sugerida: sol.categoria_destino || 'Consumibles de Robótica',
+        cantidad_solicitada: Number(sol.cantidad) || 1,
+        cantidad_aprobada: sol.cantidad_aprobada !== undefined ? Number(sol.cantidad_aprobada) : Number(sol.cantidad) || 1,
+        precio_estimado_unitario: Number(sol.precio_estimado) || 0,
+        url_compra: sol.url_compra || '',
+      },
+    ];
+  }
+  if (sol.motivo) {
+    return [
+      {
+        nombre: sol.motivo,
+        categoria_sugerida: 'Consumibles de Robótica',
+        cantidad_solicitada: 1,
+        cantidad_aprobada: 1,
+        precio_estimado_unitario: Number(sol.valor_estimado_compra) || 0,
+        url_compra: '',
+      },
+    ];
+  }
+  return [];
 };
 
 // Configuración visual y semántica de estados según Sistema de Marca FMO
@@ -386,15 +458,19 @@ export default function GestionComprasView({
       }
 
       // Filtro Sede
-      if (filtroSede !== 'todas' && sol.sede_destino !== filtroSede && sol.sede !== filtroSede) {
-        return false;
+      if (filtroSede !== 'todas') {
+        const sedeSol = getSolSede(sol).toLowerCase().trim();
+        const sedeFiltro = filtroSede.toLowerCase().trim();
+        if (!sedeSol.includes(sedeFiltro) && !sedeFiltro.includes(sedeSol)) {
+          return false;
+        }
       }
 
       // Filtro Proyecto STEAM (Unificado)
       if (filtroProyecto !== 'todos') {
-        const canonicalSol = normalizeProyectoNombre(sol.proyecto_steam);
+        const canonicalSol = normalizeProyectoNombre(getSolProyecto(sol));
         const canonicalFiltro = normalizeProyectoNombre(filtroProyecto);
-        if (canonicalSol !== canonicalFiltro && sol.proyecto_steam !== filtroProyecto) {
+        if (canonicalSol !== canonicalFiltro && getSolProyecto(sol) !== filtroProyecto) {
           return false;
         }
       }
@@ -402,16 +478,19 @@ export default function GestionComprasView({
       // Búsqueda libre
       if (busqueda.trim()) {
         const q = busqueda.toLowerCase().trim();
+        const items = getSolItems(sol);
         const texto = [
+          formatRadicado(sol.id, sol.radicado),
           sol.radicado,
-          sol.solicitante_nombre,
-          sol.solicitante_correo,
-          sol.sede_destino,
-          sol.proyecto_steam,
-          sol.proveedor,
-          sol.numero_factura_orden,
-          sol.justificacion,
-          Array.isArray(sol.items) ? sol.items.map((i) => i.nombre).join(' ') : '',
+          sol.id,
+          getSolNombre(sol),
+          sol.solicitante_correo || sol.correo || '',
+          getSolSede(sol),
+          getSolProyecto(sol),
+          sol.proveedor || '',
+          sol.numero_factura_orden || '',
+          getSolJustificacion(sol),
+          items.map((i) => i.nombre).join(' '),
         ]
           .filter(Boolean)
           .join(' ')
@@ -428,7 +507,8 @@ export default function GestionComprasView({
   const sedesList = useMemo(() => {
     const set = new Set();
     (solicitudes || []).forEach((s) => {
-      if (s.sede_destino) set.add(s.sede_destino);
+      const sede = getSolSede(s);
+      if (sede) set.add(sede);
     });
     set.add('Medellín');
     set.add('El Carmen de Viboral');
@@ -445,11 +525,10 @@ export default function GestionComprasView({
 
     // Inicializar cantidades aprobadas con lo solicitado
     const iniciales = {};
-    if (Array.isArray(sol.items)) {
-      sol.items.forEach((it, idx) => {
-        iniciales[idx] = it.cantidad_aprobada !== undefined ? it.cantidad_aprobada : it.cantidad_solicitada || 1;
-      });
-    }
+    const items = getSolItems(sol);
+    items.forEach((it, idx) => {
+      iniciales[idx] = it.cantidad_aprobada !== undefined ? it.cantidad_aprobada : (it.cantidad_solicitada || it.cantidad || 1);
+    });
     setEvalCantidadesAprobadas(iniciales);
     setModalEvaluarOpen(true);
   };
@@ -463,9 +542,10 @@ export default function GestionComprasView({
 
     setEvalSubmitting(true);
     try {
-      const itemsActualizados = (solicitudAEvaluar.items || []).map((it, idx) => ({
+      const rawItems = getSolItems(solicitudAEvaluar);
+      const itemsActualizados = rawItems.map((it, idx) => ({
         ...it,
-        cantidad_aprobada: decisionFinal === 'Rechazada' ? 0 : Number(evalCantidadesAprobadas[idx] ?? it.cantidad_solicitada),
+        cantidad_aprobada: decisionFinal === 'Rechazada' ? 0 : Number(evalCantidadesAprobadas[idx] ?? it.cantidad_solicitada ?? it.cantidad ?? 1),
       }));
 
       const evaluadorNombre = currentUser
@@ -488,7 +568,7 @@ export default function GestionComprasView({
 
       showSuccess(
         `Solicitud ${decisionFinal}`,
-        `La solicitud ${solicitudAEvaluar.radicado} ha pasado al estado "${decisionFinal}".`
+        `La solicitud ${formatRadicado(solicitudAEvaluar.id, solicitudAEvaluar.radicado)} ha pasado al estado "${decisionFinal}".`
       );
       setModalEvaluarOpen(false);
       setSolicitudAEvaluar(null);
@@ -506,7 +586,7 @@ export default function GestionComprasView({
     setCompraValorFinal(sol.valor_final_compra || sol.valor_estimado_compra || '');
     setCompraFactura(sol.numero_factura_orden || '');
     setCompraFecha(sol.fecha_compra || today());
-    setCompraNotas('');
+    setCompraNotas(sol.observaciones_compra || '');
     setModalRegistrarCompraOpen(true);
   };
 
@@ -540,7 +620,7 @@ export default function GestionComprasView({
 
       showSuccess(
         'Compra Registrada',
-        `Se registró la compra para ${solicitudAComprar.radicado} (Factura: ${compraFactura}). Ya puedes ingresarla al inventario.`
+        `Se registró la compra para ${formatRadicado(solicitudAComprar.id, solicitudAComprar.radicado)} (Factura: ${compraFactura}). Ya puedes ingresarla al inventario.`
       );
       setModalRegistrarCompraOpen(false);
       setSolicitudAComprar(null);
@@ -562,7 +642,7 @@ export default function GestionComprasView({
 
       showSuccess(
         'Ingreso a Bodega Confirmado',
-        `Los ítems de ${sol.radicado} fueron precargados en el inventario oficial de la Fundación Marina Orth.`
+        `Los ítems de ${formatRadicado(sol.id, sol.radicado)} fueron precargados en el inventario oficial de la Fundación Marina Orth.`
       );
     } catch (err) {
       showError('Error al ingresar a inventario', err.message);
@@ -622,22 +702,23 @@ export default function GestionComprasView({
         };
       });
 
-      // Relleno de datos
+      // Relleno de datos con extractores robustos
       solicitudesFiltradas.forEach((sol) => {
-        const itemsStr = (sol.items || [])
-          .map((i) => `${i.nombre} (Sol: ${i.cantidad_solicitada || 1}, Aprob: ${i.cantidad_aprobada ?? '—'})`)
+        const items = getSolItems(sol);
+        const itemsStr = items
+          .map((i) => `${i.nombre} (Sol: ${i.cantidad_solicitada || i.cantidad || 1}, Aprob: ${i.cantidad_aprobada ?? '—'})`)
           .join('; ');
 
         const row = worksheet.addRow([
-          sol.radicado,
-          fmtDate(sol.creado_en || sol.fecha_requerida),
-          sol.solicitante_nombre,
-          sol.sede_destino,
-          sol.proyecto_steam,
-          itemsStr,
+          formatRadicado(sol.id, sol.radicado),
+          fmtDate(getSolFecha(sol)),
+          getSolNombre(sol),
+          getSolSede(sol),
+          getSolProyecto(sol),
+          itemsStr || 'Sin ítems detallados',
           sol.estado,
           sol.proveedor ? `${sol.proveedor} (${sol.numero_factura_orden || 'S/N'})` : 'Pendiente de compra',
-          sol.valor_final_compra || sol.valor_estimado_compra || 0,
+          Number(sol.valor_final_compra) || Number(sol.valor_estimado_compra) || 0,
         ]);
 
         row.alignment = { vertical: 'middle', horizontal: 'left' };
@@ -1437,8 +1518,14 @@ export default function GestionComprasView({
             </thead>
             <tbody>
               {solicitudesFiltradas.map((sol) => {
-                const totalItems = Array.isArray(sol.items) ? sol.items.length : 0;
-                const primerItem = sol.items && sol.items[0];
+                const solItems = getSolItems(sol);
+                const totalItems = solItems.length;
+                const primerItem = solItems[0];
+                const solNombre = getSolNombre(sol);
+                const solSede = getSolSede(sol);
+                const solProyecto = getSolProyecto(sol);
+                const solFecha = getSolFecha(sol);
+                const radicadoFormat = formatRadicado(sol.id, sol.radicado);
                 const estadoConfig = getEstadoBadgeConfig(sol.estado);
                 const EstadoIcon = estadoConfig.Icon;
 
@@ -1457,7 +1544,7 @@ export default function GestionComprasView({
                     }}
                   >
                     {/* 1. Radicado / Fecha */}
-                    <td style={{ width: '13%', minWidth: '115px', padding: '12px 14px', verticalAlign: 'middle' }}>
+                    <td style={{ width: '13%', minWidth: '110px', padding: '12px 14px', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
                         <span
                           style={{
@@ -1474,7 +1561,7 @@ export default function GestionComprasView({
                           }}
                           title={sol.radicado || sol.id}
                         >
-                          {formatRadicado(sol.id, sol.radicado)}
+                          {radicadoFormat}
                         </span>
                         <span
                           style={{
@@ -1483,15 +1570,15 @@ export default function GestionComprasView({
                             marginTop: '4px',
                             whiteSpace: 'nowrap',
                           }}
-                          title={fmtDate(sol.creado_en || sol.fecha_requerida)}
+                          title={fmtDate(solFecha)}
                         >
-                          {fmtDate(sol.creado_en || sol.fecha_requerida)}
+                          {fmtDate(solFecha)}
                         </span>
                       </div>
                     </td>
 
                     {/* 2. Solicitante & Sede */}
-                    <td style={{ width: '17%', minWidth: '150px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '18%', minWidth: '150px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
                         <strong
                           style={{
@@ -1504,43 +1591,37 @@ export default function GestionComprasView({
                             whiteSpace: 'nowrap',
                             fontFamily: "'Poppins', sans-serif",
                           }}
-                          title={sol.solicitante_nombre || sol.solicitante || 'Sin asignar'}
+                          title={solNombre}
                         >
-                          {sol.solicitante_nombre || sol.solicitante || (
-                            <span style={{ color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic', fontWeight: 400 }}>Sin asignar</span>
-                          )}
+                          {solNombre}
                         </strong>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-                          {sol.sede_destino || sol.sede ? (
-                            <span
-                              className="sede-badge municipal"
-                              style={{
-                                fontSize: '10px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                display: 'inline-block',
-                              }}
-                              title={`Sede: ${sol.sede_destino || sol.sede}`}
-                            >
-                              {sol.sede_destino || sol.sede}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic' }}>Sede sin asignar</span>
-                          )}
+                          <span
+                            className="sede-badge municipal"
+                            style={{
+                              fontSize: '10px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block',
+                            }}
+                            title={`Sede: ${solSede}`}
+                          >
+                            {solSede}
+                          </span>
                         </div>
                       </div>
                     </td>
 
                     {/* 3. Proyecto STEAM */}
-                    <td style={{ width: '14%', minWidth: '130px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
+                    <td style={{ width: '14%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
-                        <ProgramAreaBadge area={sol.proyecto_steam || 'Robótica'} size="sm" />
+                        <ProgramAreaBadge area={solProyecto} size="sm" />
                       </div>
                     </td>
 
                     {/* 4. Detalle de Ítems */}
-                    <td style={{ width: '20%', minWidth: '170px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '20%', minWidth: '165px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {primerItem ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <strong
@@ -1558,7 +1639,7 @@ export default function GestionComprasView({
                             {primerItem.nombre}
                           </strong>
                           <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span>Sol: <strong style={{ color: 'var(--text-h, #013a52)' }}>{primerItem.cantidad_solicitada || 1}</strong></span>
+                            <span>Sol: <strong style={{ color: 'var(--text-h, #013a52)' }}>{primerItem.cantidad_solicitada || primerItem.cantidad || 1}</strong></span>
                             {primerItem.cantidad_aprobada !== undefined && (
                               <span>· Aprob: <strong style={{ color: '#4d7c0f' }}>{primerItem.cantidad_aprobada}</strong></span>
                             )}
@@ -1574,8 +1655,8 @@ export default function GestionComprasView({
                       )}
                     </td>
 
-                    {/* 5. Estado (Con ancho y estilo robusto sin solapamiento) */}
-                    <td style={{ width: '16%', minWidth: '165px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    {/* 5. Estado */}
+                    <td style={{ width: '15%', minWidth: '150px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
                         <span
                           style={{
@@ -1602,7 +1683,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 6. Compra & Factura */}
-                    <td style={{ width: '10%', minWidth: '110px', padding: '12px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '10%', minWidth: '115px', padding: '12px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {sol.proveedor ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <strong
@@ -1622,9 +1703,9 @@ export default function GestionComprasView({
                           <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             Fact: {sol.numero_factura_orden || 'S/N'}
                           </div>
-                          {sol.valor_final_compra > 0 && (
+                          {Number(sol.valor_final_compra) > 0 && (
                             <div style={{ fontSize: '11px', fontWeight: 700, color: '#4d7c0f' }}>
-                              ${sol.valor_final_compra.toLocaleString('es-CO')}
+                              ${Number(sol.valor_final_compra).toLocaleString('es-CO')}
                             </div>
                           )}
                         </div>
@@ -1634,9 +1715,11 @@ export default function GestionComprasView({
                             fontSize: '11px',
                             color: 'var(--text-muted, #94a3b8)',
                             fontStyle: 'italic',
-                            display: 'block',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: 'var(--surface-2, #f1f5f9)',
+                            border: '1px solid var(--line, #e2e8f0)',
                             whiteSpace: 'nowrap',
                           }}
                         >
@@ -1823,603 +1906,1417 @@ export default function GestionComprasView({
       )}
 
       {/* =========================================================================
-          MODAL 1: EVALUAR SOLICITUD DE COMPRA (2 COLUMNAS)
+          MODAL 1: EVALUAR SOLICITUD DE COMPRA (2 COLUMNAS INSTITUCIONAL FMO)
           ========================================================================= */}
-      {modalEvaluarOpen && solicitudAEvaluar && (
-        <div
-          onClick={() => !evalSubmitting && setModalEvaluarOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-            backgroundColor: 'rgba(1, 58, 82, 0.65)',
-            backdropFilter: 'blur(4px)',
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
+      {modalEvaluarOpen && solicitudAEvaluar && (() => {
+        const solItems = getSolItems(solicitudAEvaluar);
+        const radicadoStr = formatRadicado(solicitudAEvaluar.id, solicitudAEvaluar.radicado);
+        const solNombre = getSolNombre(solicitudAEvaluar);
+        const solSede = getSolSede(solicitudAEvaluar);
+        const solProyecto = getSolProyecto(solicitudAEvaluar);
+        const solFecha = getSolFecha(solicitudAEvaluar);
+        const solJustificacion = getSolJustificacion(solicitudAEvaluar);
+
+        return (
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => !evalSubmitting && setModalEvaluarOpen(false)}
             style={{
-              width: '100%',
-              maxWidth: '840px',
-              maxHeight: '92vh',
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
               display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'var(--surface, #ffffff)',
-              borderRadius: '20px',
-              boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
-              border: '1px solid var(--line, #e2e8f0)',
-              overflow: 'hidden',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              backgroundColor: 'rgba(1, 58, 82, 0.7)',
+              backdropFilter: 'blur(5px)',
               fontFamily: "'Poppins', sans-serif",
             }}
           >
-            {/* Header del Modal */}
             <div
-              className="p-5 flex items-center justify-between text-white shrink-0"
-              style={{ backgroundColor: '#7B2CBF' }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '860px',
+                maxHeight: '92vh',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'var(--surface, #ffffff)',
+                borderRadius: '20px',
+                boxShadow: '0 25px 50px -12px rgba(1, 58, 82, 0.45)',
+                border: '1px solid var(--line, #e2e8f0)',
+                overflow: 'hidden',
+                fontFamily: "'Poppins', sans-serif",
+              }}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                  <FileCheck className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold m-0 text-white">
-                    Evaluar Solicitud de Compra — {solicitudAEvaluar.radicado}
-                  </h3>
-                  <p className="text-xs text-purple-200 m-0 mt-0.5">
-                    Revisión de justificación STEAM, verificación de stock en bodega y autorización de cantidades.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalEvaluarOpen(false)}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer"
+              {/* Header Institucional FMO */}
+              <div
+                style={{
+                  backgroundColor: '#013a52',
+                  borderBottom: '3px solid #7B2CBF',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  flexShrink: 0,
+                }}
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Contenido en 2 Columnas */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', padding: '24px', overflowY: 'auto' }}>
-              {/* Columna Izquierda: Información del Requerimiento */}
-              <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#013a52] dark:text-slate-300 pb-2 border-b border-slate-200 dark:border-slate-800 m-0">
-                  1. Datos del Solicitante y Justificación
-                </h4>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs flex flex-col gap-2">
-                  <div>
-                    <span className="text-slate-500 font-medium">Docente / Solicitante:</span>{' '}
-                    <strong className="text-[#013a52] dark:text-white font-bold">{solicitudAEvaluar.solicitante_nombre}</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '12px',
+                      backgroundColor: '#7B2CBF',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 3px 10px rgba(123, 44, 191, 0.4)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FileCheck size={22} strokeWidth={2.4} />
                   </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">Sede / Municipio Destino:</span>{' '}
-                    <strong className="text-[#013a52] dark:text-white font-bold">{solicitudAEvaluar.sede_destino}</strong>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                        Evaluar Solicitud de Compra
+                      </h3>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          padding: '2px 9px',
+                          borderRadius: '999px',
+                          backgroundColor: '#abd037',
+                          color: '#013a52',
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        {radicadoStr}
+                      </span>
+                    </div>
+                    <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'rgba(255, 255, 255, 0.8)', fontWeight: 400 }}>
+                      Revisión técnica de requerimientos pedagógicos, cruce con bodega y dictamen presupuestal.
+                    </p>
                   </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">Proyecto STEAM:</span>{' '}
-                    <div className="inline-block ml-1">
-                      <ProgramAreaBadge area={solicitudAEvaluar.proyecto_steam} size="sm" />
+                </div>
+
+                {/* Botón Cerrar Translúcido */}
+                <button
+                  type="button"
+                  onClick={() => setModalEvaluarOpen(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.28)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  title="Cerrar modal"
+                >
+                  <X size={18} strokeWidth={2.4} />
+                </button>
+              </div>
+
+              {/* Contenido en 2 Columnas */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                  gap: '22px',
+                  padding: '22px',
+                  overflowY: 'auto',
+                  backgroundColor: 'var(--surface, #ffffff)',
+                }}
+              >
+                {/* Columna Izquierda: Información del Requerimiento */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: 'var(--text-h, #013a52)',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      paddingBottom: '8px',
+                      borderBottom: '1.5px solid var(--line, #e2e8f0)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#7B2CBF' }}></span>
+                    <span>1. Requerimiento Institucional & Justificación</span>
+                  </div>
+
+                  {/* Ficha de Solicitante y Sede */}
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '14px',
+                      backgroundColor: 'var(--surface-2, #f8fafc)',
+                      border: '1px solid var(--line, #e2e8f0)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim, #6d6e71)' }}>
+                        <User size={14} style={{ color: '#013a52' }} />
+                        <span>Docente / Solicitante:</span>
+                      </div>
+                      <strong style={{ color: 'var(--text-h, #013a52)', fontWeight: 700 }}>{solNombre}</strong>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim, #6d6e71)' }}>
+                        <MapPin size={14} style={{ color: '#2cacd0' }} />
+                        <span>Sede / Municipio:</span>
+                      </div>
+                      <span className="sede-badge municipal" style={{ fontSize: '11px', fontWeight: 700 }}>
+                        {solSede}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim, #6d6e71)' }}>
+                        <FolderKanban size={14} style={{ color: '#7B2CBF' }} />
+                        <span>Proyecto STEAM:</span>
+                      </div>
+                      <ProgramAreaBadge area={solProyecto} size="sm" />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim, #6d6e71)' }}>
+                        <Calendar size={14} style={{ color: '#6d6e71' }} />
+                        <span>Fecha Requerida:</span>
+                      </div>
+                      <strong style={{ color: 'var(--text-h, #013a52)', fontWeight: 700 }}>{fmtDate(solFecha)}</strong>
                     </div>
                   </div>
+
+                  {/* Justificación Pedagógica */}
                   <div>
-                    <span className="text-slate-500 font-medium">Fecha Requerida:</span>{' '}
-                    <strong className="text-[#013a52] dark:text-white">{fmtDate(solicitudAEvaluar.fecha_requerida)}</strong>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: 'var(--text-h, #013a52)',
+                        marginBottom: '6px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      Justificación Pedagógica / Necesidad:
+                    </label>
+                    <div
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        backgroundColor: 'var(--surface-2, #f8fafc)',
+                        border: '1px solid var(--line, #e2e8f0)',
+                        fontSize: '12px',
+                        lineHeight: 1.5,
+                        color: 'var(--text, #013a52)',
+                        fontStyle: 'italic',
+                        position: 'relative',
+                      }}
+                    >
+                      "{solJustificacion}"
+                    </div>
+                  </div>
+
+                  {/* Lista de Ítems Solicitados */}
+                  <div>
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: 'var(--text-h, #013a52)',
+                        marginBottom: '8px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      <span>Ítems Solicitados ({solItems.length})</span>
+                    </label>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {solItems.length === 0 ? (
+                        <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: 'var(--surface-2, #f8fafc)', fontSize: '12px', color: 'var(--text-dim, #6d6e71)', fontStyle: 'italic' }}>
+                          Sin ítems especificados en la solicitud.
+                        </div>
+                      ) : (
+                        solItems.map((it, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              padding: '12px 14px',
+                              borderRadius: '12px',
+                              border: '1px solid var(--line, #e2e8f0)',
+                              backgroundColor: 'var(--surface, #ffffff)',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                              <strong style={{ fontSize: '12.5px', color: 'var(--text-h, #013a52)', fontWeight: 700 }}>
+                                {it.nombre}
+                              </strong>
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 800,
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                  color: '#b45309',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                Sol: {it.cantidad_solicitada || it.cantidad || 1}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', marginTop: '4px' }}>
+                              Categoría sugerida: <span style={{ fontWeight: 600 }}>{it.categoria_sugerida || 'Consumibles'}</span>
+                            </div>
+                            {it.url_compra && (
+                              <div style={{ marginTop: '6px' }}>
+                                <a
+                                  href={it.url_compra}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    color: '#0284c7',
+                                    textDecoration: 'none',
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                >
+                                  <ExternalLink size={12} />
+                                  <span>Ver referencia comercial</span>
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    Justificación Pedagógica / Necesidad:
-                  </label>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 m-0 leading-relaxed italic">
-                    "{solicitudAEvaluar.justificacion || 'Sin justificación registrada.'}"
-                  </p>
+                {/* Columna Derecha: Cruce con Bodega y Decisión */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: 'var(--text-h, #013a52)',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      paddingBottom: '8px',
+                      borderBottom: '1.5px solid var(--line, #e2e8f0)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2cacd0' }}></span>
+                    <span>2. Cruce con Bodega & Dictamen Técnico</span>
+                  </div>
+
+                  {/* Alerta de Existencias en Bodega */}
+                  <div
+                    style={{
+                      padding: '14px',
+                      borderRadius: '14px',
+                      backgroundColor: 'rgba(44, 172, 208, 0.08)',
+                      border: '1.5px solid rgba(44, 172, 208, 0.25)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <Building2 size={16} style={{ color: '#2cacd0' }} />
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#013a52' }}>
+                        Cruce Automático con Stock en Bodega:
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {solItems.map((it, idx) => {
+                        const match = findStockEnBodega(it.nombre);
+                        return (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px', gap: '8px' }}>
+                            <span style={{ color: 'var(--text-dim, #6d6e71)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {it.nombre}:
+                            </span>
+                            {match && (match.disponible > 0 || match.quantity > 0) ? (
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  color: '#15803d',
+                                  backgroundColor: 'rgba(22, 163, 74, 0.15)',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                ✓ {match.disponible || match.quantity} disponibles en catálogo
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  color: '#b45309',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                Sin stock (Requiere compra)
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Cantidades Aprobadas */}
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: 'var(--text-h, #013a52)',
+                        marginBottom: '8px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      Cantidades Aprobadas para Adquisición:
+                    </label>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {solItems.map((it, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            borderRadius: '12px',
+                            backgroundColor: 'var(--surface-2, #f8fafc)',
+                            border: '1px solid var(--line, #e2e8f0)',
+                            gap: '10px',
+                          }}
+                        >
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {it.nombre}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                            <span style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)' }}>Aprobar:</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max={it.cantidad_solicitada || 999}
+                              value={evalCantidadesAprobadas[idx] ?? it.cantidad_solicitada ?? 1}
+                              onChange={(e) =>
+                                setEvalCantidadesAprobadas((prev) => ({
+                                  ...prev,
+                                  [idx]: Math.max(0, parseInt(e.target.value) || 0),
+                                }))
+                              }
+                              style={{
+                                width: '64px',
+                                padding: '6px 8px',
+                                textAlign: 'center',
+                                fontWeight: 700,
+                                fontSize: '13px',
+                                borderRadius: '8px',
+                                border: '1.5px solid var(--line, #cbd5e1)',
+                                backgroundColor: 'var(--surface, #ffffff)',
+                                color: 'var(--text-h, #013a52)',
+                                outline: 'none',
+                                fontFamily: "'Poppins', sans-serif",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Presupuesto Máximo Autorizado con Prefix Box Separado */}
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: 'var(--text-h, #013a52)',
+                        marginBottom: '6px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      Presupuesto Máximo Autorizado (COP):
+                    </label>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <span
+                        style={{
+                          padding: '0 12px',
+                          height: '38px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          backgroundColor: 'var(--surface-2, #f1f5f9)',
+                          color: 'var(--text-dim, #6d6e71)',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          borderRight: '1.5px solid var(--line, #cbd5e1)',
+                          userSelect: 'none',
+                        }}
+                      >
+                        $ COP
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={evalPresupuesto}
+                        onChange={(e) => setEvalPresupuesto(e.target.value)}
+                        placeholder="Ej: 650000"
+                        style={{
+                          flex: 1,
+                          border: 'none',
+                          outline: 'none',
+                          padding: '8px 12px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          color: 'var(--text-h, #013a52)',
+                          backgroundColor: 'transparent',
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Observaciones Obligatorias del Coordinador */}
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: 'var(--text-h, #013a52)',
+                        marginBottom: '6px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      Concepto Técnico / Observaciones del Coordinador *:
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={evalObservaciones}
+                      onChange={(e) => setEvalObservaciones(e.target.value)}
+                      placeholder="Describe el motivo de aprobación, ajustes presupuestales o justificación técnica de rechazo..."
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        fontSize: '12px',
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        color: 'var(--text-h, #013a52)',
+                        outline: 'none',
+                        fontFamily: "'Poppins', sans-serif",
+                        resize: 'vertical',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Pie de Acciones de Decisión */}
+              <div
+                style={{
+                  padding: '16px 22px',
+                  backgroundColor: 'var(--surface-2, #f8fafc)',
+                  borderTop: '1px solid var(--line, #e2e8f0)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                  flexShrink: 0,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setModalEvaluarOpen(false)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'var(--text-dim, #6d6e71)',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--line, #cbd5e1)',
+                    cursor: 'pointer',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  Cancelar
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  {/* 1. Rechazar */}
+                  <button
+                    type="button"
+                    disabled={evalSubmitting}
+                    onClick={() => handleGuardarEvaluacion('Rechazada')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 16px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      backgroundColor: '#E0321C',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: "'Poppins', sans-serif",
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#b91c1c')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#E0321C')}
+                  >
+                    <XCircle size={15} />
+                    <span>Rechazar Solicitud</span>
+                  </button>
+
+                  {/* 2. Dejar en Evaluación */}
+                  <button
+                    type="button"
+                    disabled={evalSubmitting}
+                    onClick={() => handleGuardarEvaluacion('En Evaluación')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 16px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      backgroundColor: '#7B2CBF',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: "'Poppins', sans-serif",
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#63209E')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#7B2CBF')}
+                  >
+                    <Clock size={15} />
+                    <span>Dejar en Evaluación</span>
+                  </button>
+
+                  {/* 3. Aprobar para Compra */}
+                  <button
+                    type="button"
+                    disabled={evalSubmitting}
+                    onClick={() => handleGuardarEvaluacion('Aprobada')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 18px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      backgroundColor: '#abd037',
+                      color: '#013a52',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 3px 10px rgba(171, 208, 55, 0.35)',
+                      fontFamily: "'Poppins', sans-serif",
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#96b82d')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#abd037')}
+                  >
+                    <CheckCircle2 size={16} strokeWidth={2.4} />
+                    <span>Aprobar para Compra</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* =========================================================================
+          MODAL 2: REGISTRAR COMPRA EFECTUADA (REDISEÑO INSTITUCIONAL FMO)
+          ========================================================================= */}
+      {modalRegistrarCompraOpen && solicitudAComprar && (() => {
+        const radicadoStr = formatRadicado(solicitudAComprar.id, solicitudAComprar.radicado);
+        const solNombre = getSolNombre(solicitudAComprar);
+        const solSede = getSolSede(solicitudAComprar);
+        const solProyecto = getSolProyecto(solicitudAComprar);
+        const itemsAComprar = getSolItems(solicitudAComprar);
+
+        return (
+          <div
+            onClick={() => !compraSubmitting && setModalRegistrarCompraOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              backgroundColor: 'rgba(1, 58, 82, 0.7)',
+              backdropFilter: 'blur(5px)',
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '620px',
+                maxHeight: '92vh',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'var(--surface, #ffffff)',
+                borderRadius: '20px',
+                boxShadow: '0 25px 50px -12px rgba(1, 58, 82, 0.45)',
+                border: '1px solid var(--line, #e2e8f0)',
+                overflow: 'hidden',
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              {/* Header del Modal */}
+              <div
+                style={{
+                  backgroundColor: '#013a52',
+                  borderBottom: '3px solid #2CACD0',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '12px',
+                      backgroundColor: '#2CACD0',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 3px 10px rgba(44, 172, 208, 0.4)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Receipt size={22} strokeWidth={2.4} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                        Registrar Compra y Adquisición
+                      </h3>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          padding: '2px 9px',
+                          borderRadius: '999px',
+                          backgroundColor: '#2CACD0',
+                          color: '#ffffff',
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        {radicadoStr}
+                      </span>
+                    </div>
+                    <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'rgba(255, 255, 255, 0.8)', fontWeight: 400 }}>
+                      Ingresa los datos fiscales, casa comercial y factura oficial de la compra.
+                    </p>
+                  </div>
                 </div>
 
-                {/* Lista de Ítems Solicitados con Enlace Externo */}
-                <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-2">
-                    Ítems Solicitados ({Array.isArray(solicitudAEvaluar.items) ? solicitudAEvaluar.items.length : 0}):
-                  </label>
-                  <div className="flex flex-col gap-2">
-                    {(solicitudAEvaluar.items || []).map((it, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <strong className="text-[#013a52] dark:text-white">{it.nombre}</strong>
-                          <span className="px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 text-[11px]">
-                            Sol: {it.cantidad_solicitada || 1}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-1">
-                          Categoría: {it.categoria_sugerida || 'Consumibles'}
-                        </div>
-                        {it.url_compra && (
-                          <a
-                            href={it.url_compra}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 hover:text-sky-800 mt-1.5"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            <span>Ver referencia comercial</span>
-                          </a>
-                        )}
+                {/* Botón Cerrar Translúcido */}
+                <button
+                  type="button"
+                  onClick={() => setModalRegistrarCompraOpen(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.28)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  title="Cerrar modal"
+                >
+                  <X size={18} strokeWidth={2.4} />
+                </button>
+              </div>
+
+              {/* Formulario de Compra */}
+              <form onSubmit={handleGuardarRegistroCompra} style={{ padding: '22px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Resumen del Requerimiento Autorizado */}
+                <div
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--surface-2, #f8fafc)',
+                    border: '1px solid var(--line, #e2e8f0)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <User size={14} style={{ color: '#013a52' }} />
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
+                        {solNombre}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)' }}>·</span>
+                      <MapPin size={13} style={{ color: '#2cacd0' }} />
+                      <span style={{ fontSize: '11.5px', color: 'var(--text, #013a52)', fontWeight: 600 }}>
+                        {solSede}
+                      </span>
+                    </div>
+                    <ProgramAreaBadge area={solProyecto} size="sm" />
+                  </div>
+
+                  {/* Resumen de ítems autorizados */}
+                  <div style={{ borderTop: '1px solid var(--line, #e2e8f0)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--text-dim, #6d6e71)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Ítems Autorizados para Compra:
+                    </span>
+                    {itemsAComprar.map((it, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11.5px' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-h, #013a52)' }}>{it.nombre}</span>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(171, 208, 55, 0.2)', color: '#365314', fontWeight: 700 }}>
+                          Cant: {it.cantidad_aprobada ?? it.cantidad_solicitada ?? 1}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Columna Derecha: Cruce con Bodega y Decisión */}
-              <div className="flex flex-col gap-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#013a52] dark:text-slate-300 pb-2 border-b border-slate-200 dark:border-slate-800 m-0">
-                  2. Cruce con Bodega y Dictamen Técnico
-                </h4>
-
-                {/* Alerta de Existencias en Bodega */}
-                <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-xs">
-                  <div className="font-bold text-[#013a52] dark:text-blue-300 flex items-center gap-1.5 mb-1.5">
-                    <Building2 className="w-4 h-4 text-[#2cacd0]" />
-                    <span>Cruce Automático con Stock en Bodega:</span>
-                  </div>
-                  {(solicitudAEvaluar.items || []).map((it, idx) => {
-                    const match = findStockEnBodega(it.nombre);
-                    return (
-                      <div key={idx} className="mt-1 flex items-center justify-between text-[11px]">
-                        <span className="text-slate-600 dark:text-slate-400 truncate max-w-[180px]">{it.nombre}:</span>
-                        {match ? (
-                          <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
-                            {match.disponible || match.quantity || 0} disponibles en catálogo
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic">No disponible en bodega (Requiere compra)</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Ajuste de Cantidad Aprobada por Ítem */}
-                <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-2">
-                    Cantidades Aprobadas para Adquisición:
-                  </label>
-                  {(solicitudAEvaluar.items || []).map((it, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-3 mb-2 text-xs">
-                      <span className="text-slate-700 dark:text-slate-300 truncate">{it.nombre}:</span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-slate-400 text-[11px]">Aprobar:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max={it.cantidad_solicitada || 99}
-                          value={evalCantidadesAprobadas[idx] ?? it.cantidad_solicitada}
-                          onChange={(e) =>
-                            setEvalCantidadesAprobadas((prev) => ({
-                              ...prev,
-                              [idx]: Math.max(0, parseInt(e.target.value) || 0),
-                            }))
-                          }
-                          className="w-16 px-2 py-1 text-center font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#abd037]"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Presupuesto Estimado */}
-                <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    Presupuesto Máximo Autorizado (COP):
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+                  {/* Proveedor / Casa Comercial */}
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Proveedor / Empresa Comercial *:
+                    </label>
                     <input
-                      type="number"
-                      value={evalPresupuesto}
-                      onChange={(e) => setEvalPresupuesto(e.target.value)}
-                      placeholder="Ej: 650000"
-                      className="w-full pl-7 pr-3 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                      type="text"
+                      required
+                      value={compraProveedor}
+                      onChange={(e) => setCompraProveedor(e.target.value)}
+                      placeholder="Ej: RobotShop Colombia, Panamericana, Homecenter"
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        color: 'var(--text-h, #013a52)',
+                        outline: 'none',
+                        fontFamily: "'Poppins', sans-serif",
+                        boxSizing: 'border-box',
+                      }}
                     />
                   </div>
+
+                  {/* Valor Final Facturado con Prefix Box Separado */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Valor Final Facturado (COP) *:
+                    </label>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <span
+                        style={{
+                          padding: '0 12px',
+                          height: '38px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          backgroundColor: 'var(--surface-2, #f1f5f9)',
+                          color: 'var(--text-dim, #6d6e71)',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          borderRight: '1.5px solid var(--line, #cbd5e1)',
+                          userSelect: 'none',
+                        }}
+                      >
+                        $ COP
+                      </span>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={compraValorFinal}
+                        onChange={(e) => setCompraValorFinal(e.target.value)}
+                        placeholder="Ej: 325000"
+                        style={{
+                          flex: 1,
+                          border: 'none',
+                          outline: 'none',
+                          padding: '8px 12px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          color: 'var(--text-h, #013a52)',
+                          backgroundColor: 'transparent',
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* N.° de Factura u Orden */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      N.° Factura / Orden de Compra *:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={compraFactura}
+                      onChange={(e) => setCompraFactura(e.target.value)}
+                      placeholder="Ej: FAC-2026-9812"
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        fontSize: '12.5px',
+                        fontWeight: 700,
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        color: 'var(--text-h, #013a52)',
+                        outline: 'none',
+                        fontFamily: "'Poppins', sans-serif",
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  {/* Fecha de Compra */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Fecha de Compra *:
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={compraFecha}
+                      onChange={(e) => setCompraFecha(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        color: 'var(--text-h, #013a52)',
+                        outline: 'none',
+                        fontFamily: "'Poppins', sans-serif",
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  {/* Proyecto Vinculado */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Proyecto Vinculado:
+                    </label>
+                    <div style={{ paddingTop: '4px' }}>
+                      <ProgramAreaBadge area={solProyecto} size="sm" />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Observaciones Obligatorias del Coordinador */}
+                {/* Observaciones de Compra */}
                 <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    Concepto Técnico / Observaciones del Coordinador *:
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Notas de Compra / Garantía:
                   </label>
                   <textarea
-                    rows={3}
-                    value={evalObservaciones}
-                    onChange={(e) => setEvalObservaciones(e.target.value)}
-                    placeholder="Describe el motivo de aprobación, ajustes presupuestales o justificación de rechazo..."
-                    className="w-full p-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+                    rows={2}
+                    value={compraNotas}
+                    onChange={(e) => setCompraNotas(e.target.value)}
+                    placeholder="Garantía de 12 meses, entregado con remisión en bodega..."
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      fontSize: '12px',
+                      borderRadius: '12px',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      backgroundColor: 'var(--surface, #ffffff)',
+                      color: 'var(--text-h, #013a52)',
+                      outline: 'none',
+                      fontFamily: "'Poppins', sans-serif",
+                      resize: 'vertical',
+                      boxSizing: 'border-box',
+                    }}
                   />
                 </div>
-              </div>
-            </div>
 
-            {/* Pie de Acciones de Decisión */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap shrink-0">
-              <button
-                type="button"
-                onClick={() => setModalEvaluarOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-none cursor-pointer"
-              >
-                Cancelar
-              </button>
-
-              <div className="flex items-center gap-2">
-                {/* 1. Rechazar */}
-                <button
-                  type="button"
-                  disabled={evalSubmitting}
-                  onClick={() => handleGuardarEvaluacion('Rechazada')}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
-                  style={{ backgroundColor: '#E0321C' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#b91c1c')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#E0321C')}
+                {/* Pie de Acciones */}
+                <div
+                  style={{
+                    paddingTop: '14px',
+                    borderTop: '1px solid var(--line, #e2e8f0)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                  }}
                 >
-                  Rechazar Solicitud
-                </button>
-
-                {/* 2. Dejar en Evaluación */}
-                <button
-                  type="button"
-                  disabled={evalSubmitting}
-                  onClick={() => handleGuardarEvaluacion('En Evaluación')}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
-                  style={{ backgroundColor: '#7B2CBF' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#63209E')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#7B2CBF')}
-                >
-                  Dejar en Evaluación
-                </button>
-
-                {/* 3. Aprobar para Compra */}
-                <button
-                  type="button"
-                  disabled={evalSubmitting}
-                  onClick={() => handleGuardarEvaluacion('Aprobada')}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
-                  style={{ backgroundColor: '#abd037', color: '#013a52' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#96b82d')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#abd037')}
-                >
-                  <CheckCircle2 className="w-4 h-4 stroke-[2.4]" />
-                  <span>Aprobar para Compra</span>
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setModalRegistrarCompraOpen(false)}
+                    style={{
+                      padding: '9px 16px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: 'var(--text-dim, #6d6e71)',
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--line, #cbd5e1)',
+                      cursor: 'pointer',
+                      fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={compraSubmitting}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      borderRadius: '12px',
+                      fontSize: '12.5px',
+                      fontWeight: 800,
+                      backgroundColor: '#abd037',
+                      color: '#013a52',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 3px 10px rgba(171, 208, 55, 0.35)',
+                      fontFamily: "'Poppins', sans-serif",
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#96b82d')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#abd037')}
+                  >
+                    <CheckCircle2 size={16} strokeWidth={2.4} />
+                    <span>Confirmar Compra Realizada</span>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* =========================================================================
-          MODAL 2: REGISTRAR COMPRA EFECTUADA (COMPACTO)
+          MODAL 3: VER DETALLE COMPLETO DE LA SOLICITUD (REDISEÑO INSTITUCIONAL FMO)
           ========================================================================= */}
-      {modalRegistrarCompraOpen && solicitudAComprar && (
-        <div
-          onClick={() => !compraSubmitting && setModalRegistrarCompraOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-            backgroundColor: 'rgba(1, 58, 82, 0.65)',
-            backdropFilter: 'blur(4px)',
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
+      {modalDetalleOpen && solicitudDetalle && (() => {
+        const radicadoStr = formatRadicado(solicitudDetalle.id, solicitudDetalle.radicado);
+        const solNombre = getSolNombre(solicitudDetalle);
+        const solSede = getSolSede(solicitudDetalle);
+        const solProyecto = getSolProyecto(solicitudDetalle);
+        const solFecha = getSolFecha(solicitudDetalle);
+        const solJustificacion = getSolJustificacion(solicitudDetalle);
+        const solItems = getSolItems(solicitudDetalle);
+        const estadoConfig = getEstadoBadgeConfig(solicitudDetalle.estado);
+        const EstadoIcon = estadoConfig.Icon;
+
+        return (
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setModalDetalleOpen(false)}
             style={{
-              width: '100%',
-              maxWidth: '580px',
-              maxHeight: '92vh',
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
               display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'var(--surface, #ffffff)',
-              borderRadius: '20px',
-              boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
-              border: '1px solid var(--line, #e2e8f0)',
-              overflow: 'hidden',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              backgroundColor: 'rgba(1, 58, 82, 0.7)',
+              backdropFilter: 'blur(5px)',
               fontFamily: "'Poppins', sans-serif",
             }}
           >
-            {/* Header del Modal */}
             <div
-              className="p-5 flex items-center justify-between text-white shrink-0"
-              style={{ backgroundColor: '#2CACD0' }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '680px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'var(--surface, #ffffff)',
+                borderRadius: '20px',
+                boxShadow: '0 25px 50px -12px rgba(1, 58, 82, 0.45)',
+                border: '1px solid var(--line, #e2e8f0)',
+                overflow: 'hidden',
+                fontFamily: "'Poppins', sans-serif",
+              }}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Receipt className="w-5 h-5 text-white" />
+              {/* Header Institucional */}
+              <div
+                style={{
+                  backgroundColor: '#013a52',
+                  borderBottom: '3px solid #abd037',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      backgroundColor: '#abd037',
+                      color: '#013a52',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Eye size={20} strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 800, color: '#ffffff' }}>
+                      Ficha de Solicitud de Compra — {radicadoStr}
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: 'rgba(255, 255, 255, 0.8)' }}>
+                      Auditoría integral del ciclo de adquisición SIGA-FMO
+                    </p>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setModalDetalleOpen(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.28)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                  }}
+                  title="Cerrar ficha"
+                >
+                  <X size={18} strokeWidth={2.4} />
+                </button>
+              </div>
+
+              {/* Contenido */}
+              <div style={{ padding: '22px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: '12px',
+                    padding: '14px 16px',
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--surface-2, #f8fafc)',
+                    border: '1px solid var(--line, #e2e8f0)',
+                    fontSize: '12px',
+                  }}
+                >
+                  <div>
+                    <span style={{ color: 'var(--text-dim, #6d6e71)' }}>Solicitante:</span>{' '}
+                    <strong style={{ color: 'var(--text-h, #013a52)', fontWeight: 700 }}>{solNombre}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-dim, #6d6e71)' }}>Sede Destino:</span>{' '}
+                    <strong style={{ color: 'var(--text-h, #013a52)', fontWeight: 700 }}>{solSede}</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ color: 'var(--text-dim, #6d6e71)' }}>Proyecto STEAM:</span>
+                    <ProgramAreaBadge area={solProyecto} size="sm" />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ color: 'var(--text-dim, #6d6e71)' }}>Estado Actual:</span>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        ...estadoConfig.badgeStyle,
+                      }}
+                    >
+                      <EstadoIcon size={12} />
+                      <span>{estadoConfig.label}</span>
+                    </span>
+                  </div>
+                </div>
+
                 <div>
-                  <h3 className="text-base font-bold m-0 text-white">
-                    Registrar Compra — {solicitudAComprar.radicado}
-                  </h3>
-                  <p className="text-xs text-sky-100 m-0 mt-0.5">
-                    Ingresa los datos fiscales y la factura oficial de la adquisición.
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Justificación:
+                  </h4>
+                  <p
+                    style={{
+                      margin: 0,
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--surface-2, #f8fafc)',
+                      border: '1px solid var(--line, #e2e8f0)',
+                      fontSize: '12px',
+                      fontStyle: 'italic',
+                      color: 'var(--text, #013a52)',
+                    }}
+                  >
+                    "{solJustificacion}"
                   </p>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalRegistrarCompraOpen(false)}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border-none cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Formulario de Compra */}
-            <form onSubmit={handleGuardarRegistroCompra} className="p-6 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Proveedor */}
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    Proveedor / Empresa Comercial *:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={compraProveedor}
-                    onChange={(e) => setCompraProveedor(e.target.value)}
-                    placeholder="Ej: RobotShop Colombia, Panamericana, Homecenter"
-                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2cacd0]"
-                  />
-                </div>
-
-                {/* Valor Total Facturado */}
                 <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    Valor Final Facturado (COP) *:
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={compraValorFinal}
-                      onChange={(e) => setCompraValorFinal(e.target.value)}
-                      placeholder="Ej: 325000"
-                      className="w-full pl-7 pr-3 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2cacd0]"
-                    />
-                  </div>
-                </div>
-
-                {/* N.° de Factura u Orden */}
-                <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    N.° Factura / Orden de Compra *:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={compraFactura}
-                    onChange={(e) => setCompraFactura(e.target.value)}
-                    placeholder="Ej: FAC-2026-9812"
-                    className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2cacd0]"
-                  />
-                </div>
-
-                {/* Fecha de Compra */}
-                <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    Fecha de Compra *:
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={compraFecha}
-                    onChange={(e) => setCompraFecha(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2cacd0]"
-                  />
-                </div>
-
-                {/* Proyecto Destino (Solo Lectura) */}
-                <div>
-                  <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                    Proyecto Vinculado:
-                  </label>
-                  <div className="pt-1">
-                    <ProgramAreaBadge area={solicitudAComprar.proyecto_steam} size="sm" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Observaciones de Compra */}
-              <div>
-                <label className="block text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">
-                  Notas de Compra / Garantía:
-                </label>
-                <textarea
-                  rows={2}
-                  value={compraNotas}
-                  onChange={(e) => setCompraNotas(e.target.value)}
-                  placeholder="Garantía de 12 meses, entregado con remisión en bodega..."
-                  className="w-full p-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2cacd0]"
-                />
-              </div>
-
-              {/* Pie de Acciones */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModalRegistrarCompraOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 border-none cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={compraSubmitting}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all cursor-pointer"
-                  style={{ backgroundColor: '#2CACD0' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2292B3')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2CACD0')}
-                >
-                  <CheckCircle2 className="w-4 h-4 stroke-[2.4]" />
-                  <span>Confirmar Compra Realizada</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL 3: VER DETALLE COMPLETO DE LA SOLICITUD
-          ========================================================================= */}
-      {modalDetalleOpen && solicitudDetalle && (
-        <div
-          onClick={() => setModalDetalleOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-            backgroundColor: 'rgba(1, 58, 82, 0.65)',
-            backdropFilter: 'blur(4px)',
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: '640px',
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'var(--surface, #ffffff)',
-              borderRadius: '20px',
-              boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
-              border: '1px solid var(--line, #e2e8f0)',
-              overflow: 'hidden',
-              fontFamily: "'Poppins', sans-serif",
-            }}
-          >
-            <div className="p-5 flex items-center justify-between bg-slate-100 dark:bg-slate-800 shrink-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-[#013a52] dark:text-white m-0">
-                  Ficha de Solicitud de Compra — {solicitudDetalle.radicado}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalDetalleOpen(false)}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-700 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto text-xs flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                <div>
-                  <span className="text-slate-500">Solicitante:</span>{' '}
-                  <strong className="text-[#013a52] dark:text-white">{solicitudDetalle.solicitante_nombre}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500">Sede Destino:</span>{' '}
-                  <strong className="text-[#013a52] dark:text-white">{solicitudDetalle.sede_destino}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500">Proyecto STEAM:</span>{' '}
-                  <div className="inline-block ml-1">
-                    <ProgramAreaBadge area={solicitudDetalle.proyecto_steam} size="sm" />
-                  </div>
-                </div>
-                <div>
-                  <span className="text-slate-500">Estado Actual:</span>{' '}
-                  <strong className="font-bold text-[#013a52] dark:text-white">{solicitudDetalle.estado}</strong>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">Justificación:</h4>
-                <p className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 m-0 italic">
-                  "{solicitudDetalle.justificacion}"
-                </p>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold text-[#013a52] dark:text-slate-300 mb-2">Ítems Solicitados:</h4>
-                <div className="flex flex-col gap-2">
-                  {(solicitudDetalle.items || []).map((it, idx) => (
-                    <div key={idx} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                      <div>
-                        <strong className="text-[#013a52] dark:text-white">{it.nombre}</strong>
-                        <div className="text-[11px] text-slate-500">Cat: {it.categoria_sugerida}</div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    Ítems Solicitados ({solItems.length}):
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {solItems.map((it, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: '12px',
+                          border: '1px solid var(--line, #e2e8f0)',
+                          backgroundColor: 'var(--surface, #ffffff)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <div>
+                          <strong style={{ color: 'var(--text-h, #013a52)' }}>{it.nombre}</strong>
+                          <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)' }}>
+                            Cat: {it.categoria_sugerida || 'Consumibles'}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '11.5px' }}>
+                            Sol: <strong>{it.cantidad_solicitada || it.cantidad || 1}</strong> | Aprob:{' '}
+                            <strong style={{ color: '#15803d' }}>{it.cantidad_aprobada ?? '—'}</strong>
+                          </span>
+                          {it.url_compra && (
+                            <div style={{ marginTop: '2px' }}>
+                              <a
+                                href={it.url_compra}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                  color: '#0284c7',
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                }}
+                              >
+                                <ExternalLink size={11} />
+                                <span>Referencia comercial</span>
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div>Sol: <strong>{it.cantidad_solicitada}</strong> | Aprob: <strong className="text-emerald-600">{it.cantidad_aprobada ?? '—'}</strong></div>
-                        {it.url_compra && (
-                          <a href={it.url_compra} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-600 font-bold inline-flex items-center gap-0.5">
-                            <ExternalLink className="w-2.5 h-2.5" />
-                            <span>Link</span>
-                          </a>
-                        )}
+                    ))}
+                  </div>
+                </div>
+
+                {solicitudDetalle.observaciones_coordinador && (
+                  <div>
+                    <h4 style={{ margin: '0 0 6px 0', fontSize: '11.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Concepto Técnico del Coordinador:
+                    </h4>
+                    <p
+                      style={{
+                        margin: 0,
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        backgroundColor: 'rgba(123, 44, 191, 0.08)',
+                        border: '1px solid rgba(123, 44, 191, 0.25)',
+                        fontSize: '12px',
+                        color: '#4a1d96',
+                      }}
+                    >
+                      "{solicitudDetalle.observaciones_coordinador}"
+                    </p>
+                  </div>
+                )}
+
+                {solicitudDetalle.proveedor && (
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '14px',
+                      backgroundColor: 'rgba(44, 172, 208, 0.08)',
+                      border: '1px solid rgba(44, 172, 208, 0.25)',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#013a52', marginBottom: '8px' }}>
+                      Datos de Compra y Factura:
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px', fontSize: '11.5px' }}>
+                      <div>Proveedor: <strong>{solicitudDetalle.proveedor}</strong></div>
+                      <div>Factura: <strong>{solicitudDetalle.numero_factura_orden || 'S/N'}</strong></div>
+                      <div>Fecha Compra: <strong>{fmtDate(solicitudDetalle.fecha_compra)}</strong></div>
+                      <div>
+                        Valor Total: <strong style={{ color: '#15803d' }}>${Number(solicitudDetalle.valor_final_compra || 0).toLocaleString('es-CO')}</strong>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
 
-              {solicitudDetalle.observaciones_coordinador && (
-                <div>
-                  <h4 className="text-xs font-bold text-[#013a52] dark:text-slate-300 mb-1">Observaciones de Coordinación:</h4>
-                  <p className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800 m-0">
-                    "{solicitudDetalle.observaciones_coordinador}"
-                  </p>
-                </div>
-              )}
-
-              {solicitudDetalle.proveedor && (
-                <div className="p-3 rounded-xl bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800">
-                  <div className="font-bold text-[#013a52] dark:text-cyan-200 mb-1">Datos de Compra y Factura:</div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div>Proveedor: <strong>{solicitudDetalle.proveedor}</strong></div>
-                    <div>Factura: <strong>{solicitudDetalle.numero_factura_orden}</strong></div>
-                    <div>Fecha Compra: <strong>{fmtDate(solicitudDetalle.fecha_compra)}</strong></div>
-                    <div>Valor Total: <strong className="text-emerald-700">${(solicitudDetalle.valor_final_compra || 0).toLocaleString('es-CO')}</strong></div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 bg-slate-100 dark:bg-slate-800 text-right">
-              <button
-                type="button"
-                onClick={() => setModalDetalleOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#013a52] text-white cursor-pointer border-none"
+              {/* Pie */}
+              <div
+                style={{
+                  padding: '14px 22px',
+                  backgroundColor: 'var(--surface-2, #f8fafc)',
+                  borderTop: '1px solid var(--line, #e2e8f0)',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                }}
               >
-                Cerrar Ficha
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setModalDetalleOpen(false)}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    backgroundColor: '#013a52',
+                    color: '#ffffff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  Cerrar Ficha
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
