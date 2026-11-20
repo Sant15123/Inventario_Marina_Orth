@@ -278,9 +278,14 @@ export default function ProgramAreaBadge({
   iconSize = 18,
   showIcon = true,
   style = {},
+  label = null,
 }) {
   const config = resolveAreaConfig(area, defaultProgram);
   const IconComponent = config.Icon;
+  const safeAreaStr = typeof area === 'string' ? area.trim() : '';
+  const genericPrograms = ['robotica', 'robótica', 'nuevas tecnologías', 'nuevas tecnologias', 'teachlabs', 'habilidades socioemocionales', 'inglés', 'ingles', 'becas', 'becas "educando para el futuro"', 'general', 'administración / general'];
+  const isSpecificProject = safeAreaStr && !genericPrograms.includes(safeAreaStr.toLowerCase());
+  const displayLabel = label || (isSpecificProject ? safeAreaStr : config.label) || 'Sin asignar';
 
   return (
     <span
@@ -289,7 +294,7 @@ export default function ProgramAreaBadge({
         fontFamily: "'Poppins', sans-serif",
         ...style,
       }}
-      title={`Programa / Área FMO: ${config.label}`}
+      title={`Programa / Área FMO: ${displayLabel}`}
     >
       {showIcon && (
         <span
@@ -299,7 +304,7 @@ export default function ProgramAreaBadge({
           <IconComponent size={iconSize} className="w-full h-full" />
         </span>
       )}
-      <span className="truncate">{typeof config.label === 'string' ? config.label : 'Sin asignar'}</span>
+      <span className="truncate">{typeof displayLabel === 'string' ? displayLabel : 'Sin asignar'}</span>
     </span>
   );
 }

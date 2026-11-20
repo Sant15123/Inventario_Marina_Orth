@@ -1045,9 +1045,15 @@ export const inventoryApi = {
 
           if (!cErr && Array.isArray(cData)) {
             dataCompras = cData.map((sc) => {
-              const catDestino = String(sc.categoria_destino || 'consumibles').toLowerCase();
-              const catNormalizada = catDestino === 'papeleria' ? 'papeleria' : 'consumibles';
-              const fRad = sc.creado_en || '';
+              const catDestino = String(sc.categoria_destino || sc.categoria || 'consumibles').toLowerCase();
+              let catNormalizada = 'consumibles';
+              if (catDestino.includes('electron') || catDestino.includes('electrónica')) {
+                catNormalizada = 'electronica';
+              } else if (catDestino.includes('papel') || catDestino.includes('papelería')) {
+                catNormalizada = 'papeleria';
+              }
+              const fRad = sc.creado_en || sc.created_at || '';
+              const proy = sc.proyecto_steam || sc.proyecto_steam_id || sc.proyecto || '';
               const singleItem = {
                 id: sc.id,
                 solicitud_id: sc.id,
@@ -1055,13 +1061,26 @@ export const inventoryApi = {
                 item_id: sc.item_inventario_id || null,
                 nombre_item: sc.nombre_producto || 'Producto sugerido',
                 nombre_sugerido: sc.nombre_producto || 'Producto sugerido',
-                categoria_sugerida: catNormalizada,
-                categoria_destino: catNormalizada,
+                categoria_sugerida: sc.categoria_destino || catNormalizada,
+                categoria_destino: sc.categoria_destino || catNormalizada,
                 url_compra: sc.url_compra || null,
                 precio_estimado: Number(sc.precio_estimado) || 0,
-                cantidad: Number(sc.cantidad) || 1,
+                cantidad: Number(sc.cantidad || sc.cantidad_solicitada) || 1,
                 ingresado_inventario: Boolean(sc.ingresado_inventario),
               };
+
+              let itemsList = [];
+              if (Array.isArray(sc.items) && sc.items.length > 0) {
+                itemsList = sc.items;
+              } else if (typeof sc.items === 'string') {
+                try {
+                  const parsed = JSON.parse(sc.items);
+                  if (Array.isArray(parsed) && parsed.length > 0) itemsList = parsed;
+                } catch (_) {}
+              }
+              if (itemsList.length === 0) {
+                itemsList = [singleItem];
+              }
 
               return {
                 id: sc.id,
@@ -1071,7 +1090,11 @@ export const inventoryApi = {
                 tipo: 'SUGERENCIA_COMPRA',
                 tipo_solicitud: 'SUGERENCIA_COMPRA',
                 tipoSolicitud: 'SUGERENCIA_COMPRA',
-                categoria_destino: catNormalizada,
+                categoria_destino: sc.categoria_destino || catNormalizada,
+                categoria: sc.categoria || sc.categoria_destino || catNormalizada,
+                proyecto_steam: proy,
+                proyecto_steam_id: sc.proyecto_steam_id || proy,
+                proyecto: proy,
                 fecha_requerida: sc.fecha_requerida,
                 fecha_devolucion_estimada: sc.fecha_requerida,
                 motivo: sc.justificacion || 'Sugerencia de compra',
@@ -1085,8 +1108,8 @@ export const inventoryApi = {
                 created_at: fRad,
                 fecha_radicado: fRad ? String(fRad).slice(0, 10) : '',
                 is_solicitud_compra: true,
-                items: [singleItem],
-                items_solicitud: [singleItem],
+                items: itemsList,
+                items_solicitud: itemsList,
               };
             });
           }

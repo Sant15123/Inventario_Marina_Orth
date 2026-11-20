@@ -22,10 +22,12 @@ import {
   Hourglass,
   XCircle,
   Info,
+  Cpu,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { fmtDate, formatearFechaSegura, today, SEDES, PROYECTOS } from '../services/mockData';
+import { normalizeProyectoNombre } from '../constants/proyectos';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
@@ -62,47 +64,83 @@ const renderTipoSolicitud = (solicitud) => {
 
   // Detección exhaustiva de solicitud de compra: por tipo, por campos de ítems o por texto del motivo
   const esCompra =
+    solicitud.is_solicitud_compra ||
     tipo === 'SUGERENCIA_COMPRA' ||
     tipo.includes('COMPRA') ||
     items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || i.tipo_item === 'compra') ||
     (solicitud.motivo && (
       solicitud.motivo.toLowerCase().includes('compra') ||
       solicitud.motivo.toLowerCase().includes('batería') ||
-      solicitud.motivo.toLowerCase().includes('bateria')
+      solicitud.motivo.toLowerCase().includes('bateria') ||
+      solicitud.motivo.toLowerCase().includes('lipo')
     ));
 
   if (esCompra) {
-    const categorias = [
-      ...new Set(
-        items
-          .map((i) => (i.categoria_sugerida || i.categoria || i.categoria_destino)?.toLowerCase())
-          .filter(Boolean)
-      ),
-    ];
+    const rawCategories = [
+      solicitud.categoria_destino,
+      solicitud.categoria,
+      ...items.map((i) => i.categoria_destino || i.categoria_sugerida || i.categoria),
+    ]
+      .filter(Boolean)
+      .map((c) => String(c).toLowerCase().trim());
 
-    let etiqueta = 'Compra: Robótica / Cons.';
-    if (categorias.length === 1) {
-      if (categorias[0].includes('papeleria')) {
-        etiqueta = 'Compra: Papelería';
-      } else {
-        etiqueta = 'Compra: Robótica / Cons.';
-      }
-    } else if (categorias.length > 1) {
-      etiqueta = 'Compra: Robótica y Papelería';
-    } else {
-      const textoItems = items.map((it) => (it.nombre_item || it.nombre_sugerido || '')).join(' ').toLowerCase();
-      const textoCompleto = (textoItems + ' ' + (solicitud.motivo || '')).toLowerCase();
-      if (textoCompleto.includes('papel') || textoCompleto.includes('resma') || textoCompleto.includes('cuaderno') || textoCompleto.includes('cartulina')) {
-        etiqueta = 'Compra: Papelería';
-      } else {
-        etiqueta = 'Compra: Robótica / Cons.';
-      }
+    const textoItems = items.map((it) => (it.nombre_item || it.nombre_sugerido || it.nombre || '')).join(' ').toLowerCase();
+    const textoCompleto = `${textoItems} ${solicitud.motivo || ''} ${solicitud.justificacion || ''}`.toLowerCase();
+
+    // 1. Equipos de Electrónica
+    const esElectronica = rawCategories.some(
+      (c) => c.includes('electron') || c.includes('electrónica')
+    ) || (
+      rawCategories.length === 0 && (
+        textoCompleto.includes('electron') ||
+        textoCompleto.includes('circuito') ||
+        textoCompleto.includes('arduino') ||
+        textoCompleto.includes('sensor') ||
+        textoCompleto.includes('cautin') ||
+        textoCompleto.includes('multimetro') ||
+        textoCompleto.includes('servomotor')
+      )
+    );
+
+    // 2. Papelería
+    const esPapeleria = !esElectronica && (
+      rawCategories.some(
+        (c) => c.includes('papel') || c.includes('papelería')
+      ) || (
+        rawCategories.length === 0 && (
+          textoCompleto.includes('papel') ||
+          textoCompleto.includes('resma') ||
+          textoCompleto.includes('cuaderno') ||
+          textoCompleto.includes('cartulina') ||
+          textoCompleto.includes('marcador')
+        )
+      )
+    );
+
+    if (esElectronica) {
+      return (
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all bg-[#0284c7]/10 text-[#0284c7] border-[#0284c7]/30 dark:bg-[#0284c7]/20 dark:text-[#38bdf8] dark:border-[#0284c7]/40 shadow-2xs"
+          style={{ whiteSpace: 'nowrap' }}
+          title="Compra sugerida: Equipos de Electrónica"
+        >
+          <span
+            className="inline-flex items-center justify-center flex-shrink-0 w-[18px] h-[18px] rounded-full bg-[#0284c7] text-white shadow-xs"
+            aria-hidden="true"
+          >
+            <Cpu size={11} strokeWidth={2.4} />
+          </span>
+          <span className="truncate">🛒 Compra: Electrónica</span>
+        </span>
+      );
     }
 
-    if (etiqueta.includes('Papelería')) {
-      return <ProgramBadgeIcon program="teachlabs" variant="badge" label={`🛒 ${etiqueta}`} />;
+    if (esPapeleria) {
+      return <ProgramBadgeIcon program="teachlabs" variant="badge" label="🛒 Compra: Papelería" />;
     }
-    return <ProgramBadgeIcon program="robotica" variant="badge" label={`🛒 ${etiqueta}`} />;
+
+    // 3. Consumibles de Robótica (por defecto)
+    return <ProgramBadgeIcon program="robotica" variant="badge" label="🛒 Compra: Robótica / Cons." />;
   }
 
   if (tipo.includes('CONSUMIBLE')) {
@@ -187,6 +225,9 @@ export default function MiPanelUsuarioView({
                 ...s,
                 items: s.items_solicitud || [],
                 tipo: s.tipo_solicitud || 'PRESTAMO_EQUIPO',
+                proyecto_steam: s.proyecto_steam || s.proyecto_steam_id || s.proyecto || '',
+                proyecto_steam_id: s.proyecto_steam_id || s.proyecto_steam || '',
+                proyecto: s.proyecto || s.proyecto_steam || '',
               }));
             }
           } catch (_) {}
@@ -199,7 +240,16 @@ export default function MiPanelUsuarioView({
 
             if (!cErr && Array.isArray(cData)) {
               compList = cData.map((sc) => {
-                const catDestino = String(sc.categoria_destino || 'consumibles').toLowerCase();
+                const catDestino = String(sc.categoria_destino || sc.categoria || 'consumibles').toLowerCase();
+                let catNormalizada = 'consumibles';
+                if (catDestino.includes('electron') || catDestino.includes('electrónica')) {
+                  catNormalizada = 'electronica';
+                } else if (catDestino.includes('papel') || catDestino.includes('papelería')) {
+                  catNormalizada = 'papeleria';
+                }
+                const fRad = sc.creado_en || sc.created_at || '';
+                const proy = sc.proyecto_steam || sc.proyecto_steam_id || sc.proyecto || '';
+
                 const singleItem = {
                   id: sc.id,
                   solicitud_id: sc.id,
@@ -207,13 +257,26 @@ export default function MiPanelUsuarioView({
                   item_id: sc.item_inventario_id || null,
                   nombre_item: sc.nombre_producto || 'Producto sugerido',
                   nombre_sugerido: sc.nombre_producto || 'Producto sugerido',
-                  categoria_sugerida: catDestino,
-                  categoria_destino: catDestino,
+                  categoria_sugerida: sc.categoria_destino || catNormalizada,
+                  categoria_destino: sc.categoria_destino || catNormalizada,
                   url_compra: sc.url_compra || null,
                   precio_estimado: Number(sc.precio_estimado) || 0,
-                  cantidad: Number(sc.cantidad) || 1,
+                  cantidad: Number(sc.cantidad || sc.cantidad_solicitada) || 1,
                   ingresado_inventario: Boolean(sc.ingresado_inventario),
                 };
+
+                let itemsList = [];
+                if (Array.isArray(sc.items) && sc.items.length > 0) {
+                  itemsList = sc.items;
+                } else if (typeof sc.items === 'string') {
+                  try {
+                    const parsed = JSON.parse(sc.items);
+                    if (Array.isArray(parsed) && parsed.length > 0) itemsList = parsed;
+                  } catch (_) {}
+                }
+                if (itemsList.length === 0) {
+                  itemsList = [singleItem];
+                }
 
                 return {
                   id: sc.id,
@@ -223,7 +286,11 @@ export default function MiPanelUsuarioView({
                   tipo: 'SUGERENCIA_COMPRA',
                   tipo_solicitud: 'SUGERENCIA_COMPRA',
                   tipoSolicitud: 'SUGERENCIA_COMPRA',
-                  categoria_destino: catDestino,
+                  categoria_destino: sc.categoria_destino || catNormalizada,
+                  categoria: sc.categoria || sc.categoria_destino || catNormalizada,
+                  proyecto_steam: proy,
+                  proyecto_steam_id: sc.proyecto_steam_id || proy,
+                  proyecto: proy,
                   fecha_requerida: sc.fecha_requerida,
                   fecha_devolucion_estimada: sc.fecha_requerida,
                   motivo: sc.justificacion || 'Sugerencia de compra',
@@ -233,12 +300,12 @@ export default function MiPanelUsuarioView({
                   ingresado_inventario: Boolean(sc.ingresado_inventario),
                   item_inventario_id: sc.item_inventario_id || null,
                   observaciones_admin: sc.observaciones_admin || null,
-                  creado_en: sc.creado_en,
-                  created_at: sc.creado_en,
-                  fecha_radicado: sc.creado_en ? String(sc.creado_en).slice(0, 10) : '',
+                  creado_en: fRad,
+                  created_at: fRad,
+                  fecha_radicado: fRad ? String(fRad).slice(0, 10) : '',
                   is_solicitud_compra: true,
-                  items: [singleItem],
-                  items_solicitud: [singleItem],
+                  items: itemsList,
+                  items_solicitud: itemsList,
                 };
               });
             }
@@ -1152,7 +1219,24 @@ export default function MiPanelUsuarioView({
                             {fmtDate(fechaRad)}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
-                            {renderTipoSolicitud(sol)}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '3px' }}>
+                              {renderTipoSolicitud(sol)}
+                              {(() => {
+                                const rawProy = sol.proyecto_steam || sol.proyecto_steam_id || sol.proyecto;
+                                const nomProy = normalizeProyectoNombre(rawProy);
+                                if (!nomProy) return null;
+                                return (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-semibold bg-slate-100 dark:bg-slate-800 text-[#013a52] dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                                    title={`Proyecto STEAM vinculado: ${nomProy}`}
+                                    style={{ maxWidth: '210px' }}
+                                  >
+                                    <span style={{ color: '#84CC16', fontWeight: 800 }}>•</span>
+                                    <span className="truncate">{nomProy}</span>
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           </td>
                           <td style={{ padding: '10px 12px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -1199,11 +1283,6 @@ export default function MiPanelUsuarioView({
                             <div style={{ maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text, #f8fafc)' }}>
                               {sol.motivo || '—'}
                             </div>
-                            {sol.proyecto_steam_id && (
-                              <div style={{ fontSize: '11px', color: '#84CC16', fontWeight: 600, marginTop: '2px' }}>
-                                Proy: {sol.proyecto_steam_id}
-                              </div>
-                            )}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                             {(() => {

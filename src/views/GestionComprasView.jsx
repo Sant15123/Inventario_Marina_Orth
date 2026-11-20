@@ -199,7 +199,7 @@ export const getSolSede = (sol) => {
 export const getSolProyecto = (sol) => {
   if (!sol) return 'Robótica Educativa';
   const val = sol.proyecto_steam || sol.proyecto_steam_id || sol.proyecto;
-  if (val && String(val).trim()) return String(val).trim();
+  if (val && String(val).trim()) return normalizeProyectoNombre(String(val).trim());
   return 'Robótica Educativa';
 };
 
@@ -2151,7 +2151,7 @@ export default function GestionComprasView({
                     {/* 3. Proyecto STEAM */}
                     <td style={{ width: '14%', minWidth: '120px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
-                        <ProgramAreaBadge area={solProyecto} size="sm" />
+                        <ProgramAreaBadge area={solProyecto} label={solProyecto} size="sm" />
                       </div>
                     </td>
 
