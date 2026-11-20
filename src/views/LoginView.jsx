@@ -12,66 +12,8 @@ import {
   AlertCircle,
   HelpCircle,
   X,
-  Sparkles,
-  ShieldCheck,
-  Compass,
-  PackageCheck,
-  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-const DEMO_ROLES = [
-  {
-    role: 'Administrador',
-    key: 'administrador',
-    nombre: 'Santiago Ortiz',
-    email: 'santiago.ortiz@fmo.org',
-    pass: 'admin123',
-    color: '#013a52',
-    bgLight: '#e0f2fe',
-    Icon: ShieldCheck,
-  },
-  {
-    role: 'Coordinador',
-    key: 'coordinador',
-    nombre: 'Carolina Gómez',
-    email: 'carolina.gomez@fmo.org',
-    pass: 'coord123',
-    color: '#2cacd0',
-    bgLight: '#e0f7fa',
-    Icon: Compass,
-  },
-  {
-    role: 'Supervisor',
-    key: 'supervisor',
-    nombre: 'Luisa Fernanda',
-    email: 'luisa.fernanda@fmo.org',
-    pass: 'super123',
-    color: '#7b2cbf',
-    bgLight: '#f3e8ff',
-    Icon: Eye,
-  },
-  {
-    role: 'Operador',
-    key: 'operador',
-    nombre: 'Carlos Mendoza',
-    email: 'carlos.mendoza@fmo.org',
-    pass: 'oper123',
-    color: '#0a3c63',
-    bgLight: '#e0e7ff',
-    Icon: PackageCheck,
-  },
-  {
-    role: 'Docente / Usuario',
-    key: 'usuario',
-    nombre: 'Profesor STEAM',
-    email: 'profesor.steam@fmo.org',
-    pass: 'docente123',
-    color: '#84cc16',
-    bgLight: '#ecfccb',
-    Icon: GraduationCap,
-  },
-];
 
 export default function LoginView({ theme = 'light', onToggleTheme }) {
   const navigate = useNavigate();
@@ -164,36 +106,6 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
         err.response?.data?.message ||
         err.message ||
         'Credenciales incorrectas. Verifica tu correo o documento y contraseña.'
-      );
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  // Manejador de selección de credenciales demo (1 clic)
-  const handleSelectDemo = async (demo) => {
-    setErrorMsg('');
-    setIdentificador(demo.email);
-    setPassword(demo.pass);
-    setCargando(true);
-
-    try {
-      const result = await login({
-        identifier: demo.email,
-        password: demo.pass,
-        remember: true,
-      });
-
-      if (result?.success) {
-        const dest = demo.key === 'usuario' ? '/mi-panel' : '/';
-        navigate(dest, { replace: true });
-      }
-    } catch (err) {
-      console.error('Error al iniciar sesión con cuenta demo:', err);
-      setErrorMsg(
-        err.response?.data?.message ||
-        err.message ||
-        'Error al iniciar sesión con la cuenta demo seleccionada.'
       );
     } finally {
       setCargando(false);
@@ -631,89 +543,6 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
             )}
           </button>
         </form>
-
-        {/* 6. Sección Oficial de Acceso Rápido Demo (1 Clic) - 5 Roles */}
-        <div style={{ marginTop: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.75rem', gap: '0.5rem' }}>
-            <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#334155' : '#E2E8F0' }} />
-            <span
-              style={{
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: isDark ? '#94A3B8' : '#64748B',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-              }}
-            >
-              <Sparkles size={12} className="text-[#84CC16]" /> Credenciales Demo (1 Clic)
-            </span>
-            <div style={{ flex: 1, height: '1px', backgroundColor: isDark ? '#334155' : '#E2E8F0' }} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '7px' }}>
-            {DEMO_ROLES.map((demo, idx) => {
-              const Icon = demo.Icon;
-              const isLast = idx === DEMO_ROLES.length - 1;
-              return (
-                <button
-                  key={demo.key}
-                  type="button"
-                  onClick={() => handleSelectDemo(demo)}
-                  disabled={cargando}
-                  style={{
-                    gridColumn: isLast ? 'span 2' : 'span 1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '7px 9px',
-                    borderRadius: '10px',
-                    border: isDark ? '1px solid #1E293B' : '1px solid #E2E8F0',
-                    backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
-                    cursor: cargando ? 'not-allowed' : 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = demo.color;
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = isDark ? '#1E293B' : '#E2E8F0';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '7px',
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : demo.bgLight,
-                      color: demo.color,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon size={15} />
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: isDark ? '#F1F5F9' : '#0F172A', whiteSpace: 'nowrap' }}>
-                      {demo.role}
-                    </div>
-                    <div style={{ fontSize: '10px', color: isDark ? '#94A3B8' : '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {demo.nombre}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* Modal Informativo de Recuperación de Contraseña */}
