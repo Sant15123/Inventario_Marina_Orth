@@ -30,6 +30,7 @@
 
   --text: #ffffff;
   /* Blanco puro */
+  --text-h: #ffffff;
   --text-dim: #cbd5e1;
   --text-muted: #94a3b8;
 
@@ -81,6 +82,7 @@
   --line-strong: #cbd5e1;
 
   --text: #013a52;
+  --text-h: #013a52;
   --text-dim: #6d6e71;
   --text-muted: #6d6e71;
 
@@ -5504,4 +5506,31 @@ button {
   border-color: #abd037 !important;
   box-shadow: 0 4px 16px rgba(171, 208, 55, 0.28) !important;
   background: var(--surface-hover);
+}
+
+[data-theme="light"] .compras-step-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .compras-step-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .compras-step-card.active {
+  background: #f8fafc;
+  border-color: #abd037 !important;
+}
+
+[data-theme="dark"] .compras-step-card,
+html.dark .compras-step-card {
+  background: #062838;
+  border-color: #0d4661;
+}
+
+[data-theme="dark"] .compras-step-card.active,
+html.dark .compras-step-card.active {
+  background: #093448;
+  border-color: #abd037 !important;
 }

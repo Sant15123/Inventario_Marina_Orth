@@ -385,25 +385,258 @@ export default function GestionComprasView({
   const [compraNotas, setCompraNotas] = useState('');
   const [compraSubmitting, setCompraSubmitting] = useState(false);
 
-  // 1. Carga inicial de solicitudes desde Supabase o localStorage con respaldo DEMO
+  // Identificador estricto de solicitudes de compra (compatible con solicitudes_compra y solicitudes_inventario)
+  const esSolicitudCompra = (s) => {
+    if (!s) return false;
+    const tipo = String(s.tipo_solicitud || s.tipo || s.tipoSolicitud || '').toUpperCase().trim();
+    const items = Array.isArray(s.items_solicitud) && s.items_solicitud.length > 0
+      ? s.items_solicitud
+      : (Array.isArray(s.items) && s.items.length > 0 ? s.items : []);
+    return (
+      tipo === 'SUGERENCIA_COMPRA' ||
+      tipo === 'COMPRA' ||
+      tipo.includes('COMPRA') ||
+      Boolean(s.is_solicitud_compra) ||
+      items.some((i) => i.categoria_sugerida || i.url_compra || i.nombre_sugerido || String(i.tipo_item || '').toLowerCase() === 'compra') ||
+      (s.motivo && (
+        s.motivo.toLowerCase().includes('compra') ||
+        s.motivo.toLowerCase().includes('batería') ||
+        s.motivo.toLowerCase().includes('bateria') ||
+        s.motivo.toLowerCase().includes('lipo')
+      )) ||
+      (s.justificacion && s.justificacion.toLowerCase().includes('compra'))
+    );
+  };
+
+  // 1. Carga unificada de compras desde Supabase (solicitudes_compra + solicitudes_inventario con items)
   const cargarSolicitudes = async () => {
     try {
       setLoading(true);
-      const data = await inventoryApi.getSolicitudesCompra();
-      if (Array.isArray(data) && data.length > 0) {
-        setSolicitudes(data);
-      } else {
-        // Inicializar desde localStorage o fallback semilla
-        const cached = localStorage.getItem('siga_solicitudes_compra');
-        if (cached) {
+      let dataFinal = [];
+
+      try {
+        const { supabase } = await import('../services/supabase');
+        if (supabase) {
+          let invList = [];
+          let compList = [];
+
+          // 1.1 Consultar solicitudes_inventario con sus items_solicitud
           try {
-            setSolicitudes(JSON.parse(cached));
-          } catch {
-            setSolicitudes(SOLICITUDES_COMPRA_DEMO);
+            const { data: invData, error: invErr } = await supabase
+              .from('solicitudes_inventario')
+              .select(`
+                *,
+                items_solicitud (
+                  id,
+                  cantidad,
+                  item_id,
+                  nombre_sugerido,
+                  categoria_sugerida,
+                  url_compra,
+                  precio_estimado,
+                  ingresado_inventario
+                )
+              `)
+              .order('creado_en', { ascending: false });
+
+            if (!invErr && Array.isArray(invData)) {
+              invList = invData
+                .filter(esSolicitudCompra)
+                .map((s) => {
+                  const solItems = (s.items_solicitud || []).map((it) => ({
+                    id: it.id,
+                    nombre: it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido',
+                    nombre_sugerido: it.nombre_sugerido || it.nombre_item || it.nombre || 'Producto sugerido',
+                    cantidad_solicitada: Number(it.cantidad) || 1,
+                    cantidad: Number(it.cantidad) || 1,
+                    cantidad_aprobada: it.cantidad_aprobada !== undefined ? it.cantidad_aprobada : Number(it.cantidad) || 1,
+                    categoria_sugerida: it.categoria_sugerida || 'Consumibles',
+                    precio_estimado_unitario: Number(it.precio_estimado) || 0,
+                    precio_estimado: Number(it.precio_estimado) || 0,
+                    url_compra: it.url_compra || '',
+                    ingresado_inventario: Boolean(it.ingresado_inventario),
+                  }));
+
+                  const itemsFinales = solItems.length > 0 ? solItems : (
+                    s.motivo || s.justificacion ? [{
+                      id: `${s.id}-item`,
+                      nombre: s.motivo || s.justificacion || 'Insumo pedagógico sugerido',
+                      nombre_sugerido: s.motivo || s.justificacion || 'Insumo pedagógico sugerido',
+                      cantidad_solicitada: 1,
+                      cantidad_aprobada: 1,
+                      precio_estimado_unitario: 0,
+                      categoria_sugerida: 'Consumibles',
+                      url_compra: '',
+                      ingresado_inventario: false,
+                    }] : []
+                  );
+
+                  return {
+                    ...s,
+                    is_solicitud_compra: false,
+                    radicado: s.radicado || s.id,
+                    solicitante_nombre: s.solicitante_nombre || s.usuario_nombre || s.nombre || 'Docente FMO',
+                    usuario_nombre: s.usuario_nombre || s.solicitante_nombre || s.nombre || 'Docente FMO',
+                    solicitante_correo: s.solicitante_correo || s.usuario_correo || s.correo || '',
+                    solicitante_documento: s.solicitante_documento || s.usuario_documento || s.documento || '',
+                    solicitante_telefono: s.solicitante_telefono || s.usuario_telefono || s.telefono || '',
+                    sede: s.sede_destino || s.sede || 'Medellín',
+                    sede_destino: s.sede_destino || s.sede || 'Medellín',
+                    proyecto_steam: s.proyecto_steam || s.proyecto_steam_id || s.proyecto || 'Robótica',
+                    justificacion: s.justificacion || s.motivo || 'Requerimiento pedagógico institucional STEAM',
+                    motivo: s.motivo || s.justificacion || 'Requerimiento pedagógico institucional STEAM',
+                    fecha_requerida: s.fecha_requerida || s.fecha_devolucion_estimada || s.creado_en || today(),
+                    items: itemsFinales,
+                    items_solicitud: itemsFinales,
+                    tipo: s.tipo_solicitud || 'SUGERENCIA_COMPRA',
+                    tipo_solicitud: s.tipo_solicitud || 'SUGERENCIA_COMPRA',
+                  };
+                });
+            }
+          } catch (eInv) {
+            console.warn('Aviso consulta solicitudes_inventario en GestionCompras:', eInv.message);
           }
+
+          // 1.2 Consultar tabla dedicada solicitudes_compra
+          try {
+            const { data: cData, error: cErr } = await supabase
+              .from('solicitudes_compra')
+              .select('*')
+              .order('creado_en', { ascending: false });
+
+            if (!cErr && Array.isArray(cData)) {
+              compList = cData.map((sc) => {
+                const catDestino = String(sc.categoria_destino || 'consumibles').toLowerCase();
+                const singleItem = {
+                  id: sc.id,
+                  solicitud_id: sc.id,
+                  tipo_item: 'compra',
+                  item_id: sc.item_inventario_id || null,
+                  nombre: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
+                  nombre_item: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
+                  nombre_sugerido: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
+                  categoria_sugerida: catDestino,
+                  categoria_destino: catDestino,
+                  url_compra: sc.url_compra || '',
+                  precio_estimado_unitario: Number(sc.precio_estimado) || 0,
+                  precio_estimado: Number(sc.precio_estimado) || 0,
+                  cantidad_solicitada: Number(sc.cantidad) || 1,
+                  cantidad_aprobada: sc.cantidad_aprobada !== undefined ? sc.cantidad_aprobada : Number(sc.cantidad) || 1,
+                  cantidad: Number(sc.cantidad) || 1,
+                  ingresado_inventario: Boolean(sc.ingresado_inventario),
+                };
+
+                let itemsList = [];
+                if (Array.isArray(sc.items) && sc.items.length > 0) {
+                  itemsList = sc.items.map((it, idx) => ({
+                    id: it.id || `${sc.id}-${idx}`,
+                    nombre: it.nombre || it.nombre_sugerido || it.nombre_producto || it.nombre_item || sc.nombre_producto || 'Producto sugerido',
+                    nombre_sugerido: it.nombre_sugerido || it.nombre || it.nombre_producto || sc.nombre_producto || 'Producto sugerido',
+                    cantidad_solicitada: Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
+                    cantidad_aprobada: it.cantidad_aprobada !== undefined ? Number(it.cantidad_aprobada) : Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
+                    precio_estimado_unitario: Number(it.precio_estimado_unitario || it.precio_estimado || sc.precio_estimado) || 0,
+                    categoria_sugerida: it.categoria_sugerida || sc.categoria_destino || 'Consumibles',
+                    url_compra: it.url_compra || sc.url_compra || '',
+                    ingresado_inventario: Boolean(it.ingresado_inventario || sc.ingresado_inventario),
+                  }));
+                } else if (typeof sc.items === 'string') {
+                  try {
+                    const parsed = JSON.parse(sc.items);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                      itemsList = parsed.map((it, idx) => ({
+                        id: it.id || `${sc.id}-${idx}`,
+                        nombre: it.nombre || it.nombre_sugerido || it.nombre_producto || it.nombre_item || sc.nombre_producto || 'Producto sugerido',
+                        nombre_sugerido: it.nombre_sugerido || it.nombre || it.nombre_producto || sc.nombre_producto || 'Producto sugerido',
+                        cantidad_solicitada: Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
+                        cantidad_aprobada: it.cantidad_aprobada !== undefined ? Number(it.cantidad_aprobada) : Number(it.cantidad_solicitada || it.cantidad || sc.cantidad) || 1,
+                        precio_estimado_unitario: Number(it.precio_estimado_unitario || it.precio_estimado || sc.precio_estimado) || 0,
+                        categoria_sugerida: it.categoria_sugerida || sc.categoria_destino || 'Consumibles',
+                        url_compra: it.url_compra || sc.url_compra || '',
+                        ingresado_inventario: Boolean(it.ingresado_inventario || sc.ingresado_inventario),
+                      }));
+                    }
+                  } catch (_) {}
+                }
+
+                if (itemsList.length === 0) {
+                  itemsList = [singleItem];
+                }
+
+                return {
+                  id: sc.id,
+                  radicado: sc.radicado || sc.numero_orden || sc.id,
+                  usuario_id: sc.usuario_id,
+                  usuario_nombre: sc.usuario_nombre || sc.solicitante_nombre || 'Docente FMO',
+                  solicitante_nombre: sc.solicitante_nombre || sc.usuario_nombre || 'Docente FMO',
+                  solicitante_correo: sc.solicitante_correo || sc.usuario_correo || sc.correo || '',
+                  solicitante_documento: sc.solicitante_documento || '',
+                  solicitante_telefono: sc.solicitante_telefono || '',
+                  sede: sc.sede || sc.sede_destino || 'Medellín',
+                  sede_destino: sc.sede_destino || sc.sede || 'Medellín',
+                  proyecto_steam: sc.proyecto_steam || sc.proyecto_steam_id || sc.proyecto || 'Robótica',
+                  tipo: 'SUGERENCIA_COMPRA',
+                  tipo_solicitud: 'SUGERENCIA_COMPRA',
+                  tipoSolicitud: 'SUGERENCIA_COMPRA',
+                  categoria_destino: catDestino,
+                  fecha_requerida: sc.fecha_requerida || sc.creado_en || today(),
+                  fecha_devolucion_estimada: sc.fecha_requerida || sc.creado_en || today(),
+                  motivo: sc.justificacion || 'Sugerencia de compra',
+                  justificacion: sc.justificacion || 'Sugerencia de compra',
+                  estado: sc.estado || 'PENDIENTE',
+                  prioridad: sc.prioridad || 'Media',
+                  ingresado_inventario: Boolean(sc.ingresado_inventario),
+                  item_inventario_id: sc.item_inventario_id || null,
+                  observaciones_admin: sc.observaciones_admin || null,
+                  observaciones_coordinador: sc.observaciones_coordinador || null,
+                  evaluado_por: sc.evaluado_por || null,
+                  fecha_evaluacion: sc.fecha_evaluacion || null,
+                  proveedor: sc.proveedor || '',
+                  numero_factura_orden: sc.numero_factura_orden || '',
+                  fecha_compra: sc.fecha_compra || null,
+                  valor_final_compra: Number(sc.valor_final_compra || sc.valor_total_compra) || 0,
+                  valor_estimado_compra: Number(sc.valor_estimado_compra) || (Number(sc.precio_estimado) * Number(sc.cantidad)) || 0,
+                  observaciones_compra: sc.observaciones_compra || '',
+                  creado_en: sc.creado_en,
+                  created_at: sc.creado_en,
+                  fecha_radicado: sc.creado_en ? String(sc.creado_en).slice(0, 10) : '',
+                  is_solicitud_compra: true,
+                  items: itemsList,
+                  items_solicitud: itemsList,
+                };
+              });
+            }
+          } catch (eComp) {
+            console.warn('Aviso consulta solicitudes_compra en GestionCompras:', eComp.message);
+          }
+
+          dataFinal = [...compList, ...invList].sort(
+            (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
+          );
+        }
+      } catch (errSup) {
+        console.warn('Aviso consulta directa Supabase en GestionComprasView:', errSup.message);
+      }
+
+      if (dataFinal.length > 0) {
+        setSolicitudes(dataFinal);
+        syncLocal(dataFinal);
+      } else {
+        // Fallback a API o localStorage o DEMO
+        const apiData = await inventoryApi.getSolicitudesCompra();
+        if (Array.isArray(apiData) && apiData.length > 0) {
+          setSolicitudes(apiData);
         } else {
-          setSolicitudes(SOLICITUDES_COMPRA_DEMO);
-          localStorage.setItem('siga_solicitudes_compra', JSON.stringify(SOLICITUDES_COMPRA_DEMO));
+          const cached = localStorage.getItem('siga_solicitudes_compra');
+          if (cached) {
+            try {
+              setSolicitudes(JSON.parse(cached));
+            } catch {
+              setSolicitudes(SOLICITUDES_COMPRA_DEMO);
+            }
+          } else {
+            setSolicitudes(SOLICITUDES_COMPRA_DEMO);
+            localStorage.setItem('siga_solicitudes_compra', JSON.stringify(SOLICITUDES_COMPRA_DEMO));
+          }
         }
       }
     } catch (err) {
@@ -414,18 +647,75 @@ export default function GestionComprasView({
     }
   };
 
+  // Suscripción Realtime a cambios en solicitudes para sincronización inmediata
   useEffect(() => {
     cargarSolicitudes();
 
-    const handleSolicitudCreada = (e) => {
-      const nueva = e.detail;
-      if (nueva) {
-        cargarSolicitudes();
+    let canal = null;
+    (async () => {
+      try {
+        const { supabase } = await import('../services/supabase');
+        if (supabase) {
+          canal = supabase
+            .channel('cambios-compras-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'solicitudes_compra' }, () => {
+              cargarSolicitudes();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'solicitudes_inventario' }, () => {
+              cargarSolicitudes();
+            })
+            .subscribe();
+        }
+      } catch (e) {
+        console.warn('Aviso suscripción Realtime en compras:', e);
       }
+    })();
+
+    const handleSolicitudCambio = () => cargarSolicitudes();
+    window.addEventListener('siga:solicitud_creada', handleSolicitudCambio);
+    window.addEventListener('siga:solicitud_resuelta', handleSolicitudCambio);
+
+    return () => {
+      if (canal) {
+        import('../services/supabase')
+          .then(({ supabase }) => {
+            if (supabase) supabase.removeChannel(canal);
+          })
+          .catch(() => {});
+      }
+      window.removeEventListener('siga:solicitud_creada', handleSolicitudCambio);
+      window.removeEventListener('siga:solicitud_resuelta', handleSolicitudCambio);
     };
-    window.addEventListener('siga:solicitud_creada', handleSolicitudCreada);
-    return () => window.removeEventListener('siga:solicitud_creada', handleSolicitudCreada);
   }, []);
+
+  // Persistir actualización en la tabla adecuada de Supabase (solicitudes_compra o solicitudes_inventario)
+  const persistirCambioSolicitud = async (sol, patch) => {
+    try {
+      const { supabase } = await import('../services/supabase');
+      if (supabase) {
+        if (sol.is_solicitud_compra !== false) {
+          const { error } = await supabase
+            .from('solicitudes_compra')
+            .update(patch)
+            .eq('id', sol.id);
+          if (error) console.warn('Aviso persistencia solicitudes_compra:', error.message);
+        } else {
+          const invPatch = {
+            estado: patch.estado,
+            observaciones_admin: patch.observaciones_coordinador || patch.observaciones_compra || null,
+          };
+          const { error } = await supabase
+            .from('solicitudes_inventario')
+            .update(invPatch)
+            .eq('id', sol.id);
+          if (error) console.warn('Aviso persistencia solicitudes_inventario:', error.message);
+        }
+      }
+    } catch (e) {
+      console.warn('Aviso persistencia Supabase compras:', e.message);
+    }
+    return inventoryApi.updateSolicitudCompra(sol.id, patch);
+  };
 
   // Guardar en caché local ante cada cambio
   const syncLocal = (nuevas) => {
@@ -561,7 +851,7 @@ export default function GestionComprasView({
         items: itemsActualizados,
       };
 
-      await inventoryApi.updateSolicitudCompra(solicitudAEvaluar.id, patch);
+      await persistirCambioSolicitud(solicitudAEvaluar, patch);
 
       const actualizadas = solicitudes.map((s) => (s.id === solicitudAEvaluar.id ? { ...s, ...patch } : s));
       syncLocal(actualizadas);
@@ -613,7 +903,7 @@ export default function GestionComprasView({
         observaciones_compra: compraNotas.trim(),
       };
 
-      await inventoryApi.updateSolicitudCompra(solicitudAComprar.id, patch);
+      await persistirCambioSolicitud(solicitudAComprar, patch);
 
       const actualizadas = solicitudes.map((s) => (s.id === solicitudAComprar.id ? { ...s, ...patch } : s));
       syncLocal(actualizadas);
@@ -635,7 +925,7 @@ export default function GestionComprasView({
   const handleIngresarAInventario = async (sol) => {
     try {
       const patch = { ingresado_inventario: true };
-      await inventoryApi.updateSolicitudCompra(sol.id, patch);
+      await persistirCambioSolicitud(sol, patch);
 
       const actualizadas = solicitudes.map((s) => (s.id === sol.id ? { ...s, ingresado_inventario: true } : s));
       syncLocal(actualizadas);
@@ -953,11 +1243,11 @@ export default function GestionComprasView({
             >
               {conteos.pendientes}
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
+            <div className="card-title" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
               Solicitud & Evaluación
             </div>
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '6px' }}>
+          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '4px' }}>
             Revisión técnica y cruce con bodega
           </div>
         </div>
@@ -1035,11 +1325,11 @@ export default function GestionComprasView({
             >
               {conteos.aprobadas}
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
+            <div className="card-title" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
               Aprobación & Adquisición
             </div>
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '6px' }}>
+          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '4px' }}>
             Órdenes autorizadas pendientes de factura
           </div>
         </div>
@@ -1117,11 +1407,11 @@ export default function GestionComprasView({
             >
               {conteos.compradas}
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
+            <div className="card-title" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
               Compra & Recepción
             </div>
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '6px' }}>
+          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '4px' }}>
             Ingreso al inventario oficial FMO
           </div>
         </div>
@@ -1411,8 +1701,8 @@ export default function GestionComprasView({
               >
                 <th
                   style={{
-                    width: '13%',
-                    minWidth: '115px',
+                    width: '12%',
+                    minWidth: '110px',
                     padding: '12px 14px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -1426,8 +1716,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '17%',
-                    minWidth: '150px',
+                    width: '16%',
+                    minWidth: '140px',
                     padding: '12px 12px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -1441,8 +1731,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '14%',
-                    minWidth: '130px',
+                    width: '13%',
+                    minWidth: '120px',
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontSize: '11.5px',
@@ -1456,8 +1746,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '20%',
-                    minWidth: '170px',
+                    width: '18%',
+                    minWidth: '150px',
                     padding: '12px 12px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -1471,8 +1761,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '16%',
-                    minWidth: '165px',
+                    width: '13%',
+                    minWidth: '125px',
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontSize: '11.5px',
@@ -1486,30 +1776,32 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '10%',
-                    minWidth: '110px',
-                    padding: '12px 10px',
+                    width: '14%',
+                    minWidth: '135px',
+                    padding: '12px 14px',
                     textAlign: 'left',
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   COMPRA & FACTURA
                 </th>
                 <th
                   style={{
-                    width: '10%',
-                    minWidth: '115px',
-                    padding: '12px 12px',
+                    width: '14%',
+                    minWidth: '135px',
+                    padding: '12px 14px',
                     textAlign: 'center',
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   ACCIONES
@@ -1544,7 +1836,7 @@ export default function GestionComprasView({
                     }}
                   >
                     {/* 1. Radicado / Fecha */}
-                    <td style={{ width: '13%', minWidth: '110px', padding: '12px 14px', verticalAlign: 'middle' }}>
+                    <td style={{ width: '12%', minWidth: '110px', padding: '12px 14px', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
                         <span
                           style={{
@@ -1578,7 +1870,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 2. Solicitante & Sede */}
-                    <td style={{ width: '18%', minWidth: '150px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '16%', minWidth: '140px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
                         <strong
                           style={{
@@ -1614,14 +1906,14 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 3. Proyecto STEAM */}
-                    <td style={{ width: '14%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
+                    <td style={{ width: '13%', minWidth: '120px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
                         <ProgramAreaBadge area={solProyecto} size="sm" />
                       </div>
                     </td>
 
                     {/* 4. Detalle de Ítems */}
-                    <td style={{ width: '20%', minWidth: '165px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '18%', minWidth: '150px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {primerItem ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <strong
@@ -1656,7 +1948,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 5. Estado */}
-                    <td style={{ width: '15%', minWidth: '150px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '13%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
                         <span
                           style={{
@@ -1683,7 +1975,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 6. Compra & Factura */}
-                    <td style={{ width: '10%', minWidth: '115px', padding: '12px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '14%', minWidth: '135px', padding: '12px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {sol.proveedor ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <strong
@@ -1716,8 +2008,8 @@ export default function GestionComprasView({
                             color: 'var(--text-muted, #94a3b8)',
                             fontStyle: 'italic',
                             display: 'inline-block',
-                            padding: '2px 8px',
-                            borderRadius: '6px',
+                            padding: '3px 10px',
+                            borderRadius: '8px',
                             backgroundColor: 'var(--surface-2, #f1f5f9)',
                             border: '1px solid var(--line, #e2e8f0)',
                             whiteSpace: 'nowrap',
@@ -1729,8 +2021,8 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 7. Acciones */}
-                    <td style={{ width: '10%', minWidth: '115px', padding: '12px 12px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <td style={{ width: '14%', minWidth: '135px', padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         {/* Botón Ver Detalle */}
                         <button
                           type="button"
