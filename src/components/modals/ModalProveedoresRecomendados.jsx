@@ -49,7 +49,8 @@ export default function ModalProveedoresRecomendados({ isOpen, onClose }) {
       const data = await getProveedoresRecomendados();
       setProveedores(data || []);
     } catch (err) {
-      console.warn('Error cargando proveedores:', err);
+      console.error('[ModalProveedoresRecomendados] Error cargando proveedores:', err);
+      showError('Error al consultar proveedores', err?.message || 'No se pudieron cargar los proveedores desde Supabase.');
     } finally {
       setLoading(false);
     }

@@ -22,51 +22,52 @@ CREATE INDEX IF NOT EXISTS idx_proveedores_created_at ON public.proveedores_reco
 ALTER TABLE public.proveedores_recomendados ENABLE ROW LEVEL SECURITY;
 
 -- 4. Políticas de Seguridad (RLS)
--- Lectura pública / autenticada para que usuarios y docentes puedan ver la lista al solicitar compras
+-- Permitir lectura pública y autenticada (para que docentes y coordinadores consulten el catálogo)
 DROP POLICY IF EXISTS "Lectura de proveedores recomendados para todos los usuarios autenticados" ON public.proveedores_recomendados;
-CREATE POLICY "Lectura de proveedores recomendados para todos los usuarios autenticados"
+DROP POLICY IF EXISTS "proveedores_recomendados_select_all" ON public.proveedores_recomendados;
+CREATE POLICY "proveedores_recomendados_select_all"
 ON public.proveedores_recomendados
 FOR SELECT
+TO anon, authenticated
 USING (true);
 
--- Inserción permitida para Administrador y Coordinador
+-- Inserción permitida
 DROP POLICY IF EXISTS "Inserción de proveedores recomendados para admin y coordinador" ON public.proveedores_recomendados;
-CREATE POLICY "Inserción de proveedores recomendados para admin y coordinador"
+DROP POLICY IF EXISTS "proveedores_recomendados_insert_all" ON public.proveedores_recomendados;
+CREATE POLICY "proveedores_recomendados_insert_all"
 ON public.proveedores_recomendados
 FOR INSERT
+TO anon, authenticated
 WITH CHECK (true);
 
--- Actualización permitida para Administrador y Coordinador
+-- Actualización permitida
 DROP POLICY IF EXISTS "Actualización de proveedores recomendados para admin y coordinador" ON public.proveedores_recomendados;
-CREATE POLICY "Actualización de proveedores recomendados para admin y coordinador"
+DROP POLICY IF EXISTS "proveedores_recomendados_update_all" ON public.proveedores_recomendados;
+CREATE POLICY "proveedores_recomendados_update_all"
 ON public.proveedores_recomendados
 FOR UPDATE
-USING (true);
+TO anon, authenticated
+USING (true)
+WITH CHECK (true);
 
--- Eliminación permitida para Administrador y Coordinador
+-- Eliminación permitida
 DROP POLICY IF EXISTS "Eliminación de proveedores recomendados para admin y coordinador" ON public.proveedores_recomendados;
-CREATE POLICY "Eliminación de proveedores recomendados para admin y coordinador"
+DROP POLICY IF EXISTS "proveedores_recomendados_delete_all" ON public.proveedores_recomendados;
+CREATE POLICY "proveedores_recomendados_delete_all"
 ON public.proveedores_recomendados
 FOR DELETE
+TO anon, authenticated
 USING (true);
 
--- 5. Semilla inicial de Proveedores Recomendados FMO (Idempotente)
-INSERT INTO public.proveedores_recomendados (nombre, url, descripcion)
-SELECT 'Sigma Electrónica', 'https://www.sigmaelectronica.net', 'Sensores especializados, placas Arduino, microcontroladores ESP32, módulos IoT y componentes de robótica.'
-WHERE NOT EXISTS (SELECT 1 FROM public.proveedores_recomendados WHERE nombre ILIKE 'Sigma Electrónica');
-
-INSERT INTO public.proveedores_recomendados (nombre, url, descripcion)
-SELECT 'Dynamoelectronics', 'https://www.dynamoelectronics.com', 'Servomotores, kits de robótica educativa, filamento para impresión 3D, baterías LiPo y hardware electromecánico.'
-WHERE NOT EXISTS (SELECT 1 FROM public.proveedores_recomendados WHERE nombre ILIKE 'Dynamoelectronics');
-
-INSERT INTO public.proveedores_recomendados (nombre, url, descripcion)
-SELECT 'Panamericana Librería y Papelería', 'https://www.panamericana.com.co', 'Papelería institucional, resmas de papel bond, marcadores borrables, guías pedagógicas y consumibles de oficina.'
-WHERE NOT EXISTS (SELECT 1 FROM public.proveedores_recomendados WHERE nombre ILIKE 'Panamericana%');
-
-INSERT INTO public.proveedores_recomendados (nombre, url, descripcion)
-SELECT 'Homecenter Colombia', 'https://www.homecenter.com.co', 'Cajas organizadoras plásticas, herramientas de taller, cintas, tornillería y materiales de mantenimiento ligero.'
-WHERE NOT EXISTS (SELECT 1 FROM public.proveedores_recomendados WHERE nombre ILIKE 'Homecenter%');
-
-INSERT INTO public.proveedores_recomendados (nombre, url, descripcion)
-SELECT 'MercadoLibre Colombia', 'https://www.mercadolibre.com.co', 'Catálogo multirubro con envíos directos para insumos pedagógicos, repuestos electrónicos y tecnología general.'
-WHERE NOT EXISTS (SELECT 1 FROM public.proveedores_recomendados WHERE nombre ILIKE 'MercadoLibre%');
+-- 5. Semilla inicial opcional (solo se inserta si la tabla está completamente vacía)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM public.proveedores_recomendados LIMIT 1) THEN
+        INSERT INTO public.proveedores_recomendados (nombre, url, descripcion) VALUES
+        ('Sigma Electrónica', 'https://www.sigmaelectronica.net', 'Sensores especializados, placas Arduino, microcontroladores ESP32, módulos IoT y componentes de robótica.'),
+        ('Dynamoelectronics', 'https://www.dynamoelectronics.com', 'Servomotores, kits de robótica educativa, filamento para impresión 3D, baterías LiPo y hardware electromecánico.'),
+        ('Panamericana Librería y Papelería', 'https://www.panamericana.com.co', 'Papelería institucional, resmas de papel bond, marcadores borrables, guías pedagógicas y consumibles de oficina.'),
+        ('Homecenter Colombia', 'https://www.homecenter.com.co', 'Cajas organizadoras plásticas, herramientas de taller, cintas, tornillería y materiales de mantenimiento ligero.'),
+        ('MercadoLibre Colombia', 'https://www.mercadolibre.com.co', 'Catálogo multirubro con envíos directos para insumos pedagógicos, repuestos electrónicos y tecnología general.');
+    END IF;
+END $$;

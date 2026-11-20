@@ -67,7 +67,10 @@ export default function ModalSolicitudMaterial({
           setProveedoresRecomendados(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.warn('Error cargando proveedores en ModalSolicitudMaterial:', err);
+        console.error('[ModalSolicitudMaterial] Error cargando proveedores desde Supabase:', err);
+        if (showError) {
+          showError('Error al consultar tiendas recomendadas', err?.message || 'No se pudo conectar con Supabase.');
+        }
       } finally {
         if (mounted) setLoadingProveedores(false);
       }

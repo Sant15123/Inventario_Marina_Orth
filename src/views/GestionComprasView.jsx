@@ -384,7 +384,7 @@ export default function GestionComprasView({
           setProveedoresCount(Array.isArray(list) ? list.length : 0);
         }
       } catch (err) {
-        console.warn('Error al obtener conteo de proveedores:', err);
+        console.error('[GestionComprasView] Error al obtener conteo de proveedores:', err);
       }
     };
 
