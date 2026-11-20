@@ -1024,50 +1024,156 @@ export default function ModalSolicitudMaterial({
                 </div>
 
                 {/* Directorio de Proveedores Recomendados por la Fundación */}
-                <div className="bg-[#F7F9FA] border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700 rounded-xl p-4">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-[#abd037]/20 text-[#013a52] dark:text-[#abd037]">
+                <div
+                  style={{
+                    backgroundColor: 'var(--surface-2, #f8fafc)',
+                    border: '1.5px solid var(--line, #e2e8f0)',
+                    borderRadius: '14px',
+                    padding: '16px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  {/* Encabezado en una sola fila */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      marginBottom: '14px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '10px',
+                          backgroundColor: '#013a52',
+                          color: '#abd037',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          boxShadow: '0 2px 6px rgba(1, 58, 82, 0.25)',
+                        }}
+                      >
                         <Store size={18} strokeWidth={2.4} />
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div
-                          className="text-sm font-bold text-[#013a52] dark:text-white"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                          style={{
+                            fontSize: '13.5px',
+                            fontWeight: 700,
+                            color: 'var(--text-h, #013a52)',
+                            lineHeight: 1.25,
+                          }}
                         >
                           Proveedores Recomendados por la Fundación
                         </div>
-                        <div className="text-xs text-[#6d6e71] dark:text-slate-300">
+                        <div
+                          style={{
+                            fontSize: '11.5px',
+                            color: 'var(--text-dim, #6d6e71)',
+                            marginTop: '2px',
+                            lineHeight: 1.3,
+                          }}
+                        >
                           Consulta estas tiendas confiables para buscar el enlace de referencia de tu producto
                         </div>
                       </div>
                     </div>
-                    <span className="bg-[#abd037]/20 text-[#013a52] dark:text-[#abd037] text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '4px 12px',
+                        borderRadius: '999px',
+                        backgroundColor: 'rgba(171, 208, 55, 0.18)',
+                        border: '1.5px solid #abd037',
+                        color: 'var(--text-h, #013a52)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
                       {proveedoresRecomendados.length} {proveedoresRecomendados.length === 1 ? 'sugerido' : 'sugeridos'}
-                    </span>
+                    </div>
                   </div>
 
                   {/* Listado con scroll suave max-h-52 */}
-                  <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      maxHeight: '220px',
+                      overflowY: 'auto',
+                      paddingRight: '4px',
+                    }}
+                  >
                     {loadingProveedores ? (
-                      <div className="p-4 text-center text-xs text-[#6d6e71] dark:text-slate-400">
+                      <div
+                        style={{
+                          padding: '16px',
+                          textAlign: 'center',
+                          fontSize: '12px',
+                          color: 'var(--text-dim, #6d6e71)',
+                        }}
+                      >
                         Cargando proveedores recomendados...
                       </div>
                     ) : proveedoresRecomendados.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-[#6d6e71] dark:text-slate-400 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+                      <div
+                        style={{
+                          padding: '16px',
+                          textAlign: 'center',
+                          fontSize: '12px',
+                          color: 'var(--text-dim, #6d6e71)',
+                          border: '1.5px dashed var(--line, #cbd5e1)',
+                          borderRadius: '10px',
+                          backgroundColor: 'var(--surface, #ffffff)',
+                        }}
+                      >
                         No hay proveedores registrados en el directorio en este momento.
                       </div>
                     ) : (
                       proveedoresRecomendados.map((prov) => (
                         <div
                           key={prov.id}
-                          className="bg-white border border-slate-200 hover:border-[#abd037] dark:bg-slate-900 dark:border-slate-700 dark:hover:border-[#abd037] rounded-xl p-3.5 shadow-sm transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          style={{
+                            backgroundColor: 'var(--surface, #ffffff)',
+                            border: '1.5px solid var(--line, #e2e8f0)',
+                            borderRadius: '12px',
+                            padding: '12px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '14px',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#abd037';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(171, 208, 55, 0.2)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--line, #e2e8f0)';
+                            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.03)';
+                          }}
                         >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                               <span
-                                className="text-sm font-bold text-[#013a52] dark:text-white"
-                                style={{ fontFamily: "'Poppins', sans-serif" }}
+                                style={{
+                                  fontSize: '13.5px',
+                                  fontWeight: 700,
+                                  color: 'var(--text-h, #013a52)',
+                                  fontFamily: "'Poppins', sans-serif",
+                                }}
                               >
                                 {prov.nombre}
                               </span>
@@ -1075,38 +1181,122 @@ export default function ModalSolicitudMaterial({
                                 href={prov.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs font-medium text-[#2CACD0] hover:underline inline-flex items-center gap-1"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  color: '#0077b6',
+                                  backgroundColor: 'rgba(0, 119, 182, 0.08)',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  textDecoration: 'none',
+                                  transition: 'background-color 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(0, 119, 182, 0.18)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(0, 119, 182, 0.08)';
+                                }}
                                 title="Abrir tienda en nueva pestaña"
                               >
-                                <span>{prov.url.replace(/^https?:\/\/(www\.)?/, '')}</span>
-                                <ExternalLink size={12} strokeWidth={2} />
+                                <span>{prov.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</span>
+                                <ExternalLink size={11} strokeWidth={2.4} />
                               </a>
                             </div>
-                            <p className="text-xs text-[#6d6e71] dark:text-slate-300 mt-1 line-clamp-2">
+
+                            <p
+                              style={{
+                                fontSize: '11.5px',
+                                color: 'var(--text-dim, #6d6e71)',
+                                marginTop: '4px',
+                                marginBottom: 0,
+                                lineHeight: 1.4,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
                               {prov.descripcion}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                             <a
                               href={prov.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="border border-[#013a52]/30 text-[#013a52] hover:bg-[#013a52]/5 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 text-xs font-semibold px-3 py-1.5 rounded-lg no-underline inline-flex items-center gap-1.5 transition-colors"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '7px 13px',
+                                borderRadius: '8px',
+                                fontSize: '11.5px',
+                                fontWeight: 600,
+                                color: 'var(--text-h, #013a52)',
+                                backgroundColor: 'transparent',
+                                border: '1.5px solid var(--line-strong, rgba(1, 58, 82, 0.35))',
+                                textDecoration: 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                whiteSpace: 'nowrap',
+                                fontFamily: "'Poppins', sans-serif",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#013a52';
+                                e.currentTarget.style.color = '#ffffff';
+                                e.currentTarget.style.borderColor = '#013a52';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.color = 'var(--text-h, #013a52)';
+                                e.currentTarget.style.borderColor = 'var(--line-strong, rgba(1, 58, 82, 0.35))';
+                              }}
                             >
                               <span>Visitar Tienda</span>
-                              <ExternalLink size={12} strokeWidth={2} />
+                              <ExternalLink size={12} strokeWidth={2.2} />
                             </a>
+
                             <button
                               type="button"
                               onClick={() => {
                                 setCompraForm((prev) => ({ ...prev, url: prov.url }));
                                 if (validationError) setValidationError('');
                               }}
-                              className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '7px 15px',
+                                borderRadius: '8px',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                color: '#013a52',
+                                backgroundColor: '#abd037',
+                                border: 'none',
+                                boxShadow: '0 2px 8px rgba(171, 208, 55, 0.4)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                whiteSpace: 'nowrap',
+                                fontFamily: "'Poppins', sans-serif",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#96bc28';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(171, 208, 55, 0.5)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#abd037';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(171, 208, 55, 0.4)';
+                              }}
                               title="Copiar el enlace de esta tienda en el formulario"
                             >
-                              Usar Tienda
+                              <span>Usar Tienda</span>
                             </button>
                           </div>
                         </div>
