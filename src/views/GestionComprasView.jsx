@@ -1960,8 +1960,8 @@ export default function GestionComprasView({
               >
                 <th
                   style={{
-                    width: '12%',
-                    minWidth: '110px',
+                    width: '11%',
+                    minWidth: '105px',
                     padding: '12px 14px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -1975,8 +1975,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '17%',
-                    minWidth: '145px',
+                    width: '16%',
+                    minWidth: '135px',
                     padding: '12px 12px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -1990,8 +1990,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '14%',
-                    minWidth: '120px',
+                    width: '18%',
+                    minWidth: '160px',
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontSize: '11.5px',
@@ -2005,8 +2005,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '21%',
-                    minWidth: '170px',
+                    width: '20%',
+                    minWidth: '165px',
                     padding: '12px 12px',
                     textAlign: 'left',
                     fontSize: '11.5px',
@@ -2020,8 +2020,8 @@ export default function GestionComprasView({
                 </th>
                 <th
                   style={{
-                    width: '20%',
-                    minWidth: '165px',
+                    width: '19%',
+                    minWidth: '150px',
                     padding: '12px 10px',
                     textAlign: 'center',
                     fontSize: '11.5px',
@@ -2036,7 +2036,7 @@ export default function GestionComprasView({
                 <th
                   style={{
                     width: '16%',
-                    minWidth: '135px',
+                    minWidth: '130px',
                     padding: '12px 14px',
                     textAlign: 'center',
                     fontSize: '11.5px',
@@ -2079,7 +2079,7 @@ export default function GestionComprasView({
                     }}
                   >
                     {/* 1. Radicado / Fecha */}
-                    <td style={{ width: '12%', minWidth: '110px', padding: '12px 14px', verticalAlign: 'middle' }}>
+                    <td style={{ width: '11%', minWidth: '105px', padding: '12px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
                         <span
                           style={{
@@ -2113,7 +2113,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 2. Solicitante & Sede */}
-                    <td style={{ width: '17%', minWidth: '145px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '16%', minWidth: '135px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
                         <strong
                           style={{
@@ -2149,14 +2149,33 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 3. Proyecto STEAM */}
-                    <td style={{ width: '14%', minWidth: '120px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
+                    <td
+                      style={{
+                        width: '18%',
+                        minWidth: '160px',
+                        padding: '12px 8px',
+                        textAlign: 'center',
+                        verticalAlign: 'middle',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          minWidth: 0,
+                          width: '100%',
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                        }}
+                      >
                         <ProgramAreaBadge area={solProyecto} label={solProyecto} size="sm" />
                       </div>
                     </td>
 
                     {/* 4. Detalle de Ítems */}
-                    <td style={{ width: '21%', minWidth: '170px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '20%', minWidth: '165px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {primerItem ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
@@ -2208,7 +2227,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 5. Estado & Adquisición */}
-                    <td style={{ width: '20%', minWidth: '165px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '19%', minWidth: '150px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', gap: '4px' }}>
                         <span
                           style={{
@@ -2257,7 +2276,7 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 6. Acciones */}
-                    <td style={{ width: '16%', minWidth: '135px', padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    <td style={{ width: '16%', minWidth: '130px', padding: '12px 14px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         {/* Botón Ver Detalle */}
                         <button

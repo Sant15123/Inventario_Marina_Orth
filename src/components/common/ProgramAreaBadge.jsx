@@ -275,11 +275,14 @@ export default function ProgramAreaBadge({
   area = '',
   defaultProgram = null,
   className = '',
-  iconSize = 18,
+  iconSize: propIconSize,
+  size = 'md',
   showIcon = true,
   style = {},
   label = null,
 }) {
+  const isSm = size === 'sm';
+  const iconSize = propIconSize || (isSm ? 14 : 18);
   const config = resolveAreaConfig(area, defaultProgram);
   const IconComponent = config.Icon;
   const safeAreaStr = typeof area === 'string' ? area.trim() : '';
@@ -289,9 +292,12 @@ export default function ProgramAreaBadge({
 
   return (
     <span
-      className={`program-area-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold leading-none shadow-2xs transition-all ${config.badgeClass} ${className}`}
+      className={`program-area-badge inline-flex items-center gap-1.5 ${isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'} font-semibold leading-none shadow-2xs transition-all max-w-full min-w-0 ${config.badgeClass} ${className}`}
       style={{
         fontFamily: "'Poppins', sans-serif",
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
         ...style,
       }}
       title={`Programa / Área FMO: ${displayLabel}`}
@@ -304,7 +310,17 @@ export default function ProgramAreaBadge({
           <IconComponent size={iconSize} className="w-full h-full" />
         </span>
       )}
-      <span className="truncate">{typeof displayLabel === 'string' ? displayLabel : 'Sin asignar'}</span>
+      <span
+        className="truncate"
+        style={{
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {typeof displayLabel === 'string' ? displayLabel : 'Sin asignar'}
+      </span>
     </span>
   );
 }
