@@ -149,6 +149,85 @@ const SOLICITUDES_COMPRA_DEMO = [
   },
 ];
 
+// Normalizar estado crudo de la BD para pestañas y conteos
+export const normalizeEstado = (st) => {
+  const s = String(st || '').trim().toUpperCase();
+  if (s === 'PENDIENTE' || s === 'EN_EVALUACION' || s === 'EN EVALUACIÓN' || s === 'EN EVALUACION') return 'pendientes';
+  if (s === 'APROBADA' || s === 'APROBADO' || s === 'APROBADO_COMPRA' || s === 'APROBADA PARA COMPRA') return 'aprobadas';
+  if (s === 'COMPRADA' || s === 'COMPRADO' || s === 'ENTREGADO_DIRECTO' || s === 'ENTREGADA') return 'compradas';
+  if (s === 'RECHAZADA' || s === 'RECHAZADO') return 'rechazadas';
+  return 'pendientes';
+};
+
+// Formato amigable de código radicado
+export const formatRadicado = (id, radicado) => {
+  if (radicado && String(radicado).trim()) {
+    const radStr = String(radicado).trim();
+    if (radStr.length <= 14) return radStr;
+    return `#${radStr.slice(0, 8).toUpperCase()}`;
+  }
+  if (id && String(id).trim()) {
+    const idStr = String(id).trim();
+    return `#${idStr.slice(0, 8).toUpperCase()}`;
+  }
+  return '#SOL-FMO';
+};
+
+// Configuración visual y semántica de estados según Sistema de Marca FMO
+export const getEstadoBadgeConfig = (rawEstado) => {
+  const norm = String(rawEstado || '').trim().toUpperCase();
+
+  if (norm === 'PENDIENTE') {
+    return {
+      label: 'Pendiente',
+      badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700/50',
+      Icon: Clock,
+    };
+  }
+  if (norm === 'EN_EVALUACION' || norm === 'EN EVALUACIÓN' || norm === 'EN EVALUACION') {
+    return {
+      label: 'En Evaluación',
+      badgeClass: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-700/50',
+      Icon: Sparkles,
+    };
+  }
+  if (norm === 'APROBADO_COMPRA' || norm === 'APROBADA' || norm === 'APROBADO' || norm === 'APROBADA PARA COMPRA') {
+    return {
+      label: 'Aprobada para Compra',
+      badgeClass: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-700/50',
+      Icon: CheckCircle2,
+    };
+  }
+  if (norm === 'ENTREGADO_DIRECTO' || norm === 'ENTREGADA') {
+    return {
+      label: 'Entregada',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700/50',
+      Icon: PackageCheck,
+    };
+  }
+  if (norm === 'COMPRADA' || norm === 'COMPRADO') {
+    return {
+      label: 'Comprada',
+      badgeClass: 'bg-lime-100 text-emerald-900 border-lime-400 dark:bg-lime-950/40 dark:text-lime-300 dark:border-lime-700/50',
+      Icon: PackageCheck,
+    };
+  }
+  if (norm === 'RECHAZADA' || norm === 'RECHAZADO') {
+    return {
+      label: 'Rechazada',
+      badgeClass: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-700/50',
+      Icon: XCircle,
+    };
+  }
+
+  // Fallback
+  return {
+    label: rawEstado || 'Pendiente',
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+    Icon: Clock,
+  };
+};
+
 export default function GestionComprasView({
   itemsInventario = [],
   onNavigate,
@@ -256,10 +335,10 @@ export default function GestionComprasView({
     const list = solicitudes || [];
     return {
       todas: list.length,
-      pendientes: list.filter((s) => s.estado === 'Pendiente' || s.estado === 'En Evaluación').length,
-      aprobadas: list.filter((s) => s.estado === 'Aprobada').length,
-      compradas: list.filter((s) => s.estado === 'Comprada').length,
-      rechazadas: list.filter((s) => s.estado === 'Rechazada').length,
+      pendientes: list.filter((s) => normalizeEstado(s.estado) === 'pendientes').length,
+      aprobadas: list.filter((s) => normalizeEstado(s.estado) === 'aprobadas').length,
+      compradas: list.filter((s) => normalizeEstado(s.estado) === 'compradas').length,
+      rechazadas: list.filter((s) => normalizeEstado(s.estado) === 'rechazadas').length,
     };
   }, [solicitudes]);
 
@@ -267,21 +346,12 @@ export default function GestionComprasView({
   const solicitudesFiltradas = useMemo(() => {
     return (solicitudes || []).filter((sol) => {
       // Filtro pestaña
-      if (pestanaActiva === 'pendientes' && sol.estado !== 'Pendiente' && sol.estado !== 'En Evaluación') {
-        return false;
-      }
-      if (pestanaActiva === 'aprobadas' && sol.estado !== 'Aprobada') {
-        return false;
-      }
-      if (pestanaActiva === 'compradas' && sol.estado !== 'Comprada') {
-        return false;
-      }
-      if (pestanaActiva === 'rechazadas' && sol.estado !== 'Rechazada') {
+      if (pestanaActiva !== 'todas' && normalizeEstado(sol.estado) !== pestanaActiva) {
         return false;
       }
 
       // Filtro Sede
-      if (filtroSede !== 'todas' && sol.sede_destino !== filtroSede) {
+      if (filtroSede !== 'todas' && sol.sede_destino !== filtroSede && sol.sede !== filtroSede) {
         return false;
       }
 
@@ -578,18 +648,18 @@ export default function GestionComprasView({
   return (
     <div className="gestion-compras-view" style={{ fontFamily: "'Poppins', sans-serif" }}>
       {/* =========================================================================
-          1. HEADER INSTITUCIONAL Y STEPPER DE 3 ETAPAS
+          1. HEADER INSTITUCIONAL Y STEPPER DE 3 ETAPAS EN HORIZONTAL
           ========================================================================= */}
       <div
-        className="compras-header p-5 rounded-2xl mb-6 shadow-sm border"
+        className="compras-header p-6 rounded-2xl mb-6 shadow-sm border bg-[#013a52]"
         style={{
-          background: 'linear-gradient(135deg, #013a52 0%, #0a3c63 100%)',
           color: '#ffffff',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderColor: 'rgba(255, 255, 255, 0.12)',
+          fontFamily: "'Poppins', sans-serif",
         }}
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
               style={{ backgroundColor: '#abd037', color: '#013a52' }}
@@ -597,18 +667,15 @@ export default function GestionComprasView({
               <ShoppingCart className="w-6 h-6 stroke-[2.4]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white m-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl font-bold tracking-tight text-white m-0">
                   Gestión de Compras y Adquisiciones
                 </h1>
-                <span
-                  className="px-2.5 py-0.5 rounded-full text-xs font-bold"
-                  style={{ backgroundColor: 'rgba(171, 208, 55, 0.25)', color: '#abd037', border: '1px solid #abd037' }}
-                >
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#abd037]/20 text-[#abd037] border border-[#abd037]/40">
                   Flujo Oficial SIGA-FMO
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-300 m-0 mt-0.5">
+              <p className="text-slate-200 text-sm mt-1 mb-0">
                 Evaluación técnica de requerimientos pedagógicos, cruce con bodega y control de facturas institucionales.
               </p>
             </div>
@@ -618,11 +685,10 @@ export default function GestionComprasView({
           <button
             type="button"
             onClick={handleExportarExcel}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md self-start md:self-auto"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md self-start md:self-auto border-none"
             style={{
               backgroundColor: '#abd037',
               color: '#013a52',
-              border: 'none',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#96b82d';
@@ -639,89 +705,95 @@ export default function GestionComprasView({
           </button>
         </div>
 
-        {/* Barra de Progreso Visual de 3 Etapas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-white/10">
+        {/* Fila inferior (Las 3 Etapas en Cuadrícula Horizontal de 3 Columnas) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/15">
           {/* Etapa 1 */}
           <div
-            className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+            className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all cursor-pointer ${
               pestanaActiva === 'pendientes'
-                ? 'bg-white/15 border-[#abd037] shadow-inner'
-                : 'bg-white/5 border-white/10 hover:bg-white/10'
+                ? 'bg-white/15 border-[#abd037] shadow-inner ring-1 ring-[#abd037]/50'
+                : 'bg-white/5 border-white/15 hover:bg-white/10'
             }`}
             onClick={() => setPestanaActiva('pendientes')}
             role="button"
             tabIndex={0}
           >
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0"
+              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm"
               style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
             >
               1
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>Solicitud & Evaluación</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-extrabold">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-semibold text-sm text-white">Solicitud & Evaluación</span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] bg-amber-500/30 text-amber-200 font-extrabold border border-amber-400/40">
                   {conteos.pendientes}
                 </span>
               </div>
-              <div className="text-[11px] text-slate-300 truncate">Revisión técnica y cruce con bodega</div>
+              <div className="text-xs text-slate-300 mt-0.5 line-clamp-1">
+                Revisión técnica y cruce con bodega
+              </div>
             </div>
           </div>
 
           {/* Etapa 2 */}
           <div
-            className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+            className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all cursor-pointer ${
               pestanaActiva === 'aprobadas'
-                ? 'bg-white/15 border-[#abd037] shadow-inner'
-                : 'bg-white/5 border-white/10 hover:bg-white/10'
+                ? 'bg-white/15 border-[#abd037] shadow-inner ring-1 ring-[#abd037]/50'
+                : 'bg-white/5 border-white/15 hover:bg-white/10'
             }`}
             onClick={() => setPestanaActiva('aprobadas')}
             role="button"
             tabIndex={0}
           >
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0"
+              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm"
               style={{ backgroundColor: '#2cacd0', color: '#ffffff' }}
             >
               2
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>Aprobación & Adquisición</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-500/30 text-cyan-200 font-extrabold">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-semibold text-sm text-white">Aprobación & Adquisición</span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] bg-sky-500/30 text-sky-200 font-extrabold border border-sky-400/40">
                   {conteos.aprobadas}
                 </span>
               </div>
-              <div className="text-[11px] text-slate-300 truncate">Órdenes autorizadas pendientes de factura</div>
+              <div className="text-xs text-slate-300 mt-0.5 line-clamp-1">
+                Órdenes autorizadas pendientes de factura
+              </div>
             </div>
           </div>
 
           {/* Etapa 3 */}
           <div
-            className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+            className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all cursor-pointer ${
               pestanaActiva === 'compradas'
-                ? 'bg-white/15 border-[#abd037] shadow-inner'
-                : 'bg-white/5 border-white/10 hover:bg-white/10'
+                ? 'bg-white/15 border-[#abd037] shadow-inner ring-1 ring-[#abd037]/50'
+                : 'bg-white/5 border-white/15 hover:bg-white/10'
             }`}
             onClick={() => setPestanaActiva('compradas')}
             role="button"
             tabIndex={0}
           >
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0"
+              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm"
               style={{ backgroundColor: '#abd037', color: '#013a52' }}
             >
               3
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>Compra & Recepción</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#abd037]/30 text-[#abd037] font-extrabold">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-semibold text-sm text-white">Compra & Recepción</span>
+                <span className="px-2 py-0.5 rounded-full text-[11px] bg-[#abd037]/30 text-[#abd037] font-extrabold border border-[#abd037]/50">
                   {conteos.compradas}
                 </span>
               </div>
-              <div className="text-[11px] text-slate-300 truncate">Ingreso al inventario oficial FMO</div>
+              <div className="text-xs text-slate-300 mt-0.5 line-clamp-1">
+                Ingreso al inventario oficial FMO
+              </div>
             </div>
           </div>
         </div>
@@ -730,9 +802,9 @@ export default function GestionComprasView({
       {/* =========================================================================
           2. PESTAÑAS DE FILTRO Y BARRA DE BÚSQUEDA
           ========================================================================= */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 mb-4">
         {/* Pestañas de Estado con Contadores */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {[
             { id: 'todas', label: 'Todas', count: conteos.todas },
             { id: 'pendientes', label: 'Pendientes por Evaluar', count: conteos.pendientes },
@@ -756,6 +828,7 @@ export default function GestionComprasView({
                   color: isActive ? '#013a52' : '#6d6e71',
                   border: isActive ? '1.5px solid #96b82d' : '1px solid var(--line, #e2e8f0)',
                   fontWeight: isActive ? 700 : 600,
+                  fontFamily: "'Poppins', sans-serif",
                 }}
               >
                 <span>{tab.label}</span>
@@ -773,22 +846,23 @@ export default function GestionComprasView({
           })}
         </div>
 
-        {/* Buscador Rápido */}
-        <div className="relative min-w-[240px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        {/* Buscador Rápido con padding holgado sin solapamiento */}
+        <div className="relative min-w-[280px]">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por radicado, solicitante, ítem o factura..."
-            className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#abd037]"
+            className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#abd037]"
             style={{ fontFamily: "'Poppins', sans-serif" }}
           />
           {busqueda && (
             <button
               type="button"
               onClick={() => setBusqueda('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              title="Limpiar búsqueda"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -797,7 +871,7 @@ export default function GestionComprasView({
       </div>
 
       {/* Filtros Secundarios: Sede y Proyecto STEAM */}
-      <div className="flex items-center gap-3 mb-4 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-wrap text-xs font-semibold">
+      <div className="flex items-center gap-3.5 mb-4 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-wrap text-xs font-semibold">
         <span className="text-[#6d6e71] flex items-center gap-1.5">
           <Filter className="w-3.5 h-3.5" />
           Filtros de auditoría:
@@ -810,6 +884,7 @@ export default function GestionComprasView({
             value={filtroSede}
             onChange={(e) => setFiltroSede(e.target.value)}
             className="rounded-lg px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+            style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             <option value="todas">Todas las sedes</option>
             {sedesList.map((s) => (
@@ -825,6 +900,7 @@ export default function GestionComprasView({
             value={filtroProyecto}
             onChange={(e) => setFiltroProyecto(e.target.value)}
             className="rounded-lg px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
+            style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             <option value="todos">Todos los proyectos</option>
             {(proyectosSteamList || []).map((p) => {
@@ -846,7 +922,7 @@ export default function GestionComprasView({
       </div>
 
       {/* =========================================================================
-          3. TABLA AUDITADA DE SOLICITUDES DE COMPRA
+          3. TABLA AUDITADA DE SOLICITUDES DE COMPRA (SIN DESBORDAMIENTO)
           ========================================================================= */}
       {solicitudesFiltradas.length === 0 ? (
         <div
@@ -864,28 +940,28 @@ export default function GestionComprasView({
         <div
           className="table-responsive rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-x-auto"
         >
-          <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1150px', borderCollapse: 'collapse' }}>
+          <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1080px', borderCollapse: 'collapse', fontFamily: "'Poppins', sans-serif" }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #abd037' }}>
-                <th style={{ width: '13%', minWidth: '120px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th style={{ width: '12%', minWidth: '115px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                   RADICADO / FECHA
                 </th>
-                <th style={{ width: '18%', minWidth: '170px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th style={{ width: '18%', minWidth: '165px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                   SOLICITANTE & SEDE
                 </th>
                 <th style={{ width: '14%', minWidth: '135px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                   PROYECTO STEAM
                 </th>
-                <th style={{ width: '22%', minWidth: '210px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th style={{ width: '21%', minWidth: '200px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                   DETALLE DE ÍTEMS
                 </th>
-                <th style={{ width: '12%', minWidth: '110px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                   ESTADO
                 </th>
-                <th style={{ width: '14%', minWidth: '135px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th style={{ width: '11%', minWidth: '115px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                   COMPRA & FACTURA
                 </th>
-                <th style={{ width: '17%', minWidth: '160px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
                   ACCIONES
                 </th>
               </tr>
@@ -894,18 +970,8 @@ export default function GestionComprasView({
               {solicitudesFiltradas.map((sol) => {
                 const totalItems = Array.isArray(sol.items) ? sol.items.length : 0;
                 const primerItem = sol.items && sol.items[0];
-
-                // Badges de estado oficiales
-                let badgeEstadoClass = 'bg-amber-100 text-amber-800 border-amber-300';
-                if (sol.estado === 'En Evaluación') {
-                  badgeEstadoClass = 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/40 dark:text-purple-300';
-                } else if (sol.estado === 'Aprobada') {
-                  badgeEstadoClass = 'bg-lime-100 text-emerald-900 border-lime-400 dark:bg-lime-950/40 dark:text-lime-300';
-                } else if (sol.estado === 'Comprada') {
-                  badgeEstadoClass = 'bg-cyan-100 text-cyan-900 border-cyan-400 dark:bg-cyan-950/40 dark:text-cyan-300';
-                } else if (sol.estado === 'Rechazada') {
-                  badgeEstadoClass = 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300';
-                }
+                const estadoConfig = getEstadoBadgeConfig(sol.estado);
+                const EstadoIcon = estadoConfig.Icon;
 
                 return (
                   <tr
@@ -914,52 +980,69 @@ export default function GestionComprasView({
                     style={{ borderBottom: '1px solid var(--line, #e2e8f0)' }}
                   >
                     {/* 1. Radicado / Fecha */}
-                    <td style={{ width: '13%', minWidth: '120px', maxWidth: 0, padding: '10px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                      <span
-                        className="badge-placa inline-block font-mono font-bold text-xs px-2.5 py-1 rounded-md"
-                        style={{
-                          backgroundColor: 'rgba(1, 58, 82, 0.08)',
-                          color: '#013a52',
-                          border: '1px solid rgba(1, 58, 82, 0.2)',
-                        }}
-                      >
-                        {sol.radicado || sol.id}
-                      </span>
-                      <div className="text-[11px] text-slate-500 mt-1 truncate">
-                        {fmtDate(sol.creado_en || sol.fecha_requerida)}
-                      </div>
-                    </td>
-
-                    {/* 2. Solicitante & Sede */}
-                    <td style={{ width: '18%', minWidth: '170px', maxWidth: 0, padding: '10px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                      <strong className="block text-xs font-bold text-[#013a52] dark:text-white truncate" title={sol.solicitante_nombre}>
-                        {sol.solicitante_nombre}
-                      </strong>
-                      <div className="flex items-center gap-1.5 mt-1">
+                    <td style={{ width: '12%', minWidth: '115px', padding: '12px 10px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
                         <span
-                          className="sede-badge municipal truncate block text-[10px]"
-                          title={`Sede: ${sol.sede_destino}`}
+                          className="badge-placa inline-block font-bold text-xs px-2.5 py-1 rounded-md"
+                          style={{
+                            backgroundColor: 'rgba(1, 58, 82, 0.08)',
+                            color: '#013a52',
+                            border: '1px solid rgba(1, 58, 82, 0.2)',
+                            fontFamily: "'Poppins', sans-serif",
+                            whiteSpace: 'nowrap',
+                          }}
+                          title={sol.radicado || sol.id}
                         >
-                          {sol.sede_destino}
+                          {formatRadicado(sol.id, sol.radicado)}
+                        </span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate block" title={fmtDate(sol.creado_en || sol.fecha_requerida)}>
+                          {fmtDate(sol.creado_en || sol.fecha_requerida)}
                         </span>
                       </div>
                     </td>
 
+                    {/* 2. Solicitante & Sede */}
+                    <td style={{ width: '18%', minWidth: '165px', padding: '12px 10px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
+                        <strong
+                          className="block text-xs font-bold text-[#013a52] dark:text-white truncate"
+                          title={sol.solicitante_nombre || sol.solicitante || 'Sin asignar'}
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          {sol.solicitante_nombre || sol.solicitante || (
+                            <span className="text-slate-400 italic font-normal">Sin asignar</span>
+                          )}
+                        </strong>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {sol.sede_destino || sol.sede ? (
+                            <span
+                              className="sede-badge municipal truncate block text-[10px]"
+                              title={`Sede: ${sol.sede_destino || sol.sede}`}
+                            >
+                              {sol.sede_destino || sol.sede}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">Sede sin asignar</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
                     {/* 3. Proyecto STEAM */}
-                    <td style={{ width: '14%', minWidth: '135px', maxWidth: 0, padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '14%', minWidth: '135px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
                       <div className="flex justify-center items-center min-w-0">
                         <ProgramAreaBadge area={sol.proyecto_steam || 'Robótica'} size="sm" />
                       </div>
                     </td>
 
                     {/* 4. Detalle de Ítems */}
-                    <td style={{ width: '22%', minWidth: '210px', maxWidth: 0, padding: '10px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '21%', minWidth: '200px', padding: '12px 10px', verticalAlign: 'middle' }}>
                       {primerItem ? (
-                        <div className="min-w-0">
+                        <div className="min-w-0" style={{ overflow: 'hidden' }}>
                           <strong className="block text-xs font-semibold text-[#013a52] dark:text-slate-200 truncate" title={primerItem.nombre}>
                             {primerItem.nombre}
                           </strong>
-                          <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
                             <span>Sol: <strong className="text-[#013a52] dark:text-white">{primerItem.cantidad_solicitada || 1}</strong></span>
                             {primerItem.cantidad_aprobada !== undefined && (
                               <span>· Aprob: <strong className="text-emerald-700 dark:text-emerald-400">{primerItem.cantidad_aprobada}</strong></span>
@@ -977,27 +1060,26 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 5. Estado */}
-                    <td style={{ width: '12%', minWidth: '110px', maxWidth: 0, padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border ${badgeEstadoClass}`}
-                      >
-                        {sol.estado === 'Pendiente' && <Clock className="w-3 h-3" />}
-                        {sol.estado === 'En Evaluación' && <Sparkles className="w-3 h-3" />}
-                        {sol.estado === 'Aprobada' && <CheckCircle2 className="w-3 h-3" />}
-                        {sol.estado === 'Comprada' && <PackageCheck className="w-3 h-3" />}
-                        {sol.estado === 'Rechazada' && <XCircle className="w-3 h-3" />}
-                        <span>{sol.estado}</span>
-                      </span>
+                    <td style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <div className="flex justify-center items-center">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${estadoConfig.badgeClass}`}
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          <EstadoIcon className="w-3.5 h-3.5 shrink-0" />
+                          <span>{estadoConfig.label}</span>
+                        </span>
+                      </div>
                     </td>
 
                     {/* 6. Compra & Factura */}
-                    <td style={{ width: '14%', minWidth: '135px', maxWidth: 0, padding: '10px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td style={{ width: '11%', minWidth: '115px', padding: '12px 10px', verticalAlign: 'middle' }}>
                       {sol.proveedor ? (
-                        <div className="min-w-0">
+                        <div className="min-w-0" style={{ overflow: 'hidden' }}>
                           <strong className="block text-xs font-bold text-[#013a52] dark:text-slate-200 truncate" title={sol.proveedor}>
                             {sol.proveedor}
                           </strong>
-                          <div className="text-[11px] text-slate-500 truncate">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                             Fact: {sol.numero_factura_orden || 'S/N'}
                           </div>
                           {sol.valor_final_compra > 0 && (
@@ -1008,14 +1090,14 @@ export default function GestionComprasView({
                         </div>
                       ) : (
                         <span className="text-[11px] text-slate-400 italic">
-                          {sol.estado === 'Aprobada' ? 'Pendiente de orden' : 'No registrada'}
+                          {normalizeEstado(sol.estado) === 'aprobadas' ? 'Pendiente orden' : 'No registrada'}
                         </span>
                       )}
                     </td>
 
                     {/* 7. Acciones */}
-                    <td style={{ width: '17%', minWidth: '160px', padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <td style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                         {/* Botón Ver Detalle */}
                         <button
                           type="button"
@@ -1023,18 +1105,18 @@ export default function GestionComprasView({
                             setSolicitudDetalle(sol);
                             setModalDetalleOpen(true);
                           }}
-                          className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-[#013a52] hover:border-[#013a52] transition-all cursor-pointer"
+                          className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-[#013a52] hover:border-[#013a52] transition-all cursor-pointer shrink-0"
                           title="Ver detalle completo de la solicitud"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
 
                         {/* Botón Evaluar (Etapa 1: Pendiente o En Evaluación) */}
-                        {(sol.estado === 'Pendiente' || sol.estado === 'En Evaluación') && (isCoordinador || isAdmin) && (
+                        {normalizeEstado(sol.estado) === 'pendientes' && (isCoordinador || isAdmin) && (
                           <button
                             type="button"
                             onClick={() => handleAbrirEvaluar(sol)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs transition-all cursor-pointer shrink-0"
                             style={{ backgroundColor: '#7B2CBF' }}
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#63209E')}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#7B2CBF')}
@@ -1046,43 +1128,43 @@ export default function GestionComprasView({
                         )}
 
                         {/* Botón Registrar Compra (Etapa 2: Aprobada) */}
-                        {sol.estado === 'Aprobada' && (isCoordinador || isAdmin) && (
+                        {normalizeEstado(sol.estado) === 'aprobadas' && (isCoordinador || isAdmin) && (
                           <button
                             type="button"
                             onClick={() => handleAbrirRegistrarCompra(sol)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs transition-all cursor-pointer shrink-0"
                             style={{ backgroundColor: '#2CACD0' }}
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2292B3')}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2CACD0')}
                             title="Registrar factura u orden de compra comercial"
                           >
                             <Receipt className="w-3.5 h-3.5" />
-                            <span>Registrar Compra</span>
+                            <span>Comprar</span>
                           </button>
                         )}
 
                         {/* Botón + Ingresar a Inventario (Etapa 3: Comprada) */}
-                        {sol.estado === 'Comprada' && (isCoordinador || isAdmin) && (
+                        {normalizeEstado(sol.estado) === 'compradas' && (isCoordinador || isAdmin) && (
                           sol.ingresado_inventario ? (
                             <span
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 shrink-0"
                               title="Los ítems ya están registrados en el inventario oficial"
                             >
                               <CheckCircle2 className="w-3 h-3" />
-                              <span>En Inventario</span>
+                              <span>Ingresado</span>
                             </span>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleIngresarAInventario(sol)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0"
                               style={{ backgroundColor: '#abd037', color: '#013a52' }}
                               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#96b82d')}
                               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#abd037')}
                               title="Precargar estos ítems adquiridos en el catálogo oficial de bodega"
                             >
                               <PackagePlus className="w-3.5 h-3.5 stroke-[2.4]" />
-                              <span>+ Ingresar a Bodega</span>
+                              <span>+ Bodega</span>
                             </button>
                           )
                         )}
