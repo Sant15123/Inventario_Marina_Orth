@@ -26,6 +26,7 @@ import {
   MapPin,
   Calendar,
   FolderKanban,
+  Store,
   Quote,
 } from 'lucide-react';
 import ProgramAreaBadge from '../components/common/ProgramAreaBadge';
@@ -35,6 +36,8 @@ import inventoryApi from '../services/inventoryApi';
 import { fmtDate, today } from '../services/mockData';
 import { useProyectos } from '../hooks/useProyectos';
 import { normalizeProyectoNombre } from '../constants/proyectos';
+import { getProveedoresRecomendados } from '../services/proveedoresService';
+import ModalProveedoresRecomendados from '../components/modals/ModalProveedoresRecomendados';
 import ExcelJS from 'exceljs';
 
 // Muestras de prueba para el flujo de compras en caso de arranque sin datos en Supabase
@@ -366,6 +369,37 @@ export default function GestionComprasView({
 
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
   const [solicitudDetalle, setSolicitudDetalle] = useState(null);
+
+  // Modal Directorio de Proveedores Recomendados
+  const [modalProveedoresOpen, setModalProveedoresOpen] = useState(false);
+  const [proveedoresCount, setProveedoresCount] = useState(0);
+
+  // Cargar conteo de proveedores recomendados y suscribirse a actualizaciones
+  useEffect(() => {
+    let mounted = true;
+    const fetchProveedoresCount = async () => {
+      try {
+        const list = await getProveedoresRecomendados();
+        if (mounted) {
+          setProveedoresCount(Array.isArray(list) ? list.length : 0);
+        }
+      } catch (err) {
+        console.warn('Error al obtener conteo de proveedores:', err);
+      }
+    };
+
+    fetchProveedoresCount();
+
+    const handleProveedoresChanged = () => {
+      fetchProveedoresCount();
+    };
+
+    window.addEventListener('siga:proveedores_changed', handleProveedoresChanged);
+    return () => {
+      mounted = false;
+      window.removeEventListener('siga:proveedores_changed', handleProveedoresChanged);
+    };
+  }, []);
 
   // Estados del formulario de evaluación
   const [evalDecision, setEvalDecision] = useState('Aprobada');
@@ -1124,6 +1158,55 @@ export default function GestionComprasView({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Botón Directorio de Proveedores Recomendados */}
+          <button
+            type="button"
+            onClick={() => setModalProveedoresOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              borderRadius: '12px',
+              backgroundColor: '#013a52',
+              color: '#ffffff',
+              border: '1.5px solid rgba(171, 208, 55, 0.45)',
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 3px 10px rgba(1, 58, 82, 0.25)',
+              transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#024d6d';
+              e.currentTarget.style.borderColor = '#abd037';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#013a52';
+              e.currentTarget.style.borderColor = 'rgba(171, 208, 55, 0.45)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            title="Ver y administrar el directorio oficial de proveedores y tiendas recomendadas"
+          >
+            <Store size={16} strokeWidth={2.4} style={{ color: '#abd037' }} />
+            <span>Proveedores Recomendados</span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '1px 8px',
+                borderRadius: '999px',
+                backgroundColor: '#abd037',
+                color: '#013a52',
+              }}
+            >
+              {proveedoresCount}
+            </span>
+          </button>
+
           {/* Botón Exportar a Excel Institucional */}
           <button
             type="button"
@@ -3566,6 +3649,12 @@ export default function GestionComprasView({
           </div>
         );
       })()}
+
+      {/* Modal de Proveedores Recomendados (Admin y Coordinador) */}
+      <ModalProveedoresRecomendados
+        isOpen={modalProveedoresOpen}
+        onClose={() => setModalProveedoresOpen(false)}
+      />
     </div>
   );
 }

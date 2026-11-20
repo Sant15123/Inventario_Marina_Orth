@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   PackagePlus,
@@ -15,11 +15,13 @@ import {
   Loader2,
   ShoppingCart,
   ExternalLink,
+  Store,
 } from 'lucide-react';
 import { today, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useProyectos } from '../../hooks/useProyectos';
+import { getProveedoresRecomendados } from '../../services/proveedoresService';
 
 export default function ModalSolicitudMaterial({
   isOpen,
@@ -50,6 +52,38 @@ export default function ModalSolicitudMaterial({
     cantidad: 1,
     precio: '',
   });
+
+  // Directorio de Proveedores Recomendados (cargados dinámicamente)
+  const [proveedoresRecomendados, setProveedoresRecomendados] = useState([]);
+  const [loadingProveedores, setLoadingProveedores] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchProveedores = async () => {
+      try {
+        setLoadingProveedores(true);
+        const data = await getProveedoresRecomendados();
+        if (mounted) {
+          setProveedoresRecomendados(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.warn('Error cargando proveedores en ModalSolicitudMaterial:', err);
+      } finally {
+        if (mounted) setLoadingProveedores(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchProveedores();
+    }
+
+    const handleChanged = () => fetchProveedores();
+    window.addEventListener('siga:proveedores_changed', handleChanged);
+    return () => {
+      mounted = false;
+      window.removeEventListener('siga:proveedores_changed', handleChanged);
+    };
+  }, [isOpen]);
 
   // 2. Variables derivadas (evaluadas tras declarar todos los estados)
   const esCompra = tipoSolicitud === 'SUGERENCIA_COMPRA' || tipoSolicitud === 'compra';
@@ -986,6 +1020,141 @@ export default function ModalSolicitudMaterial({
                       <ExternalLink size={14} />
                       <span>🔗 Probar</span>
                     </button>
+                  </div>
+                </div>
+
+                {/* Directorio de Proveedores Recomendados por la Fundación */}
+                <div
+                  className="rounded-xl border p-3.5 space-y-2.5"
+                  style={{
+                    backgroundColor: 'rgba(1, 58, 82, 0.25)',
+                    borderColor: 'rgba(171, 208, 55, 0.35)',
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                        style={{
+                          backgroundColor: '#abd037',
+                          color: '#013a52',
+                        }}
+                      >
+                        <Store size={15} strokeWidth={2.4} />
+                      </div>
+                      <div>
+                        <div
+                          className="text-xs font-bold text-white flex items-center gap-1.5"
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          <span>Proveedores Recomendados por la Fundación</span>
+                        </div>
+                        <div className="text-[11px] text-slate-300">
+                          Consulta estas tiendas confiables para buscar el enlace de referencia de tu producto
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                        color: '#abd037',
+                        border: '1px solid rgba(171, 208, 55, 0.5)',
+                      }}
+                    >
+                      {proveedoresRecomendados.length} sugeridos
+                    </span>
+                  </div>
+
+                  {/* Listado con scroll suave max-h-56 */}
+                  <div
+                    className="max-h-56 overflow-y-auto space-y-2 pr-1"
+                    style={{
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: '#abd037 transparent',
+                    }}
+                  >
+                    {loadingProveedores ? (
+                      <div className="p-3 text-center text-xs text-slate-400">
+                        Cargando proveedores recomendados...
+                      </div>
+                    ) : proveedoresRecomendados.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400 border border-dashed border-slate-700 rounded-lg">
+                        No hay proveedores registrados en el directorio en este momento.
+                      </div>
+                    ) : (
+                      proveedoresRecomendados.map((prov) => (
+                        <div
+                          key={prov.id}
+                          className="p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all hover:border-slate-500"
+                          style={{
+                            backgroundColor: 'rgba(11, 17, 32, 0.7)',
+                            borderColor: 'rgba(51, 65, 85, 0.8)',
+                          }}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className="font-bold text-xs text-white"
+                                style={{ fontFamily: "'Poppins', sans-serif" }}
+                              >
+                                {prov.nombre}
+                              </span>
+                              <a
+                                href={prov.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300 hover:underline"
+                                title="Abrir enlace en pestaña nueva"
+                              >
+                                <span>{prov.url.replace(/^https?:\/\/(www\.)?/, '')}</span>
+                                <ExternalLink size={11} strokeWidth={2.4} />
+                              </a>
+                            </div>
+                            <p className="text-[11px] text-slate-300 mt-0.5 line-clamp-2">
+                              {prov.descripcion}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <a
+                              href={prov.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all"
+                              style={{
+                                backgroundColor: '#013a52',
+                                color: '#ffffff',
+                                border: '1px solid rgba(171, 208, 55, 0.4)',
+                              }}
+                            >
+                              <span>Visitar Tienda</span>
+                              <ExternalLink size={11} />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCompraForm((prev) => ({ ...prev, url: prov.url }));
+                                if (validationError) setValidationError('');
+                              }}
+                              className="px-2.5 py-1 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all"
+                              style={{
+                                backgroundColor: '#abd037',
+                                color: '#013a52',
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                              title="Copiar el enlace de esta tienda en el formulario"
+                            >
+                              <span>Usar Tienda</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
