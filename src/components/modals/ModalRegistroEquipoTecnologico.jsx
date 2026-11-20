@@ -16,6 +16,7 @@ import { inventoryApi } from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useToast } from '../../context/ToastContext';
 import ProgramAreaBadge, { ProgramAreaSelect } from '../common/ProgramAreaBadge';
+import { getProgramTheme } from '../../utils/programThemes';
 
 const CATEGORIAS_TECNOLOGICAS = [
   'Portátiles',
@@ -58,6 +59,7 @@ export default function ModalRegistroEquipoTecnologico({
 
   const [submitting, setSubmitting] = useState(false);
   const [loadingPlaca, setLoadingPlaca] = useState(false);
+  const [btnHover, setBtnHover] = useState(false);
 
   const initialForm = {
     id: '',
@@ -277,6 +279,8 @@ export default function ModalRegistroEquipoTecnologico({
     }
   };
 
+  const currentTheme = getProgramTheme(formData.area_asignada || 'Nuevas Tecnologías', 'Nuevas Tecnologías');
+
   return (
     <div
       className="modal-backdrop"
@@ -302,24 +306,26 @@ export default function ModalRegistroEquipoTecnologico({
           backgroundColor: 'var(--surface-2, #ffffff)',
           borderRadius: '20px',
           boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
-          border: '1.5px solid rgba(171, 208, 55, 0.45)',
+          border: `1.5px solid ${currentTheme.cardBorder || currentTheme.accentBorder}`,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           maxHeight: '92vh',
           fontFamily: "'Poppins', sans-serif",
+          transition: 'border-color 0.3s ease',
         }}
       >
-        {/* ENCABEZADO INSTITUCIONAL */}
+        {/* ENCABEZADO INSTITUCIONAL DINÁMICO POR PROGRAMA FMO */}
         <div
           style={{
             padding: '16px 22px',
-            backgroundColor: '#013a52',
-            color: '#ffffff',
+            backgroundColor: currentTheme.headerBg,
+            color: currentTheme.headerText,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '3px solid #abd037',
+            borderBottom: `3px solid ${currentTheme.accentBorder}`,
+            transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -328,21 +334,22 @@ export default function ModalRegistroEquipoTecnologico({
                 width: '38px',
                 height: '38px',
                 borderRadius: '10px',
-                backgroundColor: 'rgba(171, 208, 55, 0.22)',
+                backgroundColor: currentTheme.iconBg,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#abd037',
+                color: currentTheme.iconColor,
                 flexShrink: 0,
+                transition: 'background-color 0.3s ease, color 0.3s ease',
               }}
             >
               <Laptop size={22} style={{ strokeWidth: 2.3 }} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, letterSpacing: '0.01em', color: '#ffffff' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, letterSpacing: '0.01em', color: currentTheme.headerText, transition: 'color 0.3s ease' }}>
                 {isEditing ? 'Editar Equipo Tecnológico' : 'Nuevo Equipo Tecnológico'}
               </h3>
-              <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#cbd5e1' }}>
+              <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: currentTheme.headerSubtext, transition: 'color 0.3s ease' }}>
                 Portátiles, computadores, tablets, proyectores y pantallas institucionales
               </p>
             </div>
@@ -355,7 +362,7 @@ export default function ModalRegistroEquipoTecnologico({
             style={{
               background: 'none',
               border: 'none',
-              color: '#ffffff',
+              color: currentTheme.headerText,
               cursor: 'pointer',
               padding: '6px',
               borderRadius: '8px',
@@ -365,7 +372,7 @@ export default function ModalRegistroEquipoTecnologico({
               opacity: 0.85,
               transition: 'all 0.15s ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             <X size={20} />
@@ -877,37 +884,31 @@ export default function ModalRegistroEquipoTecnologico({
                 gap: '8px',
                 padding: '9px 22px',
                 borderRadius: '11px',
-                backgroundColor: '#abd037',
-                color: '#013a52',
+                backgroundColor: btnHover ? currentTheme.buttonHover : currentTheme.buttonBg,
+                color: currentTheme.buttonText,
                 border: 'none',
                 fontSize: '13px',
                 fontWeight: 700,
                 cursor: submitting ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+                boxShadow: `0 4px 14px ${currentTheme.buttonBg}44`,
                 fontFamily: "'Poppins', sans-serif",
-                transition: 'all 0.15s ease',
+                transition: 'all 0.3s ease',
               }}
-              onMouseEnter={(e) => {
-                if (!submitting) {
-                  e.currentTarget.style.backgroundColor = '#96b82d';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }
+              onMouseEnter={() => {
+                if (!submitting) setBtnHover(true);
               }}
-              onMouseLeave={(e) => {
-                if (!submitting) {
-                  e.currentTarget.style.backgroundColor = '#abd037';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }
+              onMouseLeave={() => {
+                if (!submitting) setBtnHover(false);
               }}
             >
               {submitting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin text-[#013a52]" />
+                  <Loader2 size={16} className="animate-spin" style={{ color: currentTheme.buttonText }} />
                   <span>Guardando...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle size={16} style={{ strokeWidth: 2.3 }} />
+                  <CheckCircle size={16} style={{ strokeWidth: 2.3, color: currentTheme.buttonText }} />
                   <span>{isEditing ? 'Guardar Cambios' : 'Registrar Equipo Tecnológico'}</span>
                 </>
               )}

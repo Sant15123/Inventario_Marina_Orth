@@ -7,6 +7,7 @@ import { inventoryApi } from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useToast } from '../../context/ToastContext';
 import ProgramAreaBadge, { ProgramAreaSelect } from '../common/ProgramAreaBadge';
+import { getProgramTheme } from '../../utils/programThemes';
 
 const CATEGORIAS_MOBILIARIO = [
   'Mesas y Escritorios',
@@ -57,6 +58,7 @@ export default function ModalRegistroMobiliario({
   const [paso, setPaso] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [loadingPlaca, setLoadingPlaca] = useState(false);
+  const [btnHover, setBtnHover] = useState(false);
 
   // Form State
   const initialForm = {
@@ -420,6 +422,8 @@ export default function ModalRegistroMobiliario({
 
   const codigoHeader = formData.codigo || formData.placa || (muebleAEditar && (muebleAEditar.codigo || muebleAEditar.placa || muebleAEditar.id_referencia || muebleAEditar.id)) || 'MOB-001';
 
+  const currentTheme = getProgramTheme(formData.area_proceso || 'General', 'default');
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
@@ -438,10 +442,10 @@ export default function ModalRegistroMobiliario({
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border rounded-2xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: 'var(--surface, #0b1320)',
-          border: '1px solid var(--line, #1e293b)',
+          border: `1.5px solid ${currentTheme.cardBorder || currentTheme.accentBorder}`,
           borderRadius: '16px',
           maxWidth: '56rem',
           width: '100%',
@@ -452,39 +456,42 @@ export default function ModalRegistroMobiliario({
           boxSizing: 'border-box',
           position: 'relative',
           overflow: 'hidden',
+          transition: 'border-color 0.3s ease',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Fijo */}
+        {/* Header Fijo con Tematización Dinámica FMO */}
         <div
-          className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
+          className="p-5 border-b shrink-0 flex items-center justify-between"
           style={{
-            backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
-            borderBottom: '1px solid var(--line, #1e293b)',
+            backgroundColor: currentTheme.headerBg,
+            borderBottom: `3px solid ${currentTheme.accentBorder}`,
             padding: '16px 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexShrink: 0,
+            transition: 'background-color 0.3s ease, border-color 0.3s ease',
           }}
         >
           <div>
             <span
               style={{
                 fontFamily: 'var(--mono)',
-                color: 'var(--text-dim, #94a3b8)',
+                color: currentTheme.headerSubtext,
                 fontSize: '12px',
                 fontWeight: 600,
                 display: 'block',
                 marginBottom: '2px',
+                transition: 'color 0.3s ease',
               }}
             >
               {codigoHeader}
             </span>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0" style={{ margin: 0, fontSize: '15px' }}>
+            <h3 className="text-sm sm:text-base font-bold m-0" style={{ margin: 0, fontSize: '15px', color: currentTheme.headerText, transition: 'color 0.3s ease' }}>
               {isEditing ? 'Editar Mobiliario' : 'Nuevo Mobiliario'}
             </h3>
-            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0" style={{ margin: '2px 0 0 0', fontSize: '12px' }}>
+            <p className="text-[11px] sm:text-xs m-0" style={{ margin: '2px 0 0 0', fontSize: '12px', color: currentTheme.headerSubtext, transition: 'color 0.3s ease' }}>
               {isEditing
                 ? 'Modifica los datos del mobiliario y sus especificaciones físicas'
                 : 'Mesas, sillería, estantes y enseres para espacios formativos'}
@@ -494,7 +501,19 @@ export default function ModalRegistroMobiliario({
             type="button"
             disabled={submitting}
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+            style={{
+              padding: '8px',
+              borderRadius: '10px',
+              background: 'transparent',
+              color: currentTheme.headerText,
+              cursor: 'pointer',
+              border: 'none',
+              outline: 'none',
+              transition: 'all 0.15s ease',
+              opacity: 0.85,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
             title="Cerrar ventana"
           >
             <X className="w-5 h-5" />
@@ -1302,32 +1321,37 @@ export default function ModalRegistroMobiliario({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md bg-[#84CC16] hover:bg-[#65A30D] text-slate-950"
                   style={{
                     padding: '8px 20px',
                     borderRadius: '8px',
-                    backgroundColor: '#84CC16',
-                    border: '1px solid #65A30D',
-                    color: '#0f172a',
+                    backgroundColor: btnHover ? currentTheme.buttonHover : currentTheme.buttonBg,
+                    border: 'none',
+                    color: currentTheme.buttonText,
                     fontSize: '13px',
                     fontWeight: 800,
                     cursor: submitting ? 'not-allowed' : 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
-                    transition: 'all 0.15s ease',
+                    boxShadow: `0 2px 12px ${currentTheme.buttonBg}44`,
+                    transition: 'all 0.3s ease',
                     opacity: submitting ? 0.7 : 1,
+                  }}
+                  onMouseEnter={() => {
+                    if (!submitting) setBtnHover(true);
+                  }}
+                  onMouseLeave={() => {
+                    if (!submitting) setBtnHover(false);
                   }}
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={14} className="animate-spin" />
+                      <Loader2 size={14} className="animate-spin" style={{ color: currentTheme.buttonText }} />
                       <span>{isEditing ? 'Guardando...' : 'Registrando...'}</span>
                     </>
                   ) : (
                     <>
-                      <span>Guardar Cambios</span>
+                      <span>{isEditing ? 'Guardar Cambios' : 'Registrar Mobiliario'}</span>
                       <span>→</span>
                     </>
                   )}

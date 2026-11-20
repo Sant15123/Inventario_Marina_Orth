@@ -3,6 +3,7 @@ import { X, Laptop, Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../services/supabase';
 import ProgramAreaBadge, { ProgramAreaSelect } from '../common/ProgramAreaBadge';
+import { getProgramTheme } from '../../utils/programThemes';
 
 const CATEGORIAS_TECNOLOGICAS = [
   'Portátiles',
@@ -47,6 +48,7 @@ export default function ModalEditarActivo({
 
   const [sedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Santuario']));
   const [internalSubmitting, setInternalSubmitting] = useState(false);
+  const [btnHover, setBtnHover] = useState(false);
   const [internalFormData, setInternalFormData] = useState({
     placa: '',
     nombre: '',
@@ -207,6 +209,8 @@ export default function ModalEditarActivo({
     }
   };
 
+  const currentTheme = getProgramTheme(formData.area_asignada || formData.area || 'Nuevas Tecnologías', 'Nuevas Tecnologías');
+
   return (
     <div
       className="modal-backdrop"
@@ -232,24 +236,26 @@ export default function ModalEditarActivo({
           backgroundColor: 'var(--surface-2, #ffffff)',
           borderRadius: '20px',
           boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
-          border: '1.5px solid rgba(171, 208, 55, 0.45)',
+          border: `1.5px solid ${currentTheme.cardBorder || currentTheme.accentBorder}`,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           maxHeight: '92vh',
           fontFamily: "'Poppins', sans-serif",
+          transition: 'border-color 0.3s ease',
         }}
       >
-        {/* ENCABEZADO INSTITUCIONAL */}
+        {/* ENCABEZADO INSTITUCIONAL DINÁMICO POR PROGRAMA FMO */}
         <div
           style={{
             padding: '16px 22px',
-            backgroundColor: '#013a52',
-            color: '#ffffff',
+            backgroundColor: currentTheme.headerBg,
+            color: currentTheme.headerText,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '3px solid #abd037',
+            borderBottom: `3px solid ${currentTheme.accentBorder}`,
+            transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -258,21 +264,22 @@ export default function ModalEditarActivo({
                 width: '38px',
                 height: '38px',
                 borderRadius: '10px',
-                backgroundColor: 'rgba(171, 208, 55, 0.22)',
+                backgroundColor: currentTheme.iconBg,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#abd037',
+                color: currentTheme.iconColor,
                 flexShrink: 0,
+                transition: 'background-color 0.3s ease, color 0.3s ease',
               }}
             >
               <Laptop size={22} style={{ strokeWidth: 2.3 }} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, letterSpacing: '0.01em', color: '#ffffff' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, letterSpacing: '0.01em', color: currentTheme.headerText, transition: 'color 0.3s ease' }}>
                 Editar Equipo Tecnológico
               </h3>
-              <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#cbd5e1' }}>
+              <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: currentTheme.headerSubtext, transition: 'color 0.3s ease' }}>
                 Modifica los datos del equipo y sus especificaciones técnicas institucionales
               </p>
             </div>
@@ -285,7 +292,7 @@ export default function ModalEditarActivo({
             style={{
               background: 'none',
               border: 'none',
-              color: '#ffffff',
+              color: currentTheme.headerText,
               cursor: 'pointer',
               padding: '6px',
               borderRadius: '8px',
@@ -295,7 +302,7 @@ export default function ModalEditarActivo({
               opacity: 0.85,
               transition: 'all 0.15s ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             <X size={20} />
@@ -798,37 +805,31 @@ export default function ModalEditarActivo({
                 gap: '8px',
                 padding: '9px 22px',
                 borderRadius: '11px',
-                backgroundColor: '#abd037',
-                color: '#013a52',
+                backgroundColor: btnHover ? currentTheme.buttonHover : currentTheme.buttonBg,
+                color: currentTheme.buttonText,
                 border: 'none',
                 fontSize: '13px',
                 fontWeight: 700,
                 cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+                boxShadow: `0 4px 14px ${currentTheme.buttonBg}44`,
                 fontFamily: "'Poppins', sans-serif",
-                transition: 'all 0.15s ease',
+                transition: 'all 0.3s ease',
               }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting) {
-                  e.currentTarget.style.backgroundColor = '#96b82d';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }
+              onMouseEnter={() => {
+                if (!isSubmitting) setBtnHover(true);
               }}
-              onMouseLeave={(e) => {
-                if (!isSubmitting) {
-                  e.currentTarget.style.backgroundColor = '#abd037';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }
+              onMouseLeave={() => {
+                if (!isSubmitting) setBtnHover(false);
               }}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin text-[#013a52]" />
+                  <Loader2 size={16} className="animate-spin" style={{ color: currentTheme.buttonText }} />
                   <span>Guardando...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle size={16} style={{ strokeWidth: 2.3 }} />
+                  <CheckCircle size={16} style={{ strokeWidth: 2.3, color: currentTheme.buttonText }} />
                   <span>Guardar Cambios</span>
                 </>
               )}

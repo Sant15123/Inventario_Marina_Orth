@@ -1,5 +1,6 @@
 import FmoCobrandingBadge from '../components/common/FmoCobrandingBadge';
 import ProgramAreaBadge, { ProgramAreaSelect } from '../components/common/ProgramAreaBadge';
+import { getProgramTheme } from '../utils/programThemes';
 import {
   FmoProgramBadge,
   RoboticaIcon,
@@ -2810,6 +2811,16 @@ export default function InventarioView({
     formDataNuevo?.category === 'Papelería' ||
     formDataNuevo?.subtipo === 'papeleria' ||
     String(formDataNuevo?.id || '').toLowerCase().startsWith('pape')
+  );
+
+  const themeEditarConsumible = getProgramTheme(
+    formDataEditar.area_asignada || formDataEditar.area || (isPapeleriaEdit ? 'TeachLabs' : 'Robótica'),
+    isPapeleriaEdit ? 'TeachLabs' : 'Robótica'
+  );
+
+  const themeNuevoConsumible = getProgramTheme(
+    formDataNuevo.area_asignada || formDataNuevo.area || (isPapeleriaNuevo ? 'TeachLabs' : 'Robótica'),
+    isPapeleriaNuevo ? 'TeachLabs' : 'Robótica'
   );
 
   return (
@@ -6171,10 +6182,10 @@ export default function InventarioView({
           onClick={() => !editConsumibleSubmitting && setModalEditarOpen(false)}
         >
           <div
-            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border rounded-2xl shadow-2xl overflow-hidden"
             style={{
               backgroundColor: 'var(--surface, #0b1320)',
-              border: '1px solid var(--line, #1e293b)',
+              border: `1.5px solid ${themeEditarConsumible.cardBorder || themeEditarConsumible.accentBorder}`,
               borderRadius: '16px',
               maxWidth: '56rem',
               width: '100%',
@@ -6185,33 +6196,46 @@ export default function InventarioView({
               boxSizing: 'border-box',
               position: 'relative',
               overflow: 'hidden',
+              transition: 'border-color 0.3s ease',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header Fijo Arriba */}
+            {/* Header Fijo con Tematización Dinámica FMO */}
             <div
-              className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
+              className="p-5 border-b shrink-0 flex items-center justify-between"
               style={{
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
-                borderBottom: '1px solid var(--line, #1e293b)',
+                backgroundColor: themeEditarConsumible.headerBg,
+                borderBottom: `3px solid ${themeEditarConsumible.accentBorder}`,
                 padding: '16px 20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexShrink: 0,
+                transition: 'background-color 0.3s ease, border-color 0.3s ease',
               }}
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-sans tracking-wide font-semibold text-xs px-2.5 py-1 rounded-md"
+                  style={{
+                    backgroundColor: themeEditarConsumible.iconBg,
+                    color: themeEditarConsumible.iconColor,
+                    border: `1px solid ${themeEditarConsumible.accentBorder}`,
+                    fontFamily: "'Poppins', sans-serif",
+                    letterSpacing: '0.02em',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    transition: 'all 0.3s ease',
+                  }}
                 >
                   {formDataEditar.id || formDataEditar.codigo || itemParaEditar.codigo || itemParaEditar.id_referencia || itemParaEditar.placa || itemParaEditar.id || ''}
                 </span>
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0">
+                  <h3 className="text-sm sm:text-base font-bold m-0" style={{ margin: 0, fontSize: '15px', color: themeEditarConsumible.headerText, transition: 'color 0.3s ease' }}>
                     {isPapeleriaEdit ? 'Editar Insumo de Papelería' : 'Editar Material / Consumible'}
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0">
+                  <p className="text-[11px] sm:text-xs m-0" style={{ margin: '2px 0 0 0', fontSize: '12px', color: themeEditarConsumible.headerSubtext, transition: 'color 0.3s ease' }}>
                     {isPapeleriaEdit ? 'Actualiza los datos y existencias del insumo de papelería' : 'Actualiza la placa, ficha técnica y existencias en el inventario'}
                   </p>
                 </div>
@@ -6220,7 +6244,19 @@ export default function InventarioView({
                 type="button"
                 disabled={editConsumibleSubmitting}
                 onClick={() => setModalEditarOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+                style={{
+                  padding: '8px',
+                  borderRadius: '10px',
+                  background: 'transparent',
+                  color: themeEditarConsumible.headerText,
+                  cursor: 'pointer',
+                  border: 'none',
+                  outline: 'none',
+                  transition: 'all 0.15s ease',
+                  opacity: 0.85,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 title="Cerrar ventana"
               >
                 <X className="w-5 h-5" />
@@ -6936,17 +6972,17 @@ export default function InventarioView({
                       style={{
                         padding: '8px 20px',
                         borderRadius: '8px',
-                        backgroundColor: '#84CC16',
-                        border: '1px solid #96c412',
-                        color: '#0f172a',
+                        backgroundColor: themeEditarConsumible.buttonBg,
+                        border: 'none',
+                        color: themeEditarConsumible.buttonText,
                         fontSize: '13px',
                         fontWeight: 800,
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
-                        transition: 'all 0.15s ease',
+                        boxShadow: `0 2px 12px ${themeEditarConsumible.buttonBg}44`,
+                        transition: 'all 0.3s ease',
                       }}
                     >
                       {editConsumibleSubmitting ? (
@@ -6958,7 +6994,7 @@ export default function InventarioView({
                               height: '16px',
                               borderRadius: '50%',
                               border: '2px solid rgba(15, 23, 42, 0.2)',
-                              borderTopColor: '#0f172a',
+                              borderTopColor: themeEditarConsumible.buttonText,
                               display: 'inline-block',
                             }}
                           />
@@ -7020,10 +7056,10 @@ export default function InventarioView({
           onClick={() => !newConsumibleSubmitting && setModalNuevoOpen(false)}
         >
           <div
-            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border rounded-2xl shadow-2xl overflow-hidden"
             style={{
               backgroundColor: 'var(--surface, #0b1320)',
-              border: '1px solid var(--line, #1e293b)',
+              border: `1.5px solid ${themeNuevoConsumible.cardBorder || themeNuevoConsumible.accentBorder}`,
               borderRadius: '16px',
               maxWidth: '56rem',
               width: '100%',
@@ -7034,33 +7070,46 @@ export default function InventarioView({
               boxSizing: 'border-box',
               position: 'relative',
               overflow: 'hidden',
+              transition: 'border-color 0.3s ease',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header Fijo Arriba */}
+            {/* Header Fijo con Tematización Dinámica FMO */}
             <div
-              className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90"
+              className="p-5 border-b shrink-0 flex items-center justify-between"
               style={{
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.9))',
-                borderBottom: '1px solid var(--line, #1e293b)',
+                backgroundColor: themeNuevoConsumible.headerBg,
+                borderBottom: `3px solid ${themeNuevoConsumible.accentBorder}`,
                 padding: '16px 20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexShrink: 0,
+                transition: 'background-color 0.3s ease, border-color 0.3s ease',
               }}
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="bg-lime-950/60 text-lime-400 border border-lime-500/40 font-sans tracking-wide font-semibold text-xs px-2.5 py-1 rounded-md"
+                  style={{
+                    backgroundColor: themeNuevoConsumible.iconBg,
+                    color: themeNuevoConsumible.iconColor,
+                    border: `1px solid ${themeNuevoConsumible.accentBorder}`,
+                    fontFamily: "'Poppins', sans-serif",
+                    letterSpacing: '0.02em',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    transition: 'all 0.3s ease',
+                  }}
                 >
                   {formDataNuevo.id || '+ Nuevo'}
                 </span>
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0">
+                  <h3 className="text-sm sm:text-base font-bold m-0" style={{ margin: 0, fontSize: '15px', color: themeNuevoConsumible.headerText, transition: 'color 0.3s ease' }}>
                     {isPapeleriaNuevo ? 'Nuevo Insumo de Papelería' : 'Nuevo Material / Consumible'}
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 m-0">
+                  <p className="text-[11px] sm:text-xs m-0" style={{ margin: '2px 0 0 0', fontSize: '12px', color: themeNuevoConsumible.headerSubtext, transition: 'color 0.3s ease' }}>
                     {isPapeleriaNuevo ? 'Registra un nuevo material institucional para el catálogo de papelería' : 'Registra la ficha técnica y existencias iniciales en el inventario'}
                   </p>
                 </div>
@@ -7069,7 +7118,19 @@ export default function InventarioView({
                 type="button"
                 disabled={newConsumibleSubmitting}
                 onClick={() => setModalNuevoOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer border-0 outline-none"
+                style={{
+                  padding: '8px',
+                  borderRadius: '10px',
+                  background: 'transparent',
+                  color: themeNuevoConsumible.headerText,
+                  cursor: 'pointer',
+                  border: 'none',
+                  outline: 'none',
+                  transition: 'all 0.15s ease',
+                  opacity: 0.85,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 title="Cerrar ventana"
               >
                 <X className="w-5 h-5" />
@@ -7801,17 +7862,17 @@ export default function InventarioView({
                       style={{
                         padding: '8px 20px',
                         borderRadius: '8px',
-                        backgroundColor: '#84CC16',
-                        border: '1px solid #96c412',
-                        color: '#0f172a',
+                        backgroundColor: themeNuevoConsumible.buttonBg,
+                        border: 'none',
+                        color: themeNuevoConsumible.buttonText,
                         fontSize: '13px',
                         fontWeight: 800,
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: '0 2px 12px rgba(132, 204, 22, 0.35)',
-                        transition: 'all 0.15s ease',
+                        boxShadow: `0 2px 12px ${themeNuevoConsumible.buttonBg}44`,
+                        transition: 'all 0.3s ease',
                       }}
                     >
                       {newConsumibleSubmitting ? (
@@ -7823,7 +7884,7 @@ export default function InventarioView({
                               height: '16px',
                               borderRadius: '50%',
                               border: '2px solid rgba(15, 23, 42, 0.2)',
-                              borderTopColor: '#0f172a',
+                              borderTopColor: themeNuevoConsumible.buttonText,
                               display: 'inline-block',
                             }}
                           />
@@ -7832,7 +7893,7 @@ export default function InventarioView({
                       ) : (
                         <>
                           <span>✓</span>
-                          <span>Guardar Consumible</span>
+                          <span>{isPapeleriaNuevo ? 'Guardar Insumo' : 'Guardar Consumible'}</span>
                         </>
                       )}
                     </button>
