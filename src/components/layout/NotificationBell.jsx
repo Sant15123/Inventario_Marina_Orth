@@ -42,21 +42,29 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
       // 1. Intentar consulta directa a Supabase de solicitudes_inventario y solicitudes_compra
       let inventarioList = [];
       let comprasList = [];
+      let invError = null;
+      let compError = null;
 
       try {
         const { data: invData, error: invErr } = await supabase
           .from('solicitudes_inventario')
           .select('*')
-          .eq('estado', 'PENDIENTE')
+          .or('estado.ilike.pendiente,estado.ilike.pendientes')
           .order('creado_en', { ascending: false });
-        if (!invErr && Array.isArray(invData)) inventarioList = invData;
-      } catch (_) {}
+        if (!invErr && Array.isArray(invData)) {
+          inventarioList = invData;
+        } else if (invErr) {
+          invError = invErr;
+        }
+      } catch (e1) {
+        invError = e1;
+      }
 
       try {
         const { data: compData, error: compErr } = await supabase
           .from('solicitudes_compra')
           .select('*')
-          .eq('estado', 'PENDIENTE')
+          .or('estado.ilike.pendiente,estado.ilike.pendientes')
           .order('creado_en', { ascending: false });
         if (!compErr && Array.isArray(compData)) {
           comprasList = compData.map((sc) => ({
@@ -67,10 +75,15 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
             motivo: sc.justificacion,
             is_solicitud_compra: true,
           }));
+        } else if (compErr) {
+          compError = compErr;
         }
-      } catch (_) {}
+      } catch (e2) {
+        compError = e2;
+      }
 
-      if (inventarioList.length > 0 || comprasList.length > 0) {
+      // Si las consultas a Supabase respondieron sin error, usar datos directos
+      if (!invError && !compError) {
         const total = [...inventarioList, ...comprasList].sort(
           (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
         );
@@ -80,7 +93,8 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
       }
 
       // 2. Si Supabase devuelve error de autenticación/clave o red, usar fallback tolerante de la API
-      console.warn('Aviso Supabase solicitudes, usando servicio local:', error?.message);
+      const actualError = invError || compError;
+      console.warn('Aviso Supabase solicitudes, usando servicio local:', actualError?.message || actualError);
       const fallbackData = await inventoryApi.getSolicitudes();
       if (Array.isArray(fallbackData)) {
         const pendientesFallback = fallbackData.filter(
@@ -88,6 +102,9 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
         );
         setSolicitudes(pendientesFallback);
         setContador(pendientesFallback.length);
+      } else {
+        setSolicitudes([]);
+        setContador(0);
       }
     } catch (err) {
       console.warn('Error al obtener solicitudes para notificaciones:', err);
