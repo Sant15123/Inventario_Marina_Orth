@@ -4028,7 +4028,7 @@ export default function InventarioView({
                             )}
 
                             {/* 🗑️ Baja / Eliminar */}
-                            {canEditInventory && (
+                            {isAdmin && (
                               <button
                                 type="button"
                                 className="btn-icon-crud shrink-0"

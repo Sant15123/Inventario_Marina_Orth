@@ -1632,6 +1632,7 @@ export const inventoryApi = {
 
   createSolicitudesCompra: async (registros) => {
     const arr = Array.isArray(registros) ? registros : [registros];
+    let created = null;
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
@@ -1639,16 +1640,23 @@ export const inventoryApi = {
           .from('solicitudes_compra')
           .insert(arr)
           .select();
-        if (!error && data) return data;
+        if (!error && data) created = data;
         if (error) throw error;
       }
     } catch (e) {
       console.warn('Error createSolicitudesCompra:', e);
     }
-    return arr;
+    const finalArr = created || arr;
+    try {
+      const cached = localStorage.getItem('siga_solicitudes_compra');
+      const list = cached ? JSON.parse(cached) : [];
+      localStorage.setItem('siga_solicitudes_compra', JSON.stringify([...finalArr, ...list]));
+    } catch (e) {}
+    return finalArr;
   },
 
   updateSolicitudCompra: async (id, patch) => {
+    let updated = null;
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
@@ -1657,12 +1665,23 @@ export const inventoryApi = {
           .update(patch)
           .eq('id', id)
           .select();
-        if (!error && data) return data[0];
+        if (!error && data) updated = data[0];
       }
     } catch (e) {
       console.warn('Error updateSolicitudCompra:', e);
     }
-    return { id, ...patch };
+    try {
+      const cached = localStorage.getItem('siga_solicitudes_compra');
+      if (cached) {
+        const list = JSON.parse(cached);
+        const idx = list.findIndex((s) => String(s.id) === String(id) || s.radicado === id);
+        if (idx !== -1) {
+          list[idx] = { ...list[idx], ...patch, updated_at: new Date().toISOString() };
+          localStorage.setItem('siga_solicitudes_compra', JSON.stringify(list));
+        }
+      }
+    } catch (e) {}
+    return updated || { id, ...patch };
   },
 
   // 12. KPIs y Métricas Ligeras del Dashboard (< 2s, conteo en servidor)

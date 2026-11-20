@@ -150,6 +150,7 @@ const SOLICITUDES_COMPRA_DEMO = [
 export default function GestionComprasView({
   itemsInventario = [],
   onNavigate,
+  initialTab = 'todas',
 }) {
   const { currentUser, isCoordinador, isAdmin } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
@@ -159,10 +160,16 @@ export default function GestionComprasView({
   const [loading, setLoading] = useState(true);
 
   // Filtros reactivos
-  const [pestanaActiva, setPestanaActiva] = useState('todas'); // 'todas' | 'pendientes' | 'aprobadas' | 'compradas' | 'rechazadas'
+  const [pestanaActiva, setPestanaActiva] = useState(initialTab || 'todas'); // 'todas' | 'pendientes' | 'aprobadas' | 'compradas' | 'rechazadas'
   const [busqueda, setBusqueda] = useState('');
   const [filtroSede, setFiltroSede] = useState('todas');
   const [filtroProyecto, setFiltroProyecto] = useState('todos');
+
+  useEffect(() => {
+    if (initialTab) {
+      setPestanaActiva(initialTab);
+    }
+  }, [initialTab]);
 
   // Modales
   const [modalEvaluarOpen, setModalEvaluarOpen] = useState(false);
@@ -220,6 +227,15 @@ export default function GestionComprasView({
 
   useEffect(() => {
     cargarSolicitudes();
+
+    const handleSolicitudCreada = (e) => {
+      const nueva = e.detail;
+      if (nueva) {
+        cargarSolicitudes();
+      }
+    };
+    window.addEventListener('siga:solicitud_creada', handleSolicitudCreada);
+    return () => window.removeEventListener('siga:solicitud_creada', handleSolicitudCreada);
   }, []);
 
   // Guardar en caché local ante cada cambio

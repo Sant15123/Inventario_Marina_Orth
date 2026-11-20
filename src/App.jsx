@@ -90,6 +90,7 @@ function App() {
 
   // Parámetros de navegación inicial para transferir filtros desde Resumen
   const [inventarioParams, setInventarioParams] = useState({ tab: 'equipos', stockFilter: 'todos' });
+  const [comprasParams, setComprasParams] = useState({ tab: 'todas' });
   const [prestamosParams, setPrestamosParams] = useState(() => {
     try {
       if (typeof window !== 'undefined' && window.location) {
@@ -119,6 +120,10 @@ function App() {
         section: params.section || 'all',
         estado: params.estado || 'todos',
         solicitudId: params.solicitudId || null,
+      });
+    } else if (view === 'compras') {
+      setComprasParams({
+        tab: params.tab || 'todas',
       });
     }
     setCurrentView(view);
@@ -1238,6 +1243,7 @@ function App() {
                   {!isUsuario && (isAdmin || isCoordinador) && currentView === 'compras' && (
                     <GestionComprasView
                       itemsInventario={items}
+                      initialTab={comprasParams.tab}
                       onNavigate={handleNavigateFromSummary}
                     />
                   )}
