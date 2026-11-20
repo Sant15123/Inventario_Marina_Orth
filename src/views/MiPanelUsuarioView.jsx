@@ -84,37 +84,43 @@ const renderTipoSolicitud = (solicitud) => {
       .filter(Boolean)
       .map((c) => String(c).toLowerCase().trim());
 
-    const textoItems = items.map((it) => (it.nombre_item || it.nombre_sugerido || it.nombre || '')).join(' ').toLowerCase();
-    const textoCompleto = `${textoItems} ${solicitud.motivo || ''} ${solicitud.justificacion || ''}`.toLowerCase();
+    const nombresItems = [
+      solicitud.nombre_producto,
+      ...items.map((it) => it.nombre_item || it.nombre_sugerido || it.nombre),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    const textoCompleto = `${nombresItems} ${solicitud.motivo || ''} ${solicitud.justificacion || ''}`.toLowerCase();
 
     // 1. Equipos de Electrónica
-    const esElectronica = rawCategories.some(
-      (c) => c.includes('electron') || c.includes('electrónica')
-    ) || (
-      rawCategories.length === 0 && (
+    const esElectronica =
+      rawCategories.some((c) => c.includes('electron') || c.includes('electrónica')) ||
+      (!rawCategories.some((c) => c.includes('papel')) && (
         textoCompleto.includes('electron') ||
         textoCompleto.includes('circuito') ||
         textoCompleto.includes('arduino') ||
         textoCompleto.includes('sensor') ||
         textoCompleto.includes('cautin') ||
         textoCompleto.includes('multimetro') ||
-        textoCompleto.includes('servomotor')
-      )
-    );
+        textoCompleto.includes('servomotor') ||
+        textoCompleto.includes('protoboard')
+      ));
 
     // 2. Papelería
     const esPapeleria = !esElectronica && (
-      rawCategories.some(
-        (c) => c.includes('papel') || c.includes('papelería')
-      ) || (
-        rawCategories.length === 0 && (
-          textoCompleto.includes('papel') ||
-          textoCompleto.includes('resma') ||
-          textoCompleto.includes('cuaderno') ||
-          textoCompleto.includes('cartulina') ||
-          textoCompleto.includes('marcador')
-        )
-      )
+      rawCategories.some((c) => c.includes('papel') || c.includes('papelería')) ||
+      textoCompleto.includes('papel') ||
+      textoCompleto.includes('resma') ||
+      textoCompleto.includes('cuaderno') ||
+      textoCompleto.includes('cartulina') ||
+      textoCompleto.includes('marcador') ||
+      textoCompleto.includes('tijera') ||
+      textoCompleto.includes('pegante') ||
+      textoCompleto.includes('lapicero') ||
+      textoCompleto.includes('fomi') ||
+      textoCompleto.includes('vinilo')
     );
 
     if (esElectronica) {
