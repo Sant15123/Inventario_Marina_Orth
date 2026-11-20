@@ -458,28 +458,20 @@ export function AuthProvider({ children }) {
     try {
       let rawData = null;
 
-      // 1. Intentar consulta directa a Supabase (vista usuarios o tabla perfiles)
+      // 1. Consulta directa a Supabase sobre la tabla física oficial 'perfiles'
       try {
         const { supabase } = await import('../services/supabase');
         if (supabase) {
-          const { data, error } = await supabase
-            .from('usuarios')
+          const { data: pData, error: pError } = await supabase
+            .from('perfiles')
             .select('*')
             .order('nombre_completo', { ascending: true });
-          if (!error && Array.isArray(data) && data.length > 0) {
-            rawData = data;
-          } else {
-            const { data: pData, error: pError } = await supabase
-              .from('perfiles')
-              .select('*')
-              .order('nombre_completo', { ascending: true });
-            if (!pError && Array.isArray(pData) && pData.length > 0) {
-              rawData = pData;
-            }
+          if (!pError && Array.isArray(pData) && pData.length > 0) {
+            rawData = pData;
           }
         }
       } catch (e) {
-        console.warn('Consulta directa a Supabase usuarios:', e.message);
+        console.warn('Consulta directa a Supabase perfiles:', e.message);
       }
 
       // 2. Si no respondió Supabase, intentar backend API
@@ -892,31 +884,18 @@ export function AuthProvider({ children }) {
             payloadSupabase.password = datosActualizados.password.trim();
           }
 
-          // Intentar primero sobre la tabla física 'perfiles'
+          // Actualizar directamente sobre la tabla física oficial 'perfiles'
           let { data: supaData, error: supaError } = await supabase
             .from('perfiles')
             .update(payloadSupabase)
             .eq('id', id)
             .select();
 
-          // Si falla o la tabla 'perfiles' no responde, intentar en la vista 'usuarios' (con trigger INSTEAD OF)
-          if (supaError) {
-            lastDbError = supaError;
-            const { data: supaVistaData, error: supaVistaError } = await supabase
-              .from('usuarios')
-              .update(payloadSupabase)
-              .eq('id', id)
-              .select();
-
-            if (!supaVistaError && supaVistaData && supaVistaData.length > 0) {
-              usuarioGuardado = supaVistaData[0];
-              lastDbError = null;
-            } else if (supaVistaError) {
-              lastDbError = supaVistaError;
-            }
-          } else if (supaData && supaData.length > 0) {
+          if (!supaError && supaData && supaData.length > 0) {
             usuarioGuardado = supaData[0];
             lastDbError = null;
+          } else if (supaError) {
+            lastDbError = supaError;
           }
 
           if (usuarioGuardado?.id) {
@@ -1063,14 +1042,11 @@ export function AuthProvider({ children }) {
         if (supabase) {
           let updated = false;
           if (currentUser.id) {
-            const resU = await supabase.from('usuarios').update({ telefono: tel }).eq('id', currentUser.id);
-            if (!resU.error) updated = true;
             const resP = await supabase.from('perfiles').update({ telefono: tel }).eq('id', currentUser.id);
             if (!resP.error) updated = true;
           }
           if (!updated && (currentUser.email || currentUser.correo)) {
             const emailTarget = String(currentUser.email || currentUser.correo).toLowerCase();
-            await supabase.from('usuarios').update({ telefono: tel }).eq('email', emailTarget);
             await supabase.from('perfiles').update({ telefono: tel }).eq('email', emailTarget);
           }
         }

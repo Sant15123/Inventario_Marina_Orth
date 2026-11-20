@@ -693,14 +693,7 @@ export const inventoryApi = {
       }
     } catch (_) {}
 
-    // Intentar en endpoint REST o fallback local
-    try {
-      const json = await request('/equipos-electronica');
-      const arr = extraerArreglo(json);
-      if (arr && arr.length > 0) return arr;
-    } catch (_) {}
-
-    // Fallback inicial con catálogo oficial de semillas
+    // Fallback con catálogo oficial de semillas FMO si Supabase estuviera temporalmente inaccesible
     return DEFAULT_EQUIPOS_ELECTRONICA;
   },
 
