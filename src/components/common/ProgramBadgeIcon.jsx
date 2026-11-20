@@ -32,7 +32,7 @@ export const PROGRAM_CONFIG = {
     color: '#0A3C63',
     textColor: '#ffffff',
     bgBadge: 'bg-[#0A3C63]/10 text-[#0A3C63] border-[#0A3C63]/25 dark:bg-[#0A3C63]/30 dark:text-[#93c5fd]',
-    aliases: ['robotica', 'robot', 'consumible', 'consumibles', 'electronica', 'stem', 'clubes'],
+    aliases: ['robotica', 'robot', 'consumible', 'consumibles', 'stem', 'clubes'],
   },
   tecnologia: {
     id: 'tecnologia',
@@ -40,7 +40,7 @@ export const PROGRAM_CONFIG = {
     color: '#2CACD0',
     textColor: '#ffffff',
     bgBadge: 'bg-[#2CACD0]/15 text-[#013a52] border-[#2CACD0]/40 dark:bg-[#2CACD0]/25 dark:text-[#2CACD0]',
-    aliases: ['tecnologia', 'computo', 'equipo', 'equipos', 'laptop', 'tablet', 'retornable', 'semillero'],
+    aliases: ['tecnologia', 'computo', 'equipo', 'equipos', 'laptop', 'tablet', 'retornable', 'semillero', 'electronica', 'electrónica', 'circuito'],
   },
   teachlabs: {
     id: 'teachlabs',
@@ -330,7 +330,10 @@ export default function ProgramBadgeIcon({
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${config.bgBadge} ${className}`}
-      style={style}
+      style={{
+        fontFamily: "'Poppins', sans-serif",
+        ...style,
+      }}
     >
       <span
         className="inline-flex items-center justify-center flex-shrink-0"
