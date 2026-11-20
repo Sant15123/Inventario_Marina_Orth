@@ -16,7 +16,7 @@ import {
   ShoppingCart,
   ExternalLink,
 } from 'lucide-react';
-import { today } from '../../services/mockData';
+import { today, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 
@@ -55,6 +55,11 @@ export default function ModalSolicitudMaterial({
   const esPrestamo = tipoSolicitud === 'PRESTAMO_EQUIPO';
   const esConsumibles = tipoSolicitud === 'CONSUMIBLES' || tipoSolicitud.includes('CONSUMIB');
 
+  // Lista de proyectos STEAM asegurando respaldo institucional
+  const listaProyectos = useMemo(() => {
+    return Array.isArray(proyectos) && proyectos.length > 0 ? proyectos : PROYECTOS;
+  }, [proyectos]);
+
   // Catálogo disponible filtrado por tipo de solicitud
   const catalogoDisponible = useMemo(() => {
     if (tipoSolicitud === 'PRESTAMO_EQUIPO') {
@@ -81,6 +86,30 @@ export default function ModalSolicitudMaterial({
     const q = Number(currentItemInfo.quantity ?? currentItemInfo.disponible ?? 0);
     return isNaN(q) ? 1 : Math.max(0, q);
   }, [currentItemInfo, tipoSolicitud]);
+
+  // Validación estricta para habilitar el botón "Enviar Solicitud"
+  // Requiere: al menos un ítem agregado, fecha (si aplica), sede, proyecto STEAM y justificación
+  const isFormValid = useMemo(() => {
+    // 1. Al menos un ítem agregado
+    const tieneItems = itemsSolicitud.length > 0 || (esCompra && Boolean(compraForm.nombre?.trim() && compraForm.url?.trim()));
+    if (!tieneItems) return false;
+
+    // 2. Fecha requerida (préstamos y sugerencias de compra)
+    if (tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) {
+      if (!fechaEstimada) return false;
+    }
+
+    // 3. Sede / Municipio destino
+    if (!sede || !sede.trim()) return false;
+
+    // 4. Proyecto STEAM vinculado (estrictamente obligatorio)
+    if (!proyectoId || !proyectoId.trim()) return false;
+
+    // 5. Motivo / Justificación pedagógica
+    if (!motivo || !motivo.trim()) return false;
+
+    return true;
+  }, [itemsSolicitud.length, esCompra, compraForm.nombre, compraForm.url, tipoSolicitud, fechaEstimada, sede, proyectoId, motivo]);
 
   if (!isOpen) return null;
 
@@ -280,6 +309,39 @@ export default function ModalSolicitudMaterial({
       }
     }
 
+    if (!sede || !sede.trim()) {
+      setValidationError('Debes seleccionar una sede / municipio destino.');
+      if (typeof showError === 'function') {
+        showError('Validación', 'Debes seleccionar una sede / municipio destino.');
+      }
+      return;
+    }
+
+    if (!proyectoId || !proyectoId.trim()) {
+      setValidationError('Debes seleccionar un Proyecto STEAM vinculado para radicar la solicitud.');
+      if (typeof showError === 'function') {
+        showError('Validación', 'Debes seleccionar un Proyecto STEAM vinculado para radicar la solicitud.');
+      }
+      return;
+    }
+
+    if (!motivo.trim()) {
+      setValidationError(
+        esCompra
+          ? 'La justificación pedagógica / actividad es obligatoria.'
+          : 'El motivo o justificación pedagógica es obligatorio.'
+      );
+      if (typeof showError === 'function') {
+        showError(
+          'Validación',
+          esCompra
+            ? 'La justificación pedagógica / actividad es obligatoria.'
+            : 'El motivo o justificación pedagógica es obligatorio.'
+        );
+      }
+      return;
+    }
+
     try {
       setSubmitting(true);
       setValidationError('');
@@ -338,6 +400,8 @@ export default function ModalSolicitudMaterial({
           id: `compra-${Date.now()}`,
           tipo_solicitud: 'SUGERENCIA_COMPRA',
           tipo: 'SUGERENCIA_COMPRA',
+          proyecto_steam_id: (proyectoId || '').trim(),
+          proyecto: (proyectoId || '').trim(),
           items: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
           items_solicitud: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
         };
@@ -373,7 +437,8 @@ export default function ModalSolicitudMaterial({
         usuario_nombre: currentUser?.nombre || currentUser?.nombre_completo || 'Docente / Custodio',
         sede: sede || 'Medellín',
         tipo_solicitud: tipoSolicitud,
-        proyecto_steam_id: proyectoId || null,
+        proyecto_steam_id: (proyectoId || '').trim(),
+        proyecto: (proyectoId || '').trim(),
         motivo: motivo.trim(),
         justificacion: motivo.trim(),
         fecha_devolucion_estimada: fechaDevolucionVal,
@@ -1298,11 +1363,16 @@ export default function ModalSolicitudMaterial({
                   style={{ color: 'var(--text-dim, #94a3b8)' }}
                 >
                   <FolderGit2 size={14} style={{ color: '#84CC16' }} />
-                  <span>Proyecto STEAM Vinculado (Opcional)</span>
+                  <span>Proyecto STEAM Vinculado</span>
+                  <span className="text-rose-400">*</span>
                 </label>
                 <select
                   value={proyectoId}
-                  onChange={(e) => setProyectoId(e.target.value)}
+                  onChange={(e) => {
+                    setProyectoId(e.target.value);
+                    if (validationError) setValidationError('');
+                  }}
+                  required
                   className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
                   style={{
                     backgroundColor: 'var(--bg, #0b1120)',
@@ -1310,8 +1380,10 @@ export default function ModalSolicitudMaterial({
                     color: 'var(--text, #f8fafc)',
                   }}
                 >
-                  <option value="">-- Sin vincular a proyecto específico --</option>
-                  {proyectos.map((p) => {
+                  <option value="" disabled>
+                    -- Selecciona un proyecto STEAM --
+                  </option>
+                  {listaProyectos.map((p) => {
                     const val = typeof p === 'string' ? p : p.nombre || p.id;
                     const label = typeof p === 'string' ? p : p.nombre || p.id;
                     return (
@@ -1384,7 +1456,7 @@ export default function ModalSolicitudMaterial({
 
             <button
               type="submit"
-              disabled={submitting || itemsSolicitud.length === 0 || !motivo.trim()}
+              disabled={submitting || !isFormValid}
               className="btn btn-primary"
               style={{
                 padding: '9px 20px',
@@ -1397,9 +1469,10 @@ export default function ModalSolicitudMaterial({
                 backgroundColor: '#84CC16',
                 borderColor: '#84CC16',
                 color: '#020617',
-                cursor: submitting || itemsSolicitud.length === 0 || !motivo.trim() ? 'not-allowed' : 'pointer',
-                opacity: submitting || itemsSolicitud.length === 0 || !motivo.trim() ? 0.5 : 1,
-                boxShadow: '0 4px 12px rgba(171, 208, 55, 0.25)',
+                cursor: submitting || !isFormValid ? 'not-allowed' : 'pointer',
+                opacity: submitting || !isFormValid ? 0.5 : 1,
+                boxShadow: submitting || !isFormValid ? 'none' : '0 4px 12px rgba(171, 208, 55, 0.25)',
+                transition: 'all 0.15s ease',
               }}
             >
               {submitting ? (
