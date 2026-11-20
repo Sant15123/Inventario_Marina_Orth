@@ -68,6 +68,7 @@ export default function ModalRegistroElectronica({
     serial: '',
     cantidad: 1,
     condicion: 'Bueno',
+    responsable: '',
     estado: 'Disponible',
     area_asignada: 'Robótica',
     sede: sedes[0] || 'Medellín',
@@ -98,6 +99,7 @@ export default function ModalRegistroElectronica({
         serial: equipoAEditar.serial || '',
         cantidad: Number(equipoAEditar.cantidad ?? 1),
         condicion: equipoAEditar.condicion || equipoAEditar.condicion_fisica || 'Bueno',
+        responsable: equipoAEditar.responsable || equipoAEditar.custodio || '',
         estado: equipoAEditar.estado || 'Disponible',
         area_asignada: equipoAEditar.area_asignada || equipoAEditar.area || 'Robótica',
         sede: equipoAEditar.sede || equipoAEditar.ubicacion || sedes[0] || 'Medellín',
@@ -516,7 +518,7 @@ export default function ModalRegistroElectronica({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.2fr', gap: '8px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
                     Sede *
@@ -527,14 +529,14 @@ export default function ModalRegistroElectronica({
                     onChange={handleChange}
                     style={{
                       width: '100%',
-                      padding: '8px 8px',
+                      padding: '8px 10px',
                       borderRadius: '9px',
                       border: '1.5px solid var(--line, #cbd5e1)',
                       backgroundColor: 'var(--surface, #ffffff)',
                       color: 'var(--text, #0f172a)',
-                      fontSize: '12.5px',
+                      fontSize: '13px',
                       fontFamily: "'Poppins', sans-serif",
-                      fontWeight: 600,
+                      fontWeight: 500,
                       outline: 'none',
                     }}
                   >
@@ -551,7 +553,7 @@ export default function ModalRegistroElectronica({
                   <input
                     type="text"
                     name="ubicacion"
-                    placeholder="Ej. Taller E1 / Gaveta 04"
+                    placeholder="Ej. Taller de Robótica - Estante A1"
                     value={formData.ubicacion}
                     onChange={handleChange}
                     style={{
@@ -561,8 +563,9 @@ export default function ModalRegistroElectronica({
                       border: '1.5px solid var(--line, #cbd5e1)',
                       backgroundColor: 'var(--surface, #ffffff)',
                       color: 'var(--text, #0f172a)',
-                      fontSize: '12.5px',
+                      fontSize: '13px',
                       fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
                       outline: 'none',
                     }}
                   />
@@ -591,6 +594,7 @@ export default function ModalRegistroElectronica({
                     color: 'var(--text, #0f172a)',
                     fontSize: '13px',
                     fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
                     outline: 'none',
                   }}
                 />
@@ -614,8 +618,9 @@ export default function ModalRegistroElectronica({
                       border: '1.5px solid var(--line, #cbd5e1)',
                       backgroundColor: 'var(--surface, #ffffff)',
                       color: 'var(--text, #0f172a)',
-                      fontSize: '12.5px',
+                      fontSize: '13px',
                       fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
                       outline: 'none',
                     }}
                   />
@@ -638,8 +643,9 @@ export default function ModalRegistroElectronica({
                       border: '1.5px solid var(--line, #cbd5e1)',
                       backgroundColor: 'var(--surface, #ffffff)',
                       color: 'var(--text, #0f172a)',
-                      fontSize: '12.5px',
+                      fontSize: '13px',
                       fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 500,
                       outline: 'none',
                     }}
                   />
@@ -647,11 +653,66 @@ export default function ModalRegistroElectronica({
               </div>
             </div>
 
-            {/* FILA 5: Fecha Adquisición | Valor Estimado y Estado Operativo */}
+            {/* FILA 5: Responsable / Custodio | Estado Operativo */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
-                  Fecha de Adquisición
+                  Responsable / Custodio Asignado
+                </label>
+                <input
+                  type="text"
+                  name="responsable"
+                  placeholder="Ej. Docente STEAM o Taller Medellín"
+                  value={formData.responsable}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Estado Operativo *
+                </label>
+                <select
+                  name="estado"
+                  value={formData.estado}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
+                  }}
+                >
+                  {ESTADOS_OPERATIVOS.map((est) => (
+                    <option key={est} value={est}>{est}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* FILA 6: Fecha de Adquisición | Valor / Costo Estimado (COP) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Fecha De Adquisición
                 </label>
                 <input
                   type="date"
@@ -672,70 +733,40 @@ export default function ModalRegistroElectronica({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
-                    Valor / Costo (COP)
-                  </label>
-                  <input
-                    type="number"
-                    name="valor_estimado"
-                    min="0"
-                    placeholder="Ej. 380000"
-                    value={formData.valor_estimado}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '9px',
-                      border: '1.5px solid var(--line, #cbd5e1)',
-                      backgroundColor: 'var(--surface, #ffffff)',
-                      color: 'var(--text, #0f172a)',
-                      fontSize: '12.5px',
-                      fontFamily: "'Poppins', sans-serif",
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
-                    Estado *
-                  </label>
-                  <select
-                    name="estado"
-                    value={formData.estado}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px 8px',
-                      borderRadius: '9px',
-                      border: '1.5px solid var(--line, #cbd5e1)',
-                      backgroundColor: 'var(--surface, #ffffff)',
-                      color: 'var(--text, #0f172a)',
-                      fontSize: '12.5px',
-                      fontFamily: "'Poppins', sans-serif",
-                      fontWeight: 600,
-                      outline: 'none',
-                    }}
-                  >
-                    {ESTADOS_OPERATIVOS.map((est) => (
-                      <option key={est} value={est}>{est}</option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
+                  Valor / Costo Estimado (COP)
+                </label>
+                <input
+                  type="text"
+                  name="valor_estimado"
+                  placeholder="Ej. 380000"
+                  value={formData.valor_estimado}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '9px',
+                    border: '1.5px solid var(--line, #cbd5e1)',
+                    backgroundColor: 'var(--surface, #ffffff)',
+                    color: 'var(--text, #0f172a)',
+                    fontSize: '13px',
+                    fontFamily: "'Poppins', sans-serif",
+                    outline: 'none',
+                  }}
+                />
               </div>
             </div>
 
-            {/* FILA 6: Observaciones (Ancho completo) */}
+            {/* FILA 7: Observaciones / Ficha Técnica (Ancho completo) */}
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-h, #013a52)', marginBottom: '4px' }}>
-                Observaciones / Ficha Técnica (Opcional)
+                Especificaciones Técnicas / Observaciones
               </label>
               <textarea
                 name="observaciones"
                 rows={2}
-                placeholder="Especificaciones técnicas, accesorios incluidos o notas de calibración..."
+                placeholder="Especificaciones técnicas, rango de medición, accesorios incluidos o notas de calibración..."
                 value={formData.observaciones}
                 onChange={handleChange}
                 style={{
@@ -747,8 +778,8 @@ export default function ModalRegistroElectronica({
                   color: 'var(--text, #0f172a)',
                   fontSize: '12.5px',
                   fontFamily: "'Poppins', sans-serif",
+                  resize: 'none',
                   outline: 'none',
-                  resize: 'vertical',
                 }}
                 onFocus={(e) => (e.target.style.borderColor = '#abd037')}
                 onBlur={(e) => (e.target.style.borderColor = 'var(--line, #cbd5e1)')}
@@ -760,7 +791,7 @@ export default function ModalRegistroElectronica({
           <div
             style={{
               padding: '14px 22px',
-              backgroundColor: 'var(--surface, #f8fafc)',
+              backgroundColor: 'var(--surface-2, #f8fafc)',
               borderTop: '1px solid var(--line, #e2e8f0)',
               display: 'flex',
               alignItems: 'center',
@@ -774,18 +805,16 @@ export default function ModalRegistroElectronica({
               disabled={submitting}
               style={{
                 padding: '9px 18px',
-                borderRadius: '10px',
-                border: '1.5px solid #cbd5e1',
+                borderRadius: '11px',
+                border: '1.5px solid var(--line, #cbd5e1)',
                 backgroundColor: 'transparent',
-                color: '#6d6e71',
+                color: 'var(--text-dim, #6d6e71)',
                 fontSize: '13px',
                 fontWeight: 600,
+                cursor: submitting ? 'not-allowed' : 'pointer',
                 fontFamily: "'Poppins', sans-serif",
-                cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#013a52')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#6d6e71')}
             >
               Cancelar
             </button>
@@ -798,15 +827,15 @@ export default function ModalRegistroElectronica({
                 alignItems: 'center',
                 gap: '8px',
                 padding: '9px 22px',
-                borderRadius: '10px',
-                border: 'none',
+                borderRadius: '11px',
                 backgroundColor: btnHover ? currentTheme.buttonHover : currentTheme.buttonBg,
                 color: currentTheme.buttonText,
+                border: 'none',
                 fontSize: '13px',
                 fontWeight: 700,
-                fontFamily: "'Poppins', sans-serif",
                 cursor: submitting ? 'not-allowed' : 'pointer',
                 boxShadow: `0 4px 14px ${currentTheme.buttonBg}44`,
+                fontFamily: "'Poppins', sans-serif",
                 transition: 'all 0.3s ease',
               }}
               onMouseEnter={() => {

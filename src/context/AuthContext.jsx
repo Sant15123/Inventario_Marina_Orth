@@ -456,57 +456,91 @@ export function AuthProvider({ children }) {
   // Recargar usuarios desde la API PostgreSQL / Supabase
   const refetchUsuarios = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/usuarios`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
-          const apiUsers = json.data.map((u) => ({
-            id: u.id,
-            documento: u.documento,
-            nombre: u.nombre_completo || u.nombre,
-            email: u.email,
-            telefono: u.telefono || '',
-            rol: u.rol || 'usuario',
-            cargo: u.cargo || 'Funcionario FMO',
-            sede: u.sede || 'Medellín',
-            activo: u.activo !== false,
-            avatar_url: u.avatar_url || u.avatarUrl || u.foto_perfil || null,
-          }));
+      let rawData = null;
 
-          setUsuarios((prev) => {
-            const map = new Map();
-            // Mantener usuarios locales/demo existentes
-            prev.forEach((usr) => map.set(String(usr.documento || usr.id).toLowerCase(), usr));
-            // Actualizar o añadir desde API
-            apiUsers.forEach((usr) => {
-              const key = String(usr.documento || usr.id).toLowerCase();
-              const existing = map.get(key) || {};
-              map.set(key, { ...existing, ...usr });
-            });
+      // 1. Intentar consulta directa a Supabase (vista usuarios o tabla perfiles)
+      try {
+        const { supabase } = await import('../services/supabase');
+        if (supabase) {
+          const { data, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .order('nombre_completo', { ascending: true });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            rawData = data;
+          } else {
+            const { data: pData, error: pError } = await supabase
+              .from('perfiles')
+              .select('*')
+              .order('nombre_completo', { ascending: true });
+            if (!pError && Array.isArray(pData) && pData.length > 0) {
+              rawData = pData;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Consulta directa a Supabase usuarios:', e.message);
+      }
 
-            // Sincronizar reactivamente el avatar_url del usuario en sesión activa
-            setCurrentUser((curr) => {
-              if (!curr) return curr;
-              const match = apiUsers.find((u) => 
-                (curr.id && String(u.id) === String(curr.id)) ||
-                (curr.documento && String(u.documento) === String(curr.documento)) ||
-                (curr.email && String(u.email).toLowerCase() === String(curr.email).toLowerCase())
-              );
-              if (match && match.avatar_url !== curr.avatar_url) {
-                const updated = { ...curr, avatar_url: match.avatar_url };
-                localStorage.setItem('siga_current_user', JSON.stringify(updated));
-                return updated;
-              }
-              return curr;
-            });
-
-            return Array.from(map.values());
-          });
-          return apiUsers;
+      // 2. Si no respondió Supabase, intentar backend API
+      if (!rawData) {
+        const res = await fetch(`${API_BASE}/usuarios`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
+            rawData = json.data;
+          }
         }
       }
+
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        const apiUsers = rawData.map((u) => ({
+          id: u.id,
+          documento: u.documento,
+          nombre: u.nombre_completo || u.nombre,
+          nombre_completo: u.nombre_completo || u.nombre,
+          email: u.email,
+          telefono: u.telefono || '',
+          rol: String(u.rol || 'usuario').toLowerCase().trim(),
+          cargo: u.cargo || 'Funcionario FMO',
+          sede: u.sede || 'Medellín',
+          activo: u.activo !== false,
+          avatar_url: u.avatar_url || u.avatarUrl || u.foto_perfil || null,
+        }));
+
+        setUsuarios((prev) => {
+          const map = new Map();
+          // Mantener usuarios locales/demo existentes
+          prev.forEach((usr) => map.set(String(usr.email || usr.documento || usr.id).toLowerCase(), usr));
+          // Actualizar o añadir desde Supabase/API
+          apiUsers.forEach((usr) => {
+            const key = String(usr.email || usr.documento || usr.id).toLowerCase();
+            const existing = map.get(key) || {};
+            map.set(key, { ...existing, ...usr });
+          });
+
+          // Sincronizar reactivamente el avatar_url del usuario en sesión activa
+          setCurrentUser((curr) => {
+            if (!curr) return curr;
+            const match = apiUsers.find((u) => 
+              (curr.id && String(u.id) === String(curr.id)) ||
+              (curr.documento && String(u.documento) === String(curr.documento)) ||
+              (curr.email && String(u.email).toLowerCase() === String(curr.email).toLowerCase())
+            );
+            if (match && match.avatar_url !== curr.avatar_url) {
+              const updated = { ...curr, avatar_url: match.avatar_url };
+              localStorage.setItem('siga_current_user', JSON.stringify(updated));
+              return updated;
+            }
+            return curr;
+          });
+
+          return Array.from(map.values());
+        });
+        return apiUsers;
+      }
     } catch (err) {
-      console.warn('Advertencia al consultar /api/usuarios:', err.message);
+      console.warn('Advertencia al consultar usuarios:', err.message);
     }
     return [];
   }, []);
@@ -644,15 +678,36 @@ export function AuthProvider({ children }) {
           }
 
           if (res.status === 401 || res.status === 400 || res.status === 403 || res.status === 404) {
-            throw new Error(
-              json?.message ||
-              json?.error ||
-              'La contraseña ingresada es incorrecta o el usuario no existe.'
-            );
+            const isDemoAccount =
+              Boolean(USUARIOS_DEMO && USUARIOS_DEMO[cleanId]) ||
+              DEMO_ACCOUNTS.some(
+                (d) =>
+                  d.email.toLowerCase() === cleanId ||
+                  d.alternateEmail?.toLowerCase() === cleanId ||
+                  String(d.documento).trim() === cleanId
+              );
+
+            if (!isDemoAccount) {
+              throw new Error(
+                json?.message ||
+                json?.error ||
+                'La contraseña ingresada es incorrecta o el usuario no existe.'
+              );
+            }
           }
         } catch (apiError) {
-          // Si es un error de credenciales explícito desde el backend, propagarlo
+          // Si no es un usuario demo y es un error explícito del backend, propagarlo
+          const isDemoAccount =
+            Boolean(USUARIOS_DEMO && USUARIOS_DEMO[cleanId]) ||
+            DEMO_ACCOUNTS.some(
+              (d) =>
+                d.email.toLowerCase() === cleanId ||
+                d.alternateEmail?.toLowerCase() === cleanId ||
+                String(d.documento).trim() === cleanId
+            );
+
           if (
+            !isDemoAccount &&
             apiError.message &&
             !apiError.message.includes('Failed to fetch') &&
             !apiError.message.includes('NetworkError') &&
@@ -682,7 +737,17 @@ export function AuthProvider({ children }) {
             rol: fallback.rol,
             sede: fallback.sede,
             cargo: fallback.cargo,
-            password: 'admin123',
+            password:
+              fallback.password ||
+              (fallback.rol === 'coordinador'
+                ? 'coord123'
+                : fallback.rol === 'supervisor'
+                ? 'super123'
+                : fallback.rol === 'operador'
+                ? 'oper123'
+                : fallback.rol === 'usuario'
+                ? 'user123'
+                : 'admin123'),
           };
         }
 
@@ -803,6 +868,9 @@ export function AuthProvider({ children }) {
     async (id, datosActualizados) => {
       let usuarioGuardado = null;
       let idPersistido = id;
+      let lastDbError = null;
+
+      const cleanRol = String(datosActualizados.rol || 'usuario').toLowerCase().trim();
 
       // 1. Intentar persistencia directa en Supabase (tabla física 'perfiles' o vista 'usuarios')
       try {
@@ -814,7 +882,7 @@ export function AuthProvider({ children }) {
             telefono: datosActualizados.telefono,
             sede: datosActualizados.sede,
             email: datosActualizados.email ? datosActualizados.email.trim().toLowerCase() : undefined,
-            rol: datosActualizados.rol,
+            rol: cleanRol,
             cargo: datosActualizados.cargo,
             activo: datosActualizados.activo !== undefined ? datosActualizados.activo : true,
             avatar_url: datosActualizados.avatar_url !== undefined ? datosActualizados.avatar_url : (datosActualizados.avatarUrl || undefined),
@@ -833,6 +901,7 @@ export function AuthProvider({ children }) {
 
           // Si falla o la tabla 'perfiles' no responde, intentar en la vista 'usuarios' (con trigger INSTEAD OF)
           if (supaError) {
+            lastDbError = supaError;
             const { data: supaVistaData, error: supaVistaError } = await supabase
               .from('usuarios')
               .update(payloadSupabase)
@@ -841,9 +910,13 @@ export function AuthProvider({ children }) {
 
             if (!supaVistaError && supaVistaData && supaVistaData.length > 0) {
               usuarioGuardado = supaVistaData[0];
+              lastDbError = null;
+            } else if (supaVistaError) {
+              lastDbError = supaVistaError;
             }
           } else if (supaData && supaData.length > 0) {
             usuarioGuardado = supaData[0];
+            lastDbError = null;
           }
 
           if (usuarioGuardado?.id) {
@@ -851,6 +924,7 @@ export function AuthProvider({ children }) {
           }
         }
       } catch (errSupabase) {
+        lastDbError = errSupabase;
         console.warn('Supabase updateUsuario error o no disponible:', errSupabase.message);
       }
 
@@ -862,7 +936,7 @@ export function AuthProvider({ children }) {
           nombre: datosActualizados.nombre || datosActualizados.nombre_completo,
           telefono: datosActualizados.telefono,
           email: datosActualizados.email ? datosActualizados.email.trim().toLowerCase() : undefined,
-          rol: datosActualizados.rol,
+          rol: cleanRol,
           sede: datosActualizados.sede,
           cargo: datosActualizados.cargo,
           activo: datosActualizados.activo !== undefined ? datosActualizados.activo : true,
@@ -875,16 +949,22 @@ export function AuthProvider({ children }) {
 
         const response = await inventoryApi.updateUsuario(id, payloadApi);
         if (response && response.success !== false) {
-          const respData = response.data || {};
+          const respData = response.data || response.usuario || {};
           if (respData.id) {
             idPersistido = respData.id;
           }
           if (!usuarioGuardado) {
             usuarioGuardado = respData;
           }
+          lastDbError = null;
         }
       } catch (err) {
         console.warn('Backend API updateUsuario no disponible o fallo de red, actualizando en almacenamiento local:', err.message);
+      }
+
+      // Si ambos fallaron y hubo un error de base de datos explícito, lanzar para informar en UI
+      if (!usuarioGuardado && lastDbError && !lastDbError.message?.includes('Failed to fetch') && !lastDbError.message?.includes('NetworkError')) {
+        throw new Error(lastDbError.message || 'Error de restricción o permisos en Supabase');
       }
 
       const nombreFinal = usuarioGuardado?.nombre_completo || datosActualizados.nombre || datosActualizados.nombre_completo;
