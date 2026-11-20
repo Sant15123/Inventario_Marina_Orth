@@ -5462,3 +5462,46 @@ textarea,
 button {
   font-family: 'Poppins', sans-serif !important;
 }
+
+/* ==========================================================================
+   ESTILOS INSTITUCIONALES MÓDULO GESTIÓN DE COMPRAS (SIGA-FMO)
+   ========================================================================== */
+.gestion-compras-view {
+  width: 100%;
+  font-family: var(--font-sans);
+}
+
+.compras-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 920px) {
+  .compras-stats-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+.compras-step-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.compras-step-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.12);
+}
+
+.compras-step-card.active {
+  border-color: #abd037 !important;
+  box-shadow: 0 4px 16px rgba(171, 208, 55, 0.28) !important;
+  background: var(--surface-hover);
+}

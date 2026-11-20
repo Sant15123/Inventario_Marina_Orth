@@ -181,6 +181,11 @@ export const getEstadoBadgeConfig = (rawEstado) => {
     return {
       label: 'Pendiente',
       badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700/50',
+      badgeStyle: {
+        backgroundColor: 'rgba(245, 158, 11, 0.14)',
+        color: '#b45309',
+        border: '1px solid rgba(245, 158, 11, 0.4)',
+      },
       Icon: Clock,
     };
   }
@@ -188,13 +193,23 @@ export const getEstadoBadgeConfig = (rawEstado) => {
     return {
       label: 'En Evaluación',
       badgeClass: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-700/50',
+      badgeStyle: {
+        backgroundColor: 'rgba(44, 172, 208, 0.14)',
+        color: '#0284c7',
+        border: '1px solid rgba(44, 172, 208, 0.4)',
+      },
       Icon: Sparkles,
     };
   }
   if (norm === 'APROBADO_COMPRA' || norm === 'APROBADA' || norm === 'APROBADO' || norm === 'APROBADA PARA COMPRA') {
     return {
-      label: 'Aprobada para Compra',
+      label: 'Aprobada (Compra)',
       badgeClass: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-700/50',
+      badgeStyle: {
+        backgroundColor: 'rgba(123, 44, 191, 0.12)',
+        color: '#7b2cbf',
+        border: '1px solid rgba(123, 44, 191, 0.35)',
+      },
       Icon: CheckCircle2,
     };
   }
@@ -202,6 +217,11 @@ export const getEstadoBadgeConfig = (rawEstado) => {
     return {
       label: 'Entregada',
       badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700/50',
+      badgeStyle: {
+        backgroundColor: 'rgba(16, 185, 129, 0.14)',
+        color: '#047857',
+        border: '1px solid rgba(16, 185, 129, 0.4)',
+      },
       Icon: PackageCheck,
     };
   }
@@ -209,6 +229,11 @@ export const getEstadoBadgeConfig = (rawEstado) => {
     return {
       label: 'Comprada',
       badgeClass: 'bg-lime-100 text-emerald-900 border-lime-400 dark:bg-lime-950/40 dark:text-lime-300 dark:border-lime-700/50',
+      badgeStyle: {
+        backgroundColor: 'rgba(171, 208, 55, 0.22)',
+        color: '#365314',
+        border: '1px solid rgba(171, 208, 55, 0.6)',
+      },
       Icon: PackageCheck,
     };
   }
@@ -216,6 +241,11 @@ export const getEstadoBadgeConfig = (rawEstado) => {
     return {
       label: 'Rechazada',
       badgeClass: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-700/50',
+      badgeStyle: {
+        backgroundColor: 'rgba(244, 63, 94, 0.14)',
+        color: '#be123c',
+        border: '1px solid rgba(244, 63, 94, 0.4)',
+      },
       Icon: XCircle,
     };
   }
@@ -224,6 +254,11 @@ export const getEstadoBadgeConfig = (rawEstado) => {
   return {
     label: rawEstado || 'Pendiente',
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+    badgeStyle: {
+      backgroundColor: 'rgba(109, 110, 113, 0.1)',
+      color: 'var(--text-dim, #6d6e71)',
+      border: '1px solid var(--line, #e2e8f0)',
+    },
     Icon: Clock,
   };
 };
@@ -646,165 +681,386 @@ export default function GestionComprasView({
   };
 
   return (
-    <div className="gestion-compras-view" style={{ fontFamily: "'Poppins', sans-serif" }}>
+    <div className="gestion-compras-view" style={{ width: '100%', fontFamily: "'Poppins', sans-serif" }}>
       {/* =========================================================================
-          1. HEADER INSTITUCIONAL Y STEPPER DE 3 ETAPAS EN HORIZONTAL
+          1. HEADER INSTITUCIONAL (ALINEADO CON MÓDULOS INVENTARIO Y RESUMEN)
           ========================================================================= */}
       <div
-        className="compras-header p-6 rounded-2xl mb-6 shadow-sm border bg-[#013a52]"
+        className="section-header"
         style={{
-          color: '#ffffff',
-          borderColor: 'rgba(255, 255, 255, 0.12)',
-          fontFamily: "'Poppins', sans-serif",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+          marginBottom: '20px',
         }}
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-          <div className="flex items-center gap-3.5">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-              style={{ backgroundColor: '#abd037', color: '#013a52' }}
+        <div>
+          <h2
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '1.35rem',
+              fontWeight: 700,
+              color: 'var(--text-h, #013a52)',
+              margin: 0,
+              flexWrap: 'wrap',
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
+            <span
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                backgroundColor: '#abd037',
+                color: '#013a52',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(171, 208, 55, 0.4)',
+                flexShrink: 0,
+              }}
             >
-              <ShoppingCart className="w-6 h-6 stroke-[2.4]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-2xl font-bold tracking-tight text-white m-0">
-                  Gestión de Compras y Adquisiciones
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#abd037]/20 text-[#abd037] border border-[#abd037]/40">
-                  Flujo Oficial SIGA-FMO
-                </span>
-              </div>
-              <p className="text-slate-200 text-sm mt-1 mb-0">
-                Evaluación técnica de requerimientos pedagógicos, cruce con bodega y control de facturas institucionales.
-              </p>
-            </div>
-          </div>
+              <ShoppingCart size={20} strokeWidth={2.4} />
+            </span>
+            <span>Gestión de Compras y Adquisiciones</span>
+            <span
+              className="pill"
+              style={{
+                backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                color: 'var(--text-h, #013a52)',
+                border: '1.5px solid #abd037',
+                fontSize: '11px',
+                fontWeight: 700,
+                padding: '2px 9px',
+                borderRadius: '999px',
+              }}
+            >
+              Flujo Oficial SIGA-FMO
+            </span>
+          </h2>
+          <p
+            className="section-subtitle"
+            style={{
+              fontSize: '13px',
+              color: 'var(--text-dim, #6d6e71)',
+              margin: '4px 0 0 0',
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
+            Evaluación técnica de requerimientos pedagógicos, cruce con bodega y control de facturas institucionales.
+          </p>
+        </div>
 
-          {/* Botón Exportar a Excel */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Botón Exportar a Excel Institucional */}
           <button
             type="button"
             onClick={handleExportarExcel}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md self-start md:self-auto border-none"
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              borderRadius: '12px',
               backgroundColor: '#abd037',
               color: '#013a52',
+              border: 'none',
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 3px 10px rgba(171, 208, 55, 0.35)',
+              transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#96b82d';
               e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 5px 14px rgba(171, 208, 55, 0.45)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#abd037';
               e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(171, 208, 55, 0.35)';
             }}
-            title="Exportar listado actual a Excel con auditoría contable"
+            title="Exportar listado actual a Excel con formato institucional"
           >
-            <FileSpreadsheet className="w-4 h-4 stroke-[2.3]" />
+            <FileSpreadsheet size={16} strokeWidth={2.4} />
             <span>Exportar a Excel (.xlsx)</span>
           </button>
         </div>
+      </div>
 
-        {/* Fila inferior (Las 3 Etapas en Cuadrícula Horizontal de 3 Columnas) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/15">
-          {/* Etapa 1 */}
-          <div
-            className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all cursor-pointer ${
-              pestanaActiva === 'pendientes'
-                ? 'bg-white/15 border-[#abd037] shadow-inner ring-1 ring-[#abd037]/50'
-                : 'bg-white/5 border-white/15 hover:bg-white/10'
-            }`}
-            onClick={() => setPestanaActiva('pendientes')}
-            role="button"
-            tabIndex={0}
-          >
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm"
-              style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
-            >
-              1
+      {/* =========================================================================
+          2. LAS 3 ETAPAS DEL FLUJO EN CUADRÍCULA HORIZONTAL (3 TARJETAS KPI)
+          ========================================================================= */}
+      <div className="compras-stats-grid">
+        {/* Etapa 1: Solicitud & Evaluación */}
+        <div
+          className={`compras-step-card ${pestanaActiva === 'pendientes' ? 'active' : ''}`}
+          onClick={() => setPestanaActiva('pendientes')}
+          role="button"
+          tabIndex={0}
+          style={{
+            borderTop: '4px solid #f59e0b',
+            borderTopColor: '#f59e0b',
+          }}
+          title="Ver solicitudes pendientes por evaluar"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '8px',
+                  backgroundColor: '#f59e0b',
+                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  flexShrink: 0,
+                }}
+              >
+                1
+              </span>
+              <span
+                className="pill"
+                style={{
+                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                  color: '#b45309',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                }}
+              >
+                Etapa 1
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="font-semibold text-sm text-white">Solicitud & Evaluación</span>
-                <span className="px-2 py-0.5 rounded-full text-[11px] bg-amber-500/30 text-amber-200 font-extrabold border border-amber-400/40">
-                  {conteos.pendientes}
-                </span>
-              </div>
-              <div className="text-xs text-slate-300 mt-0.5 line-clamp-1">
-                Revisión técnica y cruce con bodega
-              </div>
+            {pestanaActiva === 'pendientes' && (
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  color: '#013a52',
+                  backgroundColor: '#abd037',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                Filtro Activo
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+            <div
+              className="num"
+              style={{
+                fontSize: '32px',
+                fontWeight: 900,
+                color: '#f59e0b',
+                fontFamily: "'Poppins', sans-serif",
+                lineHeight: 1,
+              }}
+            >
+              {conteos.pendientes}
+            </div>
+            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
+              Solicitud & Evaluación
             </div>
           </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '6px' }}>
+            Revisión técnica y cruce con bodega
+          </div>
+        </div>
 
-          {/* Etapa 2 */}
-          <div
-            className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all cursor-pointer ${
-              pestanaActiva === 'aprobadas'
-                ? 'bg-white/15 border-[#abd037] shadow-inner ring-1 ring-[#abd037]/50'
-                : 'bg-white/5 border-white/15 hover:bg-white/10'
-            }`}
-            onClick={() => setPestanaActiva('aprobadas')}
-            role="button"
-            tabIndex={0}
-          >
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm"
-              style={{ backgroundColor: '#2cacd0', color: '#ffffff' }}
-            >
-              2
+        {/* Etapa 2: Aprobación & Adquisición */}
+        <div
+          className={`compras-step-card ${pestanaActiva === 'aprobadas' ? 'active' : ''}`}
+          onClick={() => setPestanaActiva('aprobadas')}
+          role="button"
+          tabIndex={0}
+          style={{
+            borderTop: '4px solid #2cacd0',
+            borderTopColor: '#2cacd0',
+          }}
+          title="Ver solicitudes aprobadas para compra"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '8px',
+                  backgroundColor: '#2cacd0',
+                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  flexShrink: 0,
+                }}
+              >
+                2
+              </span>
+              <span
+                className="pill"
+                style={{
+                  backgroundColor: 'rgba(44, 172, 208, 0.15)',
+                  color: '#0284c7',
+                  border: '1px solid rgba(44, 172, 208, 0.4)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                }}
+              >
+                Etapa 2
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="font-semibold text-sm text-white">Aprobación & Adquisición</span>
-                <span className="px-2 py-0.5 rounded-full text-[11px] bg-sky-500/30 text-sky-200 font-extrabold border border-sky-400/40">
-                  {conteos.aprobadas}
-                </span>
-              </div>
-              <div className="text-xs text-slate-300 mt-0.5 line-clamp-1">
-                Órdenes autorizadas pendientes de factura
-              </div>
+            {pestanaActiva === 'aprobadas' && (
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  color: '#013a52',
+                  backgroundColor: '#abd037',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                Filtro Activo
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+            <div
+              className="num"
+              style={{
+                fontSize: '32px',
+                fontWeight: 900,
+                color: '#2cacd0',
+                fontFamily: "'Poppins', sans-serif",
+                lineHeight: 1,
+              }}
+            >
+              {conteos.aprobadas}
+            </div>
+            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
+              Aprobación & Adquisición
             </div>
           </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '6px' }}>
+            Órdenes autorizadas pendientes de factura
+          </div>
+        </div>
 
-          {/* Etapa 3 */}
-          <div
-            className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all cursor-pointer ${
-              pestanaActiva === 'compradas'
-                ? 'bg-white/15 border-[#abd037] shadow-inner ring-1 ring-[#abd037]/50'
-                : 'bg-white/5 border-white/15 hover:bg-white/10'
-            }`}
-            onClick={() => setPestanaActiva('compradas')}
-            role="button"
-            tabIndex={0}
-          >
+        {/* Etapa 3: Compra & Recepción */}
+        <div
+          className={`compras-step-card ${pestanaActiva === 'compradas' ? 'active' : ''}`}
+          onClick={() => setPestanaActiva('compradas')}
+          role="button"
+          tabIndex={0}
+          style={{
+            borderTop: '4px solid #abd037',
+            borderTopColor: '#abd037',
+          }}
+          title="Ver compras finalizadas"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '8px',
+                  backgroundColor: '#abd037',
+                  color: '#013a52',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  flexShrink: 0,
+                }}
+              >
+                3
+              </span>
+              <span
+                className="pill"
+                style={{
+                  backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                  color: '#4d7c0f',
+                  border: '1px solid rgba(171, 208, 55, 0.5)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                }}
+              >
+                Etapa 3
+              </span>
+            </div>
+            {pestanaActiva === 'compradas' && (
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  color: '#013a52',
+                  backgroundColor: '#abd037',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                Filtro Activo
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm"
-              style={{ backgroundColor: '#abd037', color: '#013a52' }}
+              className="num"
+              style={{
+                fontSize: '32px',
+                fontWeight: 900,
+                color: '#4d7c0f',
+                fontFamily: "'Poppins', sans-serif",
+                lineHeight: 1,
+              }}
             >
-              3
+              {conteos.compradas}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="font-semibold text-sm text-white">Compra & Recepción</span>
-                <span className="px-2 py-0.5 rounded-full text-[11px] bg-[#abd037]/30 text-[#abd037] font-extrabold border border-[#abd037]/50">
-                  {conteos.compradas}
-                </span>
-              </div>
-              <div className="text-xs text-slate-300 mt-0.5 line-clamp-1">
-                Ingreso al inventario oficial FMO
-              </div>
+            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-h, #013a52)' }}>
+              Compra & Recepción
             </div>
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', marginTop: '6px' }}>
+            Ingreso al inventario oficial FMO
           </div>
         </div>
       </div>
 
       {/* =========================================================================
-          2. PESTAÑAS DE FILTRO Y BARRA DE BÚSQUEDA
+          3. PESTAÑAS DE FILTRO POR ESTADO Y BUSCADOR RÁPIDO
           ========================================================================= */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 mb-4">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          flexWrap: 'wrap',
+          marginBottom: '16px',
+        }}
+      >
         {/* Pestañas de Estado con Contadores */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {[
             { id: 'todas', label: 'Todas', count: conteos.todas },
             { id: 'pendientes', label: 'Pendientes por Evaluar', count: conteos.pendientes },
@@ -818,25 +1074,46 @@ export default function GestionComprasView({
                 key={tab.id}
                 type="button"
                 onClick={() => setPestanaActiva(tab.id)}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? 'shadow-sm'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
                 style={{
-                  backgroundColor: isActive ? '#abd037' : 'var(--surface-2, #ffffff)',
-                  color: isActive ? '#013a52' : '#6d6e71',
-                  border: isActive ? '1.5px solid #96b82d' : '1px solid var(--line, #e2e8f0)',
-                  fontWeight: isActive ? 700 : 600,
                   fontFamily: "'Poppins', sans-serif",
+                  fontSize: '13px',
+                  fontWeight: isActive ? 700 : 600,
+                  backgroundColor: isActive ? '#abd037' : 'var(--surface, #ffffff)',
+                  color: isActive ? '#013a52' : 'var(--text-dim, #6d6e71)',
+                  border: isActive ? '1.5px solid #96b82d' : '1px solid var(--line, #e2e8f0)',
+                  borderRadius: '12px',
+                  padding: '7px 14px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: isActive ? '0 2px 8px rgba(171, 208, 55, 0.35)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = '#abd037';
+                    e.currentTarget.style.color = 'var(--text, #013a52)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = 'var(--line, #e2e8f0)';
+                    e.currentTarget.style.color = 'var(--text-dim, #6d6e71)';
+                  }
                 }}
               >
                 <span>{tab.label}</span>
                 <span
-                  className="px-2 py-0.5 rounded-full text-[11px] font-bold"
                   style={{
+                    padding: '1px 7px',
+                    borderRadius: '999px',
+                    fontSize: '11px',
+                    fontWeight: 700,
                     backgroundColor: isActive ? '#013a52' : 'rgba(109, 110, 113, 0.12)',
-                    color: isActive ? '#ffffff' : '#6d6e71',
+                    color: isActive ? '#ffffff' : 'var(--text-dim, #6d6e71)',
+                    minWidth: '20px',
+                    textAlign: 'center',
                   }}
                 >
                   {tab.count}
@@ -846,45 +1123,113 @@ export default function GestionComprasView({
           })}
         </div>
 
-        {/* Buscador Rápido con padding holgado sin solapamiento */}
-        <div className="relative min-w-[280px]">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        {/* Buscador Rápido */}
+        <div style={{ position: 'relative', minWidth: '280px', flex: '1 1 280px', maxWidth: '380px' }}>
+          <Search
+            size={16}
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted, #94a3b8)',
+              pointerEvents: 'none',
+            }}
+          />
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por radicado, solicitante, ítem o factura..."
-            className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#abd037]"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{
+              width: '100%',
+              paddingLeft: '36px',
+              paddingRight: busqueda ? '32px' : '12px',
+              paddingTop: '8px',
+              paddingBottom: '8px',
+              fontSize: '13px',
+              fontFamily: "'Poppins', sans-serif",
+              borderRadius: '12px',
+              border: '1px solid var(--line, #e2e8f0)',
+              backgroundColor: 'var(--surface, #ffffff)',
+              color: 'var(--text, #013a52)',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = '#013a52';
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(171, 208, 55, 0.5)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--line, #e2e8f0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           />
           {busqueda && (
             <button
               type="button"
               onClick={() => setBusqueda('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted, #94a3b8)',
+                cursor: 'pointer',
+                padding: '2px',
+              }}
               title="Limpiar búsqueda"
             >
-              <X className="w-3.5 h-3.5" />
+              <X size={14} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Filtros Secundarios: Sede y Proyecto STEAM */}
-      <div className="flex items-center gap-3.5 mb-4 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-wrap text-xs font-semibold">
-        <span className="text-[#6d6e71] flex items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5" />
-          Filtros de auditoría:
+      {/* =========================================================================
+          4. BARRA DE FILTROS SECUNDARIOS (SEDES Y PROYECTOS STEAM)
+          ========================================================================= */}
+      <div
+        className="filter-bar"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          padding: '10px 16px',
+          borderRadius: '12px',
+          border: '1px solid var(--line, #e2e8f0)',
+          backgroundColor: 'var(--surface, #ffffff)',
+          marginBottom: '18px',
+          flexWrap: 'wrap',
+          fontSize: '12.5px',
+          color: 'var(--text-dim, #6d6e71)',
+          fontFamily: "'Poppins', sans-serif",
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: 'var(--text, #013a52)' }}>
+          <Filter size={14} />
+          <span>Filtros de auditoría:</span>
         </span>
 
         {/* Filtro Sede */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[#013a52] dark:text-slate-300 font-bold">Sede:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontWeight: 700, color: 'var(--text, #013a52)' }}>Sede:</span>
           <select
             value={filtroSede}
             onChange={(e) => setFiltroSede(e.target.value)}
-            className="rounded-lg px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{
+              borderRadius: '8px',
+              padding: '5px 10px',
+              fontSize: '12px',
+              border: '1px solid var(--line, #cbd5e1)',
+              backgroundColor: 'var(--surface-2, #f8fafc)',
+              color: 'var(--text, #013a52)',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600,
+              outline: 'none',
+            }}
           >
             <option value="todas">Todas las sedes</option>
             {sedesList.map((s) => (
@@ -893,14 +1238,23 @@ export default function GestionComprasView({
           </select>
         </div>
 
-        {/* Filtro Proyecto */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[#013a52] dark:text-slate-300 font-bold">Proyecto STEAM:</span>
+        {/* Filtro Proyecto STEAM */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontWeight: 700, color: 'var(--text, #013a52)' }}>Proyecto STEAM:</span>
           <select
             value={filtroProyecto}
             onChange={(e) => setFiltroProyecto(e.target.value)}
-            className="rounded-lg px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#abd037]"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{
+              borderRadius: '8px',
+              padding: '5px 10px',
+              fontSize: '12px',
+              border: '1px solid var(--line, #cbd5e1)',
+              backgroundColor: 'var(--surface-2, #f8fafc)',
+              color: 'var(--text, #013a52)',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600,
+              outline: 'none',
+            }}
           >
             <option value="todos">Todos los proyectos</option>
             {(proyectosSteamList || []).map((p) => {
@@ -915,53 +1269,168 @@ export default function GestionComprasView({
           </select>
         </div>
 
-        <div className="ml-auto text-[#6d6e71] text-xs">
-          Mostrando <strong className="text-[#013a52] dark:text-white">{solicitudesFiltradas.length}</strong> de{' '}
-          <strong>{solicitudes.length}</strong> solicitudes registradas
+        <div style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-dim, #6d6e71)' }}>
+          Mostrando <strong style={{ color: 'var(--text, #013a52)' }}>{solicitudesFiltradas.length}</strong> de{' '}
+          <strong style={{ color: 'var(--text, #013a52)' }}>{solicitudes.length}</strong> solicitudes registradas
         </div>
       </div>
 
       {/* =========================================================================
-          3. TABLA AUDITADA DE SOLICITUDES DE COMPRA (SIN DESBORDAMIENTO)
+          5. TABLA AUDITADA DE SOLICITUDES DE COMPRA (SIN COLISIONES NI DESBORDAMIENTOS)
           ========================================================================= */}
       {solicitudesFiltradas.length === 0 ? (
         <div
-          className="p-10 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 my-4 shadow-sm"
+          style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            borderRadius: '16px',
+            border: '1px solid var(--line, #e2e8f0)',
+            backgroundColor: 'var(--surface, #ffffff)',
+            margin: '16px 0',
+            boxShadow: 'var(--shadow-sm)',
+          }}
         >
-          <ShoppingCart className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-          <h3 className="text-base font-bold text-[#013a52] dark:text-white m-0">
+          <ShoppingCart size={44} style={{ color: 'var(--text-muted, #94a3b8)', margin: '0 auto 10px', display: 'block' }} />
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-h, #013a52)', margin: 0 }}>
             No se encontraron solicitudes de compra
           </h3>
-          <p className="text-xs text-[#6d6e71] m-0 mt-1 max-w-md mx-auto">
+          <p style={{ fontSize: '12.5px', color: 'var(--text-dim, #6d6e71)', margin: '4px 0 0' }}>
             No hay requerimientos que coincidan con la pestaña seleccionada o los filtros aplicados.
           </p>
         </div>
       ) : (
         <div
-          className="table-responsive rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-x-auto"
+          className="table-responsive"
+          style={{
+            width: '100%',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            borderRadius: '16px',
+            border: '1px solid var(--line, #e2e8f0)',
+            backgroundColor: 'var(--surface, #ffffff)',
+            boxShadow: 'var(--shadow-sm)',
+            marginBottom: '24px',
+          }}
         >
-          <table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1080px', borderCollapse: 'collapse', fontFamily: "'Poppins', sans-serif" }}>
+          <table
+            style={{
+              width: '100%',
+              minWidth: '980px',
+              borderCollapse: 'collapse',
+              tableLayout: 'fixed',
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
             <thead>
-              <tr style={{ borderBottom: '2px solid #abd037' }}>
-                <th style={{ width: '12%', minWidth: '115px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+              <tr
+                style={{
+                  backgroundColor: 'var(--surface-2, #f8fafc)',
+                  borderBottom: '2px solid #abd037',
+                }}
+              >
+                <th
+                  style={{
+                    width: '13%',
+                    minWidth: '115px',
+                    padding: '12px 14px',
+                    textAlign: 'left',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   RADICADO / FECHA
                 </th>
-                <th style={{ width: '18%', minWidth: '165px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th
+                  style={{
+                    width: '17%',
+                    minWidth: '150px',
+                    padding: '12px 12px',
+                    textAlign: 'left',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   SOLICITANTE & SEDE
                 </th>
-                <th style={{ width: '14%', minWidth: '135px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th
+                  style={{
+                    width: '14%',
+                    minWidth: '130px',
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   PROYECTO STEAM
                 </th>
-                <th style={{ width: '21%', minWidth: '200px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th
+                  style={{
+                    width: '20%',
+                    minWidth: '170px',
+                    padding: '12px 12px',
+                    textAlign: 'left',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   DETALLE DE ÍTEMS
                 </th>
-                <th style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th
+                  style={{
+                    width: '16%',
+                    minWidth: '165px',
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   ESTADO
                 </th>
-                <th style={{ width: '11%', minWidth: '115px', padding: '12px 10px', textAlign: 'left', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th
+                  style={{
+                    width: '10%',
+                    minWidth: '110px',
+                    padding: '12px 10px',
+                    textAlign: 'left',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   COMPRA & FACTURA
                 </th>
-                <th style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', fontSize: '11.5px', fontWeight: 700, color: '#013a52' }}>
+                <th
+                  style={{
+                    width: '10%',
+                    minWidth: '115px',
+                    padding: '12px 12px',
+                    textAlign: 'center',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: 'var(--text-h, #013a52)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   ACCIONES
                 </th>
               </tr>
@@ -976,17 +1445,29 @@ export default function GestionComprasView({
                 return (
                   <tr
                     key={sol.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    style={{ borderBottom: '1px solid var(--line, #e2e8f0)' }}
+                    style={{
+                      borderBottom: '1px solid var(--line, #e2e8f0)',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover, #f8fafc)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                   >
                     {/* 1. Radicado / Fecha */}
-                    <td style={{ width: '12%', minWidth: '115px', padding: '12px 10px', verticalAlign: 'middle' }}>
+                    <td style={{ width: '13%', minWidth: '115px', padding: '12px 14px', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
                         <span
-                          className="badge-placa inline-block font-bold text-xs px-2.5 py-1 rounded-md"
                           style={{
+                            display: 'inline-block',
+                            fontWeight: 700,
+                            fontSize: '11.5px',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
                             backgroundColor: 'rgba(1, 58, 82, 0.08)',
-                            color: '#013a52',
+                            color: 'var(--text-h, #013a52)',
                             border: '1px solid rgba(1, 58, 82, 0.2)',
                             fontFamily: "'Poppins', sans-serif",
                             whiteSpace: 'nowrap',
@@ -995,109 +1476,178 @@ export default function GestionComprasView({
                         >
                           {formatRadicado(sol.id, sol.radicado)}
                         </span>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate block" title={fmtDate(sol.creado_en || sol.fecha_requerida)}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            color: 'var(--text-dim, #6d6e71)',
+                            marginTop: '4px',
+                            whiteSpace: 'nowrap',
+                          }}
+                          title={fmtDate(sol.creado_en || sol.fecha_requerida)}
+                        >
                           {fmtDate(sol.creado_en || sol.fecha_requerida)}
                         </span>
                       </div>
                     </td>
 
                     {/* 2. Solicitante & Sede */}
-                    <td style={{ width: '18%', minWidth: '165px', padding: '12px 10px', verticalAlign: 'middle' }}>
+                    <td style={{ width: '17%', minWidth: '150px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
                         <strong
-                          className="block text-xs font-bold text-[#013a52] dark:text-white truncate"
+                          style={{
+                            display: 'block',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            color: 'var(--text-h, #013a52)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontFamily: "'Poppins', sans-serif",
+                          }}
                           title={sol.solicitante_nombre || sol.solicitante || 'Sin asignar'}
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
                         >
                           {sol.solicitante_nombre || sol.solicitante || (
-                            <span className="text-slate-400 italic font-normal">Sin asignar</span>
+                            <span style={{ color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic', fontWeight: 400 }}>Sin asignar</span>
                           )}
                         </strong>
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                           {sol.sede_destino || sol.sede ? (
                             <span
-                              className="sede-badge municipal truncate block text-[10px]"
+                              className="sede-badge municipal"
+                              style={{
+                                fontSize: '10px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-block',
+                              }}
                               title={`Sede: ${sol.sede_destino || sol.sede}`}
                             >
                               {sol.sede_destino || sol.sede}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400 italic">Sede sin asignar</span>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic' }}>Sede sin asignar</span>
                           )}
                         </div>
                       </div>
                     </td>
 
                     {/* 3. Proyecto STEAM */}
-                    <td style={{ width: '14%', minWidth: '135px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
-                      <div className="flex justify-center items-center min-w-0">
+                    <td style={{ width: '14%', minWidth: '130px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
                         <ProgramAreaBadge area={sol.proyecto_steam || 'Robótica'} size="sm" />
                       </div>
                     </td>
 
                     {/* 4. Detalle de Ítems */}
-                    <td style={{ width: '21%', minWidth: '200px', padding: '12px 10px', verticalAlign: 'middle' }}>
+                    <td style={{ width: '20%', minWidth: '170px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {primerItem ? (
-                        <div className="min-w-0" style={{ overflow: 'hidden' }}>
-                          <strong className="block text-xs font-semibold text-[#013a52] dark:text-slate-200 truncate" title={primerItem.nombre}>
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <strong
+                            style={{
+                              display: 'block',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: 'var(--text, #013a52)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                            title={primerItem.nombre}
+                          >
                             {primerItem.nombre}
                           </strong>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
-                            <span>Sol: <strong className="text-[#013a52] dark:text-white">{primerItem.cantidad_solicitada || 1}</strong></span>
+                          <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span>Sol: <strong style={{ color: 'var(--text-h, #013a52)' }}>{primerItem.cantidad_solicitada || 1}</strong></span>
                             {primerItem.cantidad_aprobada !== undefined && (
-                              <span>· Aprob: <strong className="text-emerald-700 dark:text-emerald-400">{primerItem.cantidad_aprobada}</strong></span>
+                              <span>· Aprob: <strong style={{ color: '#4d7c0f' }}>{primerItem.cantidad_aprobada}</strong></span>
                             )}
                             {totalItems > 1 && (
-                              <span className="text-[10px] text-slate-400 font-bold">
+                              <span style={{ fontSize: '10px', color: 'var(--text-muted, #94a3b8)', fontWeight: 700 }}>
                                 (+{totalItems - 1} más)
                               </span>
                             )}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">Sin ítems detallados</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic' }}>Sin ítems detallados</span>
                       )}
                     </td>
 
-                    {/* 5. Estado */}
-                    <td style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
-                      <div className="flex justify-center items-center">
+                    {/* 5. Estado (Con ancho y estilo robusto sin solapamiento) */}
+                    <td style={{ width: '16%', minWidth: '165px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border ${estadoConfig.badgeClass}`}
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '4px 10px',
+                            borderRadius: '999px',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            fontFamily: "'Poppins', sans-serif",
+                            whiteSpace: 'nowrap',
+                            maxWidth: '100%',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            boxSizing: 'border-box',
+                            ...estadoConfig.badgeStyle,
+                          }}
                         >
-                          <EstadoIcon className="w-3.5 h-3.5 shrink-0" />
-                          <span>{estadoConfig.label}</span>
+                          <EstadoIcon style={{ width: '13px', height: '13px', flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{estadoConfig.label}</span>
                         </span>
                       </div>
                     </td>
 
                     {/* 6. Compra & Factura */}
-                    <td style={{ width: '11%', minWidth: '115px', padding: '12px 10px', verticalAlign: 'middle' }}>
+                    <td style={{ width: '10%', minWidth: '110px', padding: '12px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
                       {sol.proveedor ? (
-                        <div className="min-w-0" style={{ overflow: 'hidden' }}>
-                          <strong className="block text-xs font-bold text-[#013a52] dark:text-slate-200 truncate" title={sol.proveedor}>
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <strong
+                            style={{
+                              display: 'block',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              color: 'var(--text-h, #013a52)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                            title={sol.proveedor}
+                          >
                             {sol.proveedor}
                           </strong>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          <div style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             Fact: {sol.numero_factura_orden || 'S/N'}
                           </div>
                           {sol.valor_final_compra > 0 && (
-                            <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#4d7c0f' }}>
                               ${sol.valor_final_compra.toLocaleString('es-CO')}
                             </div>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400 italic">
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            color: 'var(--text-muted, #94a3b8)',
+                            fontStyle: 'italic',
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {normalizeEstado(sol.estado) === 'aprobadas' ? 'Pendiente orden' : 'No registrada'}
                         </span>
                       )}
                     </td>
 
                     {/* 7. Acciones */}
-                    <td style={{ width: '12%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                      <div className="flex items-center justify-center gap-1.5 flex-nowrap">
+                    <td style={{ width: '10%', minWidth: '115px', padding: '12px 12px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                         {/* Botón Ver Detalle */}
                         <button
                           type="button"
@@ -1105,10 +1655,31 @@ export default function GestionComprasView({
                             setSolicitudDetalle(sol);
                             setModalDetalleOpen(true);
                           }}
-                          className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-[#013a52] hover:border-[#013a52] transition-all cursor-pointer shrink-0"
-                          title="Ver detalle completo de la solicitud"
+                          style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--line, #cbd5e1)',
+                            backgroundColor: 'var(--surface, #ffffff)',
+                            color: 'var(--text-dim, #6d6e71)',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.15s ease',
+                            flexShrink: 0,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#013a52';
+                            e.currentTarget.style.color = '#013a52';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--line, #cbd5e1)';
+                            e.currentTarget.style.color = 'var(--text-dim, #6d6e71)';
+                          }}
+                          title="Ver ficha completa de la solicitud"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye size={15} />
                         </button>
 
                         {/* Botón Evaluar (Etapa 1: Pendiente o En Evaluación) */}
@@ -1116,13 +1687,26 @@ export default function GestionComprasView({
                           <button
                             type="button"
                             onClick={() => handleAbrirEvaluar(sol)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs transition-all cursor-pointer shrink-0"
-                            style={{ backgroundColor: '#7B2CBF' }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              borderRadius: '8px',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              color: '#ffffff',
+                              backgroundColor: '#7B2CBF',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              flexShrink: 0,
+                            }}
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#63209E')}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#7B2CBF')}
                             title="Evaluar requerimiento pedagógico y autorizar cantidades"
                           >
-                            <FileCheck className="w-3.5 h-3.5" />
+                            <FileCheck size={13} />
                             <span>Evaluar</span>
                           </button>
                         )}
@@ -1132,13 +1716,26 @@ export default function GestionComprasView({
                           <button
                             type="button"
                             onClick={() => handleAbrirRegistrarCompra(sol)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs transition-all cursor-pointer shrink-0"
-                            style={{ backgroundColor: '#2CACD0' }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              borderRadius: '8px',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              color: '#ffffff',
+                              backgroundColor: '#2CACD0',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              flexShrink: 0,
+                            }}
                             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2292B3')}
                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2CACD0')}
                             title="Registrar factura u orden de compra comercial"
                           >
-                            <Receipt className="w-3.5 h-3.5" />
+                            <ShoppingCart size={13} />
                             <span>Comprar</span>
                           </button>
                         )}
@@ -1147,26 +1744,73 @@ export default function GestionComprasView({
                         {normalizeEstado(sol.estado) === 'compradas' && (isCoordinador || isAdmin) && (
                           sol.ingresado_inventario ? (
                             <span
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 shrink-0"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '4px 8px',
+                                borderRadius: '8px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                backgroundColor: 'rgba(171, 208, 55, 0.2)',
+                                color: '#4d7c0f',
+                                border: '1px solid rgba(171, 208, 55, 0.45)',
+                                flexShrink: 0,
+                              }}
                               title="Los ítems ya están registrados en el inventario oficial"
                             >
-                              <CheckCircle2 className="w-3 h-3" />
+                              <PackageCheck size={13} />
                               <span>Ingresado</span>
                             </span>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleIngresarAInventario(sol)}
-                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0"
-                              style={{ backgroundColor: '#abd037', color: '#013a52' }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 10px',
+                                borderRadius: '8px',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                color: '#013a52',
+                                backgroundColor: '#abd037',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                flexShrink: 0,
+                              }}
                               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#96b82d')}
                               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#abd037')}
                               title="Precargar estos ítems adquiridos en el catálogo oficial de bodega"
                             >
-                              <PackagePlus className="w-3.5 h-3.5 stroke-[2.4]" />
+                              <PackagePlus size={13} strokeWidth={2.4} />
                               <span>+ Bodega</span>
                             </button>
                           )
+                        )}
+
+                        {/* Estado Rechazado */}
+                        {normalizeEstado(sol.estado) === 'rechazadas' && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                              color: '#be123c',
+                              border: '1px solid rgba(244, 63, 94, 0.3)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <XCircle size={13} />
+                            <span>Rechazada</span>
+                          </span>
                         )}
                       </div>
                     </td>
@@ -1183,13 +1827,35 @@ export default function GestionComprasView({
           ========================================================================= */}
       {modalEvaluarOpen && solicitudAEvaluar && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
           onClick={() => !evalSubmitting && setModalEvaluarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(1, 58, 82, 0.65)',
+            backdropFilter: 'blur(4px)',
+            fontFamily: "'Poppins', sans-serif",
+          }}
         >
           <div
-            className="w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{
+              width: '100%',
+              maxWidth: '840px',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: 'var(--surface, #ffffff)',
+              borderRadius: '20px',
+              boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
+              border: '1px solid var(--line, #e2e8f0)',
+              overflow: 'hidden',
+              fontFamily: "'Poppins', sans-serif",
+            }}
           >
             {/* Header del Modal */}
             <div
@@ -1219,7 +1885,7 @@ export default function GestionComprasView({
             </div>
 
             {/* Contenido en 2 Columnas */}
-            <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', padding: '24px', overflowY: 'auto' }}>
               {/* Columna Izquierda: Información del Requerimiento */}
               <div className="flex flex-col gap-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#013a52] dark:text-slate-300 pb-2 border-b border-slate-200 dark:border-slate-800 m-0">
@@ -1444,13 +2110,35 @@ export default function GestionComprasView({
           ========================================================================= */}
       {modalRegistrarCompraOpen && solicitudAComprar && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
           onClick={() => !compraSubmitting && setModalRegistrarCompraOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(1, 58, 82, 0.65)',
+            backdropFilter: 'blur(4px)',
+            fontFamily: "'Poppins', sans-serif",
+          }}
         >
           <div
-            className="w-full max-w-xl flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{
+              width: '100%',
+              maxWidth: '580px',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: 'var(--surface, #ffffff)',
+              borderRadius: '20px',
+              boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
+              border: '1px solid var(--line, #e2e8f0)',
+              overflow: 'hidden',
+              fontFamily: "'Poppins', sans-serif",
+            }}
           >
             {/* Header del Modal */}
             <div
@@ -1527,7 +2215,7 @@ export default function GestionComprasView({
                     value={compraFactura}
                     onChange={(e) => setCompraFactura(e.target.value)}
                     placeholder="Ej: FAC-2026-9812"
-                    className="w-full px-3 py-2 text-xs font-bold font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2cacd0]"
+                    className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#013a52] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2cacd0]"
                   />
                 </div>
 
@@ -1601,13 +2289,35 @@ export default function GestionComprasView({
           ========================================================================= */}
       {modalDetalleOpen && solicitudDetalle && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
           onClick={() => setModalDetalleOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(1, 58, 82, 0.65)',
+            backdropFilter: 'blur(4px)',
+            fontFamily: "'Poppins', sans-serif",
+          }}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{
+              width: '100%',
+              maxWidth: '640px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: 'var(--surface, #ffffff)',
+              borderRadius: '20px',
+              boxShadow: '0 20px 40px -10px rgba(1, 58, 82, 0.35)',
+              border: '1px solid var(--line, #e2e8f0)',
+              overflow: 'hidden',
+              fontFamily: "'Poppins', sans-serif",
+            }}
           >
             <div className="p-5 flex items-center justify-between bg-slate-100 dark:bg-slate-800 shrink-0">
               <div className="flex items-center gap-2">
