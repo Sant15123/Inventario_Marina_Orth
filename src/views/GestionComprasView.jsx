@@ -38,6 +38,7 @@ import { useProyectos } from '../hooks/useProyectos';
 import { normalizeProyectoNombre } from '../constants/proyectos';
 import { getProveedoresRecomendados } from '../services/proveedoresService';
 import ModalProveedoresRecomendados from '../components/modals/ModalProveedoresRecomendados';
+import { registrarAuditoria } from '../services/historyAuditService';
 import ExcelJS from 'exceljs';
 
 // Muestras de prueba para el flujo de compras en caso de arranque sin datos en Supabase
@@ -946,6 +947,29 @@ export default function GestionComprasView({
       const actualizadas = solicitudes.map((s) => (s.id === solicitudAEvaluar.id ? { ...s, ...patch } : s));
       syncLocal(actualizadas);
 
+      const tipoAuditoria = decisionFinal === 'Aprobada' || decisionFinal === 'Aprobada para Compra'
+        ? 'Compra Aprobada'
+        : (decisionFinal === 'Rechazada' ? 'Compra Rechazada' : 'En Evaluación');
+
+      const rad = formatRadicado(solicitudAEvaluar.id, solicitudAEvaluar.radicado);
+      const primerItem = rawItems[0] || {};
+      const totalUnidadesAprobadas = itemsActualizados.reduce((acc, it) => acc + (Number(it.cantidad_aprobada) || 0), 0);
+
+      try {
+        await registrarAuditoria({
+          tipo: tipoAuditoria,
+          elemento: primerItem.nombre || `Solicitud ${rad}`,
+          id_referencia: rad,
+          cantidad: totalUnidadesAprobadas || 1,
+          responsable: evaluadorNombre,
+          documento_responsable: currentUser?.documento || '',
+          sede: getSolSede(solicitudAEvaluar),
+          motivo: `Evaluación de solicitud de compra: "${decisionFinal}". Concepto/observaciones: ${evalObservaciones.trim()}. Presupuesto asignado: $${Number(evalPresupuesto) || 0} COP`,
+        });
+      } catch (eAud) {
+        console.warn('Aviso auditoria evaluacion compra:', eAud?.message);
+      }
+
       showSuccess(
         `Solicitud ${decisionFinal}`,
         `La solicitud ${formatRadicado(solicitudAEvaluar.id, solicitudAEvaluar.radicado)} ha pasado al estado "${decisionFinal}".`
@@ -998,6 +1022,27 @@ export default function GestionComprasView({
       const actualizadas = solicitudes.map((s) => (s.id === solicitudAComprar.id ? { ...s, ...patch } : s));
       syncLocal(actualizadas);
 
+      const rad = formatRadicado(solicitudAComprar.id, solicitudAComprar.radicado);
+      const primerItem = getSolItems(solicitudAComprar)[0] || {};
+      const ejecutadoPor = currentUser
+        ? `${currentUser.nombre} (${currentUser.rol || 'Administrador'})`
+        : 'Administrador FMO';
+
+      try {
+        await registrarAuditoria({
+          tipo: 'Compra Registrada',
+          elemento: primerItem.nombre || `Compra ${rad}`,
+          id_referencia: rad,
+          cantidad: Number(solicitudAComprar.cantidad) || primerItem.cantidad_aprobada || 1,
+          responsable: ejecutadoPor,
+          documento_responsable: currentUser?.documento || '',
+          sede: getSolSede(solicitudAComprar),
+          motivo: `Compra materializada en proveedor: ${compraProveedor.trim()}. Factura / Orden: ${compraFactura.trim()}. Valor total: $${Number(compraValorFinal) || 0} COP. Fecha: ${compraFecha || today()}`,
+        });
+      } catch (eAud) {
+        console.warn('Aviso auditoria registro compra:', eAud?.message);
+      }
+
       showSuccess(
         'Compra Registrada',
         `Se registró la compra para ${formatRadicado(solicitudAComprar.id, solicitudAComprar.radicado)} (Factura: ${compraFactura}). Ya puedes ingresarla al inventario.`
@@ -1023,6 +1068,25 @@ export default function GestionComprasView({
       const primerItem = getSolItems(sol)[0];
       const catSlug = getCategoriaSlug(primerItem?.categoria_destino || sol.categoria_destino || primerItem?.categoria_sugerida);
       const catNombre = formatCategoriaDestino(primerItem?.categoria_destino || sol.categoria_destino || primerItem?.categoria_sugerida);
+      const rad = formatRadicado(sol.id, sol.radicado);
+      const ejecutadoPor = currentUser
+        ? `${currentUser.nombre} (${currentUser.rol || 'Administrador'})`
+        : 'Administrador FMO';
+
+      try {
+        await registrarAuditoria({
+          tipo: 'Ingreso desde Compra',
+          elemento: primerItem?.nombre || `Ingreso de compra ${rad}`,
+          id_referencia: rad,
+          cantidad: Number(primerItem?.cantidad_aprobada) || Number(sol.cantidad) || 1,
+          responsable: ejecutadoPor,
+          documento_responsable: currentUser?.documento || '',
+          sede: getSolSede(sol),
+          motivo: `Ingreso oficial de material comprado a la bodega e inventario en la categoría: ${catNombre}. Proveedor: ${sol.proveedor || 'N/A'}. Factura: ${sol.numero_factura_orden || 'N/A'}`,
+        });
+      } catch (eAud) {
+        console.warn('Aviso auditoria ingreso inventario:', eAud?.message);
+      }
 
       showSuccess(
         'Ingreso a Bodega Confirmado',

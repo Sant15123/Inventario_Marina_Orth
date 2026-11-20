@@ -22,6 +22,7 @@ import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useProyectos } from '../../hooks/useProyectos';
 import { getProveedoresRecomendados } from '../../services/proveedoresService';
+import { registrarAuditoria } from '../../services/historyAuditService';
 
 export default function ModalSolicitudMaterial({
   isOpen,
@@ -477,6 +478,29 @@ export default function ModalSolicitudMaterial({
           items: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
           items_solicitud: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
         };
+
+        const catLegible = primerReg.categoria_destino === 'electronica'
+          ? 'Equipos de Electrónica'
+          : (primerReg.categoria_destino === 'papeleria' ? 'Papelería' : 'Consumibles de Robótica');
+
+        const radicadoCorto = solicitudCreadaCompra.radicado || (solicitudCreadaCompra.id ? `SC-${String(solicitudCreadaCompra.id).replace(/^#|^SC-|^SOL-/i, '').replace(/-/g, '').slice(0, 8).toUpperCase()}` : 'SC-NUEVA');
+
+        const proyNombre = (proyectoId || '').trim() || primerReg.proyecto_steam || 'Robótica';
+
+        try {
+          await registrarAuditoria({
+            tipo: 'Solicitud de Compra',
+            elemento: primerReg.nombre_producto || 'Solicitud de Compra',
+            id_referencia: radicadoCorto,
+            cantidad: Number(primerReg.cantidad) || 1,
+            responsable: `${currentUser?.nombre_completo || currentUser?.nombre || 'Docente FMO'} (${currentUser?.rol || 'Docente'})`,
+            documento_responsable: currentUser?.documento || '',
+            sede: sede || 'Medellín',
+            motivo: `Radicación de solicitud de compra para proyecto ${proyNombre}. Categoría destino: ${catLegible}. Justificación: ${motivo.trim() || 'Sin justificación especificada'}`,
+          });
+        } catch (audErr) {
+          console.warn('Aviso auditoría solicitud compra:', audErr?.message);
+        }
 
         if (showSuccess) {
           showSuccess(

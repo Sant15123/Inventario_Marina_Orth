@@ -16,9 +16,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
+import { registrarAuditoria } from '../../services/historyAuditService';
 
 export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sedes: propSedes }) {
-  const { crearUsuario, refetchUsuarios, usuarios = [] } = useAuth();
+  const { currentUser, crearUsuario, refetchUsuarios, usuarios = [] } = useAuth();
   const { addToast, showError } = useToast();
 
   const [sedes, setSedes] = useState(() => {
@@ -301,6 +302,23 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
 
       if (onUserCreated) {
         onUserCreated(createdUser || localUser);
+      }
+
+      const ejecutorNombre = currentUser ? `${currentUser.nombre} (${currentUser.rol || 'Administrador'})` : 'Administrador FMO';
+      const esCoord = payload.rol === 'coordinador';
+      try {
+        await registrarAuditoria({
+          tipo: esCoord ? 'Usuario Coordinador Creado' : 'Ingresos',
+          elemento: payload.nombre_completo,
+          id_referencia: payload.documento,
+          cantidad: 1,
+          responsable: ejecutorNombre,
+          documento_responsable: currentUser?.documento || '',
+          sede: payload.sede,
+          motivo: `Creación de nuevo usuario en el sistema. Rol asignado: ${payload.rol.toUpperCase()}. Cargo: ${payload.cargo || 'Funcionario FMO'}. Correo: ${payload.email}`,
+        });
+      } catch (audErr) {
+        console.warn('Aviso auditoria nuevo usuario:', audErr?.message);
       }
 
       // 4. Mostrar toast de éxito corporativo

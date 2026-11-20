@@ -4,12 +4,17 @@ import { fmtDate } from '../../data/initialData';
 function getItemIcon(item, tipo) {
   const norm = String(item || '').toLowerCase();
   const tipoNorm = String(tipo || '').toLowerCase();
+  if (norm.includes('compra') || tipoNorm.includes('compra')) return '🛒';
+  if (norm.includes('electronica') || norm.includes('electrónica') || tipoNorm.includes('electronica')) return '⚡';
+  if (norm.includes('proveedor') || tipoNorm.includes('proveedor')) return '🏪';
+  if (norm.includes('rol') || tipoNorm.includes('rol')) return '🛡️';
+  if (norm.includes('coordinador') || tipoNorm.includes('coordinador')) return '👤';
   if (norm.includes('computador') || norm.includes('portatil') || norm.includes('laptop') || norm.includes('pc')) return '💻';
   if (norm.includes('tablet') || norm.includes('ipad')) return '📱';
   if (norm.includes('impresora') || norm.includes('scanner')) return '🖨️';
   if (norm.includes('monitor') || norm.includes('pantalla')) return '🖥️';
   if (norm.includes('silla') || norm.includes('mesa') || norm.includes('escritorio') || norm.includes('archivador') || norm.includes('mueble')) return '🪑';
-  if (norm.includes('papel') || norm.includes('resma') || norm.includes('cuaderno') || norm.includes('lapicero')) return '📦';
+  if (norm.includes('papel') || norm.includes('resma') || norm.includes('cuaderno') || norm.includes('lapicero')) return '📄';
   if (tipoNorm.includes('prestamo')) return '🔄';
   if (tipoNorm.includes('entrega')) return '📦';
   if (tipoNorm.includes('baja') || tipoNorm.includes('elimin')) return '⚠️';
@@ -73,8 +78,8 @@ export default function DetalleMovimientoModal({ movimiento: rawMovimiento, onCl
               <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-h)', fontWeight: 700 }}>
                 {movimiento.elemento}
               </h4>
-              <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-                ID Registro: #{movimiento.id || 'N/A'}
+              <span style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: "'Poppins', sans-serif" }}>
+                Registro #{String(movimiento.id || '').replace(/^mov-hist-/, '').slice(0, 8).toUpperCase() || 'N/A'}
               </span>
             </div>
           </div>

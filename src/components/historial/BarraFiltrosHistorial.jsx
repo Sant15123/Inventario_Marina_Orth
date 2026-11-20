@@ -17,6 +17,9 @@ export const BarraFiltrosHistorial = ({
   countActualizaciones,
   countBajas,
   countEliminaciones = 0,
+  countCompras = 0,
+  countElectronica = 0,
+  countProveedores = 0,
   isUsuario = false,
 }) => {
   return (
@@ -37,11 +40,14 @@ export const BarraFiltrosHistorial = ({
           <option value="devolucion">{isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} {countDevoluciones !== undefined ? `(${countDevoluciones})` : ''}</option>
           {!isUsuario && (
             <>
-              <option value="ingreso">Ingresos {countIngresos !== undefined ? `(${countIngresos})` : ''}</option>
-              <option value="actualizacion">Actualizaciones {countActualizaciones !== undefined ? `(${countActualizaciones})` : ''}</option>
-              <option value="baja">Bajas {countBajas !== undefined ? `(${countBajas})` : ''}</option>
+              <option value="compras">🛒 Gestión de Compras {countCompras !== undefined ? `(${countCompras})` : ''}</option>
+              <option value="electronica">⚡ Equipos de Electrónica {countElectronica !== undefined ? `(${countElectronica})` : ''}</option>
+              <option value="proveedores">🏪 Proveedores {countProveedores !== undefined ? `(${countProveedores})` : ''}</option>
+              <option value="ingreso">📥 Ingresos {countIngresos !== undefined ? `(${countIngresos})` : ''}</option>
+              <option value="actualizacion">✏️ Actualizaciones {countActualizaciones !== undefined ? `(${countActualizaciones})` : ''}</option>
+              <option value="baja">⚠️ Bajas {countBajas !== undefined ? `(${countBajas})` : ''}</option>
               {countEliminaciones > 0 && (
-                <option value="eliminacion">Eliminaciones ({countEliminaciones})</option>
+                <option value="eliminacion">🗑️ Eliminaciones ({countEliminaciones})</option>
               )}
             </>
           )}

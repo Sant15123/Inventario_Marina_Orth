@@ -5,6 +5,7 @@
  * PERSISTENCIA ESTRICTA EN SUPABASE (Sin localStorage ni datos simulados)
  */
 import { supabase } from './supabase';
+import { registrarAuditoria } from './historyAuditService';
 
 const notifyChange = () => {
   if (typeof window !== 'undefined') {
@@ -67,6 +68,23 @@ export const createProveedorRecomendado = async (proveedor, currentUser = null) 
     throw new Error(error.message || 'No se pudo registrar el proveedor en Supabase');
   }
 
+  const usuarioNombre = currentUser?.nombre_completo || currentUser?.nombre || currentUser?.name || 'Administrador FMO';
+  const usuarioRol = currentUser?.rol || 'Administrador';
+  try {
+    await registrarAuditoria({
+      tipo: 'Proveedor Agregado',
+      elemento: data.nombre || proveedor.nombre,
+      id_referencia: data.id ? String(data.id).slice(0, 8).toUpperCase() : null,
+      cantidad: 1,
+      responsable: `${usuarioNombre} (${usuarioRol})`,
+      documento_responsable: currentUser?.documento || '',
+      sede: currentUser?.sede || 'Medellín',
+      motivo: `Nuevo proveedor recomendado registrado: "${data.nombre}". Enlace: ${data.url || 'N/A'}. Descripción: ${data.descripcion || 'Sin descripción'}`,
+    });
+  } catch (eAud) {
+    console.warn('Aviso auditoria proveedor creado:', eAud?.message);
+  }
+
   notifyChange();
   return data;
 };
@@ -75,9 +93,10 @@ export const createProveedorRecomendado = async (proveedor, currentUser = null) 
  * Actualiza un proveedor existente en la tabla proveedores_recomendados de Supabase.
  * @param {string} id - UUID del proveedor
  * @param {Object} patch - Campos a actualizar { nombre, url, descripcion }
+ * @param {Object} [currentUser=null] - Usuario actual para auditoría
  * @returns {Promise<Object>} Registro actualizado
  */
-export const updateProveedorRecomendado = async (id, patch) => {
+export const updateProveedorRecomendado = async (id, patch, currentUser = null) => {
   if (!supabase) {
     const err = new Error('Cliente Supabase no disponible.');
     console.error('[proveedoresService.updateProveedorRecomendado]', err);
@@ -104,6 +123,23 @@ export const updateProveedorRecomendado = async (id, patch) => {
     throw new Error(error.message || 'No se pudo actualizar el proveedor en Supabase');
   }
 
+  const usuarioNombre = currentUser?.nombre_completo || currentUser?.nombre || currentUser?.name || 'Administrador FMO';
+  const usuarioRol = currentUser?.rol || 'Administrador';
+  try {
+    await registrarAuditoria({
+      tipo: 'Proveedor Editado',
+      elemento: data.nombre || 'Proveedor',
+      id_referencia: String(id).slice(0, 8).toUpperCase(),
+      cantidad: 1,
+      responsable: `${usuarioNombre} (${usuarioRol})`,
+      documento_responsable: currentUser?.documento || '',
+      sede: currentUser?.sede || 'Medellín',
+      motivo: `Actualización de datos para proveedor recomendado: "${data.nombre}". Enlace: ${data.url || 'N/A'}`,
+    });
+  } catch (eAud) {
+    console.warn('Aviso auditoria proveedor editado:', eAud?.message);
+  }
+
   notifyChange();
   return data;
 };
@@ -111,9 +147,11 @@ export const updateProveedorRecomendado = async (id, patch) => {
 /**
  * Elimina un proveedor de la tabla proveedores_recomendados de Supabase.
  * @param {string} id - UUID del proveedor a eliminar
+ * @param {Object} [currentUser=null] - Usuario actual para auditoría
+ * @param {string} [nombreProveedor=''] - Nombre del proveedor eliminado
  * @returns {Promise<boolean>} true si se eliminó con éxito
  */
-export const deleteProveedorRecomendado = async (id) => {
+export const deleteProveedorRecomendado = async (id, currentUser = null, nombreProveedor = '') => {
   if (!supabase) {
     const err = new Error('Cliente Supabase no disponible.');
     console.error('[proveedoresService.deleteProveedorRecomendado]', err);
@@ -128,6 +166,23 @@ export const deleteProveedorRecomendado = async (id) => {
   if (error) {
     console.error('[proveedoresService.deleteProveedorRecomendado] Error en Supabase:', error);
     throw new Error(error.message || 'No se pudo eliminar el proveedor de Supabase');
+  }
+
+  const usuarioNombre = currentUser?.nombre_completo || currentUser?.nombre || currentUser?.name || 'Administrador FMO';
+  const usuarioRol = currentUser?.rol || 'Administrador';
+  try {
+    await registrarAuditoria({
+      tipo: 'Proveedor Eliminado',
+      elemento: nombreProveedor || 'Proveedor Recomendado',
+      id_referencia: String(id).slice(0, 8).toUpperCase(),
+      cantidad: 1,
+      responsable: `${usuarioNombre} (${usuarioRol})`,
+      documento_responsable: currentUser?.documento || '',
+      sede: currentUser?.sede || 'Medellín',
+      motivo: `Eliminación de proveedor recomendado del directorio: "${nombreProveedor || id}"`,
+    });
+  } catch (eAud) {
+    console.warn('Aviso auditoria proveedor eliminado:', eAud?.message);
   }
 
   notifyChange();

@@ -1,4 +1,6 @@
 // Configuración dinámica y tolerante a fallos para la URL base de la API
+import { registrarAuditoria } from './historyAuditService';
+
 export const getBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     let url = import.meta.env.VITE_API_URL.trim().replace(/\/+$/, '');
@@ -494,11 +496,52 @@ export const inventoryApi = {
   },
 
   createPrestamo: async (data) => {
-    const json = await request('/prestamos', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    return json?.data !== undefined ? json.data : json;
+    let res = null;
+    try {
+      const json = await request('/prestamos', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      res = json?.data !== undefined ? json.data : json;
+    } catch (e) {
+      console.warn('Endpoint /prestamos advertencia:', e?.message);
+    }
+
+    const placaRef = String(data.placa_activo || data.item_id || '').trim();
+    const esElectronica = placaRef.toUpperCase().startsWith('ELE-');
+
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase && esElectronica) {
+        await supabase
+          .from('equipos_electronica')
+          .update({
+            estado: 'En Préstamo',
+            area_asignada: data.sede || 'Medellín',
+          })
+          .eq('placa', placaRef);
+      }
+    } catch (errSup) {
+      console.warn('Aviso sincronización préstamo electrónica Supabase:', errSup?.message);
+    }
+
+    if (esElectronica) {
+      try {
+        await registrarAuditoria({
+          tipo: 'Préstamo',
+          elemento: data.elemento || data.material_nombre || `Equipo de Electrónica (${placaRef})`,
+          id_referencia: placaRef,
+          cantidad: Number(data.cantidad) || 1,
+          responsable: data.solicitante || data.responsable || 'Custodio FMO',
+          sede: data.sede || 'Medellín',
+          motivo: `Préstamo institucional de equipo de electrónica. Destino/Área: ${data.sede || 'Medellín'}. Motivo: ${data.motivo || 'Formación pedagógica STEAM'}. Devolución esperada: ${data.fecha_devolucion_esperada || 'Por definir'}`,
+        });
+      } catch (audErr) {
+        console.warn('Aviso auditoria prestamo electronica:', audErr?.message);
+      }
+    }
+
+    return res || data;
   },
 
   updatePrestamo: async (id, data) => {
@@ -531,10 +574,51 @@ export const inventoryApi = {
   },
 
   devolverPrestamo: async (id) => {
-    const json = await request(`/prestamos/${id}/devolver`, {
-      method: 'PUT',
-    });
-    return json?.data !== undefined ? json.data : json;
+    let res = null;
+    try {
+      const json = await request(`/prestamos/${id}/devolver`, {
+        method: 'PUT',
+      });
+      res = json?.data !== undefined ? json.data : json;
+    } catch (e) {
+      console.warn('Endpoint /prestamos/:id/devolver advertencia:', e?.message);
+    }
+
+    // Buscar si el préstamo correspondía a un equipo de electrónica (ELE-...)
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase && id) {
+        const { data: prestamo } = await supabase
+          .from('prestamos')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        const placaRef = String(prestamo?.placa_activo || '').trim();
+        if (placaRef.toUpperCase().startsWith('ELE-')) {
+          await supabase
+            .from('equipos_electronica')
+            .update({
+              estado: 'Disponible',
+            })
+            .eq('placa', placaRef);
+
+          await registrarAuditoria({
+            tipo: 'Devolución',
+            elemento: `Equipo de Electrónica (${placaRef})`,
+            id_referencia: placaRef,
+            cantidad: 1,
+            responsable: prestamo?.solicitante || 'Custodio FMO',
+            sede: prestamo?.sede || 'Medellín',
+            motivo: `Devolución y reincorporación a inventario de equipo de electrónica ${placaRef}. Estado: Disponible.`,
+          });
+        }
+      }
+    } catch (sbErr) {
+      console.warn('Aviso devolucion prestamo electronica:', sbErr?.message);
+    }
+
+    return res || { id, devuelto: true };
   },
 
   // 2.1 Entregas y Remisiones de Consumibles
@@ -696,17 +780,15 @@ export const inventoryApi = {
 
     // Registrar en auditoría / movimientos
     try {
-      const { supabase } = await import('./supabase');
-      if (supabase) {
-        await supabase.from('historial_movimientos').insert({
-          tipo: 'ingreso_activo',
-          titulo: `Ingreso de Equipo de Electrónica: ${payload.nombre}`,
-          detalles: `Registro de activo ${payload.placa} (${payload.subcategoria}) en sede ${payload.sede}`,
-          sede: payload.sede,
-          placa: payload.placa,
-          fecha: new Date().toISOString(),
-        });
-      }
+      await registrarAuditoria({
+        tipo: 'Ingresos',
+        elemento: `Equipo de Electrónica: ${payload.nombre}`,
+        id_referencia: payload.placa,
+        cantidad: Number(payload.cantidad) || 1,
+        responsable: payload.responsable || 'Administrador',
+        sede: payload.sede || 'Medellín',
+        motivo: `Alta de equipo serializado ${payload.placa} (${payload.subcategoria}) en sede ${payload.sede} - Proyecto STEAM: ${payload.area_asignada || 'Robótica'}`,
+      });
     } catch (_) {}
 
     return result || payload;
@@ -732,6 +814,31 @@ export const inventoryApi = {
     } catch (err) {
       console.warn('Aviso update equipos_electronica:', err.message);
     }
+
+    // Registrar en auditoría / movimientos
+    try {
+      const descCambios = [
+        updates.nombre ? `Nombre: ${updates.nombre}` : null,
+        updates.subcategoria ? `Subcategoría: ${updates.subcategoria}` : null,
+        updates.area_asignada || updates.area ? `Programa FMO: ${updates.area_asignada || updates.area}` : null,
+        updates.condicion ? `Condición: ${updates.condicion}` : null,
+        updates.estado ? `Estado: ${updates.estado}` : null,
+        updates.sede ? `Sede: ${updates.sede}` : null,
+        updates.ubicacion ? `Ubicación: ${updates.ubicacion}` : null,
+        updates.responsable !== undefined ? `Custodio: ${updates.responsable || 'Sin asignar'}` : null,
+      ].filter(Boolean).join(' | ');
+
+      await registrarAuditoria({
+        tipo: 'Actualizaciones',
+        elemento: `Equipo de Electrónica (${placa})`,
+        id_referencia: placa,
+        cantidad: 1,
+        responsable: updates.responsable || 'Administrador',
+        sede: updates.sede || 'Medellín',
+        motivo: `Actualización de ficha técnica ${placa}. ${descCambios || 'Modificación técnica de parámetros'}`,
+      });
+    } catch (_) {}
+
     return { placa, ...updates };
   },
 
@@ -743,17 +850,24 @@ export const inventoryApi = {
           .from('equipos_electronica')
           .update({ estado: 'Baja', observaciones: motivo, updated_at: new Date().toISOString() })
           .eq('placa', placa);
-        await supabase.from('historial_movimientos').insert({
-          tipo: 'baja',
-          titulo: `Baja de Equipo de Electrónica: ${placa}`,
-          detalles: `Motivo: ${motivo}`,
-          placa,
-          fecha: new Date().toISOString(),
-        });
       }
     } catch (err) {
       console.warn('Aviso delete equipos_electronica:', err.message);
     }
+
+    // Registrar en auditoría / movimientos
+    try {
+      await registrarAuditoria({
+        tipo: 'Bajas',
+        elemento: `Equipo de Electrónica (${placa})`,
+        id_referencia: placa,
+        cantidad: 1,
+        responsable: 'Administrador',
+        sede: 'Medellín',
+        motivo: `Baja técnica de equipo de electrónica ${placa}. Motivo: ${motivo}`,
+      });
+    } catch (_) {}
+
     return { ok: true, placa };
   },
 

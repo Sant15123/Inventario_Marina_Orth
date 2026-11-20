@@ -123,7 +123,7 @@ export default function ModalProveedoresRecomendados({ isOpen, onClose }) {
           nombre: nom,
           url: url,
           descripcion: desc,
-        });
+        }, user);
         showSuccess('Proveedor actualizado', `Se han actualizado los datos de "${nom}".`);
       } else {
         await createProveedorRecomendado(
@@ -151,7 +151,7 @@ export default function ModalProveedoresRecomendados({ isOpen, onClose }) {
     if (!proveedorParaEliminar) return;
     setDeleting(true);
     try {
-      await deleteProveedorRecomendado(proveedorParaEliminar.id);
+      await deleteProveedorRecomendado(proveedorParaEliminar.id, user, proveedorParaEliminar.nombre);
       showSuccess('Proveedor eliminado', `Se retiró "${proveedorParaEliminar.nombre}" del directorio.`);
       setProveedorParaEliminar(null);
       await cargarProveedores();

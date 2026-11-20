@@ -6,6 +6,7 @@ import BarraFiltrosHistorial from '../components/historial/BarraFiltrosHistorial
 import DetalleMovimientoModal from '../components/modals/DetalleMovimientoModal';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
+import { exportarHistorialExcelFMO } from '../services/excelExportService';
 import {
   Eye,
   X,
@@ -17,9 +18,50 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
+  FileSpreadsheet,
+  ShoppingCart,
+  Zap,
+  Store,
 } from 'lucide-react';
 
 export { BarraFiltrosHistorial };
+
+export const formatReferencia = (val) => {
+  if (!val || val === 'N/A' || val === '—') return null;
+  const s = String(val).trim();
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s)) {
+    return s.slice(0, 8).toUpperCase();
+  }
+  if (/^SC-[0-9a-f]{8}-[0-9a-f]{4}/i.test(s)) {
+    return `SC-${s.replace(/^SC-/i, '').slice(0, 8).toUpperCase()}`;
+  }
+  return s;
+};
+
+export const isComprasMovement = (m) => {
+  const t = String(m?.tipo || m?.type || '').toLowerCase();
+  if (t.includes('compra')) return true;
+  const ref = String(m?.id_referencia || m?.itemId || '').toUpperCase();
+  if (ref.startsWith('SC-')) return true;
+  const mot = String(m?.motivo || m?.detalles || '').toLowerCase();
+  return mot.includes('compra') || mot.includes('adquisición') || mot.includes('adquisicion');
+};
+
+export const isElectronicaMovement = (m) => {
+  const ref = String(m?.id_referencia || m?.itemId || '').toUpperCase();
+  if (ref.startsWith('ELE-')) return true;
+  const nom = String(m?.itemName || m?.elemento || '').toLowerCase();
+  const mot = String(m?.motivo || m?.detalles || '').toLowerCase();
+  const t = String(m?.tipo || m?.type || '').toLowerCase();
+  return nom.includes('electrónica') || nom.includes('electronica') || mot.includes('electrónica') || mot.includes('electronica') || t.includes('electronica');
+};
+
+export const isProveedorMovement = (m) => {
+  const nom = String(m?.itemName || m?.elemento || '').toLowerCase();
+  const mot = String(m?.motivo || m?.detalles || '').toLowerCase();
+  const t = String(m?.tipo || m?.type || '').toLowerCase();
+  return t.includes('proveedor') || nom.includes('proveedor') || mot.includes('proveedor');
+};
 
 function formatHistorialItem(h) {
   if (!h) return null;
@@ -28,12 +70,25 @@ function formatHistorialItem(h) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
+
   let mappedType = rawTipo;
-  if (rawTipo.includes('devolu') || rawTipo.includes('retorn')) mappedType = 'devolucion';
+  if (rawTipo.includes('solicitud') && rawTipo.includes('compra')) mappedType = 'solicitud_compra';
+  else if (rawTipo.includes('compra') && rawTipo.includes('aproba')) mappedType = 'compra_aprobada';
+  else if (rawTipo.includes('compra') && rawTipo.includes('rechaz')) mappedType = 'compra_rechazada';
+  else if (rawTipo.includes('compra') && rawTipo.includes('registra')) mappedType = 'compra_registrada';
+  else if (rawTipo.includes('ingreso') && rawTipo.includes('compra')) mappedType = 'ingreso_compra';
+  else if (rawTipo.includes('proveedor')) {
+    if (rawTipo.includes('elimin') || rawTipo.includes('baja') || rawTipo.includes('borr')) mappedType = 'proveedor_eliminado';
+    else if (rawTipo.includes('edit') || rawTipo.includes('actualiz') || rawTipo.includes('modific')) mappedType = 'proveedor_editado';
+    else mappedType = 'proveedor_agregado';
+  }
+  else if (rawTipo.includes('cambio') && rawTipo.includes('rol')) mappedType = 'cambio_rol';
+  else if (rawTipo.includes('coordinador')) mappedType = 'usuario_coordinador';
+  else if (rawTipo.includes('devolu') || rawTipo.includes('retorn')) mappedType = 'devolucion';
   else if (rawTipo.includes('presta') || rawTipo.includes('prst') || rawTipo.includes('loan')) mappedType = 'prestamo';
   else if (rawTipo.includes('entreg') || rawTipo.includes('salida') || rawTipo.includes('despacho')) mappedType = 'entrega';
   else if (rawTipo.includes('baja') || rawTipo.includes('descarte') || rawTipo.includes('retiro')) mappedType = 'baja';
-  else if (rawTipo.includes('actualiz') || rawTipo.includes('modific') || rawTipo.includes('edit') || rawTipo.includes('cambio') || rawTipo.includes('update')) mappedType = 'actualizacion';
+  else if (rawTipo.includes('actualiz') || rawTipo.includes('modific') || rawTipo.includes('edit') || rawTipo.includes('update')) mappedType = 'actualizacion';
   else if (rawTipo.includes('ingres') || rawTipo.includes('alta') || rawTipo.includes('creac') || rawTipo.includes('nuevo')) mappedType = 'ingreso';
   else if (rawTipo.includes('elimin') || rawTipo.includes('borr') || rawTipo.includes('delete')) mappedType = 'eliminacion';
 
@@ -76,6 +131,7 @@ export default function HistorialView({ movements = [] }) {
   const [fechaHasta, setFechaHasta] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
+  const [exportandoExcel, setExportandoExcel] = useState(false);
   const ITEMS_PER_PAGE = 5;
 
   const [historial, setHistorial] = useState(() => (Array.isArray(movements) ? movements : []));
@@ -89,6 +145,27 @@ export default function HistorialView({ movements = [] }) {
       });
     }
   }, [movements]);
+
+  // Suscripción al evento custom interno siga:historial_nuevo para refresco reactivo instantáneo
+  useEffect(() => {
+    const handleHistorialNuevo = (ev) => {
+      const nuevo = ev?.detail;
+      if (nuevo) {
+        const nuevoMovimiento = formatHistorialItem(nuevo);
+        setHistorial((prev) => {
+          const exists = prev.some(
+            (m) =>
+              String(m.id) === String(nuevoMovimiento.id) ||
+              (m.dbId && String(m.dbId) === String(nuevoMovimiento.dbId))
+          );
+          if (exists) return prev;
+          return [nuevoMovimiento, ...prev];
+        });
+      }
+    };
+    window.addEventListener('siga:historial_nuevo', handleHistorialNuevo);
+    return () => window.removeEventListener('siga:historial_nuevo', handleHistorialNuevo);
+  }, []);
 
   const fetchHistorial = async () => {
     try {
@@ -180,8 +257,68 @@ export default function HistorialView({ movements = [] }) {
   };
 
   // Helper de badge y estilos de auditoría según el tipo de movimiento
-  const getTypeBadge = (norm) => {
+  const getTypeBadge = (norm, m = null) => {
     switch (norm) {
+      case 'solicitud_compra':
+        return {
+          label: 'Solicitud de Compra',
+          icon: '🛒',
+          badgeClass: 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-300 dark:border-purple-700/60',
+        };
+      case 'compra_aprobada':
+        return {
+          label: 'Compra Aprobada',
+          icon: '✅',
+          badgeClass: 'bg-lime-100 text-emerald-900 dark:bg-lime-950/70 dark:text-lime-300 border-lime-400 dark:border-lime-700/60',
+        };
+      case 'compra_rechazada':
+        return {
+          label: 'Compra Rechazada',
+          icon: '❌',
+          badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border-rose-300 dark:border-rose-700/60',
+        };
+      case 'compra_registrada':
+        return {
+          label: 'Compra Registrada',
+          icon: '🧾',
+          badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/60',
+        };
+      case 'ingreso_compra':
+        return {
+          label: 'Ingreso desde Compra',
+          icon: '📥',
+          badgeClass: 'bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border-teal-300 dark:border-teal-700/60',
+        };
+      case 'proveedor_agregado':
+        return {
+          label: 'Proveedor Agregado',
+          icon: '🏪',
+          badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-700/60',
+        };
+      case 'proveedor_editado':
+        return {
+          label: 'Proveedor Editado',
+          icon: '🏪',
+          badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-700/60',
+        };
+      case 'proveedor_eliminado':
+        return {
+          label: 'Proveedor Eliminado',
+          icon: '🏪',
+          badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border-rose-300 dark:border-rose-700/60',
+        };
+      case 'cambio_rol':
+        return {
+          label: 'Cambio de Rol',
+          icon: '🛡️',
+          badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700/60',
+        };
+      case 'usuario_coordinador':
+        return {
+          label: 'Usuario Coordinador Creado',
+          icon: '👤',
+          badgeClass: 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border-blue-300 dark:border-blue-700/60',
+        };
       case 'ingreso':
         return {
           label: 'Ingreso',
@@ -226,7 +363,7 @@ export default function HistorialView({ movements = [] }) {
         };
       default:
         return {
-          label: 'Movimiento',
+          label: m?.tipo || 'Movimiento',
           icon: '📋',
           badgeClass: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700',
         };
@@ -240,8 +377,21 @@ export default function HistorialView({ movements = [] }) {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+
+    if (raw.includes('solicitud') && raw.includes('compra')) return 'solicitud_compra';
+    if (raw.includes('compra') && raw.includes('aproba')) return 'compra_aprobada';
+    if (raw.includes('compra') && raw.includes('rechaz')) return 'compra_rechazada';
+    if (raw.includes('compra') && raw.includes('registra')) return 'compra_registrada';
+    if (raw.includes('ingreso') && raw.includes('compra')) return 'ingreso_compra';
+    if (raw.includes('proveedor')) {
+      if (raw.includes('elimin') || raw.includes('baja') || raw.includes('borr')) return 'proveedor_eliminado';
+      if (raw.includes('edit') || raw.includes('actualiz') || raw.includes('modific')) return 'proveedor_editado';
+      return 'proveedor_agregado';
+    }
+    if (raw.includes('cambio') && raw.includes('rol')) return 'cambio_rol';
+    if (raw.includes('coordinador')) return 'usuario_coordinador';
     if (raw.includes('devolu') || raw.includes('retorn')) return 'devolucion';
-    if (raw.includes('actualiz') || raw.includes('edit') || raw.includes('modific') || raw.includes('cambio') || raw.includes('update')) return 'actualizacion';
+    if (raw.includes('actualiz') || raw.includes('edit') || raw.includes('modific') || raw.includes('update')) return 'actualizacion';
     if (raw.includes('presta') || raw.includes('prst') || raw.includes('loan')) return 'prestamo';
     if (raw.includes('entreg') || raw.includes('salida') || raw.includes('despacho')) return 'entrega';
     if (raw.includes('baja') || raw.includes('descarte') || raw.includes('retiro')) return 'baja';
@@ -314,9 +464,12 @@ export default function HistorialView({ movements = [] }) {
   const countEntregas = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'entrega').length, [userMovements]);
   const countDevoluciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'devolucion').length, [userMovements]);
   const countBajas = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'baja').length, [userMovements]);
-  const countIngresos = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'ingreso').length, [userMovements]);
-  const countActualizaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'actualizacion').length, [userMovements]);
-  const countEliminaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'eliminacion').length, [userMovements]);
+  const countIngresos = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'ingreso' || normalizeType(m) === 'ingreso_compra').length, [userMovements]);
+  const countActualizaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'actualizacion' || normalizeType(m) === 'cambio_rol').length, [userMovements]);
+  const countEliminaciones = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'eliminacion' || normalizeType(m) === 'proveedor_eliminado').length, [userMovements]);
+  const countCompras = useMemo(() => (userMovements || []).filter(isComprasMovement).length, [userMovements]);
+  const countElectronica = useMemo(() => (userMovements || []).filter(isElectronicaMovement).length, [userMovements]);
+  const countProveedores = useMemo(() => (userMovements || []).filter(isProveedorMovement).length, [userMovements]);
 
   // Filtrado de movimientos según tipo de movimiento y rango de fechas (Desde - Hasta)
   const filteredList = useMemo(() => {
@@ -325,16 +478,24 @@ export default function HistorialView({ movements = [] }) {
       if (filterType && filterType.toUpperCase() !== 'TODOS') {
         const norm = normalizeType(m);
         const fNorm = filterType.toLowerCase().trim();
-        const match =
-          norm === fNorm ||
-          (fNorm.includes('presta') && norm === 'prestamo') ||
-          (fNorm.includes('entreg') && norm === 'entrega') ||
-          (fNorm.includes('devolu') && norm === 'devolucion') ||
-          (fNorm.includes('ingres') && norm === 'ingreso') ||
-          (fNorm.includes('actualiz') && norm === 'actualizacion') ||
-          (fNorm.includes('baja') && norm === 'baja') ||
-          (fNorm.includes('elimin') && norm === 'eliminacion');
-        if (!match) return false;
+        if (fNorm === 'compras') {
+          if (!isComprasMovement(m)) return false;
+        } else if (fNorm === 'electronica') {
+          if (!isElectronicaMovement(m)) return false;
+        } else if (fNorm === 'proveedores' || fNorm === 'proveedor') {
+          if (!isProveedorMovement(m)) return false;
+        } else {
+          const match =
+            norm === fNorm ||
+            (fNorm.includes('presta') && norm === 'prestamo') ||
+            (fNorm.includes('entreg') && norm === 'entrega') ||
+            (fNorm.includes('devolu') && norm === 'devolucion') ||
+            (fNorm.includes('ingres') && (norm === 'ingreso' || norm === 'ingreso_compra')) ||
+            (fNorm.includes('actualiz') && (norm === 'actualizacion' || norm === 'cambio_rol')) ||
+            (fNorm.includes('baja') && norm === 'baja') ||
+            (fNorm.includes('elimin') && (norm === 'eliminacion' || norm === 'proveedor_eliminado'));
+          if (!match) return false;
+        }
       }
 
       // 2. Filtro por rango de fechas puntual o intervalo
@@ -366,6 +527,18 @@ export default function HistorialView({ movements = [] }) {
     setCurrentPage(1);
   };
 
+  const handleExportarExcel = async () => {
+    try {
+      setExportandoExcel(true);
+      await exportarHistorialExcelFMO(filteredList);
+    } catch (err) {
+      console.error('Error al exportar historial a Excel:', err);
+      alert('No se pudo generar el reporte Excel del historial.');
+    } finally {
+      setExportandoExcel(false);
+    }
+  };
+
   // Paginación
   const totalPages = Math.max(1, Math.ceil(filteredList.length / ITEMS_PER_PAGE));
   const paginatedList = useMemo(() => {
@@ -381,7 +554,7 @@ export default function HistorialView({ movements = [] }) {
   return (
     <div className="historial-view">
       <section>
-        <div className="section-header" style={{ marginBottom: '16px' }}>
+        <div className="section-header" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           {isUsuario ? (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -413,10 +586,36 @@ export default function HistorialView({ movements = [] }) {
                 <span className="pill default">{userMovements.length} transacciones registradas</span>
               </h2>
               <span className="section-subtitle">
-                Auditoría cronológica global de préstamos de equipos, salidas de consumibles y cambios de estado en todas las sedes
+                Auditoría cronológica global de compras, equipos de electrónica, proveedores, préstamos y cambios de estado
               </span>
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={handleExportarExcel}
+            disabled={exportandoExcel || filteredList.length === 0}
+            className="btn small"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              backgroundColor: '#013a52',
+              color: '#ffffff',
+              border: '1px solid #013a52',
+              borderRadius: '9px',
+              padding: '7px 16px',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: (exportandoExcel || filteredList.length === 0) ? 'not-allowed' : 'pointer',
+              fontFamily: "'Poppins', sans-serif",
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            }}
+            title="Exportar registros filtrados a libro de cálculo Excel (.xlsx)"
+          >
+            <FileSpreadsheet size={16} style={{ color: '#abd037' }} />
+            <span>{exportandoExcel ? 'Generando Excel...' : 'Exportar a Excel (.xlsx)'}</span>
+          </button>
         </div>
 
         {/* BARRA DE FILTROS POR TIPO DE MOVIMIENTO CON PÍLDORAS */}
@@ -428,6 +627,34 @@ export default function HistorialView({ movements = [] }) {
           >
             Ver Todos ({userMovements.length})
           </button>
+          {!isUsuario && (
+            <>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'compras' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('compras')}
+                style={filterType.toLowerCase() === 'compras' ? { backgroundColor: '#7b2cbf', borderColor: '#7b2cbf', color: '#fff' } : {}}
+              >
+                🛒 Gestión de Compras ({countCompras})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'electronica' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('electronica')}
+                style={filterType.toLowerCase() === 'electronica' ? { backgroundColor: '#0284c7', borderColor: '#0284c7', color: '#fff' } : {}}
+              >
+                ⚡ Equipos de Electrónica ({countElectronica})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'proveedores' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('proveedores')}
+                style={filterType.toLowerCase() === 'proveedores' ? { backgroundColor: '#d97706', borderColor: '#d97706', color: '#fff' } : {}}
+              >
+                🏪 Proveedores ({countProveedores})
+              </button>
+            </>
+          )}
           <button
             type="button"
             className={`btn small ${filterType.toLowerCase() === 'prestamo' ? 'btn-primary' : 'ghost'}`}
@@ -505,6 +732,9 @@ export default function HistorialView({ movements = [] }) {
             countActualizaciones={countActualizaciones}
             countBajas={countBajas}
             countEliminaciones={countEliminaciones}
+            countCompras={countCompras}
+            countElectronica={countElectronica}
+            countProveedores={countProveedores}
             isUsuario={isUsuario}
           />
         </div>
@@ -519,7 +749,7 @@ export default function HistorialView({ movements = [] }) {
               <thead>
                 <tr>
                   <th style={{ width: '110px', minWidth: '100px' }}>Fecha</th>
-                  <th style={{ width: '110px' }}>Tipo</th>
+                  <th style={{ width: '140px', minWidth: '130px' }}>Tipo</th>
                   <th style={{ minWidth: '220px' }}>Elemento / Material</th>
                   <th style={{ width: '110px', textAlign: 'center' }}>Cant. / Placas</th>
                   {!isUsuario && <th style={{ width: '170px', minWidth: '140px' }}>Responsable / Custodio</th>}
@@ -560,6 +790,8 @@ export default function HistorialView({ movements = [] }) {
                       : `${m.qty || m.cantidad || 1} und`;
 
                   const displayMotivo = m.motivo || m.motive || m.detalles;
+                  const badgeInfo = getTypeBadge(norm, m);
+                  const refLimpia = formatReferencia(m.itemId || m.id_referencia);
 
                   return (
                     <tr
@@ -571,20 +803,21 @@ export default function HistorialView({ movements = [] }) {
                       <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '8px 12px' }}>
                         {fmtDate(m.date)}
                       </td>
-                      <td style={{ padding: '8px 12px' }}>
+                      <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
                         <span
-                          className={`pill ${typePillClass[norm] || typePillClass[m.type] || 'default'}`}
-                          style={{ padding: '2px 8px', fontSize: '11.5px' }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeInfo.badgeClass}`}
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
                         >
-                          {typeLabel[norm] || typeLabel[m.type] || m.type || m.tipo}
+                          <span>{badgeInfo.icon}</span>
+                          <span>{badgeInfo.label}</span>
                         </span>
                       </td>
                       <td style={{ padding: '8px 12px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <strong style={{ fontSize: '13px', lineHeight: 1.3 }}>{m.itemName}</strong>
-                          {m.itemId && (
+                          {refLimpia && (
                             <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: "'Poppins', sans-serif", letterSpacing: '0.02em', fontWeight: 600 }}>
-                              ID: {m.itemId}
+                              Ref: {refLimpia}
                             </span>
                           )}
                           {(m.motivo || m.motive || m.detalles) && (

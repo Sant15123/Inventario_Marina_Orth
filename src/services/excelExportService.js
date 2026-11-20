@@ -1558,3 +1558,148 @@ export async function exportarComprasExcelFMO(compras = [], usuarioFiltro = null
   saveAs(blob, nombreArchivo);
 }
 
+/**
+ * Exporta la bitácora completa de historial y movimientos a un archivo Excel (.xlsx)
+ * con diseño corporativo oficial de la Fundación Marina Orth.
+ * @param {Array} movimientos - Lista de movimientos / auditoría
+ */
+export async function exportarHistorialExcelFMO(movimientos = []) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Fundación Marina Orth - SIGA FMO';
+  workbook.created = new Date();
+
+  const ws = workbook.addWorksheet('Historial de Movimientos', {
+    pageSetup: { paperSize: 9, orientation: 'landscape' },
+    views: [{ showGridLines: true }],
+  });
+
+  // 1. BANNER INSTITUCIONAL
+  ws.mergeCells('A1:K1');
+  const bannerCell = ws.getCell('A1');
+  bannerCell.value = 'FUNDACIÓN MARINA ORTH — BITÁCORA GENERAL DE AUDITORÍA Y MOVIMIENTOS HISTÓRICOS';
+  bannerCell.font = { name: 'Calibri', size: 13, bold: true, color: { argb: COLORS.white } };
+  bannerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF013A52' } };
+  bannerCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  ws.getRow(1).height = 30;
+
+  // Subtítulo con metadata
+  ws.mergeCells('A2:K2');
+  const subCell = ws.getCell('A2');
+  const hoyStr = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+  subCell.value = `Generado el ${hoyStr} | Sistema Integrado de Gestión y Auditoría (SIGA-FMO) | Total de registros: ${movimientos.length}`;
+  subCell.font = { name: 'Calibri', size: 9.5, italic: true, color: { argb: 'FF64748B' } };
+  subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+  subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  ws.getRow(2).height = 18;
+
+  // Espacio
+  ws.getRow(3).height = 8;
+
+  // 2. ENCABEZADOS DE COLUMNA
+  const headers = [
+    'N.°',
+    'Fecha',
+    'Hora',
+    'Tipo de Movimiento',
+    'Elemento / Entidad',
+    'Código / Placa / Radicado',
+    'Cantidad',
+    'Responsable / Ejecutor',
+    'Sede Destino',
+    'Motivo / Detalle Institucional',
+    'Estado',
+  ];
+
+  const headerRow = ws.getRow(4);
+  headerRow.height = 24;
+  headers.forEach((h, idx) => {
+    const cell = headerRow.getCell(idx + 1);
+    cell.value = h;
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.white } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF013A52' } };
+    cell.alignment = { vertical: 'middle', horizontal: idx === 0 || idx === 6 ? 'center' : 'left' };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FF334155' } },
+      bottom: { style: 'medium', color: { argb: 'FF84CC16' } },
+      left: { style: 'thin', color: { argb: 'FF334155' } },
+      right: { style: 'thin', color: { argb: 'FF334155' } },
+    };
+  });
+
+  // 3. FILAS DE DATOS
+  let rIdx = 5;
+  (movimientos || []).forEach((m, idx) => {
+    const row = ws.getRow(rIdx);
+    row.height = 20;
+    const isEven = idx % 2 === 0;
+    const bgColor = isEven ? 'FFFFFFFF' : 'FFF8FAFC';
+
+    // Parsear fecha y hora
+    const rawFecha = m.fecha || m.fullDate || m.date || m.created_at || '';
+    let fechaStr = '';
+    let horaStr = '';
+    if (rawFecha) {
+      try {
+        const d = new Date(rawFecha);
+        if (!isNaN(d.getTime())) {
+          fechaStr = d.toISOString().slice(0, 10);
+          horaStr = d.toTimeString().slice(0, 8);
+        } else {
+          fechaStr = String(rawFecha).slice(0, 10);
+        }
+      } catch {
+        fechaStr = String(rawFecha).slice(0, 10);
+      }
+    }
+
+    const ref = m.id_referencia || m.itemId || m.placa || m.placa_o_id || '';
+    const refLimpia = String(ref).startsWith('c04db665') ? ref.slice(0, 8).toUpperCase() : ref;
+
+    row.getCell(1).value = idx + 1;
+    row.getCell(2).value = fechaStr || '—';
+    row.getCell(3).value = horaStr || '—';
+    row.getCell(4).value = m.tipo || m.type || 'Movimiento';
+    row.getCell(5).value = m.elemento || m.itemName || m.elemento_nombre || 'Material / Registro';
+    row.getCell(6).value = refLimpia || 'N/A';
+    row.getCell(7).value = Number(m.cantidad || m.qty || 1);
+    row.getCell(8).value = m.responsable || m.person || 'Administrador FMO';
+    row.getCell(9).value = m.sede || 'Medellín';
+    row.getCell(10).value = m.motivo || m.detalles || m.motive || '—';
+    row.getCell(11).value = m.status || 'Cerrado';
+
+    for (let c = 1; c <= 11; c++) {
+      const cell = row.getCell(c);
+      cell.font = { name: 'Calibri', size: 9.5, color: { argb: 'FF0F172A' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: c === 1 || c === 6 || c === 7 || c === 11 ? 'center' : 'left',
+      };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      };
+    }
+
+    rIdx++;
+  });
+
+  // 4. AUTOFILTROS Y AUTO-AJUSTE
+  if (rIdx > 5) {
+    ws.autoFilter = `A4:K${rIdx - 1}`;
+  }
+  autoFitColumns(ws, 1, 4, 3);
+
+  // 5. DESCARGAR EXCEL
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  const fechaArch = new Date().toISOString().slice(0, 10);
+  const nombreArchivo = `Historial_Movimientos_SIGA_FMO_${fechaArch}.xlsx`;
+  saveAs(blob, nombreArchivo);
+}
+

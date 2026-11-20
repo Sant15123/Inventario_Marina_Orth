@@ -21,6 +21,7 @@ import UserAvatar from '../components/common/UserAvatar';
 import DetalleUsuarioModal from '../components/modals/DetalleUsuarioModal';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
+import { registrarAuditoria } from '../services/historyAuditService';
 
 export default function UsuariosView({ sedes: propSedes, searchTerm = '', busquedaGlobal = '' }) {
   const { usuarios, crearUsuario, editarUsuario, eliminarUsuario, currentUser, isAdmin, isSupervisor } = useAuth();
@@ -233,6 +234,40 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
       }
 
       await editarUsuario(usuarioEditando.id, payloadParaEnviar);
+
+      const rolAnterior = (usuarioEditando.rol || 'usuario').toUpperCase();
+      const rolNuevo = (formDataEditar.rol || 'usuario').toUpperCase();
+      const huboCambioRol = rolAnterior !== rolNuevo;
+      const ejecutor = currentUser ? `${currentUser.nombre} (${currentUser.rol || 'Administrador'})` : 'Administrador FMO';
+
+      try {
+        if (huboCambioRol) {
+          await registrarAuditoria({
+            tipo: 'Cambio de Rol',
+            elemento: formDataEditar.nombre,
+            id_referencia: formDataEditar.documento,
+            cantidad: 1,
+            responsable: ejecutor,
+            documento_responsable: currentUser?.documento || '',
+            sede: formDataEditar.sede || 'Medellín',
+            motivo: `Modificación de privilegios de usuario: rol anterior [${rolAnterior}] ➔ rol nuevo [${rolNuevo}]. Cargo: ${formDataEditar.cargo || 'Funcionario FMO'}`,
+          });
+        } else {
+          await registrarAuditoria({
+            tipo: 'Actualización',
+            elemento: formDataEditar.nombre,
+            id_referencia: formDataEditar.documento,
+            cantidad: 1,
+            responsable: ejecutor,
+            documento_responsable: currentUser?.documento || '',
+            sede: formDataEditar.sede || 'Medellín',
+            motivo: `Actualización de ficha de usuario. Rol: [${rolNuevo}]. Correo: ${formDataEditar.email}. Cargo: ${formDataEditar.cargo || 'Funcionario FMO'}`,
+          });
+        }
+      } catch (audErr) {
+        console.warn('Aviso auditoria edicion usuario:', audErr?.message);
+      }
+
       setModalEditarOpen(false);
       showEditSuccess(`Usuario ${formDataEditar.nombre}`);
       setUsuarioEditando(null);
@@ -273,8 +308,23 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
       confirmText: 'Dar de Baja',
       cancelText: 'Cancelar',
       isDanger: true,
-      onConfirm: () => {
+      onConfirm: async () => {
         eliminarUsuario(u.id);
+        const ejecutor = currentUser ? `${currentUser.nombre} (${currentUser.rol || 'Administrador'})` : 'Administrador FMO';
+        try {
+          await registrarAuditoria({
+            tipo: 'Baja',
+            elemento: u.nombre,
+            id_referencia: u.documento,
+            cantidad: 1,
+            responsable: ejecutor,
+            documento_responsable: currentUser?.documento || '',
+            sede: u.sede || 'Medellín',
+            motivo: `Revocación de acceso y baja de usuario en el sistema. Rol revocado: [${(u.rol || 'usuario').toUpperCase()}]`,
+          });
+        } catch (audErr) {
+          console.warn('Aviso auditoria baja usuario:', audErr?.message);
+        }
         showEditSuccess(`Usuario ${u.nombre} dado de baja exitosamente`);
       },
     });
