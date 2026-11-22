@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   PackagePlus,
@@ -12,6 +12,8 @@ import {
   FileText,
   AlertCircle,
   CheckCircle2,
+  Check,
+  ChevronDown,
   Loader2,
   ShoppingCart,
   ExternalLink,
@@ -21,6 +23,8 @@ import { today, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useProyectos } from '../../hooks/useProyectos';
+import { getProyectoPrograma, PROYECTOS_STEAM_OFICIALES } from '../../constants/proyectos';
+import ProgramAreaBadge, { resolveAreaConfig } from '../common/ProgramAreaBadge';
 import { getProveedoresRecomendados } from '../../services/proveedoresService';
 import { registrarAuditoria } from '../../services/historyAuditService';
 
@@ -57,6 +61,24 @@ export default function ModalSolicitudMaterial({
   // Directorio de Proveedores Recomendados (cargados dinámicamente)
   const [proveedoresRecomendados, setProveedoresRecomendados] = useState([]);
   const [loadingProveedores, setLoadingProveedores] = useState(false);
+
+  // Estado y ref para el selector con íconos de Proyecto STEAM
+  const [dropdownProyectoOpen, setDropdownProyectoOpen] = useState(false);
+  const dropdownProyectoRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownProyectoRef.current && !dropdownProyectoRef.current.contains(event.target)) {
+        setDropdownProyectoOpen(false);
+      }
+    }
+    if (dropdownProyectoOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownProyectoOpen]);
 
   useEffect(() => {
     let mounted = true;
@@ -97,9 +119,44 @@ export default function ModalSolicitudMaterial({
   // Proyectos STEAM unificados (Fuente única de verdad)
   const { proyectos: proyectosFromHook, formatLabel } = useProyectos();
   const listaProyectos = useMemo(() => {
-    if (Array.isArray(proyectos) && proyectos.length > 0) return proyectos;
-    return proyectosFromHook;
+    const raw = Array.isArray(proyectosFromHook) && proyectosFromHook.length > 0
+      ? proyectosFromHook
+      : (Array.isArray(proyectos) && proyectos.length > 0 ? proyectos : PROYECTOS_STEAM_OFICIALES);
+
+    return raw.map((p) => {
+      if (typeof p === 'string') {
+        const prog = getProyectoPrograma(p);
+        return {
+          id: p,
+          nombre: p,
+          sede_municipio: 'Medellín',
+          programa: prog,
+        };
+      }
+      return {
+        ...p,
+        nombre: p.nombre || p.name || '',
+        sede_municipio: p.sede_municipio || p.sede || p.municipio || 'Medellín',
+        programa: p.programa || getProyectoPrograma(p.nombre || p.name || ''),
+      };
+    });
   }, [proyectos, proyectosFromHook]);
+
+  // Proyecto actualmente seleccionado y su configuración FMO
+  const selectedProyectoObj = useMemo(() => {
+    if (!proyectoId) return null;
+    return (
+      listaProyectos.find(
+        (p) => p.nombre === proyectoId || p.id === proyectoId
+      ) || { nombre: proyectoId, programa: getProyectoPrograma(proyectoId) }
+    );
+  }, [proyectoId, listaProyectos]);
+
+  const selectedProyectoConfig = useMemo(() => {
+    if (!selectedProyectoObj) return null;
+    const prog = selectedProyectoObj.programa || getProyectoPrograma(selectedProyectoObj.nombre);
+    return resolveAreaConfig(prog);
+  }, [selectedProyectoObj]);
 
   // Catálogo disponible filtrado por tipo de solicitud
   const catalogoDisponible = useMemo(() => {
@@ -1754,38 +1811,115 @@ export default function ModalSolicitudMaterial({
                   <span>Proyecto STEAM Vinculado</span>
                   <span className="text-rose-400">*</span>
                 </label>
-                <select
-                  value={proyectoId}
-                  onChange={(e) => {
-                    setProyectoId(e.target.value);
-                    if (validationError) setValidationError('');
-                  }}
-                  required
-                  className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
-                  style={{
-                    backgroundColor: 'var(--bg, #0b1120)',
-                    borderColor: 'var(--line, #334155)',
-                    color: 'var(--text, #f8fafc)',
-                  }}
-                >
-                  <option value="" disabled>
-                    -- Selecciona un proyecto STEAM --
-                  </option>
-                  {proyectoId && !listaProyectos.some((p) => (typeof p === 'string' ? p : p.nombre) === proyectoId) && (
-                    <option value={proyectoId}>
-                      {proyectoId}
-                    </option>
+
+                {/* Selector personalizado de Proyecto STEAM con íconos oficiales FMO */}
+                <div ref={dropdownProyectoRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDropdownProyectoOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all text-left"
+                    style={{
+                      backgroundColor: 'var(--bg, #0b1120)',
+                      borderColor: dropdownProyectoOpen ? '#84CC16' : 'var(--line, #334155)',
+                      color: 'var(--text, #f8fafc)',
+                      minHeight: '44px',
+                    }}
+                    aria-expanded={dropdownProyectoOpen}
+                    aria-haspopup="listbox"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {selectedProyectoConfig ? (
+                        <>
+                          <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                            <selectedProyectoConfig.Icon size={22} className="w-full h-full" />
+                          </div>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="font-bold text-xs truncate text-[#013a52] dark:text-white" title={selectedProyectoObj?.nombre}>
+                              {selectedProyectoObj?.nombre || proyectoId}
+                            </span>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${selectedProyectoConfig.badgeClass}`}
+                            >
+                              {selectedProyectoConfig.label}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500 text-xs font-medium">
+                          -- Selecciona un proyecto STEAM --
+                        </span>
+                      )}
+                    </div>
+                    <ChevronDown
+                      size={18}
+                      className={`text-slate-400 transition-transform duration-200 flex-shrink-0 ml-2 ${
+                        dropdownProyectoOpen ? 'rotate-180 text-[#84CC16]' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Menú desplegable con Íconos Oficiales FMO por proyecto */}
+                  {dropdownProyectoOpen && (
+                    <div
+                      className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 z-50 p-1.5 space-y-1"
+                      role="listbox"
+                    >
+                      {listaProyectos.map((p) => {
+                        const val = p.nombre;
+                        const sedeP = p.sede_municipio;
+                        const prog = p.programa || getProyectoPrograma(val);
+                        const config = resolveAreaConfig(prog);
+                        const IconComp = config.Icon;
+                        const isSelected = proyectoId === val;
+
+                        return (
+                          <div
+                            key={p.id || val}
+                            onClick={() => {
+                              setProyectoId(val);
+                              if (validationError) setValidationError('');
+                              setDropdownProyectoOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-[#abd037]/15 border border-[#abd037]/60 text-[#013a52] dark:text-white'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-transparent'
+                            }`}
+                            role="option"
+                            aria-selected={isSelected}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="flex-shrink-0 w-7 h-7 flex items-center justify-center">
+                                <IconComp size={26} className="w-full h-full" />
+                              </div>
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`text-xs font-bold truncate ${isSelected ? 'text-[#013a52] dark:text-white' : 'text-slate-800 dark:text-slate-100'}`}>
+                                    {val}
+                                  </span>
+                                  <span className={`inline-flex items-center px-2 py-0.2 rounded-full text-[10px] font-bold ${config.badgeClass}`}>
+                                    {config.label}
+                                  </span>
+                                </div>
+                                {sedeP && (
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Sede: {sedeP}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <Check size={16} className="text-[#84CC16] flex-shrink-0 font-bold" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                  {listaProyectos.map((p) => {
-                    const val = typeof p === 'string' ? p : p.nombre;
-                    const label = formatLabel ? formatLabel(p) : val;
-                    return (
-                      <option key={val} value={val}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </select>
+
+                  {/* Input hidden para validación nativa de formulario */}
+                  <input type="hidden" name="proyecto_steam_id" value={proyectoId} required />
+                </div>
               </div>
             </div>
 

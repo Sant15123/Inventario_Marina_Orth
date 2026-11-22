@@ -963,6 +963,46 @@ export const inventoryApi = {
     return json?.data !== undefined ? json.data : json;
   },
 
+  updateProyecto: async (id, data) => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const payload = {};
+        if (data.nombre !== undefined) payload.nombre = String(data.nombre).trim();
+        if (data.sede_municipio !== undefined) payload.sede_municipio = data.sede_municipio;
+        if (data.municipio !== undefined) payload.sede_municipio = data.municipio;
+        if (data.descripcion !== undefined) payload.descripcion = String(data.descripcion).trim();
+        if (data.programa !== undefined) payload.programa = data.programa;
+        if (data.activo !== undefined) payload.activo = data.activo;
+
+        let query = supabase.from('proyectos_steam').update(payload);
+        if (id) {
+          query = query.eq('id', id);
+        } else if (data.nombre) {
+          query = query.eq('nombre', String(data.nombre).trim());
+        }
+        const { data: updated, error } = await query.select().single();
+        if (!error && updated) {
+          return updated;
+        }
+        if (error) {
+          console.warn('Aviso update Supabase proyectos_steam:', error.message);
+        }
+      }
+    } catch (errSup) {
+      console.warn('Aviso update Supabase proyectos_steam:', errSup);
+    }
+    try {
+      const json = await request(`/proyectos/${id || ''}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      return json?.data !== undefined ? json.data : json;
+    } catch (_) {
+      return { id, ...data };
+    }
+  },
+
   // 5.0 Solicitudes de Inventario (Rol Custodio / Docente / Admin)
   getSolicitudes: async (params = {}) => {
     // 1. Consulta directa con cliente Supabase (prioritaria para tiempo real y consistencia de tablas dedicadas)

@@ -3371,6 +3371,14 @@ export default function PrestamosView({
             setDeliveryProyecto(nuevoP.nombre);
             showInfo('Proyecto Creado', `Proyecto STEAM "${nuevoP.nombre}" registrado exitosamente.`);
           }}
+          onProyectoUpdated={(actP) => {
+            setProyectosList((prev) =>
+              prev.map((p) =>
+                (p.id && actP.id && p.id === actP.id) || p.nombre === actP.nombre ? { ...p, ...actP } : p
+              )
+            );
+            showInfo('Proyecto Actualizado', `Proyecto STEAM "${actP.nombre}" actualizado exitosamente.`);
+          }}
         />
       )}
 
