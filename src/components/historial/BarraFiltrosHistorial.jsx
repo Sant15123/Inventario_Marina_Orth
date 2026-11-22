@@ -21,6 +21,7 @@ export const BarraFiltrosHistorial = ({
   countElectronica = 0,
   countProveedores = 0,
   isUsuario = false,
+  isCoordinador = false,
 }) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 py-2 w-full">
@@ -35,11 +36,48 @@ export const BarraFiltrosHistorial = ({
           className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer"
         >
           <option value="todos">Todos los tipos {totalCount !== undefined ? `(${totalCount})` : ''}</option>
-          <option value="prestamo">{isUsuario ? 'Mis Préstamos' : 'Préstamos'} {countPrestamos !== undefined ? `(${countPrestamos})` : ''}</option>
-          <option value="entrega">{isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} {countEntregas !== undefined ? `(${countEntregas})` : ''}</option>
-          <option value="devolucion">{isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} {countDevoluciones !== undefined ? `(${countDevoluciones})` : ''}</option>
-          {!isUsuario && (
+          {isUsuario ? (
             <>
+              <option value="prestamo">Mis Préstamos {countPrestamos !== undefined ? `(${countPrestamos})` : ''}</option>
+              <option value="entrega">Mis Entregas {countEntregas !== undefined ? `(${countEntregas})` : ''}</option>
+              <option value="devolucion">Mis Devoluciones {countDevoluciones !== undefined ? `(${countDevoluciones})` : ''}</option>
+            </>
+          ) : isCoordinador ? (
+            <>
+              <option value="compras">🛒 Gestión de Compras {countCompras !== undefined ? `(${countCompras})` : ''}</option>
+              {countElectronica > 0 && (
+                <option value="electronica">⚡ Equipos de Electrónica ({countElectronica})</option>
+              )}
+              {countProveedores > 0 && (
+                <option value="proveedores">🏪 Proveedores ({countProveedores})</option>
+              )}
+              {countPrestamos > 0 && (
+                <option value="prestamo">🔄 Préstamos ({countPrestamos})</option>
+              )}
+              {countEntregas > 0 && (
+                <option value="entrega">📦 Entregas / Salidas ({countEntregas})</option>
+              )}
+              {countDevoluciones > 0 && (
+                <option value="devolucion">↩️ Devoluciones ({countDevoluciones})</option>
+              )}
+              {countIngresos > 0 && (
+                <option value="ingreso">📥 Ingresos ({countIngresos})</option>
+              )}
+              {countActualizaciones > 0 && (
+                <option value="actualizacion">✏️ Actualizaciones ({countActualizaciones})</option>
+              )}
+              {countBajas > 0 && (
+                <option value="baja">⚠️ Bajas ({countBajas})</option>
+              )}
+              {countEliminaciones > 0 && (
+                <option value="eliminacion">🗑️ Eliminaciones ({countEliminaciones})</option>
+              )}
+            </>
+          ) : (
+            <>
+              <option value="prestamo">Préstamos {countPrestamos !== undefined ? `(${countPrestamos})` : ''}</option>
+              <option value="entrega">Entregas / Salidas {countEntregas !== undefined ? `(${countEntregas})` : ''}</option>
+              <option value="devolucion">Devoluciones {countDevoluciones !== undefined ? `(${countDevoluciones})` : ''}</option>
               <option value="compras">🛒 Gestión de Compras {countCompras !== undefined ? `(${countCompras})` : ''}</option>
               <option value="electronica">⚡ Equipos de Electrónica {countElectronica !== undefined ? `(${countElectronica})` : ''}</option>
               <option value="proveedores">🏪 Proveedores {countProveedores !== undefined ? `(${countProveedores})` : ''}</option>

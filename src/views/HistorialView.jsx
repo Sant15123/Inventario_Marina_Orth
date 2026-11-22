@@ -63,6 +63,49 @@ export const isProveedorMovement = (m) => {
   return t.includes('proveedor') || nom.includes('proveedor') || mot.includes('proveedor');
 };
 
+/**
+ * Determina de forma estricta si un movimiento de auditoría fue ejecutado por el usuario actual
+ * (utilizado para aislar la privacidad del rol Coordinador y evitar fugas de registros globales).
+ */
+export const esMovimientoDeCoordinador = (m, user) => {
+  if (!m || !user) return false;
+  const nombreNorm = (user.nombre || user.nombre_completo || user.name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  const docNorm = String(user.documento || '').trim();
+  const idNorm = String(user.id || '').trim();
+  const emailNorm = String(user.email || '').toLowerCase().trim();
+
+  const resp = String(m.person || m.responsable || m.responsable_nombre || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  const docResp = String(m.documento_responsable || m.documento || '').trim();
+  const usuarioIdResp = String(m.usuario_id || '').trim();
+  const mot = String(m.motivo || m.detalles || '').toLowerCase();
+
+  // 1. Coincidencia por documento del ejecutor
+  if (docNorm && docResp && docNorm === docResp) return true;
+
+  // 2. Coincidencia por UUID de usuario
+  if (idNorm && usuarioIdResp && idNorm === usuarioIdResp) return true;
+
+  // 3. Coincidencia por nombre (ej. "Santiago Galeano (Coordinador)", "Santiago Galeano")
+  if (nombreNorm && resp) {
+    if (resp.includes(nombreNorm) || nombreNorm.includes(resp)) return true;
+    const partes = nombreNorm.split(' ').filter((p) => p.length >= 3);
+    if (partes.length >= 2 && partes.every((p) => resp.includes(p))) return true;
+  }
+
+  // 4. Coincidencia por correo en detalles o responsable
+  if (emailNorm && (resp.includes(emailNorm) || mot.includes(emailNorm))) return true;
+
+  return false;
+};
+
 function formatHistorialItem(h) {
   if (!h) return null;
   const rawTipo = String(h.type || h.tipo || '')
@@ -124,7 +167,10 @@ function formatHistorialItem(h) {
 }
 
 export default function HistorialView({ movements = [] }) {
-  const { currentUser, isUsuario, isOperador, isSupervisor } = useAuth();
+  const { currentUser, isUsuario, isOperador, isSupervisor, isCoordinador: authIsCoordinador, authLoading } = useAuth();
+  const isCoordinador = Boolean(authIsCoordinador || currentUser?.rol === 'coordinador');
+  const [loading, setLoading] = useState(true);
+
   const [filterType, setFiltroTipo] = useState('TODOS');
   const setFilterType = setFiltroTipo; // 'todos' | 'prestamo' | 'entrega' | 'devolucion' | 'baja'
   const [fechaDesde, setFechaDesde] = useState('');
@@ -134,23 +180,39 @@ export default function HistorialView({ movements = [] }) {
   const [exportandoExcel, setExportandoExcel] = useState(false);
   const ITEMS_PER_PAGE = 5;
 
-  const [historial, setHistorial] = useState(() => (Array.isArray(movements) ? movements : []));
+  // Si el usuario es Coordinador, inicializar exclusivamente con movimientos propios para evitar destello global
+  const [historial, setHistorial] = useState(() => {
+    if (!Array.isArray(movements)) return [];
+    if (isCoordinador) {
+      return movements.filter((m) => esMovimientoDeCoordinador(m, currentUser));
+    }
+    return movements;
+  });
 
   useEffect(() => {
     if (Array.isArray(movements) && movements.length > 0) {
-      setHistorial((prev) => {
-        const propKeys = new Set(movements.map((m) => String(m.id || m.dbId)));
-        const localesNuevos = prev.filter((p) => !propKeys.has(String(p.id || p.dbId)));
-        return [...localesNuevos, ...movements];
-      });
+      const movsToAdd = isCoordinador
+        ? movements.filter((m) => esMovimientoDeCoordinador(m, currentUser))
+        : movements;
+      if (movsToAdd.length > 0) {
+        setHistorial((prev) => {
+          const propKeys = new Set(movsToAdd.map((m) => String(m.id || m.dbId)));
+          const localesNuevos = prev.filter((p) => !propKeys.has(String(p.id || p.dbId)));
+          return [...localesNuevos, ...movsToAdd];
+        });
+      }
     }
-  }, [movements]);
+  }, [movements, isCoordinador, currentUser]);
 
   // Suscripción al evento custom interno siga:historial_nuevo para refresco reactivo instantáneo
   useEffect(() => {
     const handleHistorialNuevo = (ev) => {
       const nuevo = ev?.detail;
       if (nuevo) {
+        // En rol Coordinador, omitir si la acción no pertenece a este usuario
+        if (isCoordinador && !esMovimientoDeCoordinador(nuevo, currentUser)) {
+          return;
+        }
         const nuevoMovimiento = formatHistorialItem(nuevo);
         setHistorial((prev) => {
           const exists = prev.some(
@@ -165,30 +227,59 @@ export default function HistorialView({ movements = [] }) {
     };
     window.addEventListener('siga:historial_nuevo', handleHistorialNuevo);
     return () => window.removeEventListener('siga:historial_nuevo', handleHistorialNuevo);
-  }, []);
+  }, [isCoordinador, currentUser]);
 
   const fetchHistorial = async () => {
+    setLoading(true);
     try {
       if (supabase) {
-        const { data, error } = await supabase
+        let query = supabase
           .from('historial_movimientos')
-          .select('*')
-          .order('fecha', { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          setHistorial(data.map(formatHistorialItem));
+          .select('*');
+
+        // Filtrado directo en consulta para rol Coordinador (evita destellos de auditoría global)
+        if (isCoordinador && currentUser) {
+          const doc = String(currentUser.documento || '').trim();
+          const nom = (currentUser.nombre || currentUser.nombre_completo || '').trim();
+          if (doc && nom) {
+            query = query.or(`documento_responsable.eq.${doc},responsable.ilike.%${nom}%`);
+          } else if (nom) {
+            query = query.ilike('responsable', `%${nom}%`);
+          } else if (doc) {
+            query = query.eq('documento_responsable', doc);
+          }
+        }
+
+        query = query.order('fecha', { ascending: false });
+        const { data, error } = await query;
+        if (!error && Array.isArray(data)) {
+          const mapped = data.map(formatHistorialItem);
+          const filtered = isCoordinador
+            ? mapped.filter((m) => esMovimientoDeCoordinador(m, currentUser))
+            : mapped;
+          setHistorial(filtered);
           return;
         }
       }
       const apiData = await inventoryApi.getHistorial();
       if (Array.isArray(apiData) && apiData.length > 0) {
-        setHistorial(apiData.map(formatHistorialItem));
+        const mapped = apiData.map(formatHistorialItem);
+        const filtered = isCoordinador
+          ? mapped.filter((m) => esMovimientoDeCoordinador(m, currentUser))
+          : mapped;
+        setHistorial(filtered);
       }
     } catch (err) {
       console.warn('Aviso al cargar historial:', err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Si la autenticación aún está resolviendo el rol o usuario, esperar
+    if (authLoading) return;
+
     // Carga inicial
     fetchHistorial();
 
@@ -208,6 +299,10 @@ export default function HistorialView({ movements = [] }) {
             (payload) => {
               const nuevo = payload.new;
               if (nuevo) {
+                // En rol Coordinador, ignorar eventos de auditoría ejecutados por otros usuarios
+                if (isCoordinador && !esMovimientoDeCoordinador(nuevo, currentUser)) {
+                  return;
+                }
                 const nuevoMovimiento = formatHistorialItem(nuevo);
                 // Insertar al inicio de la lista de estado para que aparezca arriba de inmediato
                 setHistorial((prev) => {
@@ -234,7 +329,7 @@ export default function HistorialView({ movements = [] }) {
         supabase.removeChannel(canalHistorial);
       }
     };
-  }, []);
+  }, [authLoading, isCoordinador, currentUser]);
 
   const typeLabel = {
     ingreso: 'Ingreso',
@@ -402,6 +497,11 @@ export default function HistorialView({ movements = [] }) {
 
   // 1. Filtrado de movimientos base según el rol activo
   const userMovements = useMemo(() => {
+    // Rol Coordinador: aislamiento estricto de auditoría (únicamente sus propias acciones)
+    if (isCoordinador) {
+      return (historial || []).filter((m) => esMovimientoDeCoordinador(m, currentUser));
+    }
+
     // Supervisor y Admin tienen auditoría cronológica global de todas las sedes
     if (!isUsuario && !isOperador) {
       return historial;
@@ -457,7 +557,7 @@ export default function HistorialView({ movements = [] }) {
 
       return matchName || matchDoc;
     });
-  }, [historial, isUsuario, isOperador, currentUser]);
+  }, [historial, isCoordinador, isUsuario, isOperador, currentUser]);
 
   // Conteos dinámicos por tipo basados en los movimientos visibles del usuario
   const countPrestamos = useMemo(() => (userMovements || []).filter((m) => normalizeType(m) === 'prestamo').length, [userMovements]);
@@ -555,7 +655,21 @@ export default function HistorialView({ movements = [] }) {
     <div className="historial-view">
       <section>
         <div className="section-header" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          {isUsuario ? (
+          {isCoordinador ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight" style={{ margin: 0 }}>
+                  Mi Historial de Gestión
+                </h1>
+                <span className="pill default">
+                  {userMovements.length} transacciones registradas
+                </span>
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1" style={{ margin: '4px 0 0 0' }}>
+                Registro cronológico de tus evaluaciones, aprobaciones, compras y proveedores gestionados
+              </p>
+            </div>
+          ) : isUsuario ? (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight" style={{ margin: 0 }}>
@@ -627,7 +741,127 @@ export default function HistorialView({ movements = [] }) {
           >
             Ver Todos ({userMovements.length})
           </button>
-          {!isUsuario && (
+          {isCoordinador ? (
+            <>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'compras' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('compras')}
+                style={filterType.toLowerCase() === 'compras' ? { backgroundColor: '#7b2cbf', borderColor: '#7b2cbf', color: '#fff' } : {}}
+              >
+                🛒 Gestión de Compras ({countCompras})
+              </button>
+              {countElectronica > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'electronica' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('electronica')}
+                  style={filterType.toLowerCase() === 'electronica' ? { backgroundColor: '#0284c7', borderColor: '#0284c7', color: '#fff' } : {}}
+                >
+                  ⚡ Equipos de Electrónica ({countElectronica})
+                </button>
+              )}
+              {countProveedores > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'proveedores' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('proveedores')}
+                  style={filterType.toLowerCase() === 'proveedores' ? { backgroundColor: '#d97706', borderColor: '#d97706', color: '#fff' } : {}}
+                >
+                  🏪 Proveedores ({countProveedores})
+                </button>
+              )}
+              {countPrestamos > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'prestamo' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('prestamo')}
+                >
+                  🔄 Préstamos ({countPrestamos})
+                </button>
+              )}
+              {countEntregas > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'entrega' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('entrega')}
+                >
+                  📦 Entregas / Salidas ({countEntregas})
+                </button>
+              )}
+              {countDevoluciones > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'devolucion' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('devolucion')}
+                >
+                  ↩️ Devoluciones ({countDevoluciones})
+                </button>
+              )}
+              {countIngresos > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'ingreso' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('ingreso')}
+                  title="Altas, creaciones y nuevos ingresos"
+                >
+                  📥 Ingresos ({countIngresos})
+                </button>
+              )}
+              {countActualizaciones > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'actualizacion' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('actualizacion')}
+                  title="Modificaciones y actualizaciones técnicas"
+                >
+                  ✏️ Actualizaciones ({countActualizaciones})
+                </button>
+              )}
+              {countBajas > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'baja' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('baja')}
+                >
+                  ⚠️ Bajas ({countBajas})
+                </button>
+              )}
+              {countEliminaciones > 0 && (
+                <button
+                  type="button"
+                  className={`btn small ${filterType.toLowerCase() === 'eliminacion' ? 'btn-primary' : 'ghost'}`}
+                  onClick={() => handleFilterChange('eliminacion')}
+                >
+                  🗑️ Eliminaciones ({countEliminaciones})
+                </button>
+              )}
+            </>
+          ) : isUsuario ? (
+            <>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'prestamo' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('prestamo')}
+              >
+                🔄 Mis Préstamos ({countPrestamos})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'entrega' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('entrega')}
+              >
+                📦 Mis Entregas ({countEntregas})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'devolucion' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('devolucion')}
+              >
+                ↩️ Mis Devoluciones ({countDevoluciones})
+              </button>
+            </>
+          ) : (
             <>
               <button
                 type="button"
@@ -653,31 +887,27 @@ export default function HistorialView({ movements = [] }) {
               >
                 🏪 Proveedores ({countProveedores})
               </button>
-            </>
-          )}
-          <button
-            type="button"
-            className={`btn small ${filterType.toLowerCase() === 'prestamo' ? 'btn-primary' : 'ghost'}`}
-            onClick={() => handleFilterChange('prestamo')}
-          >
-            🔄 {isUsuario ? 'Mis Préstamos' : 'Préstamos'} ({countPrestamos})
-          </button>
-          <button
-            type="button"
-            className={`btn small ${filterType.toLowerCase() === 'entrega' ? 'btn-primary' : 'ghost'}`}
-            onClick={() => handleFilterChange('entrega')}
-          >
-            📦 {isUsuario ? 'Mis Entregas' : 'Entregas / Salidas'} ({countEntregas})
-          </button>
-          <button
-            type="button"
-            className={`btn small ${filterType.toLowerCase() === 'devolucion' ? 'btn-primary' : 'ghost'}`}
-            onClick={() => handleFilterChange('devolucion')}
-          >
-            ↩️ {isUsuario ? 'Mis Devoluciones' : 'Devoluciones'} ({countDevoluciones})
-          </button>
-          {!isUsuario && (
-            <>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'prestamo' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('prestamo')}
+              >
+                🔄 Préstamos ({countPrestamos})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'entrega' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('entrega')}
+              >
+                📦 Entregas / Salidas ({countEntregas})
+              </button>
+              <button
+                type="button"
+                className={`btn small ${filterType.toLowerCase() === 'devolucion' ? 'btn-primary' : 'ghost'}`}
+                onClick={() => handleFilterChange('devolucion')}
+              >
+                ↩️ Devoluciones ({countDevoluciones})
+              </button>
               <button
                 type="button"
                 className={`btn small ${filterType.toLowerCase() === 'ingreso' ? 'btn-primary' : 'ghost'}`}
@@ -736,11 +966,17 @@ export default function HistorialView({ movements = [] }) {
             countElectronica={countElectronica}
             countProveedores={countProveedores}
             isUsuario={isUsuario}
+            isCoordinador={isCoordinador}
           />
         </div>
 
         <div className="panel table-responsive" style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {filteredList.length === 0 ? (
+          {isCoordinador && (authLoading || loading) ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500 dark:text-slate-400" style={{ flex: 1 }}>
+              <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-medium">Cargando tu historial de gestión...</p>
+            </div>
+          ) : filteredList.length === 0 ? (
             <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span>📋</span> No se encontraron movimientos para el filtro seleccionado.
             </div>
