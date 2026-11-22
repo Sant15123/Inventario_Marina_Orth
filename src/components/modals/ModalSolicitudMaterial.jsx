@@ -503,24 +503,30 @@ export default function ModalSolicitudMaterial({
         try {
           resultadoCompra = await inventoryApi.createSolicitudesCompra(registrosCompra);
         } catch (errSup) {
-          console.error('[ModalSolicitudMaterial] Error al radicar compra:', {
+          console.error('[ModalSolicitudMaterial] Error al radicar compra en Supabase:', {
             mensaje: errSup?.message || errSup,
             detalles: errSup?.details,
             pista: errSup?.hint,
           });
+          const detalleMsg = errSup?.message || 'No se pudo registrar la solicitud en Supabase.';
+          if (showError) {
+            showError('Error al radicar solicitud de compra', detalleMsg);
+          } else {
+            setValidationError(`Error en base de datos: ${detalleMsg}`);
+          }
+          setSubmitting(false);
+          return;
+        }
+
+        if (!resultadoCompra || resultadoCompra.length === 0) {
+          const msg = 'No se obtuvo confirmación de Supabase al guardar la solicitud de compra.';
+          if (showError) showError('Error en base de datos', msg);
+          setSubmitting(false);
+          return;
         }
 
         const primerReg = registrosCompra[0] || {};
-        const solicitudCreadaCompra = (resultadoCompra && resultadoCompra[0]) || {
-          ...primerReg,
-          id: `compra-${Date.now()}`,
-          tipo_solicitud: 'SUGERENCIA_COMPRA',
-          tipo: 'SUGERENCIA_COMPRA',
-          proyecto_steam_id: (proyectoId || '').trim(),
-          proyecto: (proyectoId || '').trim(),
-          items: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
-          items_solicitud: registrosCompra.map((rc, idx) => ({ ...rc, id: `item-c-${idx}` })),
-        };
+        const solicitudCreadaCompra = resultadoCompra[0];
 
         const catLegible = primerReg.categoria_destino === 'electronica'
           ? 'Equipos de Electrónica'

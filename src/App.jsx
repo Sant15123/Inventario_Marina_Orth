@@ -124,6 +124,7 @@ function App() {
     } else if (view === 'compras') {
       setComprasParams({
         tab: params.tab || 'todas',
+        solicitudId: params.solicitudId || null,
       });
     }
     setCurrentView(view);
@@ -1244,6 +1245,7 @@ function App() {
                     <GestionComprasView
                       itemsInventario={items}
                       initialTab={comprasParams.tab}
+                      initialSolicitudId={comprasParams.solicitudId}
                       onNavigate={handleNavigateFromSummary}
                     />
                   )}

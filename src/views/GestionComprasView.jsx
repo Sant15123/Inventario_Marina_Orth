@@ -387,6 +387,7 @@ export default function GestionComprasView({
   itemsInventario = [],
   onNavigate,
   initialTab = 'todas',
+  initialSolicitudId = null,
 }) {
   const { currentUser, isCoordinador, isAdmin } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
@@ -407,6 +408,17 @@ export default function GestionComprasView({
       setPestanaActiva(initialTab);
     }
   }, [initialTab]);
+
+  // Si se recibe un ID específico de solicitud (desde la campana de notificaciones), seleccionarlo
+  useEffect(() => {
+    if (initialSolicitudId && solicitudes.length > 0) {
+      const match = solicitudes.find((s) => String(s.id) === String(initialSolicitudId));
+      if (match) {
+        setSolicitudAEvaluar(match);
+        setModalEvaluarOpen(true);
+      }
+    }
+  }, [initialSolicitudId, solicitudes]);
 
   // Modales
   const [modalEvaluarOpen, setModalEvaluarOpen] = useState(false);
@@ -1018,6 +1030,14 @@ export default function GestionComprasView({
         `Solicitud ${decisionFinal}`,
         `La solicitud ${formatRadicado(solicitudAEvaluar.id, solicitudAEvaluar.radicado)} ha pasado al estado "${decisionFinal}".`
       );
+
+      // Notificar a la campana de notificaciones para actualizar contador reactivo inmediatamente
+      try {
+        window.dispatchEvent(
+          new CustomEvent('siga:solicitud_resuelta', { detail: { id: solicitudAEvaluar.id } })
+        );
+      } catch (_) {}
+
       setModalEvaluarOpen(false);
       setSolicitudAEvaluar(null);
     } catch (err) {

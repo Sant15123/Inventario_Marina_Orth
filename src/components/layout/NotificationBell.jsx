@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Bell, Laptop, Box, ShoppingCart, ArrowRight, CheckCircle2 } from 'lucide-react';
 import supabase from '../../services/supabase';
 import inventoryApi from '../../services/inventoryApi';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * NotificationBell Component
@@ -9,6 +10,7 @@ import inventoryApi from '../../services/inventoryApi';
  * Estilizada bajo el sistema de diseño institucional de la Fundación Marina Orth (SIGA).
  */
 export default function NotificationBell({ onNavigateToSolicitudes }) {
+  const { currentUser, isCoordinador, isAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [solicitudes, setSolicitudes] = useState([]);
   const [contador, setContador] = useState(0);
@@ -20,7 +22,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
   // Filtrar estrictamente solicitudes con estado PENDIENTE
   const pendientes = useMemo(() => {
     return solicitudes.filter(
-      (s) => String(s.estado || 'PENDIENTE').toUpperCase() === 'PENDIENTE'
+      (s) => String(s.estado || 'PENDIENTE').toUpperCase().includes('PENDIENTE')
     );
   }, [solicitudes]);
 
@@ -35,11 +37,45 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     }, 1200);
   };
 
-  // Carga inicial de solicitudes pendientes desde Supabase (con fallback tolerante a la API REST)
+  // Carga inicial de solicitudes pendientes desde Supabase
   const cargarSolicitudes = async () => {
     try {
       setLoading(true);
-      // 1. Intentar consulta directa a Supabase de solicitudes_inventario y solicitudes_compra
+
+      // A. Para rol COORDINADOR: Conectar DIRECTA Y EXCLUSIVAMENTE a la tabla 'solicitudes_compra'
+      if (isCoordinador) {
+        if (supabase) {
+          const { data: compData, error: compErr } = await supabase
+            .from('solicitudes_compra')
+            .select('*')
+            .or('estado.ilike.pendiente,estado.ilike.pendientes,estado.eq.Pendiente,estado.eq.PENDIENTE')
+            .order('creado_en', { ascending: false });
+
+          if (!compErr && Array.isArray(compData)) {
+            const list = compData.map((sc) => ({
+              ...sc,
+              id: sc.id,
+              tipo_solicitud: 'SUGERENCIA_COMPRA',
+              tipo: 'SUGERENCIA_COMPRA',
+              nombre_item: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
+              motivo: sc.justificacion || sc.motivo || 'Solicitud de compra pendiente',
+              fecha: sc.creado_en || sc.created_at,
+              creado_en: sc.creado_en || sc.created_at,
+              sede: sc.sede || sc.sede_destino || 'Medellín',
+              usuario_nombre: sc.solicitante_nombre || sc.usuario_nombre || 'Docente FMO',
+              is_solicitud_compra: true,
+            }));
+            setSolicitudes(list);
+            setContador(list.length);
+            return;
+          }
+        }
+        setSolicitudes([]);
+        setContador(0);
+        return;
+      }
+
+      // B. Para otros roles administrativos (Administrador / Operador):
       let inventarioList = [];
       let comprasList = [];
       let invError = null;
@@ -51,8 +87,13 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
           .select('*')
           .or('estado.ilike.pendiente,estado.ilike.pendientes')
           .order('creado_en', { ascending: false });
+
         if (!invErr && Array.isArray(invData)) {
-          inventarioList = invData;
+          // Filtrar estrictamente: descartar registros huérfanos que sean de compras (se gestionan en solicitudes_compra)
+          inventarioList = invData.filter((s) => {
+            const t = String(s.tipo_solicitud || s.tipo || '').toUpperCase();
+            return t !== 'SUGERENCIA_COMPRA' && t !== 'COMPRA';
+          });
         } else if (invErr) {
           invError = invErr;
         }
@@ -64,15 +105,21 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
         const { data: compData, error: compErr } = await supabase
           .from('solicitudes_compra')
           .select('*')
-          .or('estado.ilike.pendiente,estado.ilike.pendientes')
+          .or('estado.ilike.pendiente,estado.ilike.pendientes,estado.eq.Pendiente,estado.eq.PENDIENTE')
           .order('creado_en', { ascending: false });
+
         if (!compErr && Array.isArray(compData)) {
           comprasList = compData.map((sc) => ({
             ...sc,
+            id: sc.id,
             tipo_solicitud: 'SUGERENCIA_COMPRA',
             tipo: 'SUGERENCIA_COMPRA',
-            nombre_item: sc.nombre_producto,
-            motivo: sc.justificacion,
+            nombre_item: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
+            motivo: sc.justificacion || sc.motivo || 'Solicitud de compra pendiente',
+            fecha: sc.creado_en || sc.created_at,
+            creado_en: sc.creado_en || sc.created_at,
+            sede: sc.sede || sc.sede_destino || 'Medellín',
+            usuario_nombre: sc.solicitante_nombre || sc.usuario_nombre || 'Docente FMO',
             is_solicitud_compra: true,
           }));
         } else if (compErr) {
@@ -82,30 +129,24 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
         compError = e2;
       }
 
-      // Si las consultas a Supabase respondieron sin error, usar datos directos
       if (!invError && !compError) {
         const total = [...inventarioList, ...comprasList].sort(
-          (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
+          (a, b) => new Date(b.creado_en || b.created_at || 0) - new Date(a.creado_en || a.created_at || 0)
         );
         setSolicitudes(total);
         setContador(total.length);
         return;
       }
 
-      // 2. Si Supabase devuelve error de autenticación/clave o red, usar fallback tolerante de la API
-      const actualError = invError || compError;
-      console.warn('Aviso Supabase solicitudes, usando servicio local:', actualError?.message || actualError);
-      const fallbackData = await inventoryApi.getSolicitudes();
-      if (Array.isArray(fallbackData)) {
-        const pendientesFallback = fallbackData.filter(
-          (s) => String(s.estado || 'PENDIENTE').toUpperCase() === 'PENDIENTE'
-        );
-        setSolicitudes(pendientesFallback);
-        setContador(pendientesFallback.length);
-      } else {
-        setSolicitudes([]);
-        setContador(0);
+      // Si sólo respondió la consulta de compras sin error
+      if (!compError && Array.isArray(comprasList)) {
+        setSolicitudes(comprasList);
+        setContador(comprasList.length);
+        return;
       }
+
+      setSolicitudes([]);
+      setContador(0);
     } catch (err) {
       console.warn('Error al obtener solicitudes para notificaciones:', err);
     } finally {
@@ -121,153 +162,160 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     // 2. Suscripción en vivo al canal Realtime
     let canal = null;
     try {
-      canal = supabase
-        .channel('solicitudes-inventario-realtime')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'solicitudes_inventario',
-          },
-          (payload) => {
-            if (payload?.new && String(payload.new.estado).toUpperCase() === 'PENDIENTE') {
-              triggerBadgeAnimation();
-              setContador((prev) => prev + 1);
-              setSolicitudes((prev) => {
-                const filtered = prev.filter((s) => s.id !== payload.new.id);
-                return [payload.new, ...filtered];
-              });
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'solicitudes_inventario',
-          },
-          (payload) => {
-            triggerBadgeAnimation();
-            const oldEstado = String(payload.old?.estado || '').toUpperCase();
-            const newEstado = String(payload.new?.estado || '').toUpperCase();
+      if (supabase) {
+        let canalBuilder = supabase.channel('notificaciones-siga-realtime');
 
-            // Si pasa de PENDIENTE a APROBADA o RECHAZADA
-            if (oldEstado === 'PENDIENTE' && newEstado !== 'PENDIENTE') {
-              setContador((prev) => Math.max(0, prev - 1));
-              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
-            } else if (newEstado === 'PENDIENTE') {
-              setSolicitudes((prev) => {
-                const exists = prev.some((s) => s.id === payload.new.id);
-                if (!exists) {
-                  setContador((c) => c + 1);
-                  return [payload.new, ...prev];
-                }
-                return prev.map((s) => (s.id === payload.new.id ? payload.new : s));
-              });
-            } else {
-              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+        // Escuchar eventos en solicitudes_compra
+        canalBuilder = canalBuilder
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'solicitudes_compra',
+            },
+            (payload) => {
+              if (payload?.new && String(payload.new.estado || '').toUpperCase().includes('PENDIENTE')) {
+                triggerBadgeAnimation();
+                const formattedComp = {
+                  ...payload.new,
+                  id: payload.new.id,
+                  tipo_solicitud: 'SUGERENCIA_COMPRA',
+                  tipo: 'SUGERENCIA_COMPRA',
+                  nombre_item: payload.new.nombre_producto || payload.new.justificacion || 'Producto sugerido',
+                  motivo: payload.new.justificacion || payload.new.motivo || 'Solicitud de compra pendiente',
+                  fecha: payload.new.creado_en || payload.new.created_at || new Date().toISOString(),
+                  creado_en: payload.new.creado_en || payload.new.created_at || new Date().toISOString(),
+                  sede: payload.new.sede || payload.new.sede_destino || 'Medellín',
+                  usuario_nombre: payload.new.solicitante_nombre || payload.new.usuario_nombre || 'Docente FMO',
+                  is_solicitud_compra: true,
+                };
+                setContador((prev) => prev + 1);
+                setSolicitudes((prev) => [formattedComp, ...prev.filter((s) => s.id !== payload.new.id)]);
+              }
             }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'DELETE',
-            schema: 'public',
-            table: 'solicitudes_inventario',
-          },
-          (payload) => {
-            const idEliminado = payload.old?.id;
-            if (idEliminado) {
-              setContador((prev) => Math.max(0, prev - 1));
-              setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'solicitudes_compra',
-          },
-          (payload) => {
-            if (payload?.new && String(payload.new.estado).toUpperCase() === 'PENDIENTE') {
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'solicitudes_compra',
+            },
+            (payload) => {
               triggerBadgeAnimation();
-              setContador((prev) => prev + 1);
-              const formattedComp = {
-                ...payload.new,
-                tipo_solicitud: 'SUGERENCIA_COMPRA',
-                tipo: 'SUGERENCIA_COMPRA',
-                nombre_item: payload.new.nombre_producto,
-                motivo: payload.new.justificacion,
-                is_solicitud_compra: true,
-              };
-              setSolicitudes((prev) => [formattedComp, ...prev.filter((s) => s.id !== payload.new.id)]);
+              const newEstado = String(payload.new?.estado || '').toUpperCase();
+              if (newEstado.includes('PENDIENTE')) {
+                const formattedComp = {
+                  ...payload.new,
+                  id: payload.new.id,
+                  tipo_solicitud: 'SUGERENCIA_COMPRA',
+                  tipo: 'SUGERENCIA_COMPRA',
+                  nombre_item: payload.new.nombre_producto || payload.new.justificacion || 'Producto sugerido',
+                  motivo: payload.new.justificacion || payload.new.motivo || 'Solicitud de compra pendiente',
+                  fecha: payload.new.creado_en || payload.new.created_at,
+                  creado_en: payload.new.creado_en || payload.new.created_at,
+                  sede: payload.new.sede || payload.new.sede_destino || 'Medellín',
+                  usuario_nombre: payload.new.solicitante_nombre || payload.new.usuario_nombre || 'Docente FMO',
+                  is_solicitud_compra: true,
+                };
+                setSolicitudes((prev) => {
+                  const exists = prev.some((s) => s.id === payload.new.id);
+                  if (!exists) {
+                    setContador((c) => c + 1);
+                    return [formattedComp, ...prev];
+                  }
+                  return prev.map((s) => (s.id === payload.new.id ? formattedComp : s));
+                });
+              } else {
+                setContador((prev) => Math.max(0, prev - 1));
+                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+              }
             }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'solicitudes_compra',
-          },
-          (payload) => {
-            triggerBadgeAnimation();
-            const oldEstado = String(payload.old?.estado || '').toUpperCase();
-            const newEstado = String(payload.new?.estado || '').toUpperCase();
-            if (oldEstado === 'PENDIENTE' && newEstado !== 'PENDIENTE') {
-              setContador((prev) => Math.max(0, prev - 1));
-              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
-            } else if (newEstado === 'PENDIENTE') {
-              const formattedComp = {
-                ...payload.new,
-                tipo_solicitud: 'SUGERENCIA_COMPRA',
-                tipo: 'SUGERENCIA_COMPRA',
-                nombre_item: payload.new.nombre_producto,
-                motivo: payload.new.justificacion,
-                is_solicitud_compra: true,
-              };
-              setSolicitudes((prev) => {
-                const exists = prev.some((s) => s.id === payload.new.id);
-                if (!exists) {
-                  setContador((c) => c + 1);
-                  return [formattedComp, ...prev];
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'solicitudes_compra',
+            },
+            (payload) => {
+              const idEliminado = payload.old?.id;
+              if (idEliminado) {
+                setContador((prev) => Math.max(0, prev - 1));
+                setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
+              }
+            }
+          );
+
+        // Si NO es rol Coordinador, escuchar también solicitudes_inventario (préstamos físicos)
+        if (!isCoordinador) {
+          canalBuilder = canalBuilder
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'solicitudes_inventario',
+              },
+              (payload) => {
+                const t = String(payload.new?.tipo_solicitud || payload.new?.tipo || '').toUpperCase();
+                if (t === 'SUGERENCIA_COMPRA' || t === 'COMPRA') return;
+                if (payload?.new && String(payload.new.estado).toUpperCase() === 'PENDIENTE') {
+                  triggerBadgeAnimation();
+                  setContador((prev) => prev + 1);
+                  setSolicitudes((prev) => [payload.new, ...prev.filter((s) => s.id !== payload.new.id)]);
                 }
-                return prev.map((s) => (s.id === payload.new.id ? formattedComp : s));
-              });
-            } else {
-              setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'DELETE',
-            schema: 'public',
-            table: 'solicitudes_compra',
-          },
-          (payload) => {
-            const idEliminado = payload.old?.id;
-            if (idEliminado) {
-              setContador((prev) => Math.max(0, prev - 1));
-              setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log('Suscripción Realtime activa:', status);
+              }
+            )
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'solicitudes_inventario',
+              },
+              (payload) => {
+                const oldEstado = String(payload.old?.estado || '').toUpperCase();
+                const newEstado = String(payload.new?.estado || '').toUpperCase();
+                if (oldEstado === 'PENDIENTE' && newEstado !== 'PENDIENTE') {
+                  setContador((prev) => Math.max(0, prev - 1));
+                  setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+                } else if (newEstado === 'PENDIENTE') {
+                  setSolicitudes((prev) => {
+                    const exists = prev.some((s) => s.id === payload.new.id);
+                    if (!exists) setContador((c) => c + 1);
+                    return exists ? prev.map((s) => (s.id === payload.new.id ? payload.new : s)) : [payload.new, ...prev];
+                  });
+                }
+              }
+            )
+            .on(
+              'postgres_changes',
+              {
+                event: 'DELETE',
+                schema: 'public',
+                table: 'solicitudes_inventario',
+              },
+              (payload) => {
+                const idEliminado = payload.old?.id;
+                if (idEliminado) {
+                  setContador((prev) => Math.max(0, prev - 1));
+                  setSolicitudes((prev) => prev.filter((s) => s.id !== idEliminado));
+                }
+              }
+            );
+        }
+
+        canal = canalBuilder.subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             setRealtimeActive(true);
           } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
             setRealtimeActive(false);
           }
         });
+      }
     } catch (subErr) {
       console.warn('Error configurando canal Realtime Supabase:', subErr);
     }
@@ -275,13 +323,26 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     // 3. Listener local para sincronización reactiva inmediata entre pestañas o módulos
     const handleLocalSolicitudCreated = (event) => {
       const nuevaSol = event?.detail;
-      if (nuevaSol && String(nuevaSol.estado || 'PENDIENTE').toUpperCase() === 'PENDIENTE') {
-        triggerBadgeAnimation();
-        setContador((prev) => prev + 1);
-        setSolicitudes((prev) => {
-          const filtered = prev.filter((s) => s.id !== nuevaSol.id);
-          return [nuevaSol, ...filtered];
-        });
+      if (nuevaSol) {
+        const est = String(nuevaSol.estado || 'PENDIENTE').toUpperCase();
+        if (est.includes('PENDIENTE')) {
+          triggerBadgeAnimation();
+          const formatted = {
+            ...nuevaSol,
+            id: nuevaSol.id,
+            tipo_solicitud: 'SUGERENCIA_COMPRA',
+            tipo: 'SUGERENCIA_COMPRA',
+            nombre_item: nuevaSol.nombre_producto || nuevaSol.nombre_item || nuevaSol.justificacion || 'Producto sugerido',
+            motivo: nuevaSol.justificacion || nuevaSol.motivo || 'Solicitud de compra pendiente',
+            fecha: nuevaSol.creado_en || nuevaSol.created_at || new Date().toISOString(),
+            creado_en: nuevaSol.creado_en || nuevaSol.created_at || new Date().toISOString(),
+            sede: nuevaSol.sede || nuevaSol.sede_destino || 'Medellín',
+            usuario_nombre: nuevaSol.solicitante_nombre || nuevaSol.usuario_nombre || 'Docente FMO',
+            is_solicitud_compra: true,
+          };
+          setSolicitudes((prev) => [formatted, ...prev.filter((s) => s.id !== nuevaSol.id)]);
+          setContador((c) => c + 1);
+        }
       }
     };
 
@@ -297,13 +358,13 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     window.addEventListener('siga:solicitud_resuelta', handleLocalSolicitudResolved);
 
     return () => {
-      if (canal) {
+      if (canal && supabase) {
         supabase.removeChannel(canal);
       }
       window.removeEventListener('siga:solicitud_creada', handleLocalSolicitudCreated);
       window.removeEventListener('siga:solicitud_resuelta', handleLocalSolicitudResolved);
     };
-  }, []);
+  }, [isCoordinador]);
 
   // Cerrar el popover al hacer clic afuera o con tecla Escape
   useEffect(() => {
@@ -352,13 +413,9 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
   const handleVerTodas = () => {
     setIsOpen(false);
     const listaPendientes = pendientes.length > 0 ? pendientes : solicitudes;
-    const primeraSol = listaPendientes[0] || null;
-    const todasCompras = listaPendientes.length > 0 && listaPendientes.every((s) => esCompraSolicitud(s));
-    const masRecienteEsCompra = primeraSol && esCompraSolicitud(primeraSol);
-
-    const destinoCompras = todasCompras || masRecienteEsCompra;
+    const destinoCompras = isCoordinador || listaPendientes.some((s) => esCompraSolicitud(s));
     const targetSection = destinoCompras ? 'compras' : 'solicitudes';
-    const tabParam = destinoCompras ? 'compras' : 'entrantes';
+    const tabParam = destinoCompras ? 'pendientes' : 'entrantes';
 
     try {
       const url = new URL(window.location);
@@ -371,6 +428,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
 
     if (onNavigateToSolicitudes) {
       onNavigateToSolicitudes({
+        view: targetSection,
         section: targetSection,
         tab: tabParam,
       });
@@ -379,9 +437,9 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
 
   const handleSelectSolicitud = (sol) => {
     setIsOpen(false);
-    const esCompra = esCompraSolicitud(sol);
+    const esCompra = isCoordinador || esCompraSolicitud(sol);
     const targetSection = esCompra ? 'compras' : 'solicitudes';
-    const tabParam = esCompra ? 'compras' : 'entrantes';
+    const tabParam = esCompra ? 'pendientes' : 'entrantes';
 
     try {
       const url = new URL(window.location);
@@ -394,6 +452,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
 
     if (onNavigateToSolicitudes) {
       onNavigateToSolicitudes({
+        view: targetSection,
         section: targetSection,
         tab: tabParam,
         solicitudId: sol?.id || null,

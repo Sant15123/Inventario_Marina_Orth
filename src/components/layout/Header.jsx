@@ -111,7 +111,11 @@ export default function Header({
           <NotificationBell
             onNavigateToSolicitudes={(targetData) => {
               if (onNavigate) {
-                onNavigate('prestamos', targetData || { section: 'solicitudes' });
+                if (isCoordinador || targetData?.view === 'compras' || targetData?.section === 'compras') {
+                  onNavigate('compras', { tab: targetData?.tab || 'pendientes', ...targetData });
+                } else {
+                  onNavigate('prestamos', targetData || { section: 'solicitudes' });
+                }
               }
             }}
           />

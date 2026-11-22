@@ -1281,7 +1281,7 @@ export const inventoryApi = {
       items: itemsList.map((it) => {
         const catDestino = String(it.categoria_sugerida || it.categoria || it.categoria_destino || '').toLowerCase().trim();
         const categoriaFinal = esCompraReq
-          ? (catDestino === 'papeleria' ? 'papeleria' : 'consumibles')
+          ? (catDestino.includes('electron') || catDestino.includes('electrónica') ? 'electronica' : (catDestino.includes('pape') ? 'papeleria' : 'consumibles'))
           : null;
         return {
           ...it,
@@ -1884,38 +1884,34 @@ export const inventoryApi = {
     });
 
     let created = null;
-    try {
-      const { supabase } = await import('./supabase');
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('solicitudes_compra')
-          .insert(sanitized)
-          .select();
-        if (!error && data) {
-          created = data;
-        }
-        if (error) {
-          console.error('[inventoryApi.createSolicitudesCompra] Error Supabase insert solicitudes_compra:', {
-            mensaje: error.message,
-            detalles: error.details,
-            pista: error.hint,
-            codigo: error.code,
-          });
-          throw error;
-        }
+    const { supabase } = await import('./supabase');
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('solicitudes_compra')
+        .insert(sanitized)
+        .select();
+
+      if (error) {
+        console.error('[inventoryApi.createSolicitudesCompra] Error Supabase insert solicitudes_compra:', {
+          mensaje: error.message,
+          detalles: error.details,
+          pista: error.hint,
+          codigo: error.code,
+        });
+        throw error;
       }
-    } catch (e) {
-      console.warn(
-        `Error createSolicitudesCompra: ${e?.message || e}${e?.details ? ` | Detalles: ${e.details}` : ''}${e?.hint ? ` | Pista: ${e.hint}` : ''}`
-      );
+
+      if (data && Array.isArray(data) && data.length > 0) {
+        try {
+          const cached = localStorage.getItem('siga_solicitudes_compra');
+          const list = cached ? JSON.parse(cached) : [];
+          localStorage.setItem('siga_solicitudes_compra', JSON.stringify([...data, ...list]));
+        } catch (e) {}
+        return data;
+      }
     }
-    const finalArr = created || arr;
-    try {
-      const cached = localStorage.getItem('siga_solicitudes_compra');
-      const list = cached ? JSON.parse(cached) : [];
-      localStorage.setItem('siga_solicitudes_compra', JSON.stringify([...finalArr, ...list]));
-    } catch (e) {}
-    return finalArr;
+
+    throw new Error('No se pudo establecer conexión con Supabase para registrar la solicitud de compra.');
   },
 
   updateSolicitudCompra: async (id, patch) => {
