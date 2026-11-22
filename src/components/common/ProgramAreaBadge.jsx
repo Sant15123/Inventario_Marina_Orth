@@ -7,6 +7,7 @@ import {
   InglesIcon,
   BecasFmoIcon,
 } from './FmoProgramIcons';
+import { getProyectoPrograma } from '../../constants/proyectos';
 
 export {
   RoboticaIcon,
@@ -273,6 +274,7 @@ export function resolveAreaConfig(area, defaultProgram = null) {
  */
 export default function ProgramAreaBadge({
   area = '',
+  programa = '',
   defaultProgram = null,
   className = '',
   iconSize: propIconSize,
@@ -283,24 +285,30 @@ export default function ProgramAreaBadge({
 }) {
   const isSm = size === 'sm';
   const iconSize = propIconSize || (isSm ? 14 : 18);
-  const config = resolveAreaConfig(area, defaultProgram);
+  const safeAreaStr = typeof area === 'string' ? area.trim() : (area?.nombre || area?.name || '');
+  const progFromObj = typeof area === 'object' ? area?.programa : null;
+  const inferredProg = programa || progFromObj || (safeAreaStr ? getProyectoPrograma(safeAreaStr) : null);
+  const config = resolveAreaConfig(inferredProg || safeAreaStr, defaultProgram);
   const IconComponent = config.Icon;
-  const safeAreaStr = typeof area === 'string' ? area.trim() : '';
   const genericPrograms = ['robotica', 'robótica', 'nuevas tecnologías', 'nuevas tecnologias', 'teachlabs', 'habilidades socioemocionales', 'inglés', 'ingles', 'becas', 'becas "educando para el futuro"', 'general', 'administración / general'];
   const isSpecificProject = safeAreaStr && !genericPrograms.includes(safeAreaStr.toLowerCase());
   const displayLabel = label || (isSpecificProject ? safeAreaStr : config.label) || 'Sin asignar';
+  const tooltipText = isSpecificProject
+    ? `Proyecto STEAM: ${displayLabel} (Programa FMO: ${config.label})`
+    : `Programa / Área FMO: ${displayLabel}`;
 
   return (
     <span
-      className={`program-area-badge inline-flex items-center gap-1.5 ${isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'} font-semibold leading-none shadow-2xs transition-all max-w-full min-w-0 ${config.badgeClass} ${className}`}
+      className={`program-area-badge inline-flex items-center gap-1.5 ${isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'} font-semibold rounded-full leading-none shadow-2xs transition-all max-w-full min-w-0 overflow-hidden ${config.badgeClass} ${className}`}
       style={{
         fontFamily: "'Poppins', sans-serif",
         maxWidth: '100%',
         minWidth: 0,
         boxSizing: 'border-box',
+        overflow: 'hidden',
         ...style,
       }}
-      title={`Programa / Área FMO: ${displayLabel}`}
+      title={tooltipText}
     >
       {showIcon && (
         <span
@@ -311,12 +319,14 @@ export default function ProgramAreaBadge({
         </span>
       )}
       <span
-        className="truncate"
+        className="truncate block flex-1 min-w-0"
         style={{
+          display: 'block',
           minWidth: 0,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
+          flex: '1 1 auto',
         }}
       >
         {typeof displayLabel === 'string' ? displayLabel : 'Sin asignar'}

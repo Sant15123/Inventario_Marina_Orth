@@ -914,11 +914,48 @@ export const inventoryApi = {
 
   // 5. Proyectos STEAM
   getProyectos: async () => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('proyectos_steam')
+          .select('*')
+          .order('nombre', { ascending: true });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (_) {}
     const json = await request('/proyectos');
     return extraerArreglo(json);
   },
 
   createProyecto: async (data) => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const payload = {
+          nombre: data.nombre ? String(data.nombre).trim() : '',
+          sede_municipio: data.sede_municipio || data.municipio || 'Medellín',
+          descripcion: data.descripcion ? String(data.descripcion).trim() : '',
+          programa: data.programa || 'Robótica',
+          activo: true,
+        };
+        const { data: inserted, error } = await supabase
+          .from('proyectos_steam')
+          .insert([payload])
+          .select()
+          .single();
+        if (!error && inserted) {
+          return inserted;
+        }
+        if (error) {
+          console.warn('Aviso insert Supabase proyectos_steam:', error.message);
+        }
+      }
+    } catch (errSup) {
+      console.warn('Aviso insert Supabase proyectos_steam:', errSup);
+    }
     const json = await request('/proyectos', {
       method: 'POST',
       body: JSON.stringify(data),

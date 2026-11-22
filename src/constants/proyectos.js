@@ -12,24 +12,28 @@ export const PROYECTOS_STEAM_OFICIALES = [
     nombre: 'Aulas Conectadas STEAM',
     sede_municipio: 'El Carmen',
     descripcion: 'Dotación tecnológica e innovación educativa en sedes rurales',
+    programa: 'Nuevas Tecnologías',
   },
   {
     id: 'd93bd1ab-ce93-4561-808e-996596fc34bd',
     nombre: 'Clubes de Innovación y Electrónica',
     sede_municipio: 'La Ceja',
     descripcion: 'Talleres prácticos de impresión 3D, sensores y electrónica básica',
+    programa: 'Robótica',
   },
   {
     id: 'ffdb7a00-afb8-4d0c-ab82-3c27108a558a',
     nombre: 'Semilleros de Robótica Educativa',
     sede_municipio: 'Medellín',
     descripcion: 'Formación STEAM en programación y robótica para estudiantes',
+    programa: 'Robótica',
   },
   {
     id: '1d431933-760d-469f-9024-a8b3bbce25f1',
     nombre: 'Siembra de colores',
     sede_municipio: 'Medellín',
     descripcion: 'Formación en habilidades socioemocionales y expresión artística',
+    programa: 'Socioemocional',
   },
 ];
 
@@ -91,4 +95,23 @@ export function normalizeProyectoNombre(valor) {
   if (aliasMatch) return aliasMatch;
 
   return str;
+}
+
+/**
+ * Retorna el Programa FMO oficial asociado a un proyecto STEAM.
+ */
+export function getProyectoPrograma(valor) {
+  if (!valor) return 'Robótica';
+  const str = String(valor).trim();
+  const proy = PROYECTOS_STEAM_OFICIALES.find(
+    (p) => p.id === str || p.nombre.toLowerCase() === str.toLowerCase()
+  );
+  if (proy?.programa) return proy.programa;
+  const lower = str.toLowerCase();
+  if (lower.includes('robot')) return 'Robótica';
+  if (lower.includes('conectad') || lower.includes('tecnolog') || lower.includes('electron')) return 'Nuevas Tecnologías';
+  if (lower.includes('siembra') || lower.includes('color') || lower.includes('socio') || lower.includes('emocion')) return 'Socioemocional';
+  if (lower.includes('teach') || lower.includes('lectur') || lower.includes('papel') || lower.includes('raton')) return 'TeachLabs';
+  if (lower.includes('ingl') || lower.includes('english')) return 'Inglés';
+  return 'Robótica';
 }

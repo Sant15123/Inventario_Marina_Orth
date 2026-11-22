@@ -1175,8 +1175,8 @@ export default function MiPanelUsuarioView({
                 <thead>
                   <tr>
                     <th style={{ width: '120px', minWidth: '110px' }}>Fecha Radicado</th>
-                    <th style={{ width: '190px', minWidth: '180px' }}>Tipo de Solicitud</th>
-                    <th style={{ minWidth: '220px' }}>Ítems Solicitados (Resumen)</th>
+                    <th style={{ width: '210px', minWidth: '200px' }}>Tipo de Solicitud</th>
+                    <th style={{ minWidth: '200px' }}>Ítems Solicitados (Resumen)</th>
                     <th style={{ width: '120px' }}>Sede</th>
                     <th style={{ minWidth: '150px' }}>Motivo / Justificación</th>
                     <th style={{ width: '140px', textAlign: 'center' }}>Estado</th>
@@ -1210,8 +1210,8 @@ export default function MiPanelUsuarioView({
                           <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '10px 12px' }}>
                             {fmtDate(fechaRad)}
                           </td>
-                          <td style={{ padding: '10px 12px', minWidth: '180px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', maxWidth: '100%' }}>
+                          <td style={{ padding: '10px 12px', width: '210px', minWidth: '200px', maxWidth: '220px', overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', maxWidth: '100%', overflow: 'hidden' }}>
                               {renderTipoSolicitud(sol)}
                               {(() => {
                                 const rawProy = sol.proyecto_steam || sol.proyecto_steam_id || sol.proyecto;
@@ -1219,15 +1219,28 @@ export default function MiPanelUsuarioView({
                                 if (!nomProy) return null;
                                 return (
                                   <span
-                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100/90 dark:bg-slate-800 text-[#013a52] dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-2xs"
+                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100/90 dark:bg-slate-800 text-[#013a52] dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-2xs max-w-full overflow-hidden"
                                     title={`Proyecto STEAM vinculado: ${nomProy}`}
                                     style={{
-                                      maxWidth: '175px',
+                                      maxWidth: '190px',
+                                      boxSizing: 'border-box',
                                       fontFamily: "'Poppins', sans-serif",
                                     }}
                                   >
-                                    <span style={{ color: '#abd037', fontWeight: 800, fontSize: '13px', lineHeight: 1 }}>•</span>
-                                    <span className="truncate">{nomProy}</span>
+                                    <span style={{ color: '#abd037', fontWeight: 800, fontSize: '13px', lineHeight: 1, flexShrink: 0 }}>•</span>
+                                    <span
+                                      className="truncate block flex-1 min-w-0"
+                                      style={{
+                                        display: 'block',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                        minWidth: 0,
+                                        maxWidth: '160px',
+                                      }}
+                                    >
+                                      {nomProy}
+                                    </span>
                                   </span>
                                 );
                               })()}
