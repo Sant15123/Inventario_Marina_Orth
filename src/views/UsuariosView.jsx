@@ -105,43 +105,85 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
     proyectos_asignados: [],
   });
 
-  // Conteo reactivo por roles para las pestañas superiores
-  const adminCount = useMemo(() => usuarios.filter((u) => u.rol === 'administrador').length, [usuarios]);
-  const coordCount = useMemo(() => usuarios.filter((u) => u.rol === 'coordinador').length, [usuarios]);
-  const supCount = useMemo(() => usuarios.filter((u) => u.rol === 'supervisor').length, [usuarios]);
-  const opCount = useMemo(() => usuarios.filter((u) => u.rol === 'operador').length, [usuarios]);
-  const userCount = useMemo(() => usuarios.filter((u) => u.rol === 'usuario').length, [usuarios]);
+  // 1. Deduplicación estricta de usuarios antes de filtrar (evita usuarios duplicados por id, documento o email)
+  const usuariosUnicos = useMemo(() => {
+    if (!Array.isArray(usuarios)) return [];
+    const seen = new Set();
+    const result = [];
 
-  // Filtrado reactivo de usuarios conectado al buscador del header superior
+    for (const u of usuarios) {
+      if (!u) continue;
+      const idKey = u.id ? `id:${String(u.id).toLowerCase().trim()}` : null;
+      const docKey = u.documento ? `doc:${String(u.documento).toLowerCase().trim()}` : null;
+      const emailKey = u.email ? `email:${String(u.email).toLowerCase().trim()}` : null;
+
+      // Si ya vimos este usuario por ID, documento o email, omitir la fila duplicada
+      if ((idKey && seen.has(idKey)) || (docKey && seen.has(docKey)) || (emailKey && seen.has(emailKey))) {
+        continue;
+      }
+
+      if (idKey) seen.add(idKey);
+      if (docKey) seen.add(docKey);
+      if (emailKey) seen.add(emailKey);
+      result.push(u);
+    }
+
+    return result;
+  }, [usuarios]);
+
+  // 2. Conteo reactivo por roles para las pestañas superiores (estrictamente normalizado)
+  const adminCount = useMemo(
+    () => usuariosUnicos.filter((u) => (u.rol || '').toLowerCase().trim() === 'administrador').length,
+    [usuariosUnicos]
+  );
+  const coordCount = useMemo(
+    () => usuariosUnicos.filter((u) => (u.rol || '').toLowerCase().trim() === 'coordinador').length,
+    [usuariosUnicos]
+  );
+  const supCount = useMemo(
+    () => usuariosUnicos.filter((u) => (u.rol || '').toLowerCase().trim() === 'supervisor').length,
+    [usuariosUnicos]
+  );
+  const opCount = useMemo(
+    () => usuariosUnicos.filter((u) => (u.rol || '').toLowerCase().trim() === 'operador').length,
+    [usuariosUnicos]
+  );
+  const userCount = useMemo(
+    () => usuariosUnicos.filter((u) => (u.rol || '').toLowerCase().trim() === 'usuario').length,
+    [usuariosUnicos]
+  );
+
+  // 3. Filtrado reactivo de usuarios conectado al buscador del header superior y pestaña de rol
   const usuariosFiltrados = useMemo(() => {
     const query = (searchTerm || busquedaGlobal || '').toLowerCase().trim();
+    const tabActual = (activeTab || 'todos').toLowerCase().trim();
 
-    return (usuarios || []).filter((usuario) => {
-      // 1. Filtro por Rol (botones superiores: Ver Todos, Admins, Supervisores, Operadores, Usuarios)
-      if (activeTab && activeTab !== 'todos') {
+    return usuariosUnicos.filter((usuario) => {
+      // 1. Filtro estricto por Rol (Ver Todos, Admins, Coordinadores, Supervisores, Operadores, Usuarios)
+      if (tabActual !== 'todos') {
         const rolNormalizado = (usuario.rol || '').toLowerCase().trim();
-        if (rolNormalizado !== activeTab.toLowerCase().trim()) {
+        if (rolNormalizado !== tabActual) {
           return false;
         }
       }
 
       // 2. Filtro por el Buscador Superior
       if (query !== '') {
-        const matchNombre = usuario.nombre?.toLowerCase().includes(query);
+        const matchNombre = (usuario.nombre || usuario.nombre_completo || '').toLowerCase().includes(query);
         const matchDocumento = String(usuario.documento || '').toLowerCase().includes(query);
-        const matchEmail = usuario.email?.toLowerCase().includes(query);
-        const matchCargo = usuario.cargo?.toLowerCase().includes(query);
-        const matchSede = usuario.sede?.toLowerCase().includes(query);
-        const matchTelefono = usuario.telefono?.toLowerCase().includes(query);
+        const matchEmail = (usuario.email || '').toLowerCase().includes(query);
+        const matchCargo = (usuario.cargo || '').toLowerCase().includes(query);
+        const matchSede = (usuario.sede || '').toLowerCase().includes(query);
+        const matchTelefono = (usuario.telefono || '').toLowerCase().includes(query);
 
         return matchNombre || matchDocumento || matchEmail || matchCargo || matchSede || matchTelefono;
       }
 
       return true;
     });
-  }, [usuarios, searchTerm, busquedaGlobal, activeTab]);
+  }, [usuariosUnicos, searchTerm, busquedaGlobal, activeTab]);
 
-  // Paginación estándar (5 registros por página)
+  // 4. Paginación estándar (5 registros por página)
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE_USUARIOS = 5;
 
@@ -579,7 +621,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
           <h2>
             <span>Control y Gestión de Usuarios</span>
             <span className="pill prestado">
-              {usuarios.length} usuarios registrados
+              {usuariosFiltrados.length} {usuariosFiltrados.length === 1 ? 'usuario registrado' : 'usuarios registrados'}
             </span>
           </h2>
           <span className="section-subtitle">
@@ -611,12 +653,12 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
                   </td>
                 </tr>
               ) : (
-                paginatedUsuarios.map((u) => {
+                paginatedUsuarios.map((u, idx) => {
                   const isCurrent = u.id === currentUser?.id;
                   const sedeCorta = formatSede(u.sede);
 
                   return (
-                    <tr key={u.id} className="h-auto">
+                    <tr key={u.id ? `usr-${u.id}` : `usr-row-${idx}`} className="h-auto">
                       {/* 1. DOCUMENTO (Badge rectangular compacto) */}
                       <td style={{ textAlign: 'center', padding: '9px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap', overflow: 'hidden' }}>
                         <span className="badge-placa" style={{ cursor: 'default', fontSize: '11.5px', padding: '2px 7px' }} title={`Documento: ${u.documento}`}>
