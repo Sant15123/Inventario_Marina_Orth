@@ -1144,7 +1144,7 @@ app.post('/api/solicitudes/ingreso-inventario', async (req, res) => {
 app.get('/api/usuarios', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, documento, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, created_at, updated_at
+      SELECT id, documento, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, proyectos_asignados, created_at, updated_at
       FROM perfiles
       ORDER BY nombre_completo ASC
     `);
@@ -1157,8 +1157,26 @@ app.get('/api/usuarios', async (req, res) => {
 app.put('/api/usuarios/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { documento, nombre, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, password } = req.body;
+    const { documento, nombre, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, password, proyectos_asignados } = req.body;
     const cleanRol = String(rol || 'usuario').toLowerCase().trim();
+
+    let cleanProyectos = undefined;
+    if (proyectos_asignados !== undefined) {
+      if (Array.isArray(proyectos_asignados)) {
+        cleanProyectos = proyectos_asignados.filter(Boolean).map(String);
+      } else if (typeof proyectos_asignados === 'string') {
+        try {
+          const parsed = JSON.parse(proyectos_asignados);
+          if (Array.isArray(parsed)) cleanProyectos = parsed.filter(Boolean).map(String);
+        } catch (_) {
+          if (proyectos_asignados.startsWith('{') && proyectos_asignados.endsWith('}')) {
+            cleanProyectos = proyectos_asignados.slice(1, -1).split(',').map((s) => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
+          } else if (proyectos_asignados.trim()) {
+            cleanProyectos = [proyectos_asignados.trim()];
+          }
+        }
+      }
+    }
 
     let query, params;
     if (password && String(password).trim().length > 0) {
@@ -1174,11 +1192,12 @@ app.put('/api/usuarios/:id', async (req, res) => {
             activo = COALESCE($8, activo),
             avatar_url = COALESCE($9, avatar_url),
             password = crypt($10, gen_salt('bf')),
+            proyectos_asignados = COALESCE($11, proyectos_asignados),
             updated_at = NOW()
-        WHERE id::text = $11 OR documento = $11 OR email = $11
-        RETURNING id, documento, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, updated_at;
+        WHERE id::text = $12 OR documento = $12 OR email = $12
+        RETURNING id, documento, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, proyectos_asignados, updated_at;
       `;
-      params = [documento, nombre_completo || nombre, email, telefono, cleanRol, cargo, sede, activo, avatar_url, password.trim(), id];
+      params = [documento, nombre_completo || nombre, email, telefono, cleanRol, cargo, sede, activo, avatar_url, password.trim(), cleanProyectos, id];
     } else {
       query = `
         UPDATE perfiles
@@ -1191,11 +1210,12 @@ app.put('/api/usuarios/:id', async (req, res) => {
             sede = COALESCE($7, sede),
             activo = COALESCE($8, activo),
             avatar_url = COALESCE($9, avatar_url),
+            proyectos_asignados = COALESCE($10, proyectos_asignados),
             updated_at = NOW()
-        WHERE id::text = $10 OR documento = $10 OR email = $10
-        RETURNING id, documento, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, updated_at;
+        WHERE id::text = $11 OR documento = $11 OR email = $11
+        RETURNING id, documento, nombre_completo, email, telefono, rol, cargo, sede, activo, avatar_url, proyectos_asignados, updated_at;
       `;
-      params = [documento, nombre_completo || nombre, email, telefono, cleanRol, cargo, sede, activo, avatar_url, id];
+      params = [documento, nombre_completo || nombre, email, telefono, cleanRol, cargo, sede, activo, avatar_url, cleanProyectos, id];
     }
 
     const result = await pool.query(query, params);
