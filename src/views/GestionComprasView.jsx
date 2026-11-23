@@ -872,9 +872,72 @@ export default function GestionComprasView({
     }
   };
 
-  // Conteo dinámico de solicitudes por pestaña
+  // Proyectos STEAM asignados al Coordinador en sesión
+  const misProyectos = useMemo(() => {
+    if (!isCoordinador) return [];
+    const raw = currentUser?.proyectos_asignados;
+    if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+      } catch (_) {
+        if (raw.startsWith('{') && raw.endsWith('}')) {
+          return raw.slice(1, -1).split(',').map((s) => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
+        }
+        return [raw.trim()].filter(Boolean);
+      }
+    }
+    return [];
+  }, [isCoordinador, currentUser?.proyectos_asignados]);
+
+  // Función verificadora estricta para determinar si una solicitud de compra pertenece a los proyectos del Coordinador
+  const perteneceACoordinador = useCallback(
+    (sol) => {
+      if (!isCoordinador) return true;
+      if (!Array.isArray(misProyectos) || misProyectos.length === 0) return false;
+      const proySol = normalizeProyectoNombre(getSolProyecto(sol));
+      const rawProy = String(sol.proyecto_steam || sol.proyecto_steam_id || sol.proyecto || '').trim();
+      const idProy = String(sol.proyecto_steam_id || '');
+
+      return misProyectos.some((mp) => {
+        const mpNorm = normalizeProyectoNombre(mp);
+        return (
+          mpNorm === proySol ||
+          String(mp).toLowerCase() === rawProy.toLowerCase() ||
+          (idProy && String(mp) === idProy)
+        );
+      });
+    },
+    [isCoordinador, misProyectos]
+  );
+
+  // Universo de solicitudes visibles según el rol del usuario autenticado:
+  // - Administrador / Supervisor / Operador: Ven el 100% de las solicitudes
+  // - Coordinador: Única y estrictamente las solicitudes de sus Proyectos STEAM asignados
+  const solicitudesVisibles = useMemo(() => {
+    if (!isCoordinador) return solicitudes || [];
+    return (solicitudes || []).filter(perteneceACoordinador);
+  }, [solicitudes, isCoordinador, perteneceACoordinador]);
+
+  // Lista de proyectos STEAM disponibles para el filtro dropdown
+  // Para Coordinador: Única y exclusivamente los proyectos que tiene asignados
+  const proyectosSteamDisponibles = useMemo(() => {
+    if (!isCoordinador) return proyectosSteamList || [];
+    if (!Array.isArray(misProyectos) || misProyectos.length === 0) return [];
+    return (proyectosSteamList || []).filter((p) => {
+      const nomP = typeof p === 'string' ? p : p.nombre;
+      const idP = typeof p === 'object' ? p.id : null;
+      return misProyectos.some((mp) => {
+        const mpNorm = normalizeProyectoNombre(mp);
+        return mpNorm === normalizeProyectoNombre(nomP) || mp === idP || mp === nomP;
+      });
+    });
+  }, [isCoordinador, misProyectos, proyectosSteamList]);
+
+  // Conteo dinámico de solicitudes por pestaña (sincronizado con proyectos asignados del Coordinador)
   const conteos = useMemo(() => {
-    const list = solicitudes || [];
+    const list = solicitudesVisibles || [];
     return {
       todas: list.length,
       pendientes: list.filter((s) => normalizeEstado(s.estado) === 'pendientes').length,
@@ -882,11 +945,11 @@ export default function GestionComprasView({
       compradas: list.filter((s) => normalizeEstado(s.estado) === 'compradas').length,
       rechazadas: list.filter((s) => normalizeEstado(s.estado) === 'rechazadas').length,
     };
-  }, [solicitudes]);
+  }, [solicitudesVisibles]);
 
-  // Filtrado de solicitudes según pestaña activa y criterios de búsqueda
+  // Filtrado de solicitudes según pestaña activa y criterios de búsqueda (estrictamente sobre solicitudesVisibles)
   const solicitudesFiltradas = useMemo(() => {
-    return (solicitudes || []).filter((sol) => {
+    return (solicitudesVisibles || []).filter((sol) => {
       // Filtro pestaña
       if (pestanaActiva !== 'todas' && normalizeEstado(sol.estado) !== pestanaActiva) {
         return false;
@@ -936,12 +999,12 @@ export default function GestionComprasView({
 
       return true;
     });
-  }, [solicitudes, pestanaActiva, filtroSede, filtroProyecto, busqueda]);
+  }, [solicitudesVisibles, pestanaActiva, filtroSede, filtroProyecto, busqueda]);
 
   // Lista de sedes únicas para el selector
   const sedesList = useMemo(() => {
     const set = new Set();
-    (solicitudes || []).forEach((s) => {
+    (solicitudesVisibles || []).forEach((s) => {
       const sede = getSolSede(s);
       if (sede) set.add(sede);
     });
@@ -1906,8 +1969,8 @@ export default function GestionComprasView({
               outline: 'none',
             }}
           >
-            <option value="todos">Todos los proyectos</option>
-            {(proyectosSteamList || []).map((p) => {
+            <option value="todos">{isCoordinador ? 'Todos mis proyectos' : 'Todos los proyectos'}</option>
+            {(proyectosSteamDisponibles || []).map((p) => {
               const val = typeof p === 'string' ? p : p.nombre;
               const label = formatProyectoLabel ? formatProyectoLabel(p) : val;
               return (
@@ -1921,14 +1984,45 @@ export default function GestionComprasView({
 
         <div style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-dim, #6d6e71)' }}>
           Mostrando <strong style={{ color: 'var(--text, #013a52)' }}>{solicitudesFiltradas.length}</strong> de{' '}
-          <strong style={{ color: 'var(--text, #013a52)' }}>{solicitudes.length}</strong> solicitudes registradas
+          <strong style={{ color: 'var(--text, #013a52)' }}>{solicitudesVisibles.length}</strong> solicitudes registradas
         </div>
       </div>
 
       {/* =========================================================================
           5. TABLA AUDITADA DE SOLICITUDES DE COMPRA (SIN COLISIONES NI DESBORDAMIENTOS)
           ========================================================================= */}
-      {solicitudesFiltradas.length === 0 ? (
+      {loading || (isCoordinador && (!currentUser || currentUser.proyectos_asignados === undefined)) ? (
+        <div
+          style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+            borderRadius: '16px',
+            border: '1px solid var(--line, #e2e8f0)',
+            backgroundColor: 'var(--surface, #ffffff)',
+            margin: '16px 0',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-block',
+              width: '36px',
+              height: '36px',
+              border: '3px solid rgba(171, 208, 55, 0.25)',
+              borderTopColor: '#abd037',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+              marginBottom: '12px',
+            }}
+          />
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-h, #013a52)', margin: 0 }}>
+            {isCoordinador ? 'Verificando Proyectos STEAM autorizados...' : 'Cargando solicitudes de compra...'}
+          </h3>
+          <p style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', margin: '4px 0 0' }}>
+            Conectando con la base de datos institucional SIGA-FMO...
+          </p>
+        </div>
+      ) : solicitudesFiltradas.length === 0 ? (
         <div
           style={{
             padding: '40px 20px',
@@ -1942,10 +2036,14 @@ export default function GestionComprasView({
         >
           <ShoppingCart size={44} style={{ color: 'var(--text-muted, #94a3b8)', margin: '0 auto 10px', display: 'block' }} />
           <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-h, #013a52)', margin: 0 }}>
-            No se encontraron solicitudes de compra
+            {isCoordinador
+              ? 'No hay solicitudes de compra registradas para tus proyectos asignados'
+              : 'No se encontraron solicitudes de compra'}
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-dim, #6d6e71)', margin: '4px 0 0' }}>
-            No hay requerimientos que coincidan con la pestaña seleccionada o los filtros aplicados.
+            {isCoordinador
+              ? 'Solo tienes acceso a los requerimientos de tus Proyectos STEAM autorizados. Cuando un docente o formador radique solicitudes en tus proyectos, aparecerán aquí.'
+              : 'No hay requerimientos que coincidan con la pestaña seleccionada o los filtros aplicados.'}
           </p>
         </div>
       ) : (

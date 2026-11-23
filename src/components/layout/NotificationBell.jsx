@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Bell, Laptop, Box, ShoppingCart, ArrowRight, CheckCircle2 } from 'lucide-react';
 import supabase from '../../services/supabase';
 import inventoryApi from '../../services/inventoryApi';
 import { useAuth } from '../../context/AuthContext';
+import { normalizeProyectoNombre } from '../../constants/proyectos';
 
 /**
  * NotificationBell Component
@@ -37,6 +38,39 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
     }, 1200);
   };
 
+  // Helper para verificar si una solicitud pertenece a los proyectos asignados al Coordinador
+  const matchProyectoCoordinador = useCallback(
+    (sol) => {
+      if (!isCoordinador) return true;
+      const raw = currentUser?.proyectos_asignados;
+      let misProyectos = [];
+      if (Array.isArray(raw)) misProyectos = raw;
+      else if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) misProyectos = parsed;
+        } catch (_) {
+          misProyectos = [raw];
+        }
+      }
+      if (!misProyectos || misProyectos.length === 0) return false;
+
+      const pNom = normalizeProyectoNombre(sol.proyecto_steam || sol.proyecto_steam_id || sol.proyecto || '');
+      const pId = String(sol.proyecto_steam_id || '');
+      const pRaw = String(sol.proyecto_steam || sol.proyecto || '').trim().toLowerCase();
+
+      return misProyectos.some((mp) => {
+        const mpNorm = normalizeProyectoNombre(mp);
+        return (
+          mpNorm === pNom ||
+          (pId && String(mp) === pId) ||
+          String(mp).trim().toLowerCase() === pRaw
+        );
+      });
+    },
+    [isCoordinador, currentUser?.proyectos_asignados]
+  );
+
   // Carga inicial de solicitudes pendientes desde Supabase
   const cargarSolicitudes = async () => {
     try {
@@ -52,19 +86,21 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
             .order('creado_en', { ascending: false });
 
           if (!compErr && Array.isArray(compData)) {
-            const list = compData.map((sc) => ({
-              ...sc,
-              id: sc.id,
-              tipo_solicitud: 'SUGERENCIA_COMPRA',
-              tipo: 'SUGERENCIA_COMPRA',
-              nombre_item: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
-              motivo: sc.justificacion || sc.motivo || 'Solicitud de compra pendiente',
-              fecha: sc.creado_en || sc.created_at,
-              creado_en: sc.creado_en || sc.created_at,
-              sede: sc.sede || sc.sede_destino || 'Medellín',
-              usuario_nombre: sc.solicitante_nombre || sc.usuario_nombre || 'Docente FMO',
-              is_solicitud_compra: true,
-            }));
+            const list = compData
+              .filter(matchProyectoCoordinador)
+              .map((sc) => ({
+                ...sc,
+                id: sc.id,
+                tipo_solicitud: 'SUGERENCIA_COMPRA',
+                tipo: 'SUGERENCIA_COMPRA',
+                nombre_item: sc.nombre_producto || sc.justificacion || 'Producto sugerido',
+                motivo: sc.justificacion || sc.motivo || 'Solicitud de compra pendiente',
+                fecha: sc.creado_en || sc.created_at,
+                creado_en: sc.creado_en || sc.created_at,
+                sede: sc.sede || sc.sede_destino || 'Medellín',
+                usuario_nombre: sc.solicitante_nombre || sc.usuario_nombre || 'Docente FMO',
+                is_solicitud_compra: true,
+              }));
             setSolicitudes(list);
             setContador(list.length);
             return;
@@ -176,6 +212,9 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
             },
             (payload) => {
               if (payload?.new && String(payload.new.estado || '').toUpperCase().includes('PENDIENTE')) {
+                if (isCoordinador && !matchProyectoCoordinador(payload.new)) {
+                  return;
+                }
                 triggerBadgeAnimation();
                 const formattedComp = {
                   ...payload.new,
@@ -205,7 +244,8 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
             (payload) => {
               triggerBadgeAnimation();
               const newEstado = String(payload.new?.estado || '').toUpperCase();
-              if (newEstado.includes('PENDIENTE')) {
+              const pertenece = matchProyectoCoordinador(payload.new);
+              if (newEstado.includes('PENDIENTE') && pertenece) {
                 const formattedComp = {
                   ...payload.new,
                   id: payload.new.id,
@@ -228,8 +268,14 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
                   return prev.map((s) => (s.id === payload.new.id ? formattedComp : s));
                 });
               } else {
-                setContador((prev) => Math.max(0, prev - 1));
-                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.new.id));
+                setSolicitudes((prev) => {
+                  const exists = prev.some((s) => s.id === payload.new.id);
+                  if (exists) {
+                    setContador((prev) => Math.max(0, prev - 1));
+                    return prev.filter((s) => s.id !== payload.new.id);
+                  }
+                  return prev;
+                });
               }
             }
           )
@@ -364,7 +410,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
       window.removeEventListener('siga:solicitud_creada', handleLocalSolicitudCreated);
       window.removeEventListener('siga:solicitud_resuelta', handleLocalSolicitudResolved);
     };
-  }, [isCoordinador]);
+  }, [isCoordinador, currentUser?.proyectos_asignados, matchProyectoCoordinador]);
 
   // Cerrar el popover al hacer clic afuera o con tecla Escape
   useEffect(() => {
@@ -592,9 +638,8 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
                   >
                     {/* Icono Equipo / Consumible / Compra */}
                     <div
-                      className={`notification-item-icon ${
-                        esCompra ? 'compra' : esPrestamo ? 'equipo' : 'consumible'
-                      }`}
+                      className={`notification-item-icon ${esCompra ? 'compra' : esPrestamo ? 'equipo' : 'consumible'
+                        }`}
                     >
                       {esCompra ? (
                         <ShoppingCart size={18} />

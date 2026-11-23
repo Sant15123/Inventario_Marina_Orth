@@ -3,6 +3,9 @@ import { Pencil, X, Loader2, Eye, EyeOff, Check, Camera, Upload } from 'lucide-r
 import UserAvatar from '../common/UserAvatar';
 import { supabase } from '../../services/supabase';
 import inventoryApi from '../../services/inventoryApi';
+import { useProyectos } from '../../hooks/useProyectos';
+import { resolveAreaConfig } from '../common/ProgramAreaBadge';
+import { RoboticaIcon } from '../common/FmoProgramIcons';
 
 export default function ModalEditarUsuario({
   isOpen,
@@ -25,6 +28,7 @@ export default function ModalEditarUsuario({
   const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
   const [confirmarPassword, setConfirmarPassword] = useState('');
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const { proyectos: listaProyectos = [], formatLabel } = useProyectos();
 
   // Manejador para carga de foto de perfil con fallback local / Supabase Storage
   const handleFotoChange = async (e) => {
@@ -178,6 +182,13 @@ export default function ModalEditarUsuario({
   const handleFormSubmit = (e) => {
     e.preventDefault();
     if (tienePassword && !passwordValida) return;
+    if (formData?.rol === 'coordinador') {
+      const proys = Array.isArray(formData.proyectos_asignados) ? formData.proyectos_asignados : [];
+      if (proys.length === 0) {
+        alert('Debes asignar al menos un Proyecto STEAM al Coordinador');
+        return;
+      }
+    }
     if (onSubmit) onSubmit(e);
   };
 
@@ -803,6 +814,195 @@ export default function ModalEditarUsuario({
                 }}
               />
             </div>
+
+            {/* SECCIÓN OBLIGATORIA: PROYECTOS STEAM ASIGNADOS (Solo Rol Coordinador) */}
+            {formData.rol === 'coordinador' && (() => {
+              const proyectosAsignados = Array.isArray(formData.proyectos_asignados) ? formData.proyectos_asignados : [];
+
+              return (
+                <div
+                  className="form-group"
+                  style={{
+                    margin: 0,
+                    padding: '14px',
+                    borderRadius: '12px',
+                    background: 'rgba(171, 208, 55, 0.08)',
+                    border: '1.5px solid rgba(171, 208, 55, 0.45)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-h, #013a52)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>Proyectos STEAM Asignados</span>
+                        <span style={{ color: '#ef4444' }}>*</span>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            backgroundColor: proyectosAsignados.length > 0 ? '#abd037' : 'rgba(239, 68, 68, 0.15)',
+                            color: proyectosAsignados.length > 0 ? '#013a52' : '#dc2626',
+                          }}
+                        >
+                          {proyectosAsignados.length} {proyectosAsignados.length === 1 ? 'seleccionado' : 'seleccionados'}
+                        </span>
+                      </label>
+                      <p style={{ fontSize: '11.5px', color: 'var(--text-dim, #6d6e71)', margin: '2px 0 0' }}>
+                        Selecciona las iniciativas formativas sobre las que este Coordinador gestionará requerimientos y compras.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onChangeFormData({
+                            ...formData,
+                            proyectos_asignados: listaProyectos.map((p) => p.nombre || p.name),
+                          })
+                        }
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: '#013a52',
+                          color: '#ffffff',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onChangeFormData({ ...formData, proyectos_asignados: [] })}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: 'transparent',
+                          color: 'var(--text-dim, #6d6e71)',
+                          border: '1px solid var(--line, #cbd5e1)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+                      gap: '8px',
+                      maxHeight: '220px',
+                      overflowY: 'auto',
+                      paddingRight: '4px',
+                    }}
+                  >
+                    {listaProyectos.map((proy) => {
+                      const nombreProy = proy.nombre || proy.name;
+                      const isSelected = proyectosAsignados.includes(nombreProy);
+                      const areaConf = resolveAreaConfig(proy.programa || nombreProy);
+                      const Icono = areaConf?.Icon || RoboticaIcon;
+
+                      return (
+                        <div
+                          key={proy.id || nombreProy}
+                          onClick={() => {
+                            const updated = isSelected
+                              ? proyectosAsignados.filter((p) => p !== nombreProy)
+                              : [...proyectosAsignados, nombreProy];
+                            onChangeFormData({ ...formData, proyectos_asignados: updated });
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            border: isSelected ? '1.5px solid #abd037' : '1px solid var(--line, #334155)',
+                            backgroundColor: isSelected ? 'rgba(171, 208, 55, 0.15)' : 'var(--surface-2, #1e293b)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            style={{
+                              accentColor: '#abd037',
+                              width: '15px',
+                              height: '15px',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              backgroundColor: isSelected ? 'rgba(1, 58, 82, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                            }}
+                          >
+                            <Icono size={16} />
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <strong
+                              style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                color: isSelected ? 'var(--text-h, #013a52)' : 'var(--text, #f8fafc)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                              title={formatLabel(proy)}
+                            >
+                              {nombreProy}
+                            </strong>
+                            <span
+                              style={{
+                                display: 'block',
+                                fontSize: '10.5px',
+                                color: 'var(--text-dim, #94a3b8)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {proy.programa || 'Programa FMO'}{proy.sede_municipio ? ` • ${proy.sede_municipio}` : ''}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {proyectosAsignados.length === 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontSize: '11.5px', fontWeight: 600 }}>
+                      <span>⚠️</span>
+                      <span>Debes asignar al menos un Proyecto STEAM al Coordinador</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Footer Fijo Abajo */}

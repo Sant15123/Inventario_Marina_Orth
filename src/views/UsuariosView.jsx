@@ -22,6 +22,8 @@ import DetalleUsuarioModal from '../components/modals/DetalleUsuarioModal';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
 import { registrarAuditoria } from '../services/historyAuditService';
+import { resolveAreaConfig } from '../components/common/ProgramAreaBadge';
+import { RoboticaIcon } from '../components/common/FmoProgramIcons';
 
 export default function UsuariosView({ sedes: propSedes, searchTerm = '', busquedaGlobal = '' }) {
   const { usuarios, crearUsuario, editarUsuario, eliminarUsuario, currentUser, isAdmin, isSupervisor } = useAuth();
@@ -100,6 +102,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
     cargo: '',
     sede: 'Medellín',
     password: '',
+    proyectos_asignados: [],
   });
 
   // Conteo reactivo por roles para las pestañas superiores
@@ -170,6 +173,12 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
   // Manejo de Edición de Usuario
   const handleOpenEditar = (u) => {
     setUsuarioEditando(u);
+    const proys = Array.isArray(u.proyectos_asignados)
+      ? u.proyectos_asignados
+      : (typeof u.proyectos_asignados === 'string'
+        ? (u.proyectos_asignados.startsWith('[') ? JSON.parse(u.proyectos_asignados) : [u.proyectos_asignados])
+        : []);
+
     setFormDataEditar({
       documento: u.documento || '',
       nombre: u.nombre || '',
@@ -180,6 +189,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
       cargo: u.cargo || '',
       sede: u.sede || 'Medellín',
       avatar_url: u.avatar_url || u.avatarUrl || u.foto_perfil || '',
+      proyectos_asignados: proys,
     });
     setModalEditarOpen(true);
   };
@@ -205,6 +215,14 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
     if (!formDataEditar.email?.trim()) {
       showError('Validación', 'El correo electrónico es requerido.');
       return;
+    }
+
+    if (formDataEditar.rol === 'coordinador') {
+      const proys = Array.isArray(formDataEditar.proyectos_asignados) ? formDataEditar.proyectos_asignados : [];
+      if (proys.length === 0) {
+        showError('Validación', 'Debes asignar al menos un Proyecto STEAM al Coordinador.');
+        return;
+      }
     }
 
     setGuardandoEdicion(true);
@@ -238,9 +256,28 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
       const rolAnterior = (usuarioEditando.rol || 'usuario').toUpperCase();
       const rolNuevo = (formDataEditar.rol || 'usuario').toUpperCase();
       const huboCambioRol = rolAnterior !== rolNuevo;
+      const proyAnteriores = Array.isArray(usuarioEditando.proyectos_asignados) ? usuarioEditando.proyectos_asignados : [];
+      const proyNuevos = Array.isArray(formDataEditar.proyectos_asignados) ? formDataEditar.proyectos_asignados : [];
+      const cambiaronProyectos = formDataEditar.rol === 'coordinador' && (
+        proyAnteriores.length !== proyNuevos.length ||
+        proyNuevos.some((p) => !proyAnteriores.includes(p))
+      );
       const ejecutor = currentUser ? `${currentUser.nombre} (${currentUser.rol || 'Administrador'})` : 'Administrador FMO';
 
       try {
+        if (cambiaronProyectos) {
+          await registrarAuditoria({
+            tipo: 'Asignación de Proyectos STEAM',
+            elemento: formDataEditar.nombre,
+            id_referencia: formDataEditar.documento,
+            cantidad: proyNuevos.length,
+            responsable: ejecutor,
+            documento_responsable: currentUser?.documento || '',
+            sede: formDataEditar.sede || 'Medellín',
+            motivo: `Asignación/modificación de Proyectos STEAM al Coordinador: [${proyNuevos.join(', ')}]. Anterior: [${proyAnteriores.join(', ') || 'Ninguno'}].`,
+          });
+        }
+
         if (huboCambioRol) {
           await registrarAuditoria({
             tipo: 'Cambio de Rol',
@@ -252,7 +289,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
             sede: formDataEditar.sede || 'Medellín',
             motivo: `Modificación de privilegios de usuario: rol anterior [${rolAnterior}] ➔ rol nuevo [${rolNuevo}]. Cargo: ${formDataEditar.cargo || 'Funcionario FMO'}`,
           });
-        } else {
+        } else if (!cambiaronProyectos) {
           await registrarAuditoria({
             tipo: 'Actualización',
             elemento: formDataEditar.nombre,
@@ -651,6 +688,60 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
                             >
                               {u.cargo || 'Personal Institucional FMO'}
                             </span>
+
+                            {/* Proyectos STEAM Asignados (Solo para Coordinador) */}
+                            {String(u.rol).toLowerCase() === 'coordinador' && Array.isArray(u.proyectos_asignados) && u.proyectos_asignados.length > 0 && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexWrap: 'wrap',
+                                  gap: '4px',
+                                  marginTop: '5px',
+                                  maxWidth: '100%',
+                                }}
+                              >
+                                {u.proyectos_asignados.map((proy, pIdx) => {
+                                  const areaConf = resolveAreaConfig(proy);
+                                  const Icono = areaConf?.Icon || RoboticaIcon;
+                                  return (
+                                    <span
+                                      key={pIdx}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#abd037]/15 text-[#013a52] dark:text-[#abd037] border border-[#abd037]/35 max-w-[190px] shadow-2xs"
+                                      title={`Proyecto STEAM Asignado: ${proy} (Programa: ${areaConf?.label || 'Oficial'})`}
+                                      style={{
+                                        fontFamily: "'Poppins', sans-serif",
+                                        boxSizing: 'border-box',
+                                        overflow: 'hidden',
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          width: '12px',
+                                          height: '12px',
+                                          flexShrink: 0,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                        }}
+                                      >
+                                        <Icono size={11} />
+                                      </span>
+                                      <span
+                                        className="truncate block flex-1 min-w-0"
+                                        style={{
+                                          display: 'block',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {proy}
+                                      </span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>

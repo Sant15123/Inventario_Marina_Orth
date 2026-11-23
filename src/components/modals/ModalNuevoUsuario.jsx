@@ -17,10 +17,14 @@ import { useToast } from '../../context/ToastContext';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { registrarAuditoria } from '../../services/historyAuditService';
+import { useProyectos } from '../../hooks/useProyectos';
+import { resolveAreaConfig } from '../common/ProgramAreaBadge';
+import { RoboticaIcon } from '../common/FmoProgramIcons';
 
 export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sedes: propSedes }) {
   const { currentUser, crearUsuario, refetchUsuarios, usuarios = [] } = useAuth();
   const { addToast, showError } = useToast();
+  const { proyectos: listaProyectos = [], formatLabel } = useProyectos();
 
   const [sedes, setSedes] = useState(() => {
     if (Array.isArray(propSedes) && propSedes.length > 0) {
@@ -112,6 +116,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [proyectosAsignados, setProyectosAsignados] = useState([]);
 
   // Generador de contraseña segura (12 caracteres)
   const generarPasswordSegura = () => {
@@ -207,8 +212,9 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
     const hasTel = Boolean(formData.telefono?.trim());
     const hasName = Boolean(formData.nombre?.trim());
     const hasEmail = Boolean(formData.email?.trim());
-    return hasDoc && hasTel && hasName && hasEmail && validationChecks.allValid;
-  }, [formData, validationChecks.allValid]);
+    const coordValido = formData.rol !== 'coordinador' || proyectosAsignados.length > 0;
+    return hasDoc && hasTel && hasName && hasEmail && validationChecks.allValid && coordValido;
+  }, [formData, validationChecks.allValid, proyectosAsignados]);
 
   if (!isOpen) return null;
 
@@ -222,6 +228,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
       sede: sedes[0]?.nombre || 'Medellín',
       cargo: '',
     });
+    setProyectosAsignados([]);
     setPassword('');
     setConfirmPassword('');
     setShowPassword(false);
@@ -240,6 +247,11 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
     e.preventDefault();
 
     if (!isFormValid || submitting) return;
+
+    if (formData.rol === 'coordinador' && proyectosAsignados.length === 0) {
+      showError('Validación', 'Debes asignar al menos un Proyecto STEAM al Coordinador');
+      return;
+    }
 
     // Verificar unicidad de documento en memoria
     const docExiste = usuarios.some(
@@ -263,6 +275,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
         cargo: formData.cargo?.trim() || 'Funcionario FMO',
         password: password,
         activo: true,
+        proyectos_asignados: formData.rol === 'coordinador' ? proyectosAsignados : [],
       };
 
       // 1. Enviar payload completo a POST /api/usuarios
@@ -293,6 +306,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
         sede: payload.sede,
         cargo: payload.cargo,
         password: payload.password,
+        proyectos_asignados: payload.proyectos_asignados,
       });
 
       // 3. Invocar refetchUsuarios() para que el nuevo usuario aparezca reflejado inmediatamente
@@ -306,6 +320,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
 
       const ejecutorNombre = currentUser ? `${currentUser.nombre} (${currentUser.rol || 'Administrador'})` : 'Administrador FMO';
       const esCoord = payload.rol === 'coordinador';
+      const detalleCoord = esCoord ? ` | Proyectos STEAM Asignados: [${proyectosAsignados.join(', ')}]` : '';
       try {
         await registrarAuditoria({
           tipo: esCoord ? 'Usuario Coordinador Creado' : 'Ingresos',
@@ -315,7 +330,7 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
           responsable: ejecutorNombre,
           documento_responsable: currentUser?.documento || '',
           sede: payload.sede,
-          motivo: `Creación de nuevo usuario en el sistema. Rol asignado: ${payload.rol.toUpperCase()}. Cargo: ${payload.cargo || 'Funcionario FMO'}. Correo: ${payload.email}`,
+          motivo: `Creación de nuevo usuario en el sistema. Rol asignado: ${payload.rol.toUpperCase()}. Cargo: ${payload.cargo || 'Funcionario FMO'}. Correo: ${payload.email}${detalleCoord}`,
         });
       } catch (audErr) {
         console.warn('Aviso auditoria nuevo usuario:', audErr?.message);
@@ -581,6 +596,184 @@ export default function ModalNuevoUsuario({ isOpen, onClose, onUserCreated, sede
                 onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
               />
             </div>
+
+            {/* SECCIÓN OBLIGATORIA: PROYECTOS STEAM ASIGNADOS (Solo Rol Coordinador) */}
+            {formData.rol === 'coordinador' && (
+              <div
+                className="form-group full"
+                style={{
+                  padding: '14px',
+                  borderRadius: '12px',
+                  background: 'rgba(171, 208, 55, 0.08)',
+                  border: '1.5px solid rgba(171, 208, 55, 0.45)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <label style={{ fontSize: '12.5px', fontWeight: 700, color: '#013a52', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>Proyectos STEAM Asignados</span>
+                      <span style={{ color: '#ef4444' }}>*</span>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          backgroundColor: proyectosAsignados.length > 0 ? '#abd037' : 'rgba(239, 68, 68, 0.15)',
+                          color: proyectosAsignados.length > 0 ? '#013a52' : '#dc2626',
+                        }}
+                      >
+                        {proyectosAsignados.length} {proyectosAsignados.length === 1 ? 'seleccionado' : 'seleccionados'}
+                      </span>
+                    </label>
+                    <p style={{ fontSize: '11.5px', color: '#6d6e71', margin: '2px 0 0' }}>
+                      Selecciona las iniciativas formativas sobre las que este Coordinador gestionará requerimientos y compras.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setProyectosAsignados(listaProyectos.map((p) => p.nombre || p.name))}
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: '#013a52',
+                        color: '#ffffff',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProyectosAsignados([])}
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: 'transparent',
+                        color: '#6d6e71',
+                        border: '1px solid #cbd5e1',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                    gap: '8px',
+                    maxHeight: '220px',
+                    overflowY: 'auto',
+                    paddingRight: '4px',
+                  }}
+                >
+                  {listaProyectos.map((proy) => {
+                    const nombreProy = proy.nombre || proy.name;
+                    const isSelected = proyectosAsignados.includes(nombreProy);
+                    const areaConf = resolveAreaConfig(proy.programa || nombreProy);
+                    const Icono = areaConf?.Icon || RoboticaIcon;
+
+                    return (
+                      <div
+                        key={proy.id || nombreProy}
+                        onClick={() => {
+                          setProyectosAsignados((prev) =>
+                            isSelected ? prev.filter((p) => p !== nombreProy) : [...prev, nombreProy]
+                          );
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          border: isSelected ? '1.5px solid #abd037' : '1px solid var(--line, #e2e8f0)',
+                          backgroundColor: isSelected ? 'rgba(171, 208, 55, 0.15)' : 'var(--surface, #ffffff)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          userSelect: 'none',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          style={{
+                            accentColor: '#abd037',
+                            width: '15px',
+                            height: '15px',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            backgroundColor: isSelected ? 'rgba(1, 58, 82, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                          }}
+                        >
+                          <Icono size={16} />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <strong
+                            style={{
+                              display: 'block',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: isSelected ? '#013a52' : 'var(--text, #1e293b)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                            title={formatLabel(proy)}
+                          >
+                            {nombreProy}
+                          </strong>
+                          <span
+                            style={{
+                              display: 'block',
+                              fontSize: '10.5px',
+                              color: '#6d6e71',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {proy.programa || 'Programa FMO'}{proy.sede_municipio ? ` • ${proy.sede_municipio}` : ''}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {proyectosAsignados.length === 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontSize: '11.5px', fontWeight: 600 }}>
+                    <span>⚠️</span>
+                    <span>Debes asignar al menos un Proyecto STEAM al Coordinador</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ============================================================== */}
             {/* SECCIÓN 1: CREDENCIALES DE ACCESO                              */}

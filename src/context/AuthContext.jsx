@@ -98,6 +98,7 @@ export const USUARIOS_DEMO = {
     rol: 'coordinador',
     sede: 'Medellín',
     cargo: 'Coordinadora de Proyectos & Adquisiciones',
+    proyectos_asignados: ['Clubes de Innovación y Electrónica', 'Semilleros de Robótica Educativa'],
   },
   'carolina.gomez@fmo.org': {
     id: 'c819a1bc-70e4-4401-bb6e-fe3e280575e9',
@@ -107,6 +108,7 @@ export const USUARIOS_DEMO = {
     rol: 'coordinador',
     sede: 'Medellín',
     cargo: 'Coordinadora de Proyectos & Adquisiciones',
+    proyectos_asignados: ['Clubes de Innovación y Electrónica', 'Semilleros de Robótica Educativa'],
   },
   '1064123987': {
     id: '834a1bc6-60e3-4401-bb6e-fe3e280575e3',
@@ -486,6 +488,27 @@ export function AuthProvider({ children }) {
       }
 
       if (Array.isArray(rawData) && rawData.length > 0) {
+        const parseProyectosAsignados = (val) => {
+          if (!val) return [];
+          if (Array.isArray(val)) return val.filter(Boolean).map(String);
+          if (typeof val === 'string') {
+            try {
+              const parsed = JSON.parse(val);
+              if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+            } catch (_) {
+              if (val.startsWith('{') && val.endsWith('}')) {
+                return val
+                  .slice(1, -1)
+                  .split(',')
+                  .map((s) => s.trim().replace(/^"|"$/g, ''))
+                  .filter(Boolean);
+              }
+              return [val.trim()].filter(Boolean);
+            }
+          }
+          return [];
+        };
+
         const apiUsers = rawData.map((u) => ({
           id: u.id,
           documento: u.documento,
@@ -498,6 +521,7 @@ export function AuthProvider({ children }) {
           sede: u.sede || 'Medellín',
           activo: u.activo !== false,
           avatar_url: u.avatar_url || u.avatarUrl || u.foto_perfil || null,
+          proyectos_asignados: parseProyectosAsignados(u.proyectos_asignados),
         }));
 
         setUsuarios((prev) => {
@@ -511,7 +535,7 @@ export function AuthProvider({ children }) {
             map.set(key, { ...existing, ...usr });
           });
 
-          // Sincronizar reactivamente el avatar_url del usuario en sesión activa
+          // Sincronizar reactivamente el avatar_url y proyectos_asignados del usuario en sesión activa
           setCurrentUser((curr) => {
             if (!curr) return curr;
             const match = apiUsers.find((u) => 
@@ -519,10 +543,21 @@ export function AuthProvider({ children }) {
               (curr.documento && String(u.documento) === String(curr.documento)) ||
               (curr.email && String(u.email).toLowerCase() === String(curr.email).toLowerCase())
             );
-            if (match && match.avatar_url !== curr.avatar_url) {
-              const updated = { ...curr, avatar_url: match.avatar_url };
-              localStorage.setItem('siga_current_user', JSON.stringify(updated));
-              return updated;
+            if (match) {
+              const avatarChanged = match.avatar_url !== curr.avatar_url;
+              const proyCurr = JSON.stringify(curr.proyectos_asignados || []);
+              const proyMatch = JSON.stringify(match.proyectos_asignados || []);
+              const proyChanged = proyCurr !== proyMatch;
+
+              if (avatarChanged || proyChanged) {
+                const updated = {
+                  ...curr,
+                  avatar_url: match.avatar_url !== undefined ? match.avatar_url : curr.avatar_url,
+                  proyectos_asignados: match.proyectos_asignados || [],
+                };
+                localStorage.setItem('siga_current_user', JSON.stringify(updated));
+                return updated;
+              }
             }
             return curr;
           });
@@ -594,6 +629,7 @@ export function AuthProvider({ children }) {
       sede: usr.sede || 'Oficina Medellín',
       cargo: usr.cargo || 'Funcionario FMO',
       avatar_url: usr.avatar_url || usr.avatarUrl || usr.foto_perfil || null,
+      proyectos_asignados: usr.proyectos_asignados || (usr.rol === 'coordinador' ? ['Clubes de Innovación y Electrónica', 'Semilleros de Robótica Educativa'] : []),
     };
 
     const newToken = generateToken(payload);
@@ -649,6 +685,11 @@ export function AuthProvider({ children }) {
               sede: rawUser.sede || 'Medellín',
               cargo: rawUser.cargo || 'Funcionario FMO',
               avatar_url: rawUser.avatar_url || rawUser.avatarUrl || rawUser.foto_perfil || null,
+              proyectos_asignados: Array.isArray(rawUser.proyectos_asignados)
+                ? rawUser.proyectos_asignados
+                : (typeof rawUser.proyectos_asignados === 'string'
+                  ? (rawUser.proyectos_asignados.startsWith('[') ? JSON.parse(rawUser.proyectos_asignados) : [rawUser.proyectos_asignados])
+                  : (rawUser.rol === 'coordinador' ? ['Clubes de Innovación y Electrónica', 'Semilleros de Robótica Educativa'] : [])),
             };
 
             const sessionToken = json.token || generateToken(tokenPayload);
@@ -775,6 +816,7 @@ export function AuthProvider({ children }) {
           sede: user.sede,
           cargo: user.cargo || 'Funcionario FMO',
           avatar_url: user.avatar_url || user.avatarUrl || user.foto_perfil || null,
+          proyectos_asignados: user.proyectos_asignados || (user.rol === 'coordinador' ? ['Clubes de Innovación y Electrónica', 'Semilleros de Robótica Educativa'] : []),
         };
 
         const newToken = generateToken(tokenPayload);
@@ -816,9 +858,25 @@ export function AuthProvider({ children }) {
   const cambiarRolActivo = useCallback(
     (nuevoRol) => {
       if (!currentUser) return;
+      const cleanRol = String(nuevoRol || '').toLowerCase().trim();
+      let proyectos = currentUser.proyectos_asignados || [];
+      if (cleanRol === 'coordinador' && (!proyectos || proyectos.length === 0)) {
+        const userMatch = (usuarios || []).find((u) =>
+          (currentUser.id && String(u.id) === String(currentUser.id)) ||
+          (currentUser.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
+        );
+        if (userMatch?.proyectos_asignados && userMatch.proyectos_asignados.length > 0) {
+          proyectos = userMatch.proyectos_asignados;
+        } else {
+          // Fallback con proyectos oficiales iniciales para Coordinador de prueba
+          proyectos = ['Clubes de Innovación y Electrónica', 'Semilleros de Robótica Educativa'];
+        }
+      }
+
       const updatedUser = {
         ...currentUser,
         rol: nuevoRol,
+        proyectos_asignados: proyectos,
       };
 
       const newToken = generateToken(updatedUser);
@@ -828,7 +886,7 @@ export function AuthProvider({ children }) {
       setToken(newToken);
       setCurrentUser(updatedUser);
     },
-    [currentUser]
+    [currentUser, usuarios]
   );
 
   /**
@@ -851,6 +909,7 @@ export function AuthProvider({ children }) {
       telefono: String(nuevo.telefono || '').trim(),
       rol: nuevo.rol || 'usuario',
       sede: nuevo.sede || 'Medellín',
+      proyectos_asignados: Array.isArray(nuevo.proyectos_asignados) ? nuevo.proyectos_asignados : [],
     };
     setUsuarios((prev) => [userCreado, ...prev]);
     return userCreado;
@@ -882,6 +941,12 @@ export function AuthProvider({ children }) {
 
           if (datosActualizados.password && typeof datosActualizados.password === 'string' && datosActualizados.password.trim().length > 0) {
             payloadSupabase.password = datosActualizados.password.trim();
+          }
+
+          if (datosActualizados.proyectos_asignados !== undefined) {
+            payloadSupabase.proyectos_asignados = Array.isArray(datosActualizados.proyectos_asignados)
+              ? datosActualizados.proyectos_asignados
+              : [];
           }
 
           // Actualizar directamente sobre la tabla física oficial 'perfiles'
@@ -924,6 +989,12 @@ export function AuthProvider({ children }) {
 
         if (datosActualizados.password && typeof datosActualizados.password === 'string' && datosActualizados.password.trim().length > 0) {
           payloadApi.password = datosActualizados.password.trim();
+        }
+
+        if (datosActualizados.proyectos_asignados !== undefined) {
+          payloadApi.proyectos_asignados = Array.isArray(datosActualizados.proyectos_asignados)
+            ? datosActualizados.proyectos_asignados
+            : [];
         }
 
         const response = await inventoryApi.updateUsuario(id, payloadApi);
@@ -975,6 +1046,9 @@ export function AuthProvider({ children }) {
               cargo: cargoFinal || u.cargo,
               sede: sedeFinal || u.sede,
               avatar_url: avatarFinal !== undefined ? avatarFinal : u.avatar_url,
+              proyectos_asignados: datosActualizados.proyectos_asignados !== undefined
+                ? datosActualizados.proyectos_asignados
+                : (usuarioGuardado?.proyectos_asignados || u.proyectos_asignados || []),
             };
           }
           return u;
@@ -1008,6 +1082,9 @@ export function AuthProvider({ children }) {
           cargo: cargoFinal || currentUser.cargo,
           sede: sedeFinal || currentUser.sede,
           avatar_url: avatarFinal !== undefined ? avatarFinal : currentUser.avatar_url,
+          proyectos_asignados: datosActualizados.proyectos_asignados !== undefined
+            ? datosActualizados.proyectos_asignados
+            : (usuarioGuardado?.proyectos_asignados || currentUser.proyectos_asignados || []),
         };
         const newToken = generateToken(updatedUser);
         localStorage.setItem('siga_token', newToken);
