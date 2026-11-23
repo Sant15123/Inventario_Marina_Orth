@@ -2469,6 +2469,117 @@ tbody tr:hover {
   gap: 10px;
 }
 
+/* Botones de acción operativos en topbar (Préstamos, Sedes, Proyectos STEAM) */
+.btn-topbar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 15px;
+  border-radius: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.btn-topbar-action:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* 1. Sede (Cyan institucional) */
+.btn-topbar-sede {
+  background: rgba(44, 172, 208, 0.08);
+  color: #013a52;
+  border: 1px solid rgba(44, 172, 208, 0.35);
+  box-shadow: 0 1px 3px rgba(44, 172, 208, 0.06);
+}
+.btn-topbar-sede:hover {
+  background: rgba(44, 172, 208, 0.18);
+  border-color: rgba(44, 172, 208, 0.65);
+  color: #013a52;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(44, 172, 208, 0.18);
+}
+[data-theme="dark"] .btn-topbar-sede {
+  background: rgba(44, 172, 208, 0.14);
+  color: #38bdf8;
+  border-color: rgba(44, 172, 208, 0.45);
+}
+[data-theme="dark"] .btn-topbar-sede:hover {
+  background: rgba(44, 172, 208, 0.24);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+/* 2. Proyecto STEAM (Purple institucional) */
+.btn-topbar-steam {
+  background: rgba(123, 44, 191, 0.08);
+  color: #7b2cbf;
+  border: 1px solid rgba(123, 44, 191, 0.32);
+  box-shadow: 0 1px 3px rgba(123, 44, 191, 0.06);
+}
+.btn-topbar-steam:hover {
+  background: rgba(123, 44, 191, 0.16);
+  border-color: rgba(123, 44, 191, 0.55);
+  color: #5e1a96;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(123, 44, 191, 0.18);
+}
+[data-theme="dark"] .btn-topbar-steam {
+  background: rgba(123, 44, 191, 0.18);
+  color: #c084fc;
+  border-color: rgba(123, 44, 191, 0.45);
+}
+[data-theme="dark"] .btn-topbar-steam:hover {
+  background: rgba(123, 44, 191, 0.28);
+  border-color: #c084fc;
+  color: #ffffff;
+}
+
+/* 3. Nuevo Préstamo (Acción Principal Destacada - FMO Lime Green) */
+.btn-topbar-loan {
+  background: #abd037;
+  color: #013a52;
+  font-weight: 700;
+  border: 1px solid #96bc28;
+  box-shadow: 0 2px 8px rgba(171, 208, 55, 0.35);
+}
+.btn-topbar-loan:hover {
+  background: #96bc28;
+  border-color: #84a822;
+  color: #013a52;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(171, 208, 55, 0.5);
+}
+
+/* 4. Entregar Consumibles (Acción Operativa - Navy Institucional) */
+.btn-topbar-delivery {
+  background: #013a52;
+  color: #ffffff;
+  font-weight: 600;
+  border: 1px solid #013a52;
+  box-shadow: 0 2px 8px rgba(1, 58, 82, 0.25);
+}
+.btn-topbar-delivery:hover {
+  background: #0A3C63;
+  border-color: #0d4661;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(1, 58, 82, 0.35);
+}
+[data-theme="dark"] .btn-topbar-delivery {
+  background: #093448;
+  border-color: #155779;
+}
+[data-theme="dark"] .btn-topbar-delivery:hover {
+  background: #0d425c;
+  border-color: #2CACD0;
+}
+
 .btn-icon-crud {
   width: 28px;
   height: 28px;

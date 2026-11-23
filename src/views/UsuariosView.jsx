@@ -236,7 +236,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
     setModalEditarOpen(true);
   };
 
-    const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   const handleGuardarEdicion = async (e) => {
     e.preventDefault();

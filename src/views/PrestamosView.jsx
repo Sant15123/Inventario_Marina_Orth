@@ -17,7 +17,7 @@ import ModalActaPrestamo from '../components/modals/ModalActaPrestamo';
 import ModalGestionSolicitud from '../components/modals/ModalGestionSolicitud';
 import EditarPrestamoModal from '../components/modals/EditarPrestamoModal';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
-import { Building2, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info, ShoppingCart, ExternalLink, PackagePlus, Search, FileSpreadsheet, Download, RotateCcw, X, ChevronDown, Calendar } from 'lucide-react';
+import { Building2, FolderKanban, Plus, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info, ShoppingCart, ExternalLink, PackagePlus, Search, FileSpreadsheet, Download, RotateCcw, X, ChevronDown, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
@@ -1163,26 +1163,17 @@ export default function PrestamosView({
 
         </div>
 
-        <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           {/* Botón + Nueva Sede: visible para Administradores y Supervisores (#2CACD0) */}
           {(isAdmin || isSupervisor) && (
             <button
               type="button"
-              className="btn small bg-[#2CACD0]/10 text-[#013a52] dark:text-[#2CACD0] border border-[#2CACD0]/40 font-bold"
+              className="btn-topbar-action btn-topbar-sede"
               onClick={() => setShowSedeModal(true)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
               title="Registrar nueva sede o municipio de operación FMO"
             >
-              <Building2 size={14} />
-              + Nueva Sede
+              <Building2 size={15} style={{ color: '#2CACD0' }} />
+              <span>+ Nueva Sede</span>
             </button>
           )}
 
@@ -1191,44 +1182,34 @@ export default function PrestamosView({
               {/* Botón + Proyecto STEAM (#7b2cbf) */}
               <button
                 type="button"
-                className="btn small bg-[#7b2cbf]/10 text-[#7b2cbf] border border-[#7b2cbf]/30 font-bold"
+                className="btn-topbar-action btn-topbar-steam"
                 onClick={() => setShowProyectoModal(true)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
+                title="Registrar nuevo Proyecto STEAM"
               >
-                + Proyecto STEAM
+                <FolderKanban size={15} style={{ color: '#7b2cbf' }} />
+                <span>+ Proyecto STEAM</span>
               </button>
-              {/* Botón + Nuevo préstamo (#abd037) */}
+
+              {/* Botón + Nuevo préstamo (#abd037) - Acción Principal */}
               <button
                 type="button"
-                className="btn small btn-primary bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-bold shadow-sm"
+                className="btn-topbar-action btn-topbar-loan"
                 onClick={() => setShowLoanModal(true)}
+                title="Registrar nuevo préstamo de equipo (retornable)"
               >
-                + Nuevo préstamo
+                <Plus size={16} strokeWidth={2.5} style={{ color: '#013a52' }} />
+                <span>+ Nuevo préstamo</span>
               </button>
-              {/* Botón + Entregar Consumibles (#0A3C63) */}
+
+              {/* Botón + Entregar Consumibles (#013a52 con icono verde) */}
               <button
                 type="button"
-                className="btn small bg-[#0A3C63] hover:bg-[#013a52] text-white font-bold shadow-sm border border-[#0A3C63]"
+                className="btn-topbar-action btn-topbar-delivery"
                 onClick={() => setShowDeliveryModal(true)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 14px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
+                title="Registrar entrega o consumo de insumos y consumibles"
               >
-                + Entregar Consumibles
+                <PackagePlus size={15} style={{ color: '#abd037' }} />
+                <span>+ Entregar Consumibles</span>
               </button>
             </>
           )}
