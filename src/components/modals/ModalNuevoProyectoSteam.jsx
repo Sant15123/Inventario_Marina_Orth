@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SEDES } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
+import { supabase } from '../../services/supabase';
 import { useProyectos } from '../../hooks/useProyectos';
 import { getProyectoPrograma } from '../../constants/proyectos';
 import {
@@ -83,27 +84,39 @@ export default function ModalNuevoProyectoSteam({
       setError('');
       setSuccessMsg('');
 
-      const payload = {
-        nombre: nombre.trim(),
-        sede_municipio: municipio,
-        municipio: municipio,
-        programa: programa,
-        descripcion: descripcion.trim(),
-      };
-
       if (modo === 'crear') {
-        let creado;
-        try {
-          creado = await inventoryApi.createProyecto(payload);
-        } catch (errApi) {
-          console.warn('Fallback al guardar proyecto localmente:', errApi);
-          creado = {
-            id: `proj-${Date.now()}`,
-            ...payload,
-          };
+        const payloadInsert = {
+          nombre: nombre.trim(),
+          sede_municipio: municipio,
+          programa: programa,
+          descripcion: descripcion.trim(),
+          activo: true,
+        };
+
+        let creado = null;
+        if (supabase) {
+          const { data: insertedSupabase, error: errorInsert } = await supabase
+            .from('proyectos_steam')
+            .insert([payloadInsert])
+            .select()
+            .single();
+
+          if (errorInsert) {
+            console.error('Error al crear en Supabase proyectos_steam:', errorInsert);
+            throw new Error(`Error en base de datos: ${errorInsert.message || 'No se pudo crear el proyecto STEAM'}`);
+          }
+
+          if (insertedSupabase) {
+            creado = insertedSupabase;
+          }
         }
 
-        const itemToSave = creado || payload;
+        if (!creado) {
+          creado = await inventoryApi.createProyecto(payloadInsert);
+        }
+
+        const itemToSave = creado || { id: `proj-${Date.now()}`, ...payloadInsert };
+
         try {
           const cached = JSON.parse(localStorage.getItem('siga_proyectos_steam') || '[]');
           if (Array.isArray(cached)) {
@@ -112,7 +125,9 @@ export default function ModalNuevoProyectoSteam({
           }
         } catch (e) {}
 
-        if (refetchProyectos) refetchProyectos();
+        if (refetchProyectos) {
+          await refetchProyectos();
+        }
         if (onProyectoCreated) onProyectoCreated(itemToSave);
 
         setSuccessMsg(`¡Proyecto STEAM "${itemToSave.nombre}" registrado exitosamente!`);
@@ -126,38 +141,70 @@ export default function ModalNuevoProyectoSteam({
         );
         const targetId = proyectoOriginal?.id || proyectoAEditarId;
 
-        let actualizado;
-        try {
-          actualizado = await inventoryApi.updateProyecto(targetId, payload);
-        } catch (errApi) {
-          console.warn('Fallback al actualizar proyecto localmente:', errApi);
-          actualizado = {
-            id: targetId,
-            ...payload,
-          };
+        const payloadUpdate = {
+          nombre: nombre.trim(),
+          sede_municipio: municipio,
+          programa: programa,
+          descripcion: descripcion.trim(),
+        };
+
+        let itemUpdated = null;
+
+        // 1. Ejecutar UPDATE real directamente en Supabase si está disponible
+        if (supabase) {
+          let query = supabase.from('proyectos_steam').update(payloadUpdate);
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(targetId));
+          if (isUUID) {
+            query = query.eq('id', targetId);
+          } else if (proyectoOriginal?.nombre) {
+            query = query.eq('nombre', proyectoOriginal.nombre);
+          } else {
+            query = query.eq('nombre', nombre.trim());
+          }
+
+          const { data: updatedSupabase, error: errorSupabase } = await query.select().single();
+
+          if (errorSupabase) {
+            console.error('Error al actualizar en Supabase proyectos_steam:', errorSupabase);
+            throw new Error(`Error en base de datos: ${errorSupabase.message || 'No se pudo actualizar el proyecto'}`);
+          }
+
+          if (updatedSupabase) {
+            itemUpdated = updatedSupabase;
+          }
         }
 
-        const itemUpdated = actualizado || { id: targetId, ...payload };
+        // 2. Si no se resolvió con cliente directo, utilizar inventoryApi
+        if (!itemUpdated) {
+          itemUpdated = await inventoryApi.updateProyecto(targetId, payloadUpdate);
+        }
+
+        const finalItem = itemUpdated || { id: targetId, ...payloadUpdate };
+
+        // Sincronizar almacenamiento local
         try {
           const cached = JSON.parse(localStorage.getItem('siga_proyectos_steam') || '[]');
           if (Array.isArray(cached)) {
             const updatedList = cached.map((p) =>
-              (p.id && itemUpdated.id && p.id === itemUpdated.id) || p.nombre === proyectoOriginal?.nombre
-                ? { ...p, ...itemUpdated }
+              (p.id && finalItem.id && p.id === finalItem.id) || p.nombre === proyectoOriginal?.nombre
+                ? { ...p, ...finalItem }
                 : p
             );
             localStorage.setItem('siga_proyectos_steam', JSON.stringify(updatedList));
           }
         } catch (e) {}
 
-        if (refetchProyectos) refetchProyectos();
-        if (onProyectoUpdated) onProyectoUpdated(itemUpdated);
-        if (onProyectoCreated) onProyectoCreated(itemUpdated);
+        // Recargar catálogo de proyectos STEAM
+        if (refetchProyectos) {
+          await refetchProyectos();
+        }
+        if (onProyectoUpdated) onProyectoUpdated(finalItem);
+        if (onProyectoCreated) onProyectoCreated(finalItem);
 
-        setSuccessMsg(`¡Proyecto STEAM "${itemUpdated.nombre}" actualizado exitosamente!`);
+        setSuccessMsg(`¡Proyecto STEAM "${finalItem.nombre}" actualizado exitosamente!`);
         setTimeout(() => {
           onClose();
-        }, 900);
+        }, 800);
       }
     } catch (err) {
       setError(err.message || 'Error al procesar el proyecto STEAM');
@@ -173,12 +220,20 @@ export default function ModalNuevoProyectoSteam({
       style={{ zIndex: 9999 }}
     >
       <div
-        className="modal-dialog"
+        className="modal-dialog flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '540px', width: '100%', overflow: 'hidden' }}
+        style={{
+          maxWidth: '540px',
+          width: '100%',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: '16px',
+        }}
       >
-        {/* Encabezado del Modal */}
-        <div className="modal-header" style={{ paddingBottom: '12px' }}>
+        {/* Encabezado del Modal (fijo) */}
+        <div className="modal-header shrink-0" style={{ paddingBottom: '12px', flexShrink: 0 }}>
           <div>
             <span
               style={{
@@ -207,13 +262,15 @@ export default function ModalNuevoProyectoSteam({
           </button>
         </div>
 
-        {/* Pestañas de Modo: Crear Nuevo vs Editar Existente */}
+        {/* Pestañas de Modo: Crear Nuevo vs Editar Existente (fijas) */}
         <div
+          className="shrink-0"
           style={{
             display: 'flex',
             borderBottom: '1px solid var(--line, #e2e8f0)',
             backgroundColor: 'var(--surface-2, #f8fafc)',
             padding: '0 20px',
+            flexShrink: 0,
           }}
         >
           <button
@@ -246,7 +303,7 @@ export default function ModalNuevoProyectoSteam({
             }}
           >
             <Plus size={15} style={{ color: modo === 'crear' ? '#abd037' : 'inherit' }} />
-            <span>+ Crear Nuevo</span>
+            <span>Crear Nuevo</span>
           </button>
 
           <button
@@ -278,12 +335,31 @@ export default function ModalNuevoProyectoSteam({
             }}
           >
             <Edit3 size={14} style={{ color: modo === 'editar' ? '#abd037' : 'inherit' }} />
-            <span>✏️ Editar Existente ({listaProyectos?.length || 0})</span>
+            <span>Editar Existente ({listaProyectos?.length || 0})</span>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body form-grid" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-1 min-h-0 overflow-hidden"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+            margin: 0,
+          }}
+        >
+          <div
+            className="modal-body form-grid flex-1 overflow-y-auto"
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              padding: '16px 20px',
+            }}
+          >
             {/* Mensajes de Alerta / Éxito */}
             {error && (
               <div
@@ -499,39 +575,84 @@ export default function ModalNuevoProyectoSteam({
             </div>
           </div>
 
-          {/* Footer del Modal */}
-          <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+          {/* Footer fijo abajo */}
+          <div
+            className="border-t border-slate-200 dark:border-slate-700 px-6 py-4 flex justify-end gap-3 shrink-0"
+            style={{
+              borderTop: '1px solid var(--line, #e2e8f0)',
+              padding: '14px 20px',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '12px',
+              flexShrink: 0,
+              backgroundColor: 'var(--surface, #ffffff)',
+            }}
+          >
             <button
               type="button"
-              className="btn ghost"
+              className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               disabled={submitting}
               onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: 600,
+                fontFamily: "'Poppins', sans-serif",
+                background: 'transparent',
+                border: '1px solid var(--line, #cbd5e1)',
+                color: 'var(--text-dim, #64748b)',
+                cursor: submitting ? 'not-allowed' : 'pointer',
+              }}
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="btn btn-primary"
               disabled={submitting || !nombre.trim()}
+              className="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
+                padding: '8px 18px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: 700,
+                fontFamily: "'Poppins', sans-serif",
+                backgroundColor: '#abd037',
+                color: '#013a52',
+                border: '1px solid #96bc28',
+                boxShadow: '0 2px 8px rgba(171, 208, 55, 0.35)',
+                cursor: submitting || !nombre.trim() ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                fontWeight: 700,
               }}
             >
               {submitting ? (
-                'Procesando...'
+                <>
+                  <span
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid #013a52',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      display: 'inline-block',
+                      animation: 'spin 0.6s linear infinite',
+                    }}
+                  />
+                  <span>Guardando...</span>
+                </>
               ) : modo === 'crear' ? (
                 <>
-                  <Plus size={16} />
-                  <span>+ Crear Proyecto STEAM</span>
+                  <Plus size={16} strokeWidth={2.5} style={{ color: '#013a52' }} />
+                  <span>Crear Proyecto STEAM</span>
                 </>
               ) : (
                 <>
-                  <Check size={16} />
-                  <span>💾 Guardar Cambios del Proyecto</span>
+                  <Check size={16} strokeWidth={2.5} style={{ color: '#013a52' }} />
+                  <span>Guardar Cambios</span>
                 </>
               )}
             </button>
