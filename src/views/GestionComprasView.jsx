@@ -396,6 +396,15 @@ export default function GestionComprasView({
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Estado dedicado y seguro para verificar Proyectos STEAM del Coordinador (evita bloqueos infinitos)
+  const [loadingProyectos, setLoadingProyectos] = useState(() => Boolean(isCoordinador));
+  const [proyectosCoordinador, setProyectosCoordinador] = useState(() => {
+    if (!isCoordinador) return [];
+    const raw = currentUser?.proyectos_asignados;
+    if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+    return [];
+  });
+
   // Filtros reactivos
   const [pestanaActiva, setPestanaActiva] = useState(initialTab || 'todas'); // 'todas' | 'pendientes' | 'aprobadas' | 'compradas' | 'rechazadas'
   const [busqueda, setBusqueda] = useState('');
@@ -657,7 +666,7 @@ export default function GestionComprasView({
                         ingresado_inventario: Boolean(it.ingresado_inventario || sc.ingresado_inventario),
                       }));
                     }
-                  } catch (_) {}
+                  } catch (_) { }
                 }
 
                 if (itemsList.length === 0) {
@@ -784,7 +793,7 @@ export default function GestionComprasView({
           .then(({ supabase }) => {
             if (supabase) supabase.removeChannel(canal);
           })
-          .catch(() => {});
+          .catch(() => { });
       }
       window.removeEventListener('siga:solicitud_creada', handleSolicitudCambio);
       window.removeEventListener('siga:solicitud_resuelta', handleSolicitudCambio);
@@ -830,7 +839,7 @@ export default function GestionComprasView({
 
       try {
         await inventoryApi.updateSolicitudCompra(targetUuid, patch);
-      } catch (_) {}
+      } catch (_) { }
 
       return data[0];
     } else {
@@ -856,7 +865,7 @@ export default function GestionComprasView({
 
       try {
         await inventoryApi.updateSolicitudCompra(targetUuid, patch);
-      } catch (_) {}
+      } catch (_) { }
 
       return data[0];
     }
@@ -872,9 +881,87 @@ export default function GestionComprasView({
     }
   };
 
-  // Proyectos STEAM asignados al Coordinador en sesión
+  // Efecto resiliente para verificar y cargar proyectos asignados al Coordinador desde Supabase
+  useEffect(() => {
+    if (!isCoordinador) {
+      setLoadingProyectos(false);
+      return;
+    }
+
+    // Si ya vienen proyectos definidos en currentUser, sincronizarlos y finalizar de inmediato
+    if (Array.isArray(currentUser?.proyectos_asignados) && currentUser.proyectos_asignados.length > 0) {
+      setProyectosCoordinador(currentUser.proyectos_asignados);
+      setLoadingProyectos(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const verificarProyectosCoordinador = async () => {
+      try {
+        if (!currentUser) {
+          if (isMounted) setLoadingProyectos(false);
+          return;
+        }
+
+        // Consultar directamente la tabla oficial 'perfiles' en Supabase
+        const { supabase } = await import('../services/supabase');
+        if (supabase) {
+          let query = supabase.from('perfiles').select('proyectos_asignados');
+          if (currentUser.id) {
+            query = query.eq('id', currentUser.id);
+          } else if (currentUser.email) {
+            query = query.eq('email', String(currentUser.email).toLowerCase());
+          } else if (currentUser.documento) {
+            query = query.eq('documento', String(currentUser.documento).trim());
+          }
+
+          const { data, error } = await query.maybeSingle();
+          if (!error && data) {
+            let asignados = [];
+            const raw = data.proyectos_asignados;
+            if (Array.isArray(raw)) {
+              asignados = raw.filter(Boolean).map(String);
+            } else if (typeof raw === 'string') {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) asignados = parsed.filter(Boolean).map(String);
+              } catch (_) {
+                if (raw.startsWith('{') && raw.endsWith('}')) {
+                  asignados = raw.slice(1, -1).split(',').map((s) => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
+                } else if (raw.trim()) {
+                  asignados = [raw.trim()];
+                }
+              }
+            }
+
+            if (isMounted) {
+              setProyectosCoordinador(asignados);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[GestionComprasView] Error al consultar proyectos asignados del coordinador:', err);
+      } finally {
+        if (isMounted) {
+          setLoadingProyectos(false);
+        }
+      }
+    };
+
+    verificarProyectosCoordinador();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isCoordinador, currentUser]);
+
+  // Proyectos STEAM asignados al Coordinador en sesión (usando proyectosCoordinador con fallback a currentUser)
   const misProyectos = useMemo(() => {
     if (!isCoordinador) return [];
+    if (Array.isArray(proyectosCoordinador) && proyectosCoordinador.length > 0) {
+      return proyectosCoordinador;
+    }
     const raw = currentUser?.proyectos_asignados;
     if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
     if (typeof raw === 'string') {
@@ -889,7 +976,7 @@ export default function GestionComprasView({
       }
     }
     return [];
-  }, [isCoordinador, currentUser?.proyectos_asignados]);
+  }, [isCoordinador, currentUser?.proyectos_asignados, proyectosCoordinador]);
 
   // Función verificadora estricta para determinar si una solicitud de compra pertenece a los proyectos del Coordinador
   const perteneceACoordinador = useCallback(
@@ -1099,7 +1186,7 @@ export default function GestionComprasView({
         window.dispatchEvent(
           new CustomEvent('siga:solicitud_resuelta', { detail: { id: solicitudAEvaluar.id } })
         );
-      } catch (_) {}
+      } catch (_) { }
 
       setModalEvaluarOpen(false);
       setSolicitudAEvaluar(null);
@@ -1991,7 +2078,7 @@ export default function GestionComprasView({
       {/* =========================================================================
           5. TABLA AUDITADA DE SOLICITUDES DE COMPRA (SIN COLISIONES NI DESBORDAMIENTOS)
           ========================================================================= */}
-      {loading || (isCoordinador && (!currentUser || currentUser.proyectos_asignados === undefined)) ? (
+      {loading || loadingProyectos ? (
         <div
           style={{
             padding: '60px 20px',
@@ -2020,6 +2107,26 @@ export default function GestionComprasView({
           </h3>
           <p style={{ fontSize: '12px', color: 'var(--text-dim, #6d6e71)', margin: '4px 0 0' }}>
             Conectando con la base de datos institucional SIGA-FMO...
+          </p>
+        </div>
+      ) : isCoordinador && misProyectos.length === 0 ? (
+        <div
+          style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            borderRadius: '16px',
+            border: '1px solid var(--line, #e2e8f0)',
+            backgroundColor: 'var(--surface, #ffffff)',
+            margin: '16px 0',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <FolderKanban size={44} style={{ color: 'var(--text-muted, #94a3b8)', margin: '0 auto 10px', display: 'block' }} />
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-h, #013a52)', margin: 0 }}>
+            Aún no tienes Proyectos STEAM asignados
+          </h3>
+          <p style={{ fontSize: '12.5px', color: 'var(--text-dim, #6d6e71)', margin: '4px 0 0', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto' }}>
+            Aún no tienes Proyectos STEAM asignados. Solicita al Administrador que te asigne al menos un proyecto en el módulo de Usuarios.
           </p>
         </div>
       ) : solicitudesFiltradas.length === 0 ? (
