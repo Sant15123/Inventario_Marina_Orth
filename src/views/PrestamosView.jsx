@@ -3336,6 +3336,15 @@ export default function PrestamosView({
             }
             showInfo('Sede Registrada', `Sede "${nombreS}" registrada exitosamente.`);
           }}
+          onSedeUpdated={(sedeAct) => {
+            const nombreNuevo = sedeAct.nombre || sedeAct;
+            const nombreViejo = sedeAct._prevNombre || sedeAct.nombre;
+            setSedesList((prev) => Array.from(new Set(prev.map((s) => (s === nombreViejo ? nombreNuevo : s)))));
+            if (loanSede === nombreViejo) setLoanSede(nombreNuevo);
+            if (deliverySede === nombreViejo) setDeliverySede(nombreNuevo);
+            showInfo('Sede Actualizada', `Sede "${nombreNuevo}" actualizada exitosamente.`);
+          }}
+          sedes={sedesList}
         />
       )}
 

@@ -1696,13 +1696,84 @@ export const inventoryApi = {
 
   // 5.1 Sedes y Municipios
   getSedes: async () => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('sedes')
+          .select('*')
+          .order('nombre', { ascending: true });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (_) {}
     const json = await request('/sedes');
     return extraerArreglo(json);
   },
 
   createSede: async (data) => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const payload = {
+          nombre: data.nombre ? String(data.nombre).trim() : '',
+          municipio: data.municipio ? String(data.municipio).trim() : (data.nombre ? String(data.nombre).trim() : null),
+          direccion: data.direccion ? String(data.direccion).trim() : null,
+          activo: data.activo !== undefined ? data.activo : true,
+        };
+        const { data: inserted, error } = await supabase
+          .from('sedes')
+          .insert([payload])
+          .select()
+          .single();
+        if (!error && inserted) {
+          return inserted;
+        }
+        if (error) {
+          console.warn('Aviso insert Supabase sedes:', error.message);
+        }
+      }
+    } catch (errSup) {
+      console.warn('Aviso insert Supabase sedes:', errSup);
+    }
     const json = await request('/sedes', {
       method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return json?.data !== undefined ? json.data : json;
+  },
+
+  updateSede: async (idOrNombre, data) => {
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        const payload = {};
+        if (data.nombre !== undefined) payload.nombre = String(data.nombre).trim();
+        if (data.municipio !== undefined) payload.municipio = data.municipio ? String(data.municipio).trim() : null;
+        if (data.direccion !== undefined) payload.direccion = data.direccion ? String(data.direccion).trim() : null;
+        if (data.activo !== undefined) payload.activo = data.activo;
+
+        let query = supabase.from('sedes').update(payload);
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(idOrNombre));
+        if (isUUID) {
+          query = query.eq('id', idOrNombre);
+        } else {
+          query = query.eq('nombre', String(idOrNombre).trim());
+        }
+        const { data: updated, error } = await query.select().single();
+        if (!error && updated) {
+          return updated;
+        }
+        if (error) {
+          console.warn('Aviso update Supabase sedes:', error.message);
+        }
+      }
+    } catch (errSup) {
+      console.warn('Aviso update Supabase sedes:', errSup);
+    }
+    const json = await request(`/sedes/${encodeURIComponent(idOrNombre || '')}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     });
     return json?.data !== undefined ? json.data : json;
