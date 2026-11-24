@@ -208,6 +208,23 @@ export const getSolFecha = (sol) => {
   return sol.fecha_requerida || sol.fecha_devolucion_estimada || sol.creado_en || today();
 };
 
+/**
+ * Normaliza cualquier formato de fecha a 'YYYY-MM-DD' en la zona horaria local,
+ * garantizando coherencia absoluta con lo renderizado en la tabla y evitando desfases de 1 día por UTC.
+ */
+export const normalizeDateToLocalYYYYMMDD = (val) => {
+  if (!val) return '';
+  let dt = new Date(val);
+  if (isNaN(dt.getTime()) && typeof val === 'string') {
+    dt = new Date(val.includes('T') ? val : `${val}T00:00:00`);
+  }
+  if (isNaN(dt.getTime())) return '';
+  const year = dt.getFullYear();
+  const month = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const getSolJustificacion = (sol) => {
   if (!sol) return 'Requerimiento pedagógico para proyectos de formación formativa STEAM.';
   const val = sol.justificacion || sol.motivo || sol.descripcion;
@@ -410,6 +427,8 @@ export default function GestionComprasView({
   const [busqueda, setBusqueda] = useState('');
   const [filtroSede, setFiltroSede] = useState('todas');
   const [filtroProyecto, setFiltroProyecto] = useState('todos');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
   const { proyectos: proyectosSteamList, formatLabel: formatProyectoLabel } = useProyectos();
 
   useEffect(() => {
@@ -1022,26 +1041,9 @@ export default function GestionComprasView({
     });
   }, [isCoordinador, misProyectos, proyectosSteamList]);
 
-  // Conteo dinámico de solicitudes por pestaña (sincronizado con proyectos asignados del Coordinador)
-  const conteos = useMemo(() => {
-    const list = solicitudesVisibles || [];
-    return {
-      todas: list.length,
-      pendientes: list.filter((s) => normalizeEstado(s.estado) === 'pendientes').length,
-      aprobadas: list.filter((s) => normalizeEstado(s.estado) === 'aprobadas').length,
-      compradas: list.filter((s) => normalizeEstado(s.estado) === 'compradas').length,
-      rechazadas: list.filter((s) => normalizeEstado(s.estado) === 'rechazadas').length,
-    };
-  }, [solicitudesVisibles]);
-
-  // Filtrado de solicitudes según pestaña activa y criterios de búsqueda (estrictamente sobre solicitudesVisibles)
-  const solicitudesFiltradas = useMemo(() => {
+  // Universo de solicitudes filtradas por criterios de auditoría (Sede, Proyecto STEAM y Rango de Fechas)
+  const solicitudesAuditoria = useMemo(() => {
     return (solicitudesVisibles || []).filter((sol) => {
-      // Filtro pestaña
-      if (pestanaActiva !== 'todas' && normalizeEstado(sol.estado) !== pestanaActiva) {
-        return false;
-      }
-
       // Filtro Sede
       if (filtroSede !== 'todas') {
         const sedeSol = getSolSede(sol).toLowerCase().trim();
@@ -1058,6 +1060,39 @@ export default function GestionComprasView({
         if (canonicalSol !== canonicalFiltro && getSolProyecto(sol) !== filtroProyecto) {
           return false;
         }
+      }
+
+      // Filtro Rango de Fechas (Desde / Hasta) en hora local YYYY-MM-DD
+      const solFechaStr = normalizeDateToLocalYYYYMMDD(getSolFecha(sol));
+      if (fechaDesde && (!solFechaStr || solFechaStr < fechaDesde)) {
+        return false;
+      }
+      if (fechaHasta && (!solFechaStr || solFechaStr > fechaHasta)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [solicitudesVisibles, filtroSede, filtroProyecto, fechaDesde, fechaHasta]);
+
+  // Conteo dinámico de solicitudes por pestaña sincronizado con fechas y filtros de auditoría
+  const conteos = useMemo(() => {
+    const list = solicitudesAuditoria || [];
+    return {
+      todas: list.length,
+      pendientes: list.filter((s) => normalizeEstado(s.estado) === 'pendientes').length,
+      aprobadas: list.filter((s) => normalizeEstado(s.estado) === 'aprobadas').length,
+      compradas: list.filter((s) => normalizeEstado(s.estado) === 'compradas').length,
+      rechazadas: list.filter((s) => normalizeEstado(s.estado) === 'rechazadas').length,
+    };
+  }, [solicitudesAuditoria]);
+
+  // Filtrado final de solicitudes según pestaña activa y criterios de búsqueda sobre solicitudesAuditoria
+  const solicitudesFiltradas = useMemo(() => {
+    return (solicitudesAuditoria || []).filter((sol) => {
+      // Filtro pestaña
+      if (pestanaActiva !== 'todas' && normalizeEstado(sol.estado) !== pestanaActiva) {
+        return false;
       }
 
       // Búsqueda libre
@@ -1086,7 +1121,7 @@ export default function GestionComprasView({
 
       return true;
     });
-  }, [solicitudesVisibles, pestanaActiva, filtroSede, filtroProyecto, busqueda]);
+  }, [solicitudesAuditoria, pestanaActiva, busqueda]);
 
   // Lista de sedes únicas para el selector
   const sedesList = useMemo(() => {
@@ -1992,11 +2027,11 @@ export default function GestionComprasView({
           4. BARRA DE FILTROS SECUNDARIOS (SEDES Y PROYECTOS STEAM)
           ========================================================================= */}
       <div
-        className="filter-bar"
+        className="filter-bar flex-wrap items-center gap-3"
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '14px',
+          gap: '12px',
           padding: '10px 16px',
           borderRadius: '12px',
           border: '1px solid var(--line, #e2e8f0)',
@@ -2068,6 +2103,83 @@ export default function GestionComprasView({
             })}
           </select>
         </div>
+
+        {/* Filtro Fecha Desde */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontWeight: 700, color: 'var(--text, #013a52)' }}>Desde:</span>
+          <input
+            type="date"
+            value={fechaDesde}
+            onChange={(e) => setFechaDesde(e.target.value)}
+            style={{
+              borderRadius: '8px',
+              padding: '4px 8px',
+              fontSize: '12px',
+              border: '1px solid var(--line, #cbd5e1)',
+              backgroundColor: 'var(--surface-2, #f8fafc)',
+              color: 'var(--text, #013a52)',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600,
+              outline: 'none',
+              colorScheme: 'light dark',
+            }}
+            className="focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] transition-colors"
+          />
+        </div>
+
+        {/* Filtro Fecha Hasta */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontWeight: 700, color: 'var(--text, #013a52)' }}>Hasta:</span>
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={(e) => setFechaHasta(e.target.value)}
+            style={{
+              borderRadius: '8px',
+              padding: '4px 8px',
+              fontSize: '12px',
+              border: '1px solid var(--line, #cbd5e1)',
+              backgroundColor: 'var(--surface-2, #f8fafc)',
+              color: 'var(--text, #013a52)',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600,
+              outline: 'none',
+              colorScheme: 'light dark',
+            }}
+            className="focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] transition-colors"
+          />
+        </div>
+
+        {/* Botón Limpiar Fechas (visible únicamente cuando fechaDesde o fechaHasta tengan valor) */}
+        {(fechaDesde || fechaHasta) && (
+          <button
+            type="button"
+            onClick={() => {
+              setFechaDesde('');
+              setFechaHasta('');
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              fontFamily: "'Poppins', sans-serif",
+              border: '1px solid var(--line, #cbd5e1)',
+              backgroundColor: 'var(--surface-2, #f1f5f9)',
+              color: 'var(--text-dim, #6d6e71)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            title="Limpiar rango de fechas"
+            className="hover:text-red-600 hover:border-red-300 transition-colors"
+          >
+            <X size={12} strokeWidth={2.5} />
+            <span>Limpiar fechas</span>
+          </button>
+        )}
 
         <div style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-dim, #6d6e71)' }}>
           Mostrando <strong style={{ color: 'var(--text, #013a52)' }}>{solicitudesFiltradas.length}</strong> de{' '}
