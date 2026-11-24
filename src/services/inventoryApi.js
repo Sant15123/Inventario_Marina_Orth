@@ -1,5 +1,6 @@
 // Configuración dinámica y tolerante a fallos para la URL base de la API
 import { registrarAuditoria } from './historyAuditService';
+import { validateActiveSession, forceLogout } from './sessionManager';
 
 export const getBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
@@ -31,6 +32,20 @@ export function getAuthToken() {
 }
 
 async function request(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const isModifying = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+  // 1. Si es una acción que modifica datos, bloquear si la sesión está caducada
+  if (isModifying) {
+    const sessionCheck = validateActiveSession();
+    if (!sessionCheck.isValid) {
+      forceLogout(sessionCheck.message);
+      const error = new Error(`Acción bloqueada (${method}): Sesión caducada por inactividad o token vencido.`);
+      error.status = 401;
+      throw error;
+    }
+  }
+
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
   const token = getAuthToken();
   const headers = {
@@ -44,7 +59,30 @@ async function request(path, options = {}) {
     headers,
   });
 
+  // 2. Interceptar 401 Unauthorized inmediatamente
+  if (res.status === 401) {
+    forceLogout('Tu sesión ha expirado o el token es inválido. Inicia sesión nuevamente para continuar.');
+    const error = new Error('Sesión caducada (401 Unauthorized)');
+    error.status = 401;
+    throw error;
+  }
+
   const json = await res.json().catch(() => null);
+
+  // 3. Interceptar respuestas con error de token expirado en el cuerpo
+  if (
+    json?.error?.toLowerCase?.().includes('jwt expired') ||
+    json?.message?.toLowerCase?.().includes('jwt expired') ||
+    json?.error?.toLowerCase?.().includes('token expirado') ||
+    json?.message?.toLowerCase?.().includes('token expirado') ||
+    json?.error?.toLowerCase?.().includes('token inválido') ||
+    json?.message?.toLowerCase?.().includes('token inválido')
+  ) {
+    forceLogout('Tu sesión ha expirado o el token es inválido. Inicia sesión nuevamente para continuar.');
+    const error = new Error('Sesión caducada (JWT expired)');
+    error.status = 401;
+    throw error;
+  }
 
   if (!res.ok) {
     const message = json?.message || json?.error || `Error HTTP ${res.status} al consultar ${path}`;
@@ -278,7 +316,7 @@ export const inventoryApi = {
     try {
       const json = await request('/consumibles');
       list = extraerArreglo(json);
-    } catch (_) {}
+    } catch (_) { }
 
     // Fallback o enriquecimiento con Supabase si está disponible
     try {
@@ -297,7 +335,7 @@ export const inventoryApi = {
           }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Enriquecer con customAreas guardadas en localStorage
     try {
@@ -308,7 +346,7 @@ export const inventoryApi = {
           return saved ? { ...c, area: saved, area_asignada: saved } : c;
         });
       }
-    } catch (_) {}
+    } catch (_) { }
 
     return list;
   },
@@ -354,7 +392,7 @@ export const inventoryApi = {
             return { ...data, __tipo: 'electronica', tipo: 'electronica' };
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // 1. Si es Mobiliario (MOB-XXXX)
@@ -372,7 +410,7 @@ export const inventoryApi = {
             return { ...data, __tipo: 'mobiliario', tipo: 'mobiliario' };
           }
         }
-      } catch (_) {}
+      } catch (_) { }
 
       try {
         const json = await request(`/mobiliario/${encodeURIComponent(rawId)}`);
@@ -380,7 +418,7 @@ export const inventoryApi = {
         if (data && (data.placa || data.id)) {
           return { ...data, __tipo: 'mobiliario', tipo: 'mobiliario' };
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // 2. Si es Papelería (PapeXXXX)
@@ -398,7 +436,7 @@ export const inventoryApi = {
             return { ...data, __tipo: 'papeleria', tipo: 'papeleria' };
           }
         }
-      } catch (_) {}
+      } catch (_) { }
 
       try {
         const catalogoModule = await import('../data/catalogoPapeleriaFMO.json');
@@ -407,7 +445,7 @@ export const inventoryApi = {
         if (found) {
           return { ...found, __tipo: 'papeleria', tipo: 'papeleria' };
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // 3. Si es Robótica / Consumible (RobXXXX)
@@ -452,7 +490,7 @@ export const inventoryApi = {
             activoObj.estado = 'En campo';
           }
         }
-      } catch (_) {}
+      } catch (_) { }
 
       return activoObj;
     } catch (errActivo) {
@@ -460,7 +498,7 @@ export const inventoryApi = {
       try {
         const c = await inventoryApi.getConsumibleById(rawId);
         return { ...c, __tipo: 'robotica', tipo: 'robotica' };
-      } catch (_) {}
+      } catch (_) { }
 
       try {
         const { supabase } = await import('./supabase');
@@ -483,7 +521,7 @@ export const inventoryApi = {
             .maybeSingle();
           if (pap) return { ...pap, __tipo: 'papeleria', tipo: 'papeleria' };
         }
-      } catch (_) {}
+      } catch (_) { }
 
       throw new Error(errActivo.message || `No se encontró ningún activo, mobiliario o material con el código "${rawId}"`);
     }
@@ -563,7 +601,7 @@ export const inventoryApi = {
 
         if (!error && res) return res;
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // 2. Fallback a endpoint REST
     const json = await request(`/prestamos/${id}`, {
@@ -691,7 +729,7 @@ export const inventoryApi = {
           return data;
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Fallback con catálogo oficial de semillas FMO si Supabase estuviera temporalmente inaccesible
     return DEFAULT_EQUIPOS_ELECTRONICA;
@@ -715,7 +753,7 @@ export const inventoryApi = {
           });
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     if (maxNum === 0) {
       DEFAULT_EQUIPOS_ELECTRONICA.forEach((it) => {
@@ -782,7 +820,7 @@ export const inventoryApi = {
         sede: payload.sede || 'Medellín',
         motivo: `Alta de equipo serializado ${payload.placa} (${payload.subcategoria}) en sede ${payload.sede} - Proyecto STEAM: ${payload.area_asignada || 'Robótica'}`,
       });
-    } catch (_) {}
+    } catch (_) { }
 
     return result || payload;
   },
@@ -830,7 +868,7 @@ export const inventoryApi = {
         sede: updates.sede || 'Medellín',
         motivo: `Actualización de ficha técnica ${placa}. ${descCambios || 'Modificación técnica de parámetros'}`,
       });
-    } catch (_) {}
+    } catch (_) { }
 
     return { placa, ...updates };
   },
@@ -859,7 +897,7 @@ export const inventoryApi = {
         sede: 'Medellín',
         motivo: `Baja técnica de equipo de electrónica ${placa}. Motivo: ${motivo}`,
       });
-    } catch (_) {}
+    } catch (_) { }
 
     return { ok: true, placa };
   },
@@ -872,7 +910,7 @@ export const inventoryApi = {
       const endpoint = qs ? `/historial?${qs}` : '/historial';
       const json = await request(endpoint);
       list = extraerArreglo(json);
-    } catch (_) {}
+    } catch (_) { }
 
     // Complementar directamente con registros de Supabase (historial_movimientos)
     try {
@@ -907,7 +945,7 @@ export const inventoryApi = {
           });
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     return list;
   },
@@ -925,7 +963,7 @@ export const inventoryApi = {
           return data;
         }
       }
-    } catch (_) {}
+    } catch (_) { }
     const json = await request('/proyectos');
     return extraerArreglo(json);
   },
@@ -1153,7 +1191,7 @@ export const inventoryApi = {
                 try {
                   const parsed = JSON.parse(sc.items);
                   if (Array.isArray(parsed) && parsed.length > 0) itemsList = parsed;
-                } catch (_) {}
+                } catch (_) { }
               }
               if (itemsList.length === 0) {
                 itemsList = [singleItem];
@@ -1220,6 +1258,11 @@ export const inventoryApi = {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
+
+      if (res.status === 401) {
+        forceLogout('Tu sesión ha expirado o el token es inválido. Inicia sesión nuevamente para continuar.');
+        throw new Error('Sesión caducada (401 Unauthorized)');
+      }
 
       if (res.ok) {
         const json = await res.json().catch(() => null);
@@ -1419,6 +1462,12 @@ export const inventoryApi = {
 
     // 2. Fallback secundario a REST
     try {
+      const sessionCheck = validateActiveSession();
+      if (!sessionCheck.isValid) {
+        forceLogout(sessionCheck.message);
+        throw new Error('Operación bloqueada: Sesión caducada por inactividad o token vencido.');
+      }
+
       const url = `${API_BASE}/solicitudes`;
       const token = getAuthToken();
       const res = await fetch(url, {
@@ -1429,6 +1478,11 @@ export const inventoryApi = {
         },
         body: JSON.stringify(payloadNormalizado),
       });
+
+      if (res.status === 401) {
+        forceLogout('Tu sesión ha expirado o el token es inválido. Inicia sesión nuevamente para continuar.');
+        throw new Error('Sesión caducada (401 Unauthorized)');
+      }
 
       if (res.ok) {
         const json = await res.json().catch(() => null);
@@ -1716,7 +1770,7 @@ export const inventoryApi = {
           return unicas;
         }
       }
-    } catch (_) {}
+    } catch (_) { }
     const json = await request('/sedes');
     return extraerArreglo(json);
   },
@@ -1854,7 +1908,7 @@ export const inventoryApi = {
         const customAreas = JSON.parse(localStorage.getItem('siga_custom_areas') || '{}');
         customAreas[targetId] = areaVal;
         localStorage.setItem('siga_custom_areas', JSON.stringify(customAreas));
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Actualizar en Supabase de forma segura filtrando estrictamente por id único
@@ -1913,7 +1967,7 @@ export const inventoryApi = {
           .order('creado_en', { ascending: false });
         if (!error && Array.isArray(data)) return data;
       }
-    } catch (_) {}
+    } catch (_) { }
     return [];
   },
 
@@ -1986,7 +2040,7 @@ export const inventoryApi = {
           const cached = localStorage.getItem('siga_solicitudes_compra');
           const list = cached ? JSON.parse(cached) : [];
           localStorage.setItem('siga_solicitudes_compra', JSON.stringify([...data, ...list]));
-        } catch (e) {}
+        } catch (e) { }
         return data;
       }
     }
@@ -2028,7 +2082,7 @@ export const inventoryApi = {
           localStorage.setItem('siga_solicitudes_compra', JSON.stringify(list));
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return updated || { id, ...patch };
   },
 

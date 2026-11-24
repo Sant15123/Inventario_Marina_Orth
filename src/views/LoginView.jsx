@@ -20,6 +20,14 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
   const location = useLocation();
   const { login, isAuthenticated, currentUser, authLoading, sessionExpiredMessage, setSessionExpiredMessage } = useAuth();
 
+  const [errorMsg, setErrorMsg] = useState(() => {
+    try {
+      return sessionExpiredMessage || sessionStorage.getItem('siga_session_expired') || '';
+    } catch {
+      return '';
+    }
+  });
+
   // Mostrar advertencia de sesión caducada si existe
   useEffect(() => {
     const expiredMsg = sessionExpiredMessage || sessionStorage.getItem('siga_session_expired');
@@ -79,7 +87,6 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
     }
   });
 
-  const [errorMsg, setErrorMsg] = useState('');
   const [cargando, setCargando] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
 

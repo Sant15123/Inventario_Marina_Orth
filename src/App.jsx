@@ -17,12 +17,16 @@ import LoginView from './views/LoginView';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import { useAuth } from './context/AuthContext';
+import { useSessionGuard } from './hooks/useSessionGuard';
 import { today, fmtDate, available, isOverdue } from './data/initialData';
 import { SEDES } from './services/mockData';
 import inventoryApi from './services/inventoryApi';
 import { exportarLibroMaestroExcelFMO } from './services/excelExportService';
 
 function App() {
+  // Observador y control estricto de inactividad de 2 horas e intercepción de sesión
+  useSessionGuard();
+
   // Estado de tema oscuro/claro con persistencia en localStorage (Tema Claro por defecto)
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {

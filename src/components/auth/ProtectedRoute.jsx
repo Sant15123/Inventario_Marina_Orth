@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { validateActiveSession, forceLogout } from '../../services/sessionManager';
 
 /**
  * Componente envoltorio para protección de rutas según autenticación y roles institucionales
@@ -32,7 +33,14 @@ export default function ProtectedRoute({ children, allowedRoles, fallbackPath = 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 2. Si se especificaron roles permitidos y el rol del usuario no está en la lista
+  // 2. Control estricto de inactividad (2 horas) y token no caducado
+  const sessionCheck = validateActiveSession();
+  if (!sessionCheck.isValid) {
+    forceLogout(sessionCheck.message);
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // 3. Si se especificaron roles permitidos y el rol del usuario no está en la lista
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(currentUser.rol)) {
     // Si el usuario autenticado tiene rol 'usuario', redirigir por defecto a su panel
     if (currentUser.rol === 'usuario') {

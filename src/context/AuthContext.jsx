@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { generateToken, verifyAndDecodeToken, decodeToken } from '../services/jwtService';
 import { inventoryApi, API_BASE } from '../services/inventoryApi';
+import {
+  validateActiveSession,
+  forceLogout,
+  onForceLogout,
+  recordActivity,
+  DEFAULT_EXPIRED_MESSAGE,
+} from '../services/sessionManager';
 
 const AuthContext = createContext(null);
 
@@ -402,19 +409,31 @@ export function AuthProvider({ children }) {
     }
   });
 
-  // Token JWT en almacenamiento local con verificación estricta de caducidad (2 horas)
+  // Escuchar eventos de cierre forzoso de sesión (por inactividad, token expirado o 401)
+  useEffect(() => {
+    const unsubscribe = onForceLogout((motivo) => {
+      setToken(null);
+      setCurrentUser(null);
+      if (motivo) {
+        setSessionExpiredMessage(motivo);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Token JWT en almacenamiento local con verificación estricta de caducidad (2 horas de inactividad o expiración de token)
   const [token, setToken] = useState(() => {
     try {
       const savedToken = localStorage.getItem('siga_token');
       if (!savedToken) return null;
-      const payload = decodeToken(savedToken);
-      const now = Math.floor(Date.now() / 1000);
-      if (payload?.exp && payload.exp < now) {
+      const sessionCheck = validateActiveSession();
+      if (!sessionCheck.isValid) {
         localStorage.removeItem('siga_token');
         localStorage.removeItem('siga_current_user');
         localStorage.removeItem('siga_user');
+        localStorage.removeItem('siga_last_activity');
         try {
-          sessionStorage.setItem('siga_session_expired', 'Tu sesión ha caducado por inactividad tras 2 horas. Por favor ingresa nuevamente.');
+          sessionStorage.setItem('siga_session_expired', sessionCheck.message || DEFAULT_EXPIRED_MESSAGE);
         } catch (_) {}
         return null;
       }
@@ -429,14 +448,18 @@ export function AuthProvider({ children }) {
     try {
       const savedToken = localStorage.getItem('siga_token');
       if (savedToken) {
-        const decoded = verifyAndDecodeToken(savedToken);
-        if (decoded) {
-          return decoded;
+        const sessionCheck = validateActiveSession();
+        if (sessionCheck.isValid) {
+          const decoded = verifyAndDecodeToken(savedToken);
+          if (decoded) {
+            return decoded;
+          }
         }
       }
       localStorage.removeItem('siga_token');
       localStorage.removeItem('siga_current_user');
       localStorage.removeItem('siga_user');
+      localStorage.removeItem('siga_last_activity');
       return null;
     } catch (e) {
       console.warn('Error al verificar sesión inicial:', e);
@@ -635,6 +658,10 @@ export function AuthProvider({ children }) {
     const newToken = generateToken(payload);
     localStorage.setItem('siga_token', newToken);
     localStorage.setItem('siga_current_user', JSON.stringify(payload));
+    recordActivity(true);
+    try {
+      sessionStorage.removeItem('siga_session_expired');
+    } catch (_) {}
 
     setToken(newToken);
     setCurrentUser(payload);
@@ -824,6 +851,10 @@ export function AuthProvider({ children }) {
         localStorage.setItem('siga_token', newToken);
         localStorage.setItem('siga_current_user', JSON.stringify(tokenPayload));
         localStorage.setItem('siga_user', JSON.stringify(tokenPayload));
+        recordActivity(true);
+        try {
+          sessionStorage.removeItem('siga_session_expired');
+        } catch (_) {}
 
         if (remember) {
           localStorage.setItem('siga_remember_user', cleanId);
@@ -848,8 +879,15 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     localStorage.removeItem('siga_token');
     localStorage.removeItem('siga_current_user');
+    localStorage.removeItem('siga_user');
+    localStorage.removeItem('siga_last_activity');
     setToken(null);
     setCurrentUser(null);
+    import('../services/supabase')
+      .then(({ supabase }) => {
+        supabase?.auth?.signOut?.().catch?.(() => {});
+      })
+      .catch(() => {});
   }, []);
 
   /**
@@ -1206,6 +1244,9 @@ export function AuthProvider({ children }) {
         isUsuario,
         sessionExpiredMessage,
         setSessionExpiredMessage,
+        validateActiveSession,
+        forceLogout,
+        recordActivity,
       }}
     >
       {children}
