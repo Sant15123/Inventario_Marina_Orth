@@ -39,7 +39,7 @@ import { normalizeProyectoNombre } from '../constants/proyectos';
 import { getProveedoresRecomendados } from '../services/proveedoresService';
 import ModalProveedoresRecomendados from '../components/modals/ModalProveedoresRecomendados';
 import { registrarAuditoria } from '../services/historyAuditService';
-import ExcelJS from 'exceljs';
+import { exportarGestionComprasExcel } from '../services/comprasExcelExportService';
 
 // Muestras de prueba para el flujo de compras en caso de arranque sin datos en Supabase
 const SOLICITUDES_COMPRA_DEMO = [
@@ -1370,103 +1370,35 @@ export default function GestionComprasView({
     }
   };
 
-  // Exportar solicitudes filtradas a Excel con formato institucional FMO
+  // Exportar solicitudes filtradas a Excel con formato corporativo FMO
   const handleExportarExcel = async () => {
     try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = 'Fundación Marina Orth - SIGA FMO';
-      workbook.created = new Date();
-
-      const worksheet = workbook.addWorksheet('Gestión de Compras', {
-        pageSetup: { paperSize: 9, orientation: 'landscape' },
+      await exportarGestionComprasExcel({
+        solicitudes: solicitudesFiltradas,
+        currentUser,
+        isCoordinador,
+        filtros: {
+          pestanaActiva,
+          filtroSede,
+          filtroProyecto,
+          fechaDesde,
+          fechaHasta,
+          busqueda,
+        },
+        helpers: {
+          formatRadicado,
+          getSolNombre,
+          getSolSede,
+          getSolProyecto,
+          getSolFecha,
+          getSolItems,
+          normalizeEstado,
+          getEstadoBadgeConfig,
+          fmtDate,
+        },
       });
 
-      // Cabecera Institucional
-      worksheet.mergeCells('A1:I1');
-      const titleCell = worksheet.getCell('A1');
-      titleCell.value = 'FUNDACIÓN MARINA ORTH — CONTROL DE COMPRAS Y ADQUISICIONES STEAM';
-      titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
-      titleCell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF013A52' }, // Azul FMO
-      };
-      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-      worksheet.getRow(1).height = 32;
-
-      // Fila de encabezados de columna
-      const headers = [
-        'Radicado',
-        'Fecha Radicado',
-        'Solicitante',
-        'Sede Destino',
-        'Proyecto STEAM',
-        'Ítems y Cantidades',
-        'Estado',
-        'Proveedor & Factura',
-        'Valor Total (COP)',
-      ];
-
-      const headerRow = worksheet.addRow(headers);
-      headerRow.height = 24;
-      headerRow.eachCell((cell) => {
-        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF013A52' } };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFABD037' }, // Verde FMO
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-          bottom: { style: 'medium', color: { argb: 'FF013A52' } },
-        };
-      });
-
-      // Relleno de datos con extractores robustos
-      solicitudesFiltradas.forEach((sol) => {
-        const items = getSolItems(sol);
-        const itemsStr = items
-          .map((i) => `${i.nombre} (Sol: ${i.cantidad_solicitada || i.cantidad || 1}, Aprob: ${i.cantidad_aprobada ?? '—'})`)
-          .join('; ');
-
-        const row = worksheet.addRow([
-          formatRadicado(sol.id, sol.radicado),
-          fmtDate(getSolFecha(sol)),
-          getSolNombre(sol),
-          getSolSede(sol),
-          getSolProyecto(sol),
-          itemsStr || 'Sin ítems detallados',
-          sol.estado,
-          sol.proveedor ? `${sol.proveedor} (${sol.numero_factura_orden || 'S/N'})` : 'Pendiente de compra',
-          Number(sol.valor_final_compra) || Number(sol.valor_estimado_compra) || 0,
-        ]);
-
-        row.alignment = { vertical: 'middle', horizontal: 'left' };
-      });
-
-      // Formato de moneda en columna de Valor Total
-      worksheet.getColumn(9).numFmt = '"$"#,##0';
-
-      // Ajuste automático de anchos de columna
-      worksheet.columns.forEach((col, idx) => {
-        if (idx === 5) {
-          col.width = 38;
-        } else {
-          col.width = 18;
-        }
-      });
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `SIGA_FMO_Gestion_Compras_${new Date().toISOString().split('T')[0]}.xlsx`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      showSuccess('Reporte Excel Generado', 'El archivo de compras se descargó exitosamente.');
+      showSuccess('Reporte Excel Generado', 'El informe corporativo de compras se descargó exitosamente.');
     } catch (err) {
       showError('Error al exportar Excel', err.message);
     }
