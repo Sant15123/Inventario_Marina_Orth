@@ -18,6 +18,7 @@ import {
   ShoppingCart,
   ExternalLink,
   Store,
+  Zap,
 } from 'lucide-react';
 import { today, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
@@ -27,6 +28,11 @@ import { getProyectoPrograma, PROYECTOS_STEAM_OFICIALES } from '../../constants/
 import ProgramAreaBadge, { resolveAreaConfig } from '../common/ProgramAreaBadge';
 import { getProveedoresRecomendados } from '../../services/proveedoresService';
 import { registrarAuditoria } from '../../services/historyAuditService';
+import {
+  getAvailableStock,
+  formatItemOptionLabel,
+  fetchFreshPrestamosCatalog,
+} from '../../services/prestamosCatalogService';
 
 export default function ModalSolicitudMaterial({
   isOpen,
@@ -61,6 +67,26 @@ export default function ModalSolicitudMaterial({
   // Directorio de Proveedores Recomendados (cargados dinámicamente)
   const [proveedoresRecomendados, setProveedoresRecomendados] = useState([]);
   const [loadingProveedores, setLoadingProveedores] = useState(false);
+
+  // Catálogo sincronizado en tiempo real desde Supabase para garantizar stock y disponibilidad exacta
+  const [liveCatalog, setLiveCatalog] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    fetchFreshPrestamosCatalog(items).then((fresh) => {
+      if (isMounted && Array.isArray(fresh) && fresh.length > 0) {
+        setLiveCatalog(fresh);
+      }
+    }).catch((err) => {
+      console.warn('[ModalSolicitudMaterial] Fallback a items de contexto:', err);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, items]);
+
+  const activeCatalog = (liveCatalog && liveCatalog.length > 0) ? liveCatalog : items;
 
   // Estado y ref para el selector con íconos de Proyecto STEAM
   const [dropdownProyectoOpen, setDropdownProyectoOpen] = useState(false);
@@ -158,15 +184,19 @@ export default function ModalSolicitudMaterial({
     return resolveAreaConfig(prog);
   }, [selectedProyectoObj]);
 
-  // Catálogo disponible filtrado por tipo de solicitud
+  // Catálogo disponible unificado y filtrado por disponibilidad real (> 0 unidades disponibles)
   const catalogoDisponible = useMemo(() => {
     if (tipoSolicitud === 'PRESTAMO_EQUIPO') {
-      // Activos de cómputo / equipos retornables
-      return (items || []).filter((it) => it.itemType === 'equipo');
+      // Unifica Equipos Tecnológicos y Equipos de Electrónica (Retornables) con stock disponible > 0
+      return (activeCatalog || []).filter(
+        (it) => (it.itemType === 'equipo' || it.itemType === 'electronica') && getAvailableStock(it) > 0
+      );
     }
-    // Consumibles / insumos de robótica / papelería
-    return (items || []).filter((it) => it.itemType === 'consumible');
-  }, [items, tipoSolicitud]);
+    // Consumibles / insumos de robótica / papelería con stock disponible > 0
+    return (activeCatalog || []).filter(
+      (it) => it.itemType === 'consumible' && getAvailableStock(it) > 0
+    );
+  }, [activeCatalog, tipoSolicitud]);
 
   // Ítem actualmente seleccionado en el selector
   const currentItemInfo = useMemo(() => {
@@ -174,16 +204,11 @@ export default function ModalSolicitudMaterial({
     return catalogoDisponible.find((it) => String(it.id) === String(selectedItemId)) || null;
   }, [catalogoDisponible, selectedItemId]);
 
-  // Stock disponible del ítem seleccionado
+  // Stock disponible real del ítem seleccionado (calculado estrictamente, sin defaults artificiales a 1)
   const stockDisponibleItem = useMemo(() => {
     if (!currentItemInfo) return 0;
-    if (tipoSolicitud === 'PRESTAMO_EQUIPO') {
-      const unitsDisponibles = (currentItemInfo.units || []).filter((u) => u.status === 'disponible').length;
-      return unitsDisponibles > 0 ? unitsDisponibles : 1;
-    }
-    const q = Number(currentItemInfo.quantity ?? currentItemInfo.disponible ?? 0);
-    return isNaN(q) ? 1 : Math.max(0, q);
-  }, [currentItemInfo, tipoSolicitud]);
+    return getAvailableStock(currentItemInfo);
+  }, [currentItemInfo]);
 
   // Validación estricta para habilitar el botón "Enviar Solicitud"
   // Requiere: al menos un ítem agregado, fecha (si aplica), sede, proyecto STEAM y justificación
@@ -242,6 +267,16 @@ export default function ModalSolicitudMaterial({
       return;
     }
 
+    if (stockDisponibleItem <= 0) {
+      setValidationError('Este artículo no cuenta con unidades disponibles en este momento.');
+      return;
+    }
+
+    if (qty > stockDisponibleItem) {
+      setValidationError(`Solo hay ${stockDisponibleItem} unidad(es) disponible(s) de este artículo.`);
+      return;
+    }
+
     // Verificar si ya está en la lista
     const yaExiste = itemsSolicitud.find((it) => String(it.item_id) === String(currentItemInfo.id));
     if (yaExiste) {
@@ -250,7 +285,7 @@ export default function ModalSolicitudMaterial({
     }
 
     const nuevoItem = {
-      tipo_item: tipoSolicitud === 'PRESTAMO_EQUIPO' ? 'equipo' : 'consumible',
+      tipo_item: tipoSolicitud === 'PRESTAMO_EQUIPO' ? (currentItemInfo.itemType || 'equipo') : 'consumible',
       item_id: currentItemInfo.id,
       nombre_item: currentItemInfo.name || currentItemInfo.material || 'Artículo',
       cantidad: qty,
@@ -611,7 +646,7 @@ export default function ModalSolicitudMaterial({
           };
         } else {
           return {
-            tipo_item: tipoSolicitud === 'CONSUMIBLES' ? 'consumible' : 'equipo',
+            tipo_item: item.tipo_item || (tipoSolicitud === 'CONSUMIBLES' ? 'consumible' : 'equipo'),
             item_id: item.item_id || null,
             nombre_item: item.nombre_item || 'Artículo',
             cantidad: Number(item.cantidad) || 1,
@@ -1608,6 +1643,7 @@ export default function ModalSolicitudMaterial({
                     onChange={(e) => {
                       setSelectedItemId(e.target.value);
                       setCantidadInput(1);
+                      if (validationError) setValidationError('');
                     }}
                     className="flex-1 rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
                     style={{
@@ -1618,12 +1654,12 @@ export default function ModalSolicitudMaterial({
                   >
                     <option value="">
                       {tipoSolicitud === 'PRESTAMO_EQUIPO'
-                        ? '-- Seleccionar equipo tecnológico --'
-                        : '-- Seleccionar material o insumo --'}
+                        ? '-- Selecciona el equipo a prestar (Tecnológico / Electrónica) --'
+                        : '-- Seleccionar material o insumo disponible --'}
                     </option>
                     {catalogoDisponible.map((it) => (
                       <option key={it.id} value={it.id}>
-                        {it.name || it.material} {it.category ? `(${it.category})` : ''}
+                        {formatItemOptionLabel(it)}
                       </option>
                     ))}
                   </select>
@@ -1631,10 +1667,19 @@ export default function ModalSolicitudMaterial({
                   <input
                     type="number"
                     min="1"
-                    max={tipoSolicitud === 'CONSUMIBLES' && stockDisponibleItem > 0 ? stockDisponibleItem : 99}
+                    max={stockDisponibleItem > 0 ? stockDisponibleItem : 1}
                     value={cantidadInput}
-                    onChange={(e) => setCantidadInput(e.target.value)}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (stockDisponibleItem > 0 && !isNaN(val) && val > stockDisponibleItem) {
+                        setCantidadInput(stockDisponibleItem);
+                      } else {
+                        setCantidadInput(e.target.value);
+                      }
+                      if (validationError) setValidationError('');
+                    }}
                     placeholder="Cant."
+                    title={stockDisponibleItem > 0 ? `Máximo disponible: ${stockDisponibleItem}` : ''}
                     className="w-20 rounded-lg px-3 py-2 text-sm text-center font-semibold border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
                     style={{
                       backgroundColor: 'var(--bg, #0b1120)',
@@ -1646,14 +1691,19 @@ export default function ModalSolicitudMaterial({
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="font-bold text-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95"
+                    disabled={!selectedItemId || stockDisponibleItem <= 0}
+                    className="font-bold text-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: '#84CC16',
                       color: '#020617',
                       border: '1px solid #84CC16',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#65A30D')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#84CC16')}
+                    onMouseEnter={(e) => {
+                      if (selectedItemId && stockDisponibleItem > 0) e.currentTarget.style.backgroundColor = '#65A30D';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedItemId && stockDisponibleItem > 0) e.currentTarget.style.backgroundColor = '#84CC16';
+                    }}
                   >
                     <Plus size={16} strokeWidth={2.5} />
                     <span>+ Agregar</span>
@@ -1692,7 +1742,13 @@ export default function ModalSolicitudMaterial({
                                 color: '#84CC16',
                               }}
                             >
-                              {it.tipo_item === 'equipo' ? <Laptop size={14} /> : <Package size={14} />}
+                              {it.tipo_item === 'electronica' ? (
+                                <Zap size={14} />
+                              ) : it.tipo_item === 'equipo' ? (
+                                <Laptop size={14} />
+                              ) : (
+                                <Package size={14} />
+                              )}
                             </span>
                             <span
                               className="font-medium truncate text-xs"

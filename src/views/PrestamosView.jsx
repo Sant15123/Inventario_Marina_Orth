@@ -21,6 +21,7 @@ import { Building2, FolderKanban, Plus, CheckSquare, Clock, Inbox, Eye, Laptop, 
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
+import { formatItemOptionLabel } from '../services/prestamosCatalogService';
 
 const renderTipoSolicitud = (solicitud) => {
   const tipo = String(solicitud.tipo_solicitud || solicitud.tipo || solicitud.tipoSolicitud || '').toUpperCase();
@@ -2365,7 +2366,7 @@ export default function PrestamosView({
                       .filter((it) => available(it) > 0)
                       .map((it) => (
                         <option key={it.id} value={it.id}>
-                          {it.name} {it.itemType === 'electronica' ? '⚡ [Electrónica]' : '💻 [Tecnología]'} (Disponibles: {available(it)})
+                          {formatItemOptionLabel(it)}
                         </option>
                       ))}
                   </select>
