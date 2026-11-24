@@ -5645,3 +5645,27 @@ html.dark .compras-step-card.active {
   background: #093448;
   border-color: #abd037 !important;
 }
+
+/* ==========================================================================
+   TEMA VISUAL INSTITUCIONAL PARA PAPELERÍA (MODAL NUEVO / EDITAR INSUMO)
+   ========================================================================== */
+.theme-modal-papeleria input:focus,
+.theme-modal-papeleria select:focus,
+.theme-modal-papeleria textarea:focus {
+  border-color: #7C3AED !important;
+  --tw-ring-color: rgba(124, 58, 237, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.4) !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .theme-modal-papeleria input:focus,
+[data-theme="dark"] .theme-modal-papeleria select:focus,
+[data-theme="dark"] .theme-modal-papeleria textarea:focus,
+html.dark .theme-modal-papeleria input:focus,
+html.dark .theme-modal-papeleria select:focus,
+html.dark .theme-modal-papeleria textarea:focus {
+  border-color: #A78BFA !important;
+  --tw-ring-color: rgba(167, 139, 250, 0.45) !important;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.45) !important;
+  outline: none !important;
+}

@@ -3027,6 +3027,62 @@ export default function InventarioView({
     isPapeleriaNuevo ? 'TeachLabs' : 'Robótica'
   );
 
+  // Paleta de tematización visual para modales de consumibles: Papelería (Morado) vs Robótica (Verde Lima)
+  const THEME_PAPELERIA_MODAL = {
+    primary: '#7C3AED',
+    hover: '#6D28D9',
+    darkText: '#A78BFA',
+    stepActiveBg: '#7C3AED',
+    stepActiveText: '#FFFFFF',
+    stepActiveBorder: '#7C3AED',
+    stepActiveCircleBg: '#FFFFFF',
+    stepActiveCircleText: '#7C3AED',
+    stepDoneBg: 'rgba(124, 58, 237, 0.12)',
+    stepDoneBorder: 'rgba(124, 58, 237, 0.35)',
+    stepDoneText: '#6D28D9',
+    stepDoneCircleBg: '#7C3AED',
+    stepDoneCircleText: '#FFFFFF',
+    stepShadow: '0 2px 10px rgba(124, 58, 237, 0.35)',
+    btnNextBg: '#7C3AED',
+    btnNextHover: '#6D28D9',
+    btnNextText: '#FFFFFF',
+    btnNextShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+    sectionTitleClass: 'text-violet-700 dark:text-violet-400',
+    sectionTitleColor: '#7C3AED',
+    codeBadgeClass: 'text-violet-700 dark:text-violet-400',
+    codeBadgeColor: '#7C3AED',
+    focusRingClass: 'focus:ring-violet-500/40 focus:border-violet-500',
+  };
+
+  const THEME_ROBOTICA_MODAL = {
+    primary: '#ABD037',
+    hover: '#96B82D',
+    darkText: '#ABD037',
+    stepActiveBg: '#ABD037',
+    stepActiveText: '#013A52',
+    stepActiveBorder: '#ABD037',
+    stepActiveCircleBg: '#013A52',
+    stepActiveCircleText: '#FFFFFF',
+    stepDoneBg: 'rgba(171, 208, 55, 0.15)',
+    stepDoneBorder: 'rgba(171, 208, 55, 0.45)',
+    stepDoneText: 'var(--text-h, #013a52)',
+    stepDoneCircleBg: '#ABD037',
+    stepDoneCircleText: '#013A52',
+    stepShadow: '0 2px 10px rgba(171, 208, 55, 0.35)',
+    btnNextBg: '#ABD037',
+    btnNextHover: '#96B82D',
+    btnNextText: '#013A52',
+    btnNextShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+    sectionTitleClass: 'text-lime-600 dark:text-lime-400',
+    sectionTitleColor: '#84CC16',
+    codeBadgeClass: 'text-lime-600 dark:text-lime-400',
+    codeBadgeColor: '#84CC16',
+    focusRingClass: 'focus:ring-lime-400/40 focus:border-lime-400',
+  };
+
+  const themeModalNuevo = isPapeleriaNuevo ? THEME_PAPELERIA_MODAL : THEME_ROBOTICA_MODAL;
+  const themeModalEditar = isPapeleriaEdit ? THEME_PAPELERIA_MODAL : THEME_ROBOTICA_MODAL;
+
   return (
     <div className="inventario-view">
       {/* HEADER DE LA SECCIÓN CON SELECTOR DE PESTAÑAS Y BOTONES */}
@@ -6441,7 +6497,7 @@ export default function InventarioView({
           onClick={() => !editConsumibleSubmitting && setModalEditarOpen(false)}
         >
           <div
-            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border rounded-2xl shadow-2xl overflow-hidden"
+            className={`relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border rounded-2xl shadow-2xl overflow-hidden ${isPapeleriaEdit ? 'theme-modal-papeleria' : ''}`}
             style={{
               backgroundColor: 'var(--surface, #0b1320)',
               border: `1.5px solid ${themeEditarConsumible.cardBorder || themeEditarConsumible.accentBorder}`,
@@ -6556,9 +6612,13 @@ export default function InventarioView({
                       onClick={() => handlePasoClickEditar(item.paso)}
                       className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-[#abd037] text-[#013a52] font-semibold border-[#abd037] shadow-sm'
+                          ? isPapeleriaEdit
+                            ? 'bg-violet-600 text-white font-semibold border-violet-600 shadow-sm'
+                            : 'bg-[#abd037] text-[#013a52] font-semibold border-[#abd037] shadow-sm'
                           : isDone
-                          ? 'bg-lime-500/10 text-[#013a52] dark:text-[#abd037] border-lime-500/30'
+                          ? isPapeleriaEdit
+                            ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30'
+                            : 'bg-lime-500/10 text-[#013a52] dark:text-[#abd037] border-lime-500/30'
                           : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50'
                       }`}
                       style={{
@@ -6574,29 +6634,33 @@ export default function InventarioView({
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         backgroundColor: isActive
-                          ? '#abd037'
+                          ? themeModalEditar.stepActiveBg
                           : isDone
-                          ? 'rgba(171, 208, 55, 0.15)'
+                          ? themeModalEditar.stepDoneBg
                           : 'var(--surface-2, #ffffff)',
                         color: isActive
-                          ? '#013a52'
+                          ? themeModalEditar.stepActiveText
                           : isDone
-                          ? 'var(--text-h, #013a52)'
+                          ? themeModalEditar.stepDoneText
                           : 'var(--text-dim, #475569)',
                         border: isActive
-                          ? '1.5px solid #abd037'
+                          ? `1.5px solid ${themeModalEditar.stepActiveBorder}`
                           : isDone
-                          ? '1.5px solid rgba(171, 208, 55, 0.45)'
+                          ? `1.5px solid ${themeModalEditar.stepDoneBorder}`
                           : '1.5px solid var(--line, #cbd5e1)',
-                        boxShadow: isActive ? '0 2px 10px rgba(171, 208, 55, 0.35)' : 'none',
+                        boxShadow: isActive ? themeModalEditar.stepShadow : 'none',
                       }}
                     >
                       <span
                         className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
                           isActive
-                            ? 'bg-[#013a52] text-white'
+                            ? isPapeleriaEdit
+                              ? 'bg-white text-violet-700 font-bold'
+                              : 'bg-[#013a52] text-white'
                             : isDone
-                            ? 'bg-[#abd037] text-[#013a52]'
+                            ? isPapeleriaEdit
+                              ? 'bg-violet-600 text-white'
+                              : 'bg-[#abd037] text-[#013a52]'
                             : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                         }`}
                         style={{
@@ -6609,14 +6673,14 @@ export default function InventarioView({
                           fontSize: '11px',
                           fontWeight: 700,
                           backgroundColor: isActive
-                            ? '#013a52'
+                            ? themeModalEditar.stepActiveCircleBg
                             : isDone
-                            ? '#abd037'
+                            ? themeModalEditar.stepDoneCircleBg
                             : 'var(--surface-3, #e2e8f0)',
                           color: isActive
-                            ? '#ffffff'
+                            ? themeModalEditar.stepActiveCircleText
                             : isDone
-                            ? '#013a52'
+                            ? themeModalEditar.stepDoneCircleText
                             : 'var(--text, #334155)',
                         }}
                       >
@@ -6651,8 +6715,8 @@ export default function InventarioView({
                   <div className="animate-fade-in">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        className={`font-bold text-xs uppercase tracking-wider m-0 ${themeModalEditar.sectionTitleClass}`}
+                        style={{ color: themeModalEditar.sectionTitleColor, margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Identificación y Clasificación
                       </h4>
@@ -6858,8 +6922,8 @@ export default function InventarioView({
                   <div className="animate-fade-in">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        className={`font-bold text-xs uppercase tracking-wider m-0 ${themeModalEditar.sectionTitleClass}`}
+                        style={{ color: themeModalEditar.sectionTitleColor, margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Ubicación y Especificaciones Técnicas
                       </h4>
@@ -7031,8 +7095,8 @@ export default function InventarioView({
                   <div className="animate-fade-in">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        className={`font-bold text-xs uppercase tracking-wider m-0 ${themeModalEditar.sectionTitleClass}`}
+                        style={{ color: themeModalEditar.sectionTitleColor, margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Adquisición, Garantía y Notas
                       </h4>
@@ -7213,20 +7277,20 @@ export default function InventarioView({
                           setPasoActual((prev) => Math.min(3, prev + 1));
                         }
                       }}
-                      className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-semibold"
+                      className={isPapeleriaEdit ? "bg-violet-600 hover:bg-violet-700 text-white font-semibold" : "bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-semibold"}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
                         padding: '9px 22px',
                         borderRadius: '11px',
-                        backgroundColor: '#abd037',
-                        color: '#013a52',
+                        backgroundColor: themeModalEditar.btnNextBg,
+                        color: themeModalEditar.btnNextText,
                         border: 'none',
                         fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer',
-                        boxShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+                        boxShadow: themeModalEditar.btnNextShadow,
                         fontFamily: "'Poppins', sans-serif",
                         transition: 'all 0.2s ease',
                       }}
@@ -7242,16 +7306,16 @@ export default function InventarioView({
                       style={{
                         padding: '9px 22px',
                         borderRadius: '11px',
-                        backgroundColor: themeEditarConsumible.buttonBg,
+                        backgroundColor: isPapeleriaEdit ? '#7C3AED' : themeEditarConsumible.buttonBg,
                         border: 'none',
-                        color: themeEditarConsumible.buttonText,
+                        color: isPapeleriaEdit ? '#ffffff' : themeEditarConsumible.buttonText,
                         fontSize: '13px',
                         fontWeight: 800,
                         cursor: editConsumibleSubmitting ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: `0 4px 14px ${themeEditarConsumible.buttonBg}44`,
+                        boxShadow: isPapeleriaEdit ? '0 4px 14px rgba(124, 58, 237, 0.4)' : `0 4px 14px ${themeEditarConsumible.buttonBg}44`,
                         fontFamily: "'Poppins', sans-serif",
                         transition: 'all 0.3s ease',
                       }}
@@ -7327,7 +7391,7 @@ export default function InventarioView({
           onClick={() => !newConsumibleSubmitting && setModalNuevoOpen(false)}
         >
           <div
-            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border rounded-2xl shadow-2xl overflow-hidden"
+            className={`relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-[#0b1320] border rounded-2xl shadow-2xl overflow-hidden ${isPapeleriaNuevo ? 'theme-modal-papeleria' : ''}`}
             style={{
               backgroundColor: 'var(--surface, #0b1320)',
               border: `1.5px solid ${themeNuevoConsumible.cardBorder || themeNuevoConsumible.accentBorder}`,
@@ -7442,9 +7506,13 @@ export default function InventarioView({
                       onClick={() => handlePasoClickNuevo(item.paso)}
                       className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-[#abd037] text-[#013a52] font-semibold border-[#abd037] shadow-sm'
+                          ? isPapeleriaNuevo
+                            ? 'bg-violet-600 text-white font-semibold border-violet-600 shadow-sm'
+                            : 'bg-[#abd037] text-[#013a52] font-semibold border-[#abd037] shadow-sm'
                           : isDone
-                          ? 'bg-lime-500/10 text-[#013a52] dark:text-[#abd037] border-lime-500/30'
+                          ? isPapeleriaNuevo
+                            ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30'
+                            : 'bg-lime-500/10 text-[#013a52] dark:text-[#abd037] border-lime-500/30'
                           : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50'
                       }`}
                       style={{
@@ -7460,29 +7528,33 @@ export default function InventarioView({
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         backgroundColor: isActive
-                          ? '#abd037'
+                          ? themeModalNuevo.stepActiveBg
                           : isDone
-                          ? 'rgba(171, 208, 55, 0.15)'
+                          ? themeModalNuevo.stepDoneBg
                           : 'var(--surface-2, #ffffff)',
                         color: isActive
-                          ? '#013a52'
+                          ? themeModalNuevo.stepActiveText
                           : isDone
-                          ? 'var(--text-h, #013a52)'
+                          ? themeModalNuevo.stepDoneText
                           : 'var(--text-dim, #475569)',
                         border: isActive
-                          ? '1.5px solid #abd037'
+                          ? `1.5px solid ${themeModalNuevo.stepActiveBorder}`
                           : isDone
-                          ? '1.5px solid rgba(171, 208, 55, 0.45)'
+                          ? `1.5px solid ${themeModalNuevo.stepDoneBorder}`
                           : '1.5px solid var(--line, #cbd5e1)',
-                        boxShadow: isActive ? '0 2px 10px rgba(171, 208, 55, 0.35)' : 'none',
+                        boxShadow: isActive ? themeModalNuevo.stepShadow : 'none',
                       }}
                     >
                       <span
                         className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
                           isActive
-                            ? 'bg-[#013a52] text-white'
+                            ? isPapeleriaNuevo
+                              ? 'bg-white text-violet-700 font-bold'
+                              : 'bg-[#013a52] text-white'
                             : isDone
-                            ? 'bg-[#abd037] text-[#013a52]'
+                            ? isPapeleriaNuevo
+                              ? 'bg-violet-600 text-white'
+                              : 'bg-[#abd037] text-[#013a52]'
                             : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                         }`}
                         style={{
@@ -7495,14 +7567,14 @@ export default function InventarioView({
                           fontSize: '11px',
                           fontWeight: 700,
                           backgroundColor: isActive
-                            ? '#013a52'
+                            ? themeModalNuevo.stepActiveCircleBg
                             : isDone
-                            ? '#abd037'
+                            ? themeModalNuevo.stepDoneCircleBg
                             : 'var(--surface-3, #e2e8f0)',
                           color: isActive
-                            ? '#ffffff'
+                            ? themeModalNuevo.stepActiveCircleText
                             : isDone
-                            ? '#013a52'
+                            ? themeModalNuevo.stepDoneCircleText
                             : 'var(--text, #334155)',
                         }}
                       >
@@ -7536,8 +7608,8 @@ export default function InventarioView({
                   <div className="animate-fade-in">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        className={`font-bold text-xs uppercase tracking-wider m-0 ${themeModalNuevo.sectionTitleClass}`}
+                        style={{ color: themeModalNuevo.sectionTitleColor, margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Identificación y Clasificación
                       </h4>
@@ -7572,7 +7644,7 @@ export default function InventarioView({
                           <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
                             Código Del Ítem *
                           </label>
-                          <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
+                          <span className={`text-[10px] font-medium ${themeModalNuevo.codeBadgeClass}`} style={{ color: themeModalNuevo.codeBadgeColor }}>
                             {isPapeleriaNuevo ? 'Formato PapeXXXX' : 'Formato RobXXXX'}
                           </span>
                         </div>
@@ -7747,8 +7819,8 @@ export default function InventarioView({
                   <div className="animate-fade-in">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        className={`font-bold text-xs uppercase tracking-wider m-0 ${themeModalNuevo.sectionTitleClass}`}
+                        style={{ color: themeModalNuevo.sectionTitleColor, margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Ubicación y Especificaciones Técnicas
                       </h4>
@@ -7921,8 +7993,8 @@ export default function InventarioView({
                   <div className="animate-fade-in">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                       <h4
-                        className="font-bold text-xs uppercase tracking-wider m-0"
-                        style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                        className={`font-bold text-xs uppercase tracking-wider m-0 ${themeModalNuevo.sectionTitleClass}`}
+                        style={{ color: themeModalNuevo.sectionTitleColor, margin: 0, fontSize: '12px', fontWeight: 700 }}
                       >
                         Adquisición, Garantía y Notas
                       </h4>
@@ -8091,20 +8163,20 @@ export default function InventarioView({
                           setPasoActualNuevo((prev) => Math.min(3, prev + 1));
                         }
                       }}
-                      className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-semibold"
+                      className={isPapeleriaNuevo ? "bg-violet-600 hover:bg-violet-700 text-white font-semibold" : "bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-semibold"}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
                         padding: '9px 22px',
                         borderRadius: '11px',
-                        backgroundColor: '#abd037',
-                        color: '#013a52',
+                        backgroundColor: themeModalNuevo.btnNextBg,
+                        color: themeModalNuevo.btnNextText,
                         border: 'none',
                         fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer',
-                        boxShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+                        boxShadow: themeModalNuevo.btnNextShadow,
                         fontFamily: "'Poppins', sans-serif",
                         transition: 'all 0.2s ease',
                       }}
@@ -8120,16 +8192,16 @@ export default function InventarioView({
                       style={{
                         padding: '9px 22px',
                         borderRadius: '11px',
-                        backgroundColor: themeNuevoConsumible.buttonBg,
+                        backgroundColor: isPapeleriaNuevo ? '#7C3AED' : themeNuevoConsumible.buttonBg,
                         border: 'none',
-                        color: themeNuevoConsumible.buttonText,
+                        color: isPapeleriaNuevo ? '#ffffff' : themeNuevoConsumible.buttonText,
                         fontSize: '13px',
                         fontWeight: 800,
                         cursor: newConsumibleSubmitting ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: `0 4px 14px ${themeNuevoConsumible.buttonBg}44`,
+                        boxShadow: isPapeleriaNuevo ? '0 4px 14px rgba(124, 58, 237, 0.4)' : `0 4px 14px ${themeNuevoConsumible.buttonBg}44`,
                         fontFamily: "'Poppins', sans-serif",
                         transition: 'all 0.3s ease',
                       }}
@@ -8143,7 +8215,7 @@ export default function InventarioView({
                               height: '16px',
                               borderRadius: '50%',
                               border: '2px solid rgba(15, 23, 42, 0.2)',
-                              borderTopColor: themeNuevoConsumible.buttonText,
+                              borderTopColor: isPapeleriaNuevo ? '#ffffff' : themeNuevoConsumible.buttonText,
                               display: 'inline-block',
                             }}
                           />

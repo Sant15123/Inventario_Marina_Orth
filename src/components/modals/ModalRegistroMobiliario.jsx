@@ -558,9 +558,9 @@ export default function ModalRegistroMobiliario({
                   }}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-lime-400 hover:bg-lime-300 text-slate-950 border-lime-400 shadow-sm'
+                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
                       : isDone
-                        ? 'bg-lime-950/40 text-lime-400 border-lime-500/40 hover:bg-lime-900/40'
+                        ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/20'
                         : 'bg-slate-200 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700/60 hover:bg-slate-300 dark:hover:bg-slate-800'
                   }`}
                   style={{
@@ -576,29 +576,29 @@ export default function ModalRegistroMobiliario({
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     backgroundColor: isActive
-                      ? '#84CC16'
+                      ? '#16A34A'
                       : isDone
-                        ? 'rgba(132, 204, 22, 0.12)'
+                        ? 'rgba(22, 163, 74, 0.12)'
                         : 'rgba(30, 41, 59, 0.4)',
                     color: isActive
-                      ? '#0f172a'
+                      ? '#ffffff'
                       : isDone
-                        ? '#84CC16'
+                        ? '#15803D'
                         : 'var(--text-dim, #94a3b8)',
                     border: isActive
-                      ? '1px solid #84CC16'
+                      ? '1px solid #16A34A'
                       : isDone
-                        ? '1px solid rgba(132, 204, 22, 0.35)'
+                        ? '1px solid rgba(22, 163, 74, 0.35)'
                         : '1px solid var(--line, #334155)',
-                    boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
+                    boxShadow: isActive ? '0 2px 10px rgba(22, 163, 74, 0.35)' : 'none',
                   }}
                 >
                   <span
                     className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
                       isActive
-                        ? 'bg-slate-950/20 text-slate-950 font-extrabold'
+                        ? 'bg-white text-green-700 font-extrabold'
                         : isDone
-                          ? 'text-lime-400 font-bold'
+                          ? 'text-green-700 dark:text-green-400 font-bold'
                           : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold'
                     }`}
                     style={{
@@ -610,14 +610,14 @@ export default function ModalRegistroMobiliario({
                       justifyContent: 'center',
                       fontSize: '10px',
                       backgroundColor: isActive
-                        ? 'rgba(15, 23, 42, 0.2)'
+                        ? '#ffffff'
                         : isDone
                           ? 'transparent'
                           : 'rgba(148, 163, 184, 0.2)',
                       color: isActive
-                        ? '#0f172a'
+                        ? '#16A34A'
                         : isDone
-                          ? '#84CC16'
+                          ? '#15803D'
                           : 'var(--text-dim, #94a3b8)',
                     }}
                   >
@@ -652,8 +652,8 @@ export default function ModalRegistroMobiliario({
               <div className="animate-fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                   <h4
-                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                    className="font-bold text-xs uppercase tracking-wider m-0 text-green-700 dark:text-green-400"
+                    style={{ color: '#15803D', margin: 0, fontSize: '12px', fontWeight: 700 }}
                   >
                     Identificación y Clasificación
                   </h4>
@@ -674,7 +674,7 @@ export default function ModalRegistroMobiliario({
                       value={formData.nombre}
                       onChange={handleChange}
                       placeholder="Ej. Mesa de Trabajo Robótica STEAM"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -688,7 +688,7 @@ export default function ModalRegistroMobiliario({
                       <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold">
                         Código / Placa *
                       </label>
-                      <span className="text-[10px] text-lime-600 dark:text-lime-400 font-medium">
+                      <span className="text-[10px] text-green-700 dark:text-green-400 font-medium" style={{ color: '#15803D' }}>
                         Formato MOB-XXX
                       </span>
                     </div>
@@ -705,7 +705,7 @@ export default function ModalRegistroMobiliario({
                         className={`w-full font-sans tracking-wide rounded-lg px-3 py-1.5 text-sm border focus:outline-none transition-colors ${
                           isEditing
                             ? 'opacity-80 cursor-not-allowed text-slate-400'
-                            : 'focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400'
+                            : 'focus:ring-2 focus:ring-green-500/40 focus:border-green-500'
                         }`}
                         style={{
                           backgroundColor: 'var(--bg, #0f172a)',
@@ -714,7 +714,7 @@ export default function ModalRegistroMobiliario({
                         }}
                       />
                       {loadingPlaca && (
-                        <div className="absolute right-3 top-2 flex items-center gap-1 text-[11px] text-lime-400">
+                        <div className="absolute right-3 top-2 flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400">
                           <Loader2 size={12} className="animate-spin" />
                         </div>
                       )}
@@ -733,7 +733,7 @@ export default function ModalRegistroMobiliario({
                       value={formData.categoria}
                       onChange={handleChange}
                       required
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -760,7 +760,7 @@ export default function ModalRegistroMobiliario({
                       max={9999}
                       value={formData.disponible}
                       onChange={handleChange}
-                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full font-sans tracking-wide bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -780,7 +780,7 @@ export default function ModalRegistroMobiliario({
                       name="condicion_fisica"
                       value={formData.condicion_fisica}
                       onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -831,7 +831,7 @@ export default function ModalRegistroMobiliario({
                       value={formData.sede}
                       onChange={handleChange}
                       required
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -857,7 +857,7 @@ export default function ModalRegistroMobiliario({
                       value={formData.ubicacion}
                       onChange={handleChange}
                       placeholder="Ej. Sala Robótica, Oficina 2, Bodega"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -874,8 +874,8 @@ export default function ModalRegistroMobiliario({
               <div className="animate-fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                   <h4
-                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                    className="font-bold text-xs uppercase tracking-wider m-0 text-green-700 dark:text-green-400"
+                    style={{ color: '#15803D', margin: 0, fontSize: '12px', fontWeight: 700 }}
                   >
                     Especificaciones Físicas y Dimensiones
                   </h4>
@@ -892,7 +892,7 @@ export default function ModalRegistroMobiliario({
                       name="material"
                       value={formData.material}
                       onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -918,7 +918,7 @@ export default function ModalRegistroMobiliario({
                       value={formData.color}
                       onChange={handleChange}
                       placeholder="Ej. Blanco / Gris / Madera clara"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -940,7 +940,7 @@ export default function ModalRegistroMobiliario({
                     value={formData.dimensiones}
                     onChange={handleChange}
                     placeholder="Ej. 75cm x 160cm x 80cm"
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                     style={{
                       backgroundColor: 'var(--bg, #0f172a)',
                       color: 'var(--text, #f8fafc)',
@@ -956,8 +956,8 @@ export default function ModalRegistroMobiliario({
               <div className="animate-fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line, #1e293b)', paddingBottom: '6px', marginBottom: '14px' }}>
                   <h4
-                    className="font-bold text-xs uppercase tracking-wider m-0 text-lime-600 dark:text-lime-400"
-                    style={{ color: '#84CC16', margin: 0, fontSize: '12px', fontWeight: 700 }}
+                    className="font-bold text-xs uppercase tracking-wider m-0 text-green-700 dark:text-green-400"
+                    style={{ color: '#15803D', margin: 0, fontSize: '12px', fontWeight: 700 }}
                   >
                     Asignación, Estado y Observaciones
                   </h4>
@@ -977,7 +977,7 @@ export default function ModalRegistroMobiliario({
                       value={formData.responsable}
                       onChange={handleChange}
                       placeholder="Ej. Bodega Central o Custodio"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -994,7 +994,7 @@ export default function ModalRegistroMobiliario({
                       name="estado_operativo"
                       value={formData.estado_operativo}
                       onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -1021,7 +1021,7 @@ export default function ModalRegistroMobiliario({
                       name="fecha_adquisicion"
                       value={formData.fecha_adquisicion}
                       onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -1041,7 +1041,7 @@ export default function ModalRegistroMobiliario({
                       value={formData.proveedor}
                       onChange={handleChange}
                       placeholder="Ej. Muebles & Diseños SAS o Donación Institucional"
-                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors"
                       style={{
                         backgroundColor: 'var(--bg, #0f172a)',
                         color: 'var(--text, #f8fafc)',
@@ -1063,7 +1063,7 @@ export default function ModalRegistroMobiliario({
                     value={formData.observaciones}
                     onChange={handleChange}
                     placeholder="Detalles físicos específicos: ruedas con freno de seguridad, llave incluida, etc."
-                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors resize-none"
+                    className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-colors resize-none"
                     style={{
                       backgroundColor: 'var(--bg, #0f172a)',
                       color: 'var(--text, #f8fafc)',
@@ -1087,13 +1087,13 @@ export default function ModalRegistroMobiliario({
                       userSelect: 'none',
                       transition: 'all 0.2s ease',
                       backgroundColor: formData.en_contabilidad
-                        ? 'rgba(132, 204, 22, 0.08)'
+                        ? 'rgba(22, 163, 74, 0.08)'
                         : 'var(--surface-2, #f8fafc)',
                       borderColor: formData.en_contabilidad
-                        ? '#84CC16'
+                        ? '#16A34A'
                         : 'var(--line, #cbd5e1)',
                       boxShadow: formData.en_contabilidad
-                        ? '0 0 0 1px rgba(132, 204, 22, 0.3), 0 2px 8px -1px rgba(132, 204, 22, 0.15)'
+                        ? '0 0 0 1px rgba(22, 163, 74, 0.3), 0 2px 8px -1px rgba(22, 163, 74, 0.15)'
                         : 'none',
                     }}
                   >
@@ -1112,12 +1112,12 @@ export default function ModalRegistroMobiliario({
                           height: '38px',
                           borderRadius: '10px',
                           backgroundColor: formData.en_contabilidad
-                            ? 'rgba(132, 204, 22, 0.22)'
+                            ? 'rgba(22, 163, 74, 0.22)'
                             : 'rgba(148, 163, 184, 0.15)',
                           border: formData.en_contabilidad
-                            ? '1px solid rgba(132, 204, 22, 0.45)'
+                            ? '1px solid rgba(22, 163, 74, 0.45)'
                             : '1px solid var(--line, #e2e8f0)',
-                          color: formData.en_contabilidad ? '#4d7c0f' : 'var(--text-dim, #64748b)',
+                          color: formData.en_contabilidad ? '#15803D' : 'var(--text-dim, #64748b)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1149,8 +1149,8 @@ export default function ModalRegistroMobiliario({
                                 fontWeight: 700,
                                 padding: '1.5px 7px',
                                 borderRadius: '9999px',
-                                backgroundColor: '#84CC16',
-                                color: '#0f172a',
+                                backgroundColor: '#16A34A',
+                                color: '#ffffff',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.04em',
                               }}
@@ -1187,19 +1187,19 @@ export default function ModalRegistroMobiliario({
                       </div>
                     </div>
 
-                    {/* Switch Toggle Animado Verde Lima */}
+                    {/* Switch Toggle Animado Verde */}
                     <div
                       aria-hidden="true"
                       style={{
                         width: '44px',
                         height: '24px',
                         borderRadius: '9999px',
-                        backgroundColor: formData.en_contabilidad ? '#84CC16' : '#cbd5e1',
+                        backgroundColor: formData.en_contabilidad ? '#16A34A' : '#cbd5e1',
                         position: 'relative',
                         transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                         flexShrink: 0,
                         boxShadow: formData.en_contabilidad
-                          ? '0 0 10px rgba(132, 204, 22, 0.4)'
+                          ? '0 0 10px rgba(22, 163, 74, 0.4)'
                           : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
                       }}
                     >
@@ -1220,7 +1220,7 @@ export default function ModalRegistroMobiliario({
                         }}
                       >
                         {formData.en_contabilidad && (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4d7c0f" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         )}
@@ -1297,20 +1297,20 @@ export default function ModalRegistroMobiliario({
                 <button
                   type="button"
                   onClick={handleSiguiente}
-                  className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md text-slate-950"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md bg-green-600 hover:bg-green-700 text-white"
                   style={{
                     padding: '8px 18px',
                     borderRadius: '8px',
-                    backgroundColor: '#84CC16',
-                    border: '1px solid #65A30D',
-                    color: '#0f172a',
+                    backgroundColor: '#16A34A',
+                    border: '1px solid #15803D',
+                    color: '#ffffff',
                     fontSize: '13px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    boxShadow: '0 2px 10px rgba(163, 230, 53, 0.3)',
+                    boxShadow: '0 2px 10px rgba(22, 163, 74, 0.35)',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -1321,19 +1321,20 @@ export default function ModalRegistroMobiliario({
                 <button
                   type="submit"
                   disabled={submitting}
+                  className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md bg-green-600 hover:bg-green-700 text-white"
                   style={{
                     padding: '8px 20px',
                     borderRadius: '8px',
-                    backgroundColor: btnHover ? currentTheme.buttonHover : currentTheme.buttonBg,
-                    border: 'none',
-                    color: currentTheme.buttonText,
+                    backgroundColor: btnHover ? '#15803D' : '#16A34A',
+                    border: '1px solid #15803D',
+                    color: '#ffffff',
                     fontSize: '13px',
                     fontWeight: 800,
                     cursor: submitting ? 'not-allowed' : 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    boxShadow: `0 2px 12px ${currentTheme.buttonBg}44`,
+                    boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
                     transition: 'all 0.3s ease',
                     opacity: submitting ? 0.7 : 1,
                   }}
@@ -1346,8 +1347,8 @@ export default function ModalRegistroMobiliario({
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={14} className="animate-spin" style={{ color: currentTheme.buttonText }} />
-                      <span>{isEditing ? 'Guardando...' : 'Registrando...'}</span>
+                      <Loader2 size={14} className="animate-spin" style={{ color: '#ffffff' }} />
+                      <span>{isEditing ? 'Guardando...' : 'Registrar Mobiliario'}</span>
                     </>
                   ) : (
                     <>
