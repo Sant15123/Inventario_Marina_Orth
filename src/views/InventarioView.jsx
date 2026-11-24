@@ -2195,10 +2195,93 @@ export default function InventarioView({
     setModalEditarOpen(true);
   };
 
+  // Validación por paso para Modal Editar Consumibles y Papelería
+  const validarPasoEditar = (paso) => {
+    const esPapeleria = Boolean(
+      activeTab === 'papeleria' ||
+      itemParaEditar?.categoria === 'Papelería' ||
+      itemParaEditar?.category === 'Papelería' ||
+      itemParaEditar?.subtipo === 'papeleria' ||
+      String(itemParaEditar?.id || '').toLowerCase().startsWith('pape')
+    );
+
+    if (paso === 1) {
+      const material = (formDataEditar.material || '').trim();
+      const codigo = (formDataEditar.id || '').trim();
+      const categoria = (formDataEditar.categoria || (esPapeleria ? 'Papelería' : '')).trim();
+      const disponible = formDataEditar.disponible;
+      const condicion = (formDataEditar.condicion || '').trim();
+
+      if (!material) {
+        showError('Validación', 'El nombre del material/insumo es obligatorio.');
+        return false;
+      }
+      if (!codigo) {
+        showError('Validación', 'El código del ítem es obligatorio.');
+        return false;
+      }
+      if (!categoria) {
+        showError('Validación', esPapeleria ? 'La categoría es obligatoria.' : 'La subcategoría o tipo es obligatoria.');
+        return false;
+      }
+      if (disponible === '' || disponible === null || isNaN(Number(disponible)) || Number(disponible) < 0) {
+        showError('Validación', 'La cantidad o stock debe ser un número válido mayor o igual a 0.');
+        return false;
+      }
+      if (!condicion) {
+        showError('Validación', 'La condición o unidad es obligatoria.');
+        return false;
+      }
+      return true;
+    }
+
+    if (paso === 2) {
+      const sede = (formDataEditar.ubicacion || formDataEditar.sede || '').trim();
+      const minimo = formDataEditar.minimo;
+      const estado = (formDataEditar.estado || '').trim();
+
+      if (!sede) {
+        showError('Validación', 'La sede institucional es obligatoria.');
+        return false;
+      }
+      if (minimo === '' || minimo === null || isNaN(Number(minimo)) || Number(minimo) < 0) {
+        showError('Validación', 'El stock mínimo de alerta debe ser un número válido mayor o igual a 0.');
+        return false;
+      }
+      if (!estado) {
+        showError('Validación', 'El estado operativo es obligatorio.');
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  };
+
+  const handlePasoClickEditar = (targetPaso) => {
+    if (targetPaso === pasoActual) return;
+    if (targetPaso > pasoActual) {
+      if (!validarPasoEditar(pasoActual)) return;
+      if (targetPaso === 3 && pasoActual === 1) {
+        if (!validarPasoEditar(2)) return;
+      }
+    }
+    setPasoActual(targetPaso);
+  };
+
   // Enviar actualización de consumible al backend PUT /api/consumibles/:id
   const handleSubmitEditarConsumible = async (e) => {
     e.preventDefault();
     if (!itemParaEditar) return;
+
+    if (!validarPasoEditar(1)) {
+      setPasoActual(1);
+      return;
+    }
+    if (!validarPasoEditar(2)) {
+      setPasoActual(2);
+      return;
+    }
 
     const idOriginal = itemParaEditar.id;
     if (!idOriginal) {
@@ -2463,9 +2546,93 @@ export default function InventarioView({
     }
   };
 
+  // Validación por paso para Modal Nuevo Consumible y Papelería
+  const validarPasoNuevo = (paso) => {
+    const esPapeleria = Boolean(
+      activeTab === 'papeleria' ||
+      formDataNuevo?.categoria === 'Papelería' ||
+      formDataNuevo?.category === 'Papelería' ||
+      formDataNuevo?.subtipo === 'papeleria' ||
+      String(formDataNuevo?.id || '').toLowerCase().startsWith('pape')
+    );
+
+    if (paso === 1) {
+      const material = (formDataNuevo.material || '').trim();
+      const codigo = (formDataNuevo.id || '').trim();
+      const categoria = (formDataNuevo.categoria || (esPapeleria ? 'Papelería' : '')).trim();
+      const disponible = formDataNuevo.disponible;
+      const condicion = (formDataNuevo.condicion || '').trim();
+
+      if (!material) {
+        showError('Validación', 'El nombre del material/insumo es obligatorio.');
+        return false;
+      }
+      if (!codigo) {
+        showError('Validación', 'El código del ítem es obligatorio.');
+        return false;
+      }
+      if (!categoria) {
+        showError('Validación', esPapeleria ? 'La categoría es obligatoria.' : 'La subcategoría o tipo es obligatoria.');
+        return false;
+      }
+      // En modo Crear, cantidad inicial debe ser mayor a 0 según regla
+      if (disponible === '' || disponible === null || isNaN(Number(disponible)) || Number(disponible) <= 0) {
+        showError('Validación', 'La cantidad inicial debe ser un número mayor a 0.');
+        return false;
+      }
+      if (!condicion) {
+        showError('Validación', 'La condición o unidad es obligatoria.');
+        return false;
+      }
+      return true;
+    }
+
+    if (paso === 2) {
+      const sede = (formDataNuevo.ubicacion || formDataNuevo.sede || '').trim();
+      const minimo = formDataNuevo.minimo;
+      const estado = (formDataNuevo.estado || '').trim();
+
+      if (!sede) {
+        showError('Validación', 'La sede institucional es obligatoria.');
+        return false;
+      }
+      if (minimo === '' || minimo === null || isNaN(Number(minimo)) || Number(minimo) < 0) {
+        showError('Validación', 'El stock mínimo de alerta debe ser un número válido mayor o igual a 0.');
+        return false;
+      }
+      if (!estado) {
+        showError('Validación', 'El estado operativo es obligatorio.');
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  };
+
+  const handlePasoClickNuevo = (targetPaso) => {
+    if (targetPaso === pasoActualNuevo) return;
+    if (targetPaso > pasoActualNuevo) {
+      if (!validarPasoNuevo(pasoActualNuevo)) return;
+      if (targetPaso === 3 && pasoActualNuevo === 1) {
+        if (!validarPasoNuevo(2)) return;
+      }
+    }
+    setPasoActualNuevo(targetPaso);
+  };
+
   // Manejador para el registro de Nuevo Consumible con todos los campos
   const handleSubmitNuevoConsumible = async (e) => {
     e.preventDefault();
+
+    if (!validarPasoNuevo(1)) {
+      setPasoActualNuevo(1);
+      return;
+    }
+    if (!validarPasoNuevo(2)) {
+      setPasoActualNuevo(2);
+      return;
+    }
 
     const id = formDataNuevo.id?.trim();
     const material = formDataNuevo.material?.trim();
@@ -6327,8 +6494,8 @@ export default function InventarioView({
               className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0f172a]/50 shrink-0"
               style={{
                 padding: '10px 20px',
-                borderBottom: '1px solid var(--line, #1e293b)',
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
+                borderBottom: '1px solid var(--line, #e2e8f0)',
+                backgroundColor: 'var(--surface-2, #f8fafc)',
                 flexShrink: 0,
               }}
             >
@@ -6343,9 +6510,9 @@ export default function InventarioView({
                 }}
               >
                 {[
-                  { paso: 1, label: 'Datos Operativos', icono: '1' },
-                  { paso: 2, label: 'Especificaciones', icono: '2' },
-                  { paso: 3, label: 'Adquisición y Notas', icono: '3' },
+                  { paso: 1, label: 'Datos Operativos', numero: '1' },
+                  { paso: 2, label: 'Especificaciones', numero: '2' },
+                  { paso: 3, label: 'Adquisición y Notas', numero: '3' },
                 ].map((item) => {
                   const isActive = pasoActual === item.paso;
                   const isDone = pasoActual > item.paso;
@@ -6353,71 +6520,74 @@ export default function InventarioView({
                     <button
                       key={item.paso}
                       type="button"
-                      onClick={() => setPasoActual(item.paso)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isActive
-                        ? 'bg-lime-400 hover:bg-lime-300 text-slate-950 border-lime-400 shadow-sm'
-                        : isDone
-                          ? 'bg-lime-950/40 text-lime-400 border-lime-500/40 hover:bg-lime-900/40'
-                          : 'bg-slate-800/40 text-slate-400 border-slate-700/60 hover:bg-slate-800'
-                        }`}
+                      onClick={() => handlePasoClickEditar(item.paso)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#abd037] text-[#013a52] font-semibold border-[#abd037] shadow-sm'
+                          : isDone
+                          ? 'bg-lime-500/10 text-[#013a52] dark:text-[#abd037] border-lime-500/30'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                      }`}
                       style={{
                         flex: 1,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '6px',
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        fontSize: '11.5px',
-                        fontWeight: 700,
+                        gap: '8px',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        fontSize: '12px',
+                        fontWeight: isActive ? 700 : 600,
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         backgroundColor: isActive
-                          ? '#84CC16'
+                          ? '#abd037'
                           : isDone
-                            ? 'rgba(132, 204, 22, 0.12)'
-                            : 'rgba(30, 41, 59, 0.4)',
+                          ? 'rgba(171, 208, 55, 0.15)'
+                          : 'var(--surface-2, #ffffff)',
                         color: isActive
-                          ? '#0f172a'
+                          ? '#013a52'
                           : isDone
-                            ? '#84CC16'
-                            : 'var(--text-dim, #94a3b8)',
+                          ? 'var(--text-h, #013a52)'
+                          : 'var(--text-dim, #475569)',
                         border: isActive
-                          ? '1px solid #84CC16'
+                          ? '1.5px solid #abd037'
                           : isDone
-                            ? '1px solid rgba(132, 204, 22, 0.35)'
-                            : '1px solid var(--line, #334155)',
-                        boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
+                          ? '1.5px solid rgba(171, 208, 55, 0.45)'
+                          : '1.5px solid var(--line, #cbd5e1)',
+                        boxShadow: isActive ? '0 2px 10px rgba(171, 208, 55, 0.35)' : 'none',
                       }}
                     >
                       <span
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${isActive
-                          ? 'bg-slate-950/20 text-slate-950 font-extrabold'
-                          : isDone
-                            ? 'text-lime-400 font-bold'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold'
-                          }`}
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
+                          isActive
+                            ? 'bg-[#013a52] text-white'
+                            : isDone
+                            ? 'bg-[#abd037] text-[#013a52]'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                        }`}
                         style={{
-                          width: '18px',
-                          height: '18px',
+                          width: '20px',
+                          height: '20px',
                           borderRadius: '50%',
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '10px',
+                          fontSize: '11px',
+                          fontWeight: 700,
                           backgroundColor: isActive
-                            ? 'rgba(15, 23, 42, 0.2)'
+                            ? '#013a52'
                             : isDone
-                              ? 'transparent'
-                              : 'rgba(148, 163, 184, 0.2)',
+                            ? '#abd037'
+                            : 'var(--surface-3, #e2e8f0)',
                           color: isActive
-                            ? '#0f172a'
+                            ? '#ffffff'
                             : isDone
-                              ? '#84CC16'
-                              : 'var(--text-dim, #94a3b8)',
+                            ? '#013a52'
+                            : 'var(--text, #334155)',
                         }}
                       >
-                        {isDone ? '✓' : item.icono}
+                        {isDone ? '✓' : item.numero}
                       </span>
                       <span className="truncate">{item.label}</span>
                     </button>
@@ -6453,7 +6623,7 @@ export default function InventarioView({
                       >
                         Identificación y Clasificación
                       </h4>
-                      <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
+                      <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400" style={{ fontSize: '11px', color: '#e11d48', fontWeight: 600 }}>* Campos obligatorios</span>
                     </div>
 
                     {/* Fila 1: Nombre del Elemento (Izquierda) + Código / Placa (Derecha) */}
@@ -6567,11 +6737,11 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 3: Condición / Unidad (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
+                    {/* Fila 3: Condición / Unidad * (Izquierda) + Área Asignada / Programa FMO con Badge (Derecha) */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Condición / Unidad
+                          Condición / Unidad *
                         </label>
                         <select
                           name="condicion"
@@ -6662,11 +6832,11 @@ export default function InventarioView({
                       </h4>
                     </div>
 
-                    {/* Fila 1: Sede / Ubicación Física | Estante / Gaveta */}
+                    {/* Fila 1: Sede / Ubicación Física * | Estante / Gaveta */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Sede / Ubicación Física
+                          Sede / Ubicación Física *
                         </label>
                         <select
                           name="ubicacion"
@@ -6755,11 +6925,11 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 3: Estado | Condición */}
+                    {/* Fila 3: Estado * | Condición */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Estado
+                          Estado *
                         </label>
                         <select
                           name="estado"
@@ -6938,58 +7108,56 @@ export default function InventarioView({
 
               {/* Footer Fijo Abajo (Siempre Visible) */}
               <div
-                className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] flex items-center justify-between shrink-0"
+                className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-[#0f172a]/80 shrink-0 flex items-center justify-between"
                 style={{
-                  backgroundColor: 'var(--surface-2, #0f172a)',
-                  borderTop: '1px solid var(--line, #1e293b)',
-                  padding: '14px 20px',
+                  padding: '14px 22px',
+                  borderTop: '1px solid var(--line, #e2e8f0)',
+                  backgroundColor: 'var(--surface-2, #f8fafc)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   flexShrink: 0,
                 }}
               >
-                {/* Botón Cancelar (Izquierda) */}
-                <button
-                  type="button"
-                  disabled={editConsumibleSubmitting}
-                  onClick={() => setModalEditarOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--line, #334155)',
-                    color: 'var(--text-dim, #94a3b8)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  Cancelar
-                </button>
+                {/* Izquierda: Cancelar y (si pasoActual > 1) Anterior */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    type="button"
+                    disabled={editConsumibleSubmitting}
+                    onClick={() => setModalEditarOpen(false)}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: '11px',
+                      backgroundColor: 'transparent',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      color: 'var(--text-dim, #475569)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
+                    Cancelar
+                  </button>
 
-                {/* Botones de Navegación del Asistente (Derecha) */}
-                <div
-                  className="flex items-center gap-2.5"
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
-                >
                   {pasoActual > 1 && (
                     <button
                       type="button"
                       disabled={editConsumibleSubmitting}
-                      onClick={() => setPasoActual((prev) => prev - 1)}
+                      onClick={() => setPasoActual((prev) => Math.max(1, prev - 1))}
                       className="px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer"
                       style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        backgroundColor: 'var(--surface, #1e293b)',
-                        border: '1px solid var(--line, #334155)',
-                        color: 'var(--text, #f8fafc)',
+                        padding: '9px 18px',
+                        borderRadius: '11px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        color: 'var(--text, #0f172a)',
                         fontSize: '13px',
                         fontWeight: 600,
-                        cursor: 'pointer',
+                        cursor: editConsumibleSubmitting ? 'not-allowed' : 'pointer',
+                        fontFamily: "'Poppins', sans-serif",
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
@@ -6999,52 +7167,59 @@ export default function InventarioView({
                       <span>←</span> Anterior
                     </button>
                   )}
+                </div>
 
-                  {pasoActual < 3 && (
+                {/* Derecha: Siguiente (pasos 1 y 2) o Guardar Cambios (paso 3) */}
+                <div>
+                  {pasoActual < 3 ? (
                     <button
                       type="button"
                       disabled={editConsumibleSubmitting}
-                      onClick={() => setPasoActual((prev) => prev + 1)}
-                      className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-bold px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer text-xs"
+                      onClick={() => {
+                        if (validarPasoEditar(pasoActual)) {
+                          setPasoActual((prev) => Math.min(3, prev + 1));
+                        }
+                      }}
+                      className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-semibold"
                       style={{
-                        padding: '8px 18px',
-                        borderRadius: '8px',
-                        backgroundColor: '#a3e635',
-                        border: '1px solid #84cc16',
-                        color: '#020617',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '9px 22px',
+                        borderRadius: '11px',
+                        backgroundColor: '#abd037',
+                        color: '#013a52',
+                        border: 'none',
                         fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 2px 10px rgba(163, 230, 53, 0.3)',
-                        transition: 'all 0.15s ease',
+                        boxShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+                        fontFamily: "'Poppins', sans-serif",
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       <span>Siguiente</span>
                       <span>→</span>
                     </button>
-                  )}
-
-                  {pasoActual === 3 && (
+                  ) : (
                     <button
                       type="submit"
                       disabled={editConsumibleSubmitting}
                       className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md"
                       style={{
-                        padding: '8px 20px',
-                        borderRadius: '8px',
+                        padding: '9px 22px',
+                        borderRadius: '11px',
                         backgroundColor: themeEditarConsumible.buttonBg,
                         border: 'none',
                         color: themeEditarConsumible.buttonText,
                         fontSize: '13px',
                         fontWeight: 800,
-                        cursor: 'pointer',
+                        cursor: editConsumibleSubmitting ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: `0 2px 12px ${themeEditarConsumible.buttonBg}44`,
+                        boxShadow: `0 4px 14px ${themeEditarConsumible.buttonBg}44`,
+                        fontFamily: "'Poppins', sans-serif",
                         transition: 'all 0.3s ease',
                       }}
                     >
@@ -7205,8 +7380,8 @@ export default function InventarioView({
               className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0f172a]/50 shrink-0"
               style={{
                 padding: '10px 20px',
-                borderBottom: '1px solid var(--line, #1e293b)',
-                backgroundColor: 'var(--surface-2, rgba(15, 23, 42, 0.6))',
+                borderBottom: '1px solid var(--line, #e2e8f0)',
+                backgroundColor: 'var(--surface-2, #f8fafc)',
                 flexShrink: 0,
               }}
             >
@@ -7221,9 +7396,9 @@ export default function InventarioView({
                 }}
               >
                 {[
-                  { paso: 1, label: 'Datos Operativos', icono: '1' },
-                  { paso: 2, label: 'Especificaciones', icono: '2' },
-                  { paso: 3, label: 'Adquisición y Notas', icono: '3' },
+                  { paso: 1, label: 'Datos Operativos', numero: '1' },
+                  { paso: 2, label: 'Especificaciones', numero: '2' },
+                  { paso: 3, label: 'Adquisición y Notas', numero: '3' },
                 ].map((item) => {
                   const isActive = pasoActualNuevo === item.paso;
                   const isDone = pasoActualNuevo > item.paso;
@@ -7231,71 +7406,74 @@ export default function InventarioView({
                     <button
                       key={item.paso}
                       type="button"
-                      onClick={() => setPasoActualNuevo(item.paso)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isActive
-                        ? 'bg-lime-400 hover:bg-lime-300 text-slate-950 border-lime-400 shadow-sm'
-                        : isDone
-                          ? 'bg-lime-950/40 text-lime-400 border-lime-500/40 hover:bg-lime-900/40'
-                          : 'bg-slate-800/40 text-slate-400 border-slate-700/60 hover:bg-slate-800'
-                        }`}
+                      onClick={() => handlePasoClickNuevo(item.paso)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#abd037] text-[#013a52] font-semibold border-[#abd037] shadow-sm'
+                          : isDone
+                          ? 'bg-lime-500/10 text-[#013a52] dark:text-[#abd037] border-lime-500/30'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                      }`}
                       style={{
                         flex: 1,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '6px',
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        fontSize: '11.5px',
-                        fontWeight: 700,
+                        gap: '8px',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        fontSize: '12px',
+                        fontWeight: isActive ? 700 : 600,
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         backgroundColor: isActive
-                          ? '#84CC16'
+                          ? '#abd037'
                           : isDone
-                            ? 'rgba(132, 204, 22, 0.12)'
-                            : 'rgba(30, 41, 59, 0.4)',
+                          ? 'rgba(171, 208, 55, 0.15)'
+                          : 'var(--surface-2, #ffffff)',
                         color: isActive
-                          ? '#0f172a'
+                          ? '#013a52'
                           : isDone
-                            ? '#84CC16'
-                            : 'var(--text-dim, #94a3b8)',
+                          ? 'var(--text-h, #013a52)'
+                          : 'var(--text-dim, #475569)',
                         border: isActive
-                          ? '1px solid #84CC16'
+                          ? '1.5px solid #abd037'
                           : isDone
-                            ? '1px solid rgba(132, 204, 22, 0.35)'
-                            : '1px solid var(--line, #334155)',
-                        boxShadow: isActive ? '0 2px 10px rgba(132, 204, 22, 0.3)' : 'none',
+                          ? '1.5px solid rgba(171, 208, 55, 0.45)'
+                          : '1.5px solid var(--line, #cbd5e1)',
+                        boxShadow: isActive ? '0 2px 10px rgba(171, 208, 55, 0.35)' : 'none',
                       }}
                     >
                       <span
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${isActive
-                          ? 'bg-slate-950/20 text-slate-950 font-extrabold'
-                          : isDone
-                            ? 'text-lime-400 font-bold'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold'
-                          }`}
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
+                          isActive
+                            ? 'bg-[#013a52] text-white'
+                            : isDone
+                            ? 'bg-[#abd037] text-[#013a52]'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                        }`}
                         style={{
-                          width: '18px',
-                          height: '18px',
+                          width: '20px',
+                          height: '20px',
                           borderRadius: '50%',
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '10px',
+                          fontSize: '11px',
+                          fontWeight: 700,
                           backgroundColor: isActive
-                            ? 'rgba(15, 23, 42, 0.2)'
+                            ? '#013a52'
                             : isDone
-                              ? 'transparent'
-                              : 'rgba(148, 163, 184, 0.2)',
+                            ? '#abd037'
+                            : 'var(--surface-3, #e2e8f0)',
                           color: isActive
-                            ? '#0f172a'
+                            ? '#ffffff'
                             : isDone
-                              ? '#84CC16'
-                              : 'var(--text-dim, #94a3b8)',
+                            ? '#013a52'
+                            : 'var(--text, #334155)',
                         }}
                       >
-                        {isDone ? '✓' : item.icono}
+                        {isDone ? '✓' : item.numero}
                       </span>
                       <span className="truncate">{item.label}</span>
                     </button>
@@ -7330,7 +7508,7 @@ export default function InventarioView({
                       >
                         Identificación y Clasificación
                       </h4>
-                      <span className="text-[11px] text-slate-400">* Campos obligatorios</span>
+                      <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400" style={{ fontSize: '11px', color: '#e11d48', fontWeight: 600 }}>* Campos obligatorios</span>
                     </div>
 
                     {/* Fila 1: Nombre del Elemento (Izquierda) + Código / Placa (Derecha) */}
@@ -7543,11 +7721,11 @@ export default function InventarioView({
                       </h4>
                     </div>
 
-                    {/* Fila 1: Sede / Ubicación Física | Estante / Gaveta */}
+                    {/* Fila 1: Sede / Ubicación Física * | Estante / Gaveta */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Sede / Ubicación Física
+                          Sede / Ubicación Física *
                         </label>
                         <select
                           name="ubicacion"
@@ -7636,11 +7814,11 @@ export default function InventarioView({
                       </div>
                     </div>
 
-                    {/* Fila 3: Estado | Condición */}
+                    {/* Fila 3: Estado * | Condición */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Estado
+                          Estado *
                         </label>
                         <select
                           name="estado"
@@ -7808,132 +7986,118 @@ export default function InventarioView({
 
               {/* Footer Fijo Abajo (Siempre Visible) */}
               <div
-                className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] flex items-center justify-between shrink-0"
+                className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-[#0f172a]/80 shrink-0 flex items-center justify-between"
                 style={{
-                  backgroundColor: 'var(--surface-2, #0f172a)',
-                  borderTop: '1px solid var(--line, #1e293b)',
-                  padding: '14px 20px',
+                  padding: '14px 22px',
+                  borderTop: '1px solid var(--line, #e2e8f0)',
+                  backgroundColor: 'var(--surface-2, #f8fafc)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   flexShrink: 0,
                 }}
               >
-                {/* Botón Cancelar (Izquierda) */}
-                <button
-                  type="button"
-                  disabled={newConsumibleSubmitting}
-                  onClick={() => setModalNuevoOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--line, #334155)',
-                    color: 'var(--text-dim, #94a3b8)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  Cancelar
-                </button>
-
-                {/* Botones de Navegación del Asistente (Derecha) */}
-                <div
-                  className="flex items-center gap-2.5"
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
-                >
+                {/* Izquierda: Cancelar y (si pasoActualNuevo > 1) Anterior */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button
                     type="button"
-                    disabled={pasoActualNuevo === 1 || newConsumibleSubmitting}
-                    onClick={() => pasoActualNuevo > 1 && setPasoActualNuevo((prev) => prev - 1)}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pasoActualNuevo === 1
-                      ? 'opacity-40 cursor-not-allowed bg-slate-800/40 text-slate-500 border border-slate-700/40'
-                      : 'cursor-pointer hover:bg-slate-800 text-slate-200'
-                      }`}
+                    disabled={newConsumibleSubmitting}
+                    onClick={() => setModalNuevoOpen(false)}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
                     style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      backgroundColor: pasoActualNuevo === 1 ? 'rgba(30, 41, 59, 0.3)' : 'var(--surface, #1e293b)',
-                      border: '1px solid var(--line, #334155)',
-                      color: pasoActualNuevo === 1 ? 'var(--text-dim, #64748b)' : 'var(--text, #f8fafc)',
+                      padding: '9px 18px',
+                      borderRadius: '11px',
+                      backgroundColor: 'transparent',
+                      border: '1.5px solid var(--line, #cbd5e1)',
+                      color: 'var(--text-dim, #475569)',
                       fontSize: '13px',
                       fontWeight: 600,
-                      cursor: pasoActualNuevo === 1 ? 'not-allowed' : 'pointer',
-                      opacity: pasoActualNuevo === 1 ? 0.45 : 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
+                      cursor: 'pointer',
                       transition: 'all 0.15s ease',
+                      fontFamily: "'Poppins', sans-serif",
                     }}
                   >
-                    <span>←</span> Anterior
+                    Cancelar
                   </button>
 
-                  {pasoActualNuevo < 3 && (
+                  {pasoActualNuevo > 1 && (
+                    <button
+                      type="button"
+                      disabled={newConsumibleSubmitting}
+                      onClick={() => setPasoActualNuevo((prev) => Math.max(1, prev - 1))}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                      style={{
+                        padding: '9px 18px',
+                        borderRadius: '11px',
+                        border: '1.5px solid var(--line, #cbd5e1)',
+                        backgroundColor: 'var(--surface, #ffffff)',
+                        color: 'var(--text, #0f172a)',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: newConsumibleSubmitting ? 'not-allowed' : 'pointer',
+                        fontFamily: "'Poppins', sans-serif",
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span>←</span> Anterior
+                    </button>
+                  )}
+                </div>
+
+                {/* Derecha: Siguiente (pasos 1 y 2) o Guardar (paso 3) */}
+                <div>
+                  {pasoActualNuevo < 3 ? (
                     <button
                       type="button"
                       disabled={newConsumibleSubmitting}
                       onClick={() => {
-                        // Validación rápida de paso 1 al avanzar
-                        if (pasoActualNuevo === 1) {
-                          if (!formDataNuevo.id?.trim()) {
-                            showError('Validación', 'El código del ítem es obligatorio (ej: Rob0143).');
-                            return;
-                          }
-                          if (!formDataNuevo.material?.trim()) {
-                            showError('Validación', 'El nombre del material es obligatorio.');
-                            return;
-                          }
-                          if (formDataNuevo.disponible === '' || isNaN(Number(formDataNuevo.disponible)) || Number(formDataNuevo.disponible) < 0) {
-                            showError('Validación', 'La cantidad inicial debe ser un número mayor o igual a 0.');
-                            return;
-                          }
+                        if (validarPasoNuevo(pasoActualNuevo)) {
+                          setPasoActualNuevo((prev) => Math.min(3, prev + 1));
                         }
-                        setPasoActualNuevo((prev) => prev + 1);
                       }}
-                      className="bg-lime-400 hover:bg-lime-300 text-slate-950 font-bold px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer text-xs"
+                      className="bg-[#abd037] hover:bg-[#96b82d] text-[#013a52] font-semibold"
                       style={{
-                        padding: '8px 18px',
-                        borderRadius: '8px',
-                        backgroundColor: '#84CC16',
-                        border: '1px solid #84CC16',
-                        color: '#020617',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '9px 22px',
+                        borderRadius: '11px',
+                        backgroundColor: '#abd037',
+                        color: '#013a52',
+                        border: 'none',
                         fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 2px 10px rgba(132, 204, 22, 0.3)',
-                        transition: 'all 0.15s ease',
+                        boxShadow: '0 4px 14px rgba(171, 208, 55, 0.4)',
+                        fontFamily: "'Poppins', sans-serif",
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       <span>Siguiente</span>
                       <span>→</span>
                     </button>
-                  )}
-
-                  {pasoActualNuevo === 3 && (
+                  ) : (
                     <button
                       type="submit"
                       disabled={newConsumibleSubmitting}
                       className="px-5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-md"
                       style={{
-                        padding: '8px 20px',
-                        borderRadius: '8px',
+                        padding: '9px 22px',
+                        borderRadius: '11px',
                         backgroundColor: themeNuevoConsumible.buttonBg,
                         border: 'none',
                         color: themeNuevoConsumible.buttonText,
                         fontSize: '13px',
                         fontWeight: 800,
-                        cursor: 'pointer',
+                        cursor: newConsumibleSubmitting ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: `0 2px 12px ${themeNuevoConsumible.buttonBg}44`,
+                        boxShadow: `0 4px 14px ${themeNuevoConsumible.buttonBg}44`,
+                        fontFamily: "'Poppins', sans-serif",
                         transition: 'all 0.3s ease',
                       }}
                     >
