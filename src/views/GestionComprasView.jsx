@@ -2282,9 +2282,8 @@ export default function GestionComprasView({
           <table
             style={{
               width: '100%',
-              minWidth: '850px',
+              minWidth: '1000px',
               borderCollapse: 'collapse',
-              tableLayout: 'fixed',
               fontFamily: "'Poppins', sans-serif",
             }}
           >
@@ -2296,85 +2295,96 @@ export default function GestionComprasView({
                 }}
               >
                 <th
+                  className="px-4 py-3"
                   style={{
-                    width: '11%',
-                    minWidth: '105px',
-                    padding: '12px 12px',
+                    width: '15%',
+                    minWidth: '160px',
+                    padding: '12px 16px',
                     textAlign: 'left',
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   RADICADO / FECHA
                 </th>
                 <th
+                  className="px-4 py-3"
                   style={{
-                    width: '15%',
-                    minWidth: '130px',
-                    padding: '12px 10px',
+                    width: '17%',
+                    minWidth: '160px',
+                    padding: '12px 16px',
                     textAlign: 'left',
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   SOLICITANTE & SEDE
                 </th>
                 <th
+                  className="px-4 py-3"
                   style={{
-                    width: '19%',
-                    minWidth: '160px',
-                    padding: '12px 8px',
+                    width: '18%',
+                    minWidth: '170px',
+                    padding: '12px 16px',
                     textAlign: 'center',
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   PROYECTO STEAM
                 </th>
                 <th
+                  className="px-4 py-3"
                   style={{
-                    width: '22%',
-                    minWidth: '170px',
-                    padding: '12px 12px',
+                    width: '21%',
+                    minWidth: '200px',
+                    padding: '12px 16px',
                     textAlign: 'left',
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   DETALLE DE ÍTEMS
                 </th>
                 <th
+                  className="px-4 py-3"
                   style={{
-                    width: '19%',
-                    minWidth: '150px',
-                    padding: '12px 10px',
+                    width: '16%',
+                    minWidth: '160px',
+                    padding: '12px 16px',
                     textAlign: 'center',
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
                     letterSpacing: '0.04em',
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   ESTADO & COMPRA
                 </th>
                 <th
+                  className="px-4 py-3"
                   style={{
-                    width: '14%',
-                    minWidth: '125px',
-                    padding: '12px 10px',
+                    width: '13%',
+                    minWidth: '130px',
+                    padding: '12px 16px',
                     textAlign: 'center',
                     fontSize: '11.5px',
                     fontWeight: 700,
@@ -2416,7 +2426,10 @@ export default function GestionComprasView({
                     }}
                   >
                     {/* 1. Radicado / Fecha */}
-                    <td style={{ width: '11%', minWidth: '105px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td
+                      className="px-4 py-3"
+                      style={{ width: '15%', minWidth: '160px', padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}
+                    >
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
                         <span
                           style={{
@@ -2450,7 +2463,10 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 2. Solicitante & Sede */}
-                    <td style={{ width: '15%', minWidth: '130px', padding: '12px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td
+                      className="px-4 py-3"
+                      style={{ width: '17%', minWidth: '160px', padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}
+                    >
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, overflow: 'hidden' }}>
                         <strong
                           style={{
@@ -2487,10 +2503,11 @@ export default function GestionComprasView({
 
                     {/* 3. Proyecto STEAM */}
                     <td
+                      className="px-4 py-3"
                       style={{
-                        width: '19%',
-                        minWidth: '160px',
-                        padding: '12px 8px',
+                        width: '18%',
+                        minWidth: '170px',
+                        padding: '12px 16px',
                         textAlign: 'center',
                         verticalAlign: 'middle',
                         overflow: 'hidden',
@@ -2512,7 +2529,10 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 4. Detalle de Ítems */}
-                    <td style={{ width: '22%', minWidth: '170px', padding: '12px 12px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td
+                      className="px-4 py-3"
+                      style={{ width: '21%', minWidth: '200px', padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}
+                    >
                       {primerItem ? (
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
@@ -2564,7 +2584,10 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 5. Estado & Adquisición */}
-                    <td style={{ width: '19%', minWidth: '150px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}>
+                    <td
+                      className="px-4 py-3"
+                      style={{ width: '16%', minWidth: '160px', padding: '12px 16px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden' }}
+                    >
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', gap: '4px' }}>
                         <span
                           style={{
@@ -2613,7 +2636,10 @@ export default function GestionComprasView({
                     </td>
 
                     {/* 6. Acciones */}
-                    <td style={{ width: '14%', minWidth: '125px', padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    <td
+                      className="px-4 py-3"
+                      style={{ width: '13%', minWidth: '130px', padding: '12px 16px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         {/* Botón Ver Detalle */}
                         <button
