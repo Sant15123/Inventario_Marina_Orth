@@ -28,6 +28,7 @@ import { getProyectoPrograma, PROYECTOS_STEAM_OFICIALES } from '../../constants/
 import ProgramAreaBadge, { resolveAreaConfig } from '../common/ProgramAreaBadge';
 import { getProveedoresRecomendados } from '../../services/proveedoresService';
 import { registrarAuditoria } from '../../services/historyAuditService';
+import { useToast } from '../../context/ToastContext';
 import {
   getAvailableStock,
   formatItemOptionLabel,
@@ -45,6 +46,17 @@ export default function ModalSolicitudMaterial({
   showSuccess,
   showError,
 }) {
+  const toast = useToast();
+  const [cantidadError, setCantidadError] = useState(false);
+
+  // Helper centralizado para emitir alertas con el sistema global de toasts (esquina superior derecha, z-[999999])
+  const triggerErrorToast = (titleOrMsg, details) => {
+    const fn = showError || toast?.showError;
+    if (typeof fn === 'function') {
+      fn(titleOrMsg, details);
+    }
+  };
+
   // 1. Estados principales del formulario (declarados al inicio)
   const [tipoSolicitud, setTipoSolicitud] = useState('PRESTAMO_EQUIPO'); // 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
   const [sede, setSede] = useState(() => currentUser?.sede || sedes[0] || 'Medellín');
@@ -257,13 +269,14 @@ export default function ModalSolicitudMaterial({
   const handleAddItem = () => {
     setValidationError('');
     if (!selectedItemId || !currentItemInfo) {
-      setValidationError('Selecciona un artículo del catálogo para agregar.');
+      triggerErrorToast('Validación', 'Selecciona un artículo del catálogo para agregar.');
       return;
     }
 
     const qty = parseInt(cantidadInput, 10);
     if (isNaN(qty) || qty <= 0) {
-      setValidationError('La cantidad debe ser mayor a 0.');
+      setCantidadError(true);
+      triggerErrorToast('Validación', 'La cantidad debe ser mayor a 0.');
       return;
     }
 
@@ -274,12 +287,15 @@ export default function ModalSolicitudMaterial({
 
     // Validación estricta sin revelar la cantidad exacta en inventario
     if (stockDisponibleItem <= 0 || cantidadTotal > stockDisponibleItem) {
-      setValidationError(
+      setCantidadError(true);
+      triggerErrorToast(
+        'Validación',
         'La cantidad solicitada supera la disponibilidad actual en inventario. Ingresa una cantidad menor o registra una Sugerencia de Compra.'
       );
       return;
     }
 
+    setCantidadError(false);
     if (yaExiste) {
       setItemsSolicitud((prev) =>
         prev.map((it) =>
@@ -315,7 +331,8 @@ export default function ModalSolicitudMaterial({
       const availableStock = catItem ? getAvailableStock(catItem) : 0;
 
       if (availableStock <= 0 || qty > availableStock) {
-        setValidationError(
+        triggerErrorToast(
+          'Validación',
           'La cantidad solicitada supera la disponibilidad actual en inventario. Ingresa una cantidad menor o registra una Sugerencia de Compra.'
         );
         return;
@@ -332,24 +349,24 @@ export default function ModalSolicitudMaterial({
   const handleAgregarCompra = () => {
     setValidationError('');
     if (!compraForm.nombre.trim()) {
-      setValidationError('Ingresa el nombre o especificación del producto sugerido.');
+      triggerErrorToast('Validación', 'Ingresa el nombre o especificación del producto sugerido.');
       return;
     }
 
     const urlTrimmed = (compraForm.url || '').trim();
     if (!urlTrimmed || !/^https?:\/\//i.test(urlTrimmed)) {
-      setValidationError('Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
+      triggerErrorToast('Validación', 'Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
       return;
     }
 
     const qty = parseInt(compraForm.cantidad, 10);
     if (isNaN(qty) || qty <= 0) {
-      setValidationError('La cantidad debe ser mayor a 0.');
+      triggerErrorToast('Validación', 'La cantidad debe ser mayor a 0.');
       return;
     }
     const precioNum = compraForm.precio ? parseFloat(compraForm.precio) : 0;
     if (compraForm.precio && (isNaN(precioNum) || precioNum < 0)) {
-      setValidationError('El precio estimado debe ser un número válido.');
+      triggerErrorToast('Validación', 'El precio estimado debe ser un número válido.');
       return;
     }
 
@@ -406,7 +423,7 @@ export default function ModalSolicitudMaterial({
       if (esCompra && compraForm.nombre.trim()) {
         const urlTrimmed = (compraForm.url || '').trim();
         if (!urlTrimmed || !/^https?:\/\//i.test(urlTrimmed)) {
-          setValidationError('Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
+          triggerErrorToast('Validación', 'Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
           return;
         }
         const qty = parseInt(compraForm.cantidad, 10) || 1;
@@ -430,7 +447,8 @@ export default function ModalSolicitudMaterial({
         itemsParaEnviar = [nuevoItem];
         setItemsSolicitud(itemsParaEnviar);
       } else {
-        setValidationError(
+        triggerErrorToast(
+          'Validación',
           esCompra
             ? 'Debes ingresar un producto y su enlace de compra válido (https://...) para sugerir material.'
             : 'Debes agregar al menos un artículo a la solicitud.'
@@ -445,13 +463,14 @@ export default function ModalSolicitudMaterial({
         return !u || !/^https?:\/\//i.test(u);
       });
       if (itemInvalido) {
-        setValidationError('Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
+        triggerErrorToast('Validación', 'Debes ingresar un enlace de compra válido (https://...) para poder sugerir este material.');
         return;
       }
     }
 
     if (!motivo.trim()) {
-      setValidationError(
+      triggerErrorToast(
+        'Validación',
         esCompra
           ? 'La justificación pedagógica / actividad es obligatoria.'
           : 'El motivo o justificación pedagógica es obligatorio.'
@@ -461,7 +480,8 @@ export default function ModalSolicitudMaterial({
 
     if (tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) {
       if (!fechaEstimada) {
-        setValidationError(
+        triggerErrorToast(
+          'Validación',
           esCompra
             ? 'La fecha ideal requerida es obligatoria para la sugerencia de compra.'
             : 'La fecha estimada de devolución es obligatoria para préstamos de equipo.'
@@ -470,7 +490,8 @@ export default function ModalSolicitudMaterial({
       }
       const fechaActual = today();
       if (fechaEstimada < fechaActual) {
-        setValidationError(
+        triggerErrorToast(
+          'Validación',
           esCompra
             ? 'La fecha ideal requerida no puede ser una fecha pasada.'
             : 'La fecha estimada de devolución no puede ser una fecha pasada.'
@@ -480,35 +501,12 @@ export default function ModalSolicitudMaterial({
     }
 
     if (!sede || !sede.trim()) {
-      setValidationError('Debes seleccionar una sede / municipio destino.');
-      if (typeof showError === 'function') {
-        showError('Validación', 'Debes seleccionar una sede / municipio destino.');
-      }
+      triggerErrorToast('Validación', 'Debes seleccionar una sede / municipio destino.');
       return;
     }
 
     if (!proyectoId || !proyectoId.trim()) {
-      setValidationError('Debes seleccionar un Proyecto STEAM vinculado para radicar la solicitud.');
-      if (typeof showError === 'function') {
-        showError('Validación', 'Debes seleccionar un Proyecto STEAM vinculado para radicar la solicitud.');
-      }
-      return;
-    }
-
-    if (!motivo.trim()) {
-      setValidationError(
-        esCompra
-          ? 'La justificación pedagógica / actividad es obligatoria.'
-          : 'El motivo o justificación pedagógica es obligatorio.'
-      );
-      if (typeof showError === 'function') {
-        showError(
-          'Validación',
-          esCompra
-            ? 'La justificación pedagógica / actividad es obligatoria.'
-            : 'El motivo o justificación pedagógica es obligatorio.'
-        );
-      }
+      triggerErrorToast('Validación', 'Debes seleccionar un Proyecto STEAM vinculado para radicar la solicitud.');
       return;
     }
 
@@ -529,12 +527,11 @@ export default function ModalSolicitudMaterial({
         const requestedQty = Number(item.cantidad || 1);
 
         if (availableStock <= 0 || requestedQty > availableStock) {
-          const nombreItem = item.nombre_item || 'El artículo seleccionado';
-          const msg = `La cantidad solicitada para "${nombreItem}" supera la disponibilidad actual en inventario. Ingresa una cantidad menor o registra una Sugerencia de Compra.`;
-          setValidationError(msg);
-          if (typeof showError === 'function') {
-            showError('Disponibilidad Insuficiente', msg);
-          }
+          setCantidadError(true);
+          triggerErrorToast(
+            'Validación',
+            'La cantidad solicitada supera la disponibilidad actual en inventario. Ingresa una cantidad menor o registra una Sugerencia de Compra.'
+          );
           return;
         }
       }
@@ -928,20 +925,6 @@ export default function ModalSolicitudMaterial({
         {/* Formulario y cuerpo scrolleable */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden" style={{ margin: 0 }}>
           <div className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
-            {validationError && (
-              <div
-                className="flex items-center gap-2.5 p-3.5 text-xs rounded-xl font-medium"
-                style={{
-                  backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
-                  color: '#fda4af',
-                }}
-              >
-                <AlertCircle size={16} className="shrink-0 text-rose-400" />
-                <span>{validationError}</span>
-              </div>
-            )}
-
             {/* 3. Tipo de Solicitud (Segmented Control / Tabs de 3 columnas fijas en una fila) */}
             <div>
               <label
@@ -1550,7 +1533,7 @@ export default function ModalSolicitudMaterial({
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366f1')}
                     >
                       <Plus size={16} strokeWidth={2.5} />
-                      <span>+ Agregar a la lista</span>
+                      <span>Agregar a la lista</span>
                     </button>
                   </div>
                 </div>
@@ -1702,6 +1685,7 @@ export default function ModalSolicitudMaterial({
                     onChange={(e) => {
                       setSelectedItemId(e.target.value);
                       setCantidadInput(1);
+                      if (cantidadError) setCantidadError(false);
                       if (validationError) setValidationError('');
                     }}
                     className="flex-1 rounded-lg px-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
@@ -1729,14 +1713,19 @@ export default function ModalSolicitudMaterial({
                     value={cantidadInput}
                     onChange={(e) => {
                       setCantidadInput(e.target.value);
+                      if (cantidadError) setCantidadError(false);
                       if (validationError) setValidationError('');
                     }}
                     placeholder="Cant."
-                    className="w-20 rounded-lg px-3 py-2 text-sm text-center font-semibold border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
+                    className={`w-20 rounded-lg px-3 py-2 text-sm text-center font-semibold border transition-all ${
+                      cantidadError
+                        ? 'border-red-500 ring-2 ring-red-500/20 text-red-400 focus:outline-none'
+                        : 'focus:outline-none focus:ring-2 focus:ring-[#84CC16]'
+                    }`}
                     style={{
                       backgroundColor: 'var(--bg, #0b1120)',
-                      borderColor: 'var(--line, #334155)',
-                      color: 'var(--text, #f8fafc)',
+                      borderColor: cantidadError ? '#ef4444' : 'var(--line, #334155)',
+                      color: cantidadError ? '#f87171' : 'var(--text, #f8fafc)',
                     }}
                   />
 
@@ -1758,7 +1747,7 @@ export default function ModalSolicitudMaterial({
                     }}
                   >
                     <Plus size={16} strokeWidth={2.5} />
-                    <span>+ Agregar</span>
+                    <span>Agregar</span>
                   </button>
                 </div>
 
