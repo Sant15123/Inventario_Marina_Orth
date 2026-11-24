@@ -39,20 +39,20 @@ export function getAvailableStock(item) {
 /**
  * Formatea la etiqueta de cada opción en los desplegables de selección de equipos y materiales.
  * Formato institucional estándar:
- * Nombre [Marca/Código] — Tipo/Categoría (X disp.)
- * Ejemplos:
- * - "Multímetro Digital Automotriz True RMS — Electrónica (1 disp.)"
- * - "Portátil Lenovo ThinkPad E14 — Tecnológico (3 disp.)"
- * - "Filamento PLA Blanco 1kg — Filamentos 3D (12 disp.)"
+ * - Con stock (Admin): "Nombre [Marca/Código] — Tipo/Categoría (X disp.)"
+ * - Sin stock (Usuario): "Nombre [Marca/Código] — Tipo/Categoría"
  * 
  * @param {Object} it - Objeto de ítem
+ * @param {Object} [options] - Opciones de formato
+ * @param {boolean} [options.includeStock=true] - Si true, incluye sufijo "(X disp.)"
  * @returns {string} Texto formateado para el <option>
  */
-export function formatItemOptionLabel(it) {
+export function formatItemOptionLabel(it, { includeStock = true } = {}) {
   if (!it) return '';
   const disp = getAvailableStock(it);
   const dispStr = `${disp} disp.`;
   const nombre = it.name || it.material || 'Artículo';
+  const stockSuffix = includeStock ? ` (${dispStr})` : '';
 
   if (it.itemType === 'electronica') {
     const marca = (it.marca || '').trim();
@@ -66,7 +66,7 @@ export function formatItemOptionLabel(it) {
     }
 
     const extra = marcaOCodigo ? ` [${marcaOCodigo}]` : '';
-    return `${nombre}${extra} — Electrónica (${dispStr})`;
+    return `${nombre}${extra} — Electrónica${stockSuffix}`;
   }
 
   if (it.itemType === 'equipo') {
@@ -82,12 +82,12 @@ export function formatItemOptionLabel(it) {
     }
 
     const extra = marcaOCodigo ? ` [${marcaOCodigo}]` : '';
-    return `${nombre}${extra} — Tecnológico (${dispStr})`;
+    return `${nombre}${extra} — Tecnológico${stockSuffix}`;
   }
 
   // Consumible u otro insumo
   const cat = it.categoria || it.category || 'Consumible';
-  return `${nombre} — ${cat} (${dispStr})`;
+  return `${nombre} — ${cat}${stockSuffix}`;
 }
 
 /**

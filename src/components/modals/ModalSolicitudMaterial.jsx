@@ -267,34 +267,65 @@ export default function ModalSolicitudMaterial({
       return;
     }
 
-    if (stockDisponibleItem <= 0) {
-      setValidationError('Este artículo no cuenta con unidades disponibles en este momento.');
-      return;
-    }
-
-    if (qty > stockDisponibleItem) {
-      setValidationError(`Solo hay ${stockDisponibleItem} unidad(es) disponible(s) de este artículo.`);
-      return;
-    }
-
-    // Verificar si ya está en la lista
+    // Calcular cantidad acumulada si el ítem ya estaba agregado en la lista
     const yaExiste = itemsSolicitud.find((it) => String(it.item_id) === String(currentItemInfo.id));
-    if (yaExiste) {
-      setValidationError('El artículo ya se encuentra en la lista de solicitud.');
+    const cantidadYaEnLista = yaExiste ? Number(yaExiste.cantidad || 0) : 0;
+    const cantidadTotal = cantidadYaEnLista + qty;
+
+    // Validación estricta sin revelar la cantidad exacta en inventario
+    if (stockDisponibleItem <= 0 || cantidadTotal > stockDisponibleItem) {
+      setValidationError(
+        'La cantidad solicitada supera la disponibilidad actual en inventario. Ingresa una cantidad menor o registra una Sugerencia de Compra.'
+      );
       return;
     }
 
-    const nuevoItem = {
-      tipo_item: tipoSolicitud === 'PRESTAMO_EQUIPO' ? (currentItemInfo.itemType || 'equipo') : 'consumible',
-      item_id: currentItemInfo.id,
-      nombre_item: currentItemInfo.name || currentItemInfo.material || 'Artículo',
-      cantidad: qty,
-      unidad: currentItemInfo.unit || 'und',
-    };
+    if (yaExiste) {
+      setItemsSolicitud((prev) =>
+        prev.map((it) =>
+          String(it.item_id) === String(currentItemInfo.id)
+            ? { ...it, cantidad: cantidadTotal }
+            : it
+        )
+      );
+    } else {
+      const nuevoItem = {
+        tipo_item: tipoSolicitud === 'PRESTAMO_EQUIPO' ? (currentItemInfo.itemType || 'equipo') : 'consumible',
+        item_id: currentItemInfo.id,
+        nombre_item: currentItemInfo.name || currentItemInfo.material || 'Artículo',
+        cantidad: qty,
+        unidad: currentItemInfo.unit || 'und',
+      };
+      setItemsSolicitud((prev) => [...prev, nuevoItem]);
+    }
 
-    setItemsSolicitud((prev) => [...prev, nuevoItem]);
     setSelectedItemId('');
     setCantidadInput(1);
+  };
+
+  // Actualizar cantidad de un ítem existente en la lista con validación de stock
+  const handleUpdateItemQty = (idx, newQty) => {
+    const item = itemsSolicitud[idx];
+    if (!item) return;
+    const qty = parseInt(newQty, 10);
+    if (isNaN(qty) || qty <= 0) return;
+
+    if (item.tipo_item !== 'compra') {
+      const catItem = (activeCatalog || []).find((c) => String(c.id) === String(item.item_id));
+      const availableStock = catItem ? getAvailableStock(catItem) : 0;
+
+      if (availableStock <= 0 || qty > availableStock) {
+        setValidationError(
+          'La cantidad solicitada supera la disponibilidad actual en inventario. Ingresa una cantidad menor o registra una Sugerencia de Compra.'
+        );
+        return;
+      }
+    }
+
+    setValidationError('');
+    setItemsSolicitud((prev) =>
+      prev.map((it, i) => (i === idx ? { ...it, cantidad: qty } : it))
+    );
   };
 
   // Agregar ítem sugerido de compra
@@ -479,6 +510,34 @@ export default function ModalSolicitudMaterial({
         );
       }
       return;
+    }
+
+    // Doble validación estricta de stock antes de enviar (sin revelar cantidades exactas)
+    if (tipoSolicitud === 'PRESTAMO_EQUIPO' || tipoSolicitud === 'CONSUMIBLES') {
+      let catalogoVigente = activeCatalog;
+      try {
+        const fresh = await fetchFreshPrestamosCatalog(activeCatalog);
+        if (Array.isArray(fresh) && fresh.length > 0) {
+          catalogoVigente = fresh;
+        }
+      } catch (_) {}
+
+      for (const item of itemsParaEnviar) {
+        if (item.tipo_item === 'compra') continue;
+        const catItem = (catalogoVigente || []).find((c) => String(c.id) === String(item.item_id));
+        const availableStock = catItem ? getAvailableStock(catItem) : 0;
+        const requestedQty = Number(item.cantidad || 1);
+
+        if (availableStock <= 0 || requestedQty > availableStock) {
+          const nombreItem = item.nombre_item || 'El artículo seleccionado';
+          const msg = `La cantidad solicitada para "${nombreItem}" supera la disponibilidad actual en inventario. Ingresa una cantidad menor o registra una Sugerencia de Compra.`;
+          setValidationError(msg);
+          if (typeof showError === 'function') {
+            showError('Disponibilidad Insuficiente', msg);
+          }
+          return;
+        }
+      }
     }
 
     try {
@@ -1654,12 +1713,12 @@ export default function ModalSolicitudMaterial({
                   >
                     <option value="">
                       {tipoSolicitud === 'PRESTAMO_EQUIPO'
-                        ? '-- Selecciona el equipo a prestar (Tecnológico / Electrónica) --'
-                        : '-- Seleccionar material o insumo disponible --'}
+                        ? '-- Selecciona el equipo a prestar --'
+                        : '-- Seleccionar material o insumo --'}
                     </option>
                     {catalogoDisponible.map((it) => (
                       <option key={it.id} value={it.id}>
-                        {formatItemOptionLabel(it)}
+                        {formatItemOptionLabel(it, { includeStock: false })}
                       </option>
                     ))}
                   </select>
@@ -1667,19 +1726,12 @@ export default function ModalSolicitudMaterial({
                   <input
                     type="number"
                     min="1"
-                    max={stockDisponibleItem > 0 ? stockDisponibleItem : 1}
                     value={cantidadInput}
                     onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
-                      if (stockDisponibleItem > 0 && !isNaN(val) && val > stockDisponibleItem) {
-                        setCantidadInput(stockDisponibleItem);
-                      } else {
-                        setCantidadInput(e.target.value);
-                      }
+                      setCantidadInput(e.target.value);
                       if (validationError) setValidationError('');
                     }}
                     placeholder="Cant."
-                    title={stockDisponibleItem > 0 ? `Máximo disponible: ${stockDisponibleItem}` : ''}
                     className="w-20 rounded-lg px-3 py-2 text-sm text-center font-semibold border focus:outline-none focus:ring-2 focus:ring-[#84CC16]"
                     style={{
                       backgroundColor: 'var(--bg, #0b1120)',
@@ -1691,7 +1743,7 @@ export default function ModalSolicitudMaterial({
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    disabled={!selectedItemId || stockDisponibleItem <= 0}
+                    disabled={!selectedItemId}
                     className="font-bold text-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: '#84CC16',
@@ -1699,10 +1751,10 @@ export default function ModalSolicitudMaterial({
                       border: '1px solid #84CC16',
                     }}
                     onMouseEnter={(e) => {
-                      if (selectedItemId && stockDisponibleItem > 0) e.currentTarget.style.backgroundColor = '#65A30D';
+                      if (selectedItemId) e.currentTarget.style.backgroundColor = '#65A30D';
                     }}
                     onMouseLeave={(e) => {
-                      if (selectedItemId && stockDisponibleItem > 0) e.currentTarget.style.backgroundColor = '#84CC16';
+                      if (selectedItemId) e.currentTarget.style.backgroundColor = '#84CC16';
                     }}
                   >
                     <Plus size={16} strokeWidth={2.5} />
@@ -1757,17 +1809,44 @@ export default function ModalSolicitudMaterial({
                               {it.nombre_item}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 shrink-0">
-                            <span
-                              className="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            <div
+                              className="flex items-center gap-1 rounded-lg px-1.5 py-0.5 border"
                               style={{
-                                backgroundColor: 'rgba(132, 204, 22, 0.18)',
-                                color: '#bef264',
-                                border: '1px solid rgba(132, 204, 22, 0.4)',
+                                backgroundColor: 'var(--bg-alt, rgba(30, 41, 59, 0.6))',
+                                borderColor: 'var(--line, #334155)',
                               }}
                             >
-                              {it.cantidad} {it.unidad}
-                            </span>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateItemQty(idx, it.cantidad - 1)}
+                                disabled={it.cantidad <= 1}
+                                className="w-5 h-5 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                style={{ color: 'var(--text, #f8fafc)' }}
+                                title="Disminuir cantidad"
+                              >
+                                -
+                              </button>
+                              <span
+                                className="px-1.5 py-0.5 rounded text-xs font-bold min-w-[24px] text-center"
+                                style={{
+                                  backgroundColor: 'rgba(132, 204, 22, 0.18)',
+                                  color: '#bef264',
+                                }}
+                              >
+                                {it.cantidad}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateItemQty(idx, it.cantidad + 1)}
+                                className="w-5 h-5 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-pointer hover:bg-slate-700/50"
+                                style={{ color: 'var(--text, #f8fafc)' }}
+                                title="Aumentar cantidad"
+                              >
+                                +
+                              </button>
+                              <span className="text-[11px] text-slate-400 pl-0.5 pr-1">{it.unidad || 'und'}</span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(idx)}

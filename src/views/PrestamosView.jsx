@@ -2366,7 +2366,7 @@ export default function PrestamosView({
                       .filter((it) => available(it) > 0)
                       .map((it) => (
                         <option key={it.id} value={it.id}>
-                          {formatItemOptionLabel(it)}
+                          {formatItemOptionLabel(it, { includeStock: true })}
                         </option>
                       ))}
                   </select>
