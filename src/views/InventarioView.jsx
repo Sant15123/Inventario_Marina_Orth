@@ -24,6 +24,7 @@ import { available, SEDES, EMPLOYEES, PROYECTOS, today } from '../services/mockD
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 import { exportarLibroMaestroExcelFMO } from '../services/excelExportService';
 import { supabase } from '../services/supabase';
+import { SUBCATEGORIAS_CONSUMIBLES_ROBOTICA } from '../constants/consumibles';
 
 import catalogoPapeleriaFMO from '../data/catalogoPapeleriaFMO.json';
 
@@ -232,6 +233,8 @@ export default function InventarioView({
   const [activeTab, setActiveTab] = useState(initialTab);
   // Filtro de stock para consumibles: 'todos' | 'minimo'
   const [filterStockConsumibles, setFilterStockConsumibles] = useState(initialStockFilter);
+  // Filtro de subcategoría para consumibles de robótica
+  const [filterSubcategoriaConsumibles, setFilterSubcategoriaConsumibles] = useState('todas');
 
   // Hook de autenticación y roles de usuario
   const { currentUser, isAdmin, isSupervisor, isOperador, isCoordinador } = useAuth();
@@ -1063,6 +1066,14 @@ export default function InventarioView({
       });
     }
 
+    if (filterSubcategoriaConsumibles && filterSubcategoriaConsumibles !== 'todas') {
+      const targetSub = filterSubcategoriaConsumibles.trim().toLowerCase();
+      list = list.filter((c) => {
+        const cat = (c.categoria || c.category || c.subcategoria || '').trim().toLowerCase();
+        return cat === targetSub;
+      });
+    }
+
     const term = normalizeText(searchTerm);
     if (!term) return list;
 
@@ -1070,18 +1081,18 @@ export default function InventarioView({
       return (
         normalizeText(c.id).includes(term) ||
         normalizeText(c.material || c.name).includes(term) ||
-        normalizeText(c.categoria || c.category).includes(term) ||
+        normalizeText(c.categoria || c.category || c.subcategoria).includes(term) ||
         normalizeText(c.ubicacion || c.location).includes(term) ||
         normalizeText(c.ubicacion_estante).includes(term)
       );
     });
-  }, [rawConsumibles, filterStockConsumibles, searchTerm]);
+  }, [rawConsumibles, filterStockConsumibles, filterSubcategoriaConsumibles, searchTerm]);
 
   // Reset de paginación consistente al cambiar búsqueda global o filtros
   useEffect(() => {
     setEquiposPage(1);
     setConsumiblesPage(1);
-  }, [searchTerm, filterSede, filterStatus, filterStockConsumibles]);
+  }, [searchTerm, filterSede, filterStatus, filterStockConsumibles, filterSubcategoriaConsumibles]);
 
   // Render plano de todas las unidades de equipos devueltas por PostgreSQL / Supabase
   const rawEquiposUnits = useMemo(() => {
@@ -1227,7 +1238,7 @@ export default function InventarioView({
   const initialFormNuevo = {
     id: '',
     material: '',
-    categoria: 'Robótica',
+    categoria: 'Componentes Electrónicos',
     area: 'Robótica',
     area_asignada: 'Robótica',
     ubicacion: 'Oficina FMO',
@@ -2444,7 +2455,7 @@ export default function InventarioView({
     const id = formDataNuevo.id?.trim();
     const material = formDataNuevo.material?.trim();
     const esPapeleria = activeTab === 'papeleria' || formDataNuevo.categoria === 'Papelería' || String(id || '').toLowerCase().startsWith('pape');
-    const categoria = esPapeleria ? 'Papelería' : (formDataNuevo.categoria?.trim() || 'Robótica');
+    const categoria = esPapeleria ? 'Papelería' : (formDataNuevo.categoria?.trim() || 'Componentes Electrónicos');
     const ubicacion = formDataNuevo.ubicacion?.trim() || 'Oficina FMO';
     const ubicacion_estante = formDataNuevo.ubicacion_estante?.trim() || '';
     const disponible = Number(formDataNuevo.disponible);
@@ -4167,7 +4178,7 @@ export default function InventarioView({
           </div>
 
           {/* Barra de filtros para consumibles con el mismo diseño que equipos tecnológicos */}
-          <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px' }}>
+          <div className="filter-bar" style={{ marginBottom: '4px', padding: '8px 14px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
             <div className="filter-group flex items-center gap-2">
               <label className="text-[#6d6e71] font-medium text-sm">Estado de Stock:</label>
               <select
@@ -4184,7 +4195,24 @@ export default function InventarioView({
               </select>
             </div>
 
-            <div className="filter-count text-[#6d6e71] text-sm">
+            <div className="filter-group flex items-center gap-2">
+              <label className="text-[#6d6e71] font-medium text-sm">Subcategoría:</label>
+              <select
+                value={filterSubcategoriaConsumibles}
+                onChange={(e) => {
+                  setFilterSubcategoriaConsumibles(e.target.value);
+                  setConsumiblesPage(1);
+                }}
+                className="bg-white text-[#013a52] font-semibold text-sm border border-slate-300 focus:ring-2 focus:ring-[#abd037] focus:border-[#013a52] rounded-md px-3 py-1.5 outline-none shadow-xs"
+              >
+                <option value="todas">Todas las subcategorías</option>
+                {SUBCATEGORIAS_CONSUMIBLES_ROBOTICA.map((subcat) => (
+                  <option key={subcat} value={subcat}>{subcat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-count text-[#6d6e71] text-sm ml-auto">
               Mostrando <strong className="font-bold text-[#013a52]">{consumibles.length}</strong> de <strong className="font-bold text-[#013a52]">{countConsumiblesTodos}</strong> materiales registrados
             </div>
           </div>
@@ -6462,7 +6490,7 @@ export default function InventarioView({
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Categoría *
+                          {isPapeleriaEdit ? 'Categoría *' : 'Subcategoría / Tipo *'}
                         </label>
                         {isPapeleriaEdit ? (
                           <input
@@ -6479,7 +6507,7 @@ export default function InventarioView({
                         ) : (
                           <select
                             name="categoria"
-                            value={formDataEditar.categoria || 'Robótica'}
+                            value={formDataEditar.categoria || 'Componentes Electrónicos'}
                             onChange={(e) => setFormDataEditar({ ...formDataEditar, categoria: e.target.value })}
                             className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                             style={{
@@ -6488,12 +6516,16 @@ export default function InventarioView({
                               borderColor: 'var(--line, #334155)',
                             }}
                           >
-                            <option value="Robótica">Robótica</option>
-                            <option value="Electrónica">Electrónica</option>
-                            <option value="Herramientas">Herramientas</option>
-                            <option value="Impresión 3D">Impresión 3D</option>
-                            <option value="Cables y Adaptadores">Cables y Adaptadores</option>
-                            <option value="Cómputo & Formación">Cómputo & Formación</option>
+                            {formDataEditar.categoria && !SUBCATEGORIAS_CONSUMIBLES_ROBOTICA.includes(formDataEditar.categoria) && (
+                              <option value={formDataEditar.categoria}>
+                                {formDataEditar.categoria} (Valor actual)
+                              </option>
+                            )}
+                            {SUBCATEGORIAS_CONSUMIBLES_ROBOTICA.map((subcat) => (
+                              <option key={subcat} value={subcat}>
+                                {subcat}
+                              </option>
+                            ))}
                           </select>
                         )}
                       </div>
@@ -7342,7 +7374,7 @@ export default function InventarioView({
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '14px', marginBottom: '12px' }}>
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1">
-                          Categoría *
+                          {isPapeleriaNuevo ? 'Categoría *' : 'Subcategoría / Tipo *'}
                         </label>
                         {isPapeleriaNuevo ? (
                           <input
@@ -7360,7 +7392,7 @@ export default function InventarioView({
                           <select
                             required
                             name="categoria"
-                            value={formDataNuevo.categoria || 'Robótica'}
+                            value={formDataNuevo.categoria || 'Componentes Electrónicos'}
                             onChange={(e) => setFormDataNuevo({ ...formDataNuevo, categoria: e.target.value })}
                             className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                             style={{
@@ -7369,12 +7401,11 @@ export default function InventarioView({
                               borderColor: 'var(--line, #334155)',
                             }}
                           >
-                            <option value="Robótica">Robótica</option>
-                            <option value="Electrónica">Electrónica</option>
-                            <option value="Herramientas">Herramientas</option>
-                            <option value="Impresión 3D">Impresión 3D</option>
-                            <option value="Cables y Adaptadores">Cables y Adaptadores</option>
-                            <option value="Cómputo & Formación">Cómputo & Formación</option>
+                            {SUBCATEGORIAS_CONSUMIBLES_ROBOTICA.map((subcat) => (
+                              <option key={subcat} value={subcat}>
+                                {subcat}
+                              </option>
+                            ))}
                           </select>
                         )}
                       </div>
