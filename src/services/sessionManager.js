@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   USER: 'siga_user',
   LAST_ACTIVITY: 'siga_last_activity',
   SESSION_EXPIRED: 'siga_session_expired',
+  SESSION_EXPIRED_REASON: 'siga_session_expired_reason',
   REMEMBER_USER: 'siga_remember_user',
 };
 
@@ -121,7 +122,7 @@ export function validateActiveSession() {
     return {
       isValid: false,
       reason: 'inactivity',
-      message: DEFAULT_EXPIRED_MESSAGE,
+      message: 'inactividad',
     };
   }
 
@@ -132,7 +133,7 @@ export function validateActiveSession() {
       return {
         isValid: false,
         reason: 'invalid_token',
-        message: DEFAULT_EXPIRED_MESSAGE,
+        message: 'token_caducado',
       };
     }
 
@@ -142,7 +143,7 @@ export function validateActiveSession() {
         return {
           isValid: false,
           reason: 'token_expired',
-          message: DEFAULT_EXPIRED_MESSAGE,
+          message: 'token_caducado',
         };
       }
     }
@@ -150,7 +151,7 @@ export function validateActiveSession() {
     return {
       isValid: false,
       reason: 'token_decode_error',
-      message: DEFAULT_EXPIRED_MESSAGE,
+      message: 'token_caducado',
     };
   }
 
@@ -160,6 +161,7 @@ export function validateActiveSession() {
 /**
  * Cierre forzoso de sesión por inactividad, token caducado o error 401
  * - Limpia tokens y datos de sesión en localStorage y sessionStorage
+ * - Guarda el motivo ('inactividad' o 'token_caducado') en sessionStorage para la pantalla de Login
  * - Llama a signOut() en Supabase
  * - Redirige inmediatamente a /login con aviso explicativo
  * @param {string} [motivo]
@@ -171,8 +173,23 @@ export async function forceLogout(motivo = DEFAULT_EXPIRED_MESSAGE) {
   try {
     const finalMsg = motivo || DEFAULT_EXPIRED_MESSAGE;
 
-    // 1. Guardar mensaje de expiración para que LoginView lo muestre
+    // Determinar la causa normalizada ('inactividad' o 'token_caducado')
+    let reasonKey = 'token_caducado';
+    const strMotivo = String(finalMsg).toLowerCase();
+    if (
+      strMotivo === 'inactividad' ||
+      strMotivo.includes('inactiv') ||
+      strMotivo.includes('2 hora') ||
+      isSessionExpiredByInactivity()
+    ) {
+      reasonKey = 'inactividad';
+    } else {
+      reasonKey = 'token_caducado';
+    }
+
+    // 1. Guardar motivo de expiración en sessionStorage para que LoginView muestre el banner
     try {
+      sessionStorage.setItem(STORAGE_KEYS.SESSION_EXPIRED_REASON, reasonKey);
       sessionStorage.setItem(STORAGE_KEYS.SESSION_EXPIRED, finalMsg);
     } catch (_) {}
 

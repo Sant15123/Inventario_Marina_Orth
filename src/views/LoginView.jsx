@@ -12,6 +12,7 @@ import {
   AlertCircle,
   HelpCircle,
   X,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,25 +21,52 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
   const location = useLocation();
   const { login, isAuthenticated, currentUser, authLoading, sessionExpiredMessage, setSessionExpiredMessage } = useAuth();
 
-  const [errorMsg, setErrorMsg] = useState(() => {
+  // Estado para el motivo del cierre automático de sesión ('inactividad' o 'token_caducado')
+  const [expiredReason, setExpiredReason] = useState(() => {
     try {
-      return sessionExpiredMessage || sessionStorage.getItem('siga_session_expired') || '';
+      const reason = sessionStorage.getItem('siga_session_expired_reason');
+      const expiredMsg = sessionStorage.getItem('siga_session_expired');
+      if (reason) {
+        // Limpiar inmediatamente de sessionStorage para que si el usuario recarga no vuelva a salir
+        sessionStorage.removeItem('siga_session_expired_reason');
+        sessionStorage.removeItem('siga_session_expired');
+        return reason;
+      }
+      if (expiredMsg) {
+        sessionStorage.removeItem('siga_session_expired');
+        const str = String(expiredMsg).toLowerCase();
+        return str.includes('inactiv') || str.includes('2 hora') ? 'inactividad' : 'token_caducado';
+      }
+      return null;
     } catch {
-      return '';
+      return null;
     }
   });
 
-  // Mostrar advertencia de sesión caducada si existe
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // Sincronizar advertencia de sesión caducada desde AuthContext si llega dinámicamente
   useEffect(() => {
-    const expiredMsg = sessionExpiredMessage || sessionStorage.getItem('siga_session_expired');
-    if (expiredMsg) {
-      setErrorMsg(expiredMsg);
+    if (sessionExpiredMessage) {
+      const str = String(sessionExpiredMessage).toLowerCase();
+      const resolved = str.includes('inactiv') || str.includes('2 hora') ? 'inactividad' : 'token_caducado';
+      setExpiredReason(resolved);
       try {
+        sessionStorage.removeItem('siga_session_expired_reason');
         sessionStorage.removeItem('siga_session_expired');
         if (setSessionExpiredMessage) setSessionExpiredMessage('');
       } catch (_) {}
     }
   }, [sessionExpiredMessage, setSessionExpiredMessage]);
+
+  // Cerrar el banner de sesión expirada manualmente
+  const handleCloseExpiredBanner = () => {
+    setExpiredReason(null);
+    try {
+      sessionStorage.removeItem('siga_session_expired_reason');
+      sessionStorage.removeItem('siga_session_expired');
+    } catch (_) {}
+  };
 
   // El tema se rige directamente por la propiedad activa
   const isDark = theme === 'dark';
@@ -94,6 +122,11 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
+    setExpiredReason(null);
+    try {
+      sessionStorage.removeItem('siga_session_expired_reason');
+      sessionStorage.removeItem('siga_session_expired');
+    } catch (_) {}
     setCargando(true);
 
     try {
@@ -301,8 +334,111 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
           </p>
         </div>
 
+        {/* Banner de alerta destacado por inactividad (2 Horas) o token caducado */}
+        {expiredReason && (
+          <div
+            style={{
+              marginBottom: '1.25rem',
+              padding: '0.875rem 1rem',
+              borderRadius: '0.875rem',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+              fontFamily: "'Poppins', sans-serif",
+              backgroundColor: expiredReason === 'inactividad'
+                ? (isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7')
+                : (isDark ? 'rgba(244, 63, 94, 0.15)' : '#FFF1F2'),
+              borderColor: expiredReason === 'inactividad'
+                ? (isDark ? 'rgba(245, 158, 11, 0.45)' : '#FCD34D')
+                : (isDark ? 'rgba(244, 63, 94, 0.45)' : '#FECDD3'),
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              boxShadow: isDark
+                ? '0 4px 14px rgba(0, 0, 0, 0.3)'
+                : '0 2px 8px rgba(0, 0, 0, 0.05)',
+            }}
+          >
+            {expiredReason === 'inactividad' ? (
+              <Clock
+                size={20}
+                style={{
+                  color: isDark ? '#FBBF24' : '#D97706',
+                  flexShrink: 0,
+                  marginTop: '2px',
+                }}
+              />
+            ) : (
+              <AlertCircle
+                size={20}
+                style={{
+                  color: isDark ? '#FB7185' : '#E11D48',
+                  flexShrink: 0,
+                  marginTop: '2px',
+                }}
+              />
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  lineHeight: '1.3',
+                  marginBottom: '0.2rem',
+                  fontFamily: "'Poppins', sans-serif",
+                  color: expiredReason === 'inactividad'
+                    ? (isDark ? '#FBBF24' : '#92400E')
+                    : (isDark ? '#FB7185' : '#9F1239'),
+                }}
+              >
+                {expiredReason === 'inactividad'
+                  ? 'Sesión cerrada por inactividad'
+                  : 'Tu sesión ha expirado'}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.775rem',
+                  lineHeight: '1.45',
+                  fontFamily: "'Poppins', sans-serif",
+                  color: expiredReason === 'inactividad'
+                    ? (isDark ? '#FDE68A' : '#78350F')
+                    : (isDark ? '#FDA4AF' : '#881337'),
+                }}
+              >
+                {expiredReason === 'inactividad'
+                  ? 'Por tu seguridad, cerramos tu sesión tras 2 horas sin actividad. Inicia sesión nuevamente para continuar.'
+                  : 'Tus credenciales vencieron. Inicia sesión nuevamente para guardar o consultar cambios.'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseExpiredBanner}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '6px',
+                color: expiredReason === 'inactividad'
+                  ? (isDark ? '#FDE68A' : '#92400E')
+                  : (isDark ? '#FDA4AF' : '#9F1239'),
+                opacity: 0.8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
+              title="Cerrar aviso"
+              aria-label="Cerrar aviso"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Alerta de error si falla la validación */}
-        {errorMsg && (
+        {errorMsg && !expiredReason && (
           <div
             style={{
               marginBottom: '1rem',

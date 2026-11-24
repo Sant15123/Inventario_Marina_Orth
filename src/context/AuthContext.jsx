@@ -434,6 +434,10 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('siga_last_activity');
         try {
           sessionStorage.setItem('siga_session_expired', sessionCheck.message || DEFAULT_EXPIRED_MESSAGE);
+          sessionStorage.setItem(
+            'siga_session_expired_reason',
+            sessionCheck.reason === 'inactivity' ? 'inactividad' : 'token_caducado'
+          );
         } catch (_) {}
         return null;
       }
@@ -661,6 +665,7 @@ export function AuthProvider({ children }) {
     recordActivity(true);
     try {
       sessionStorage.removeItem('siga_session_expired');
+      sessionStorage.removeItem('siga_session_expired_reason');
     } catch (_) {}
 
     setToken(newToken);
@@ -854,6 +859,7 @@ export function AuthProvider({ children }) {
         recordActivity(true);
         try {
           sessionStorage.removeItem('siga_session_expired');
+          sessionStorage.removeItem('siga_session_expired_reason');
         } catch (_) {}
 
         if (remember) {
@@ -877,6 +883,10 @@ export function AuthProvider({ children }) {
    * Cierre de sesión institucional
    */
   const logout = useCallback(() => {
+    try {
+      sessionStorage.removeItem('siga_session_expired_reason');
+      sessionStorage.removeItem('siga_session_expired');
+    } catch (_) {}
     localStorage.removeItem('siga_token');
     localStorage.removeItem('siga_current_user');
     localStorage.removeItem('siga_user');
