@@ -178,7 +178,8 @@ export default function HistorialView({ movements = [] }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const [exportandoExcel, setExportandoExcel] = useState(false);
-  const ITEMS_PER_PAGE = 5;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const ITEMS_PER_PAGE = itemsPerPage;
 
   // Si el usuario es Coordinador, inicializar exclusivamente con movimientos propios para evitar destello global
   const [historial, setHistorial] = useState(() => {
@@ -644,7 +645,7 @@ export default function HistorialView({ movements = [] }) {
   const paginatedList = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredList.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredList, currentPage]);
+  }, [filteredList, currentPage, ITEMS_PER_PAGE]);
 
   const handleFilterChange = (type) => {
     setFilterType(type);
@@ -1140,7 +1141,7 @@ export default function HistorialView({ movements = [] }) {
               <div>
                 Mostrando{' '}
                 <strong style={{ color: 'var(--text-h)' }}>
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+                  {filteredList.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}
                 </strong>{' '}
                 -{' '}
                 <strong style={{ color: 'var(--text-h)' }}>
@@ -1149,16 +1150,45 @@ export default function HistorialView({ movements = [] }) {
                 de <strong style={{ color: 'var(--text-h)' }}>{filteredList.length}</strong> movimientos
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  className="btn small ghost"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  style={{ padding: '3px 10px', fontSize: '12px', cursor: currentPage <= 1 ? 'not-allowed' : 'pointer' }}
-                >
-                  ← Anterior
-                </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim)' }}>
+                  <span>Filas:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    style={{
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--bg-input, #fff)',
+                      color: 'var(--text)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={99999}>Todos</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn small ghost"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    style={{ padding: '3px 10px', fontSize: '12px', cursor: currentPage <= 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    ← Anterior
+                  </button>
 
                 <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
                   Página {currentPage} de {totalPages}
@@ -1175,6 +1205,7 @@ export default function HistorialView({ movements = [] }) {
                 </button>
               </div>
             </div>
+          </div>
           )}
         </div>
       </section>

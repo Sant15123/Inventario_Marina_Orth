@@ -227,7 +227,8 @@ export default function PrestamosView({
   const [solicitudesPage, setSolicitudesPage] = useState(1);
   const [solicitudParaGestionar, setSolicitudParaGestionar] = useState(null);
   const [modalGestionOpen, setModalGestionOpen] = useState(false);
-  const SOLICITUDES_PER_PAGE = 5;
+  const [solicitudesPerPage, setSolicitudesPerPage] = useState(5);
+  const SOLICITUDES_PER_PAGE = solicitudesPerPage;
 
   const fetchSolicitudes = async () => {
     try {
@@ -784,9 +785,10 @@ export default function PrestamosView({
     }
   };
 
-  // Paginación fija de 5 filas para préstamos activos
+  // Paginación para préstamos activos
   const [currentLoanPage, setCurrentLoanPage] = useState(1);
-  const LOANS_PER_PAGE = 5;
+  const [loansPerPage, setLoansPerPage] = useState(5);
+  const LOANS_PER_PAGE = loansPerPage;
   const totalLoanPages = Math.max(1, Math.ceil(activeLoans.length / LOANS_PER_PAGE));
   const paginatedLoans = activeLoans.slice(
     (currentLoanPage - 1) * LOANS_PER_PAGE,
@@ -1746,7 +1748,7 @@ export default function PrestamosView({
                   })}
 
                   {/* FILAS PLACEHOLDER PARA MANTENER LA ALTURA EXACTA SI HAY MENOS DE 5 REGISTROS */}
-                  {Array.from({ length: Math.max(0, LOANS_PER_PAGE - paginatedLoans.length) }).map((_, phIdx) => (
+                  {loansPerPage <= 5 && Array.from({ length: Math.max(0, 5 - paginatedLoans.length) }).map((_, phIdx) => (
                     <tr key={`ph-loans-${phIdx}`} style={{ height: '56px', opacity: 0.25 }}>
                       <td colSpan={7} style={{ padding: '0 8px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
                         &nbsp;
@@ -1782,16 +1784,45 @@ export default function PrestamosView({
                   de <strong style={{ color: 'var(--text-h)' }}>{activeLoans.length}</strong> préstamos
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className="btn small ghost"
-                    disabled={currentLoanPage <= 1}
-                    onClick={() => setCurrentLoanPage((p) => Math.max(1, p - 1))}
-                    style={{ padding: '3px 10px', fontSize: '12px', cursor: currentLoanPage <= 1 ? 'not-allowed' : 'pointer' }}
-                  >
-                    ← Anterior
-                  </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim)' }}>
+                    <span>Filas:</span>
+                    <select
+                      value={loansPerPage}
+                      onChange={(e) => {
+                        setLoansPerPage(Number(e.target.value));
+                        setCurrentLoanPage(1);
+                      }}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--bg-input, #fff)',
+                        color: 'var(--text)',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn small ghost"
+                      disabled={currentLoanPage <= 1}
+                      onClick={() => setCurrentLoanPage((p) => Math.max(1, p - 1))}
+                      style={{ padding: '3px 10px', fontSize: '12px', cursor: currentLoanPage <= 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      ← Anterior
+                    </button>
 
                   <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
                     Página {currentLoanPage} de {totalLoanPages}
@@ -1809,7 +1840,8 @@ export default function PrestamosView({
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
         </section>
       )}
 
@@ -2281,7 +2313,7 @@ export default function PrestamosView({
                 <div>
                   Mostrando{' '}
                   <strong style={{ color: 'var(--text-h)' }}>
-                    {(solicitudesPage - 1) * SOLICITUDES_PER_PAGE + 1}
+                    {solicitudesEstandar.length === 0 ? 0 : (solicitudesPage - 1) * SOLICITUDES_PER_PAGE + 1}
                   </strong>{' '}
                   -{' '}
                   <strong style={{ color: 'var(--text-h)' }}>
@@ -2290,16 +2322,45 @@ export default function PrestamosView({
                   de <strong style={{ color: 'var(--text-h)' }}>{solicitudesEstandar.length}</strong> solicitudes
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className="btn small ghost"
-                    disabled={solicitudesPage <= 1}
-                    onClick={() => setSolicitudesPage((p) => Math.max(1, p - 1))}
-                    style={{ padding: '3px 10px', fontSize: '12px', cursor: solicitudesPage <= 1 ? 'not-allowed' : 'pointer' }}
-                  >
-                    ← Anterior
-                  </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim)' }}>
+                    <span>Filas:</span>
+                    <select
+                      value={solicitudesPerPage}
+                      onChange={(e) => {
+                        setSolicitudesPerPage(Number(e.target.value));
+                        setSolicitudesPage(1);
+                      }}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--bg-input, #fff)',
+                        color: 'var(--text)',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn small ghost"
+                      disabled={solicitudesPage <= 1}
+                      onClick={() => setSolicitudesPage((p) => Math.max(1, p - 1))}
+                      style={{ padding: '3px 10px', fontSize: '12px', cursor: solicitudesPage <= 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      ← Anterior
+                    </button>
 
                   <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
                     Página {solicitudesPage} de {Math.max(1, Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE))}
@@ -2327,6 +2388,7 @@ export default function PrestamosView({
                   </button>
                 </div>
               </div>
+            </div>
             )}
           </div>
         </section>

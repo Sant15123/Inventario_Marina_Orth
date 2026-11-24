@@ -3786,12 +3786,14 @@ export default function InventarioView({
                         const val = Number(e.target.value);
                         setItemsPerPage(val);
                         setEquiposPage(1);
+                        setElectronicaPage(1);
                         setConsumiblesPage(1);
                         setPapeleriaPage(1);
                         setMobiliarioPage(1);
                       }}
                       className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
                     >
+                      <option value={5}>5</option>
                       <option value={10}>10</option>
                       <option value={25}>25</option>
                       <option value={50}>50</option>
@@ -4287,28 +4289,53 @@ export default function InventarioView({
                     : 'equipos registrados'}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    type="button"
-                    disabled={currentElectronicaPage <= 1}
-                    onClick={() => setElectronicaPage((p) => Math.max(1, p - 1))}
-                    className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-[#013a52] dark:text-slate-100 transition-colors cursor-pointer"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Anterior
-                  </button>
-                  <span className="font-bold text-[#013a52] dark:text-slate-200 text-xs" style={{ fontFamily: "'Poppins', sans-serif" }}>
-                    Pág. {currentElectronicaPage} de {totalElectronicaPages}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={currentElectronicaPage >= totalElectronicaPages}
-                    onClick={() => setElectronicaPage((p) => Math.min(totalElectronicaPages, p + 1))}
-                    className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-[#013a52] dark:text-slate-100 transition-colors cursor-pointer"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Siguiente
-                  </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div className="flex items-center gap-1.5 text-xs text-[#6d6e71]">
+                    <span>Filas:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setItemsPerPage(val);
+                        setEquiposPage(1);
+                        setElectronicaPage(1);
+                        setConsumiblesPage(1);
+                        setPapeleriaPage(1);
+                        setMobiliarioPage(1);
+                      }}
+                      className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      disabled={currentElectronicaPage <= 1}
+                      onClick={() => setElectronicaPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-[#013a52] dark:text-slate-100 transition-colors cursor-pointer"
+                      style={{ fontFamily: "'Poppins', sans-serif" }}
+                    >
+                      ← Anterior
+                    </button>
+                    <span className="font-bold text-[#013a52] dark:text-slate-200 text-xs" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                      Página {currentElectronicaPage} de {totalElectronicaPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={currentElectronicaPage >= totalElectronicaPages}
+                      onClick={() => setElectronicaPage((p) => Math.min(totalElectronicaPages, p + 1))}
+                      className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-[#013a52] dark:text-slate-100 transition-colors cursor-pointer"
+                      style={{ fontFamily: "'Poppins', sans-serif" }}
+                    >
+                      Siguiente →
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -4779,12 +4806,14 @@ export default function InventarioView({
                         const val = Number(e.target.value);
                         setItemsPerPage(val);
                         setEquiposPage(1);
+                        setElectronicaPage(1);
                         setConsumiblesPage(1);
                         setPapeleriaPage(1);
                         setMobiliarioPage(1);
                       }}
                       className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
                     >
+                      <option value={5}>5</option>
                       <option value={10}>10</option>
                       <option value={25}>25</option>
                       <option value={50}>50</option>
@@ -5322,12 +5351,14 @@ export default function InventarioView({
                         const val = Number(e.target.value);
                         setItemsPerPage(val);
                         setEquiposPage(1);
+                        setElectronicaPage(1);
                         setConsumiblesPage(1);
                         setPapeleriaPage(1);
                         setMobiliarioPage(1);
                       }}
                       className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
                     >
+                      <option value={5}>5</option>
                       <option value={10}>10</option>
                       <option value={25}>25</option>
                       <option value={50}>50</option>
@@ -5710,12 +5741,14 @@ export default function InventarioView({
                         const val = Number(e.target.value);
                         setItemsPerPage(val);
                         setEquiposPage(1);
+                        setElectronicaPage(1);
                         setConsumiblesPage(1);
                         setPapeleriaPage(1);
                         setMobiliarioPage(1);
                       }}
                       className="bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-semibold text-[#013a52] outline-none cursor-pointer"
                     >
+                      <option value={5}>5</option>
                       <option value={10}>10</option>
                       <option value={25}>25</option>
                       <option value={50}>50</option>

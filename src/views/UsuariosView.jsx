@@ -197,9 +197,10 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
     });
   }, [usuariosUnicos, searchTerm, busquedaGlobal, activeTab]);
 
-  // 4. Paginación estándar (5 registros por página)
+  // 4. Paginación de usuarios
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE_USUARIOS = 5;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const ITEMS_PER_PAGE_USUARIOS = itemsPerPage;
 
   // Resetear a página 1 cada vez que cambie la búsqueda o el filtro de rol superior
   useEffect(() => {
@@ -211,7 +212,7 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
   const paginatedUsuarios = useMemo(() => {
     const start = (currentUsuariosPage - 1) * ITEMS_PER_PAGE_USUARIOS;
     return usuariosFiltrados.slice(start, start + ITEMS_PER_PAGE_USUARIOS);
-  }, [usuariosFiltrados, currentUsuariosPage]);
+  }, [usuariosFiltrados, currentUsuariosPage, ITEMS_PER_PAGE_USUARIOS]);
 
   // Resumir nombre de Sede para que nunca desborde ni se sobreponga
   const formatSede = (sede) => {
@@ -962,16 +963,45 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
               de <strong style={{ color: 'var(--text-h)' }}>{usuariosFiltrados.length}</strong> usuarios registrados
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                type="button"
-                className="btn small ghost"
-                disabled={currentUsuariosPage <= 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                style={{ padding: '3px 10px', fontSize: '12px', cursor: currentUsuariosPage <= 1 ? 'not-allowed' : 'pointer' }}
-              >
-                ← Anterior
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim)' }}>
+                <span>Filas:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: '2px 8px',
+                    fontSize: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--bg-input, #fff)',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={99999}>Todos</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn small ghost"
+                  disabled={currentUsuariosPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  style={{ padding: '3px 10px', fontSize: '12px', cursor: currentUsuariosPage <= 1 ? 'not-allowed' : 'pointer' }}
+                >
+                  ← Anterior
+                </button>
 
               <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 6px', fontSize: '12px' }}>
                 Página {currentUsuariosPage} de {totalPages}
@@ -989,7 +1019,8 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* =========================================================================
           MODAL INSTITUCIONAL: REGISTRAR NUEVO USUARIO

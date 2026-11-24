@@ -1123,6 +1123,22 @@ export default function GestionComprasView({
     });
   }, [solicitudesAuditoria, pestanaActiva, busqueda]);
 
+  // Paginación de solicitudes en Gestión de Compras
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const totalPages = Math.max(1, Math.ceil(solicitudesFiltradas.length / itemsPerPage));
+  const currentComprasPage = Math.min(currentPage, totalPages);
+
+  // Resetear página al cambiar filtros o búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pestanaActiva, busqueda, filtroSede, filtroProyecto, fechaDesde, fechaHasta]);
+
+  const paginatedSolicitudes = useMemo(() => {
+    const start = (currentComprasPage - 1) * itemsPerPage;
+    return solicitudesFiltradas.slice(start, start + itemsPerPage);
+  }, [solicitudesFiltradas, currentComprasPage, itemsPerPage]);
+
   // Lista de sedes únicas para el selector
   const sedesList = useMemo(() => {
     const set = new Set();
@@ -2399,7 +2415,7 @@ export default function GestionComprasView({
               </tr>
             </thead>
             <tbody>
-              {solicitudesFiltradas.map((sol) => {
+              {paginatedSolicitudes.map((sol) => {
                 const solItems = getSolItems(sol);
                 const totalItems = solItems.length;
                 const primerItem = solItems[0];
@@ -2827,6 +2843,98 @@ export default function GestionComprasView({
               })}
             </tbody>
           </table>
+
+          {/* CONTROLES DE PAGINACIÓN */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 16px',
+              borderTop: '1px solid var(--line, #e2e8f0)',
+              fontSize: '12.5px',
+              color: 'var(--text-dim, #64748b)',
+              flexWrap: 'wrap',
+              gap: '12px',
+              backgroundColor: 'var(--bg-card, #ffffff)',
+            }}
+          >
+            <div>
+              Mostrando{' '}
+              <strong style={{ color: 'var(--text-h, #013a52)' }}>
+                {solicitudesFiltradas.length === 0 ? 0 : (currentComprasPage - 1) * itemsPerPage + 1}
+              </strong>{' '}
+              -{' '}
+              <strong style={{ color: 'var(--text-h, #013a52)' }}>
+                {Math.min(currentComprasPage * itemsPerPage, solicitudesFiltradas.length)}
+              </strong>{' '}
+              de <strong style={{ color: 'var(--text-h, #013a52)' }}>{solicitudesFiltradas.length}</strong> solicitudes
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim, #64748b)' }}>
+                <span>Filas:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: '2px 8px',
+                    fontSize: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line, #e2e8f0)',
+                    background: 'var(--bg-input, #ffffff)',
+                    color: 'var(--text, #013a52)',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={99999}>Todos</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn small ghost"
+                  disabled={currentComprasPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: '12px',
+                    cursor: currentComprasPage <= 1 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  ← Anterior
+                </button>
+
+                <span style={{ fontWeight: 600, color: 'var(--text, #013a52)', padding: '0 4px', fontSize: '12px' }}>
+                  Página {currentComprasPage} de {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  className="btn small ghost"
+                  disabled={currentComprasPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: '12px',
+                    cursor: currentComprasPage >= totalPages ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Siguiente →
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

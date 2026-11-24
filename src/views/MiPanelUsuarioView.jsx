@@ -179,9 +179,10 @@ export default function MiPanelUsuarioView({
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
   const [modalMotivoRechazo, setModalMotivoRechazo] = useState(null);
 
-  // Paginación de 5 en 5 para la pestaña "Mis Solicitudes"
+  // Paginación para la pestaña "Mis Solicitudes"
   const [solicitudesPage, setSolicitudesPage] = useState(1);
-  const SOLICITUDES_PER_PAGE = 5;
+  const [solicitudesPerPage, setSolicitudesPerPage] = useState(5);
+  const SOLICITUDES_PER_PAGE = solicitudesPerPage;
 
   // Cargar solicitudes del usuario
   const fetchSolicitudes = async () => {
@@ -1458,7 +1459,7 @@ export default function MiPanelUsuarioView({
                 <div>
                   Mostrando{' '}
                   <strong style={{ color: 'var(--text-h)' }}>
-                    {(solicitudesPage - 1) * SOLICITUDES_PER_PAGE + 1}
+                    {solicitudes.length === 0 ? 0 : (solicitudesPage - 1) * SOLICITUDES_PER_PAGE + 1}
                   </strong>{' '}
                   -{' '}
                   <strong style={{ color: 'var(--text-h)' }}>
@@ -1467,16 +1468,45 @@ export default function MiPanelUsuarioView({
                   de <strong style={{ color: 'var(--text-h)' }}>{solicitudes.length}</strong> solicitudes
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className="btn small ghost"
-                    disabled={solicitudesPage <= 1}
-                    onClick={() => setSolicitudesPage((p) => Math.max(1, p - 1))}
-                    style={{ padding: '3px 10px', fontSize: '12px', cursor: solicitudesPage <= 1 ? 'not-allowed' : 'pointer' }}
-                  >
-                    ← Anterior
-                  </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-dim)' }}>
+                    <span>Filas:</span>
+                    <select
+                      value={solicitudesPerPage}
+                      onChange={(e) => {
+                        setSolicitudesPerPage(Number(e.target.value));
+                        setSolicitudesPage(1);
+                      }}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--bg-input, #fff)',
+                        color: 'var(--text)',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={99999}>Todos</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn small ghost"
+                      disabled={solicitudesPage <= 1}
+                      onClick={() => setSolicitudesPage((p) => Math.max(1, p - 1))}
+                      style={{ padding: '3px 10px', fontSize: '12px', cursor: solicitudesPage <= 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      ← Anterior
+                    </button>
 
                   <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
                     Página {solicitudesPage} de {Math.max(1, Math.ceil(solicitudes.length / SOLICITUDES_PER_PAGE))}
@@ -1504,6 +1534,7 @@ export default function MiPanelUsuarioView({
                   </button>
                 </div>
               </div>
+            </div>
             )}
           </div>
         </section>
