@@ -75,7 +75,21 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
       }
     };
     fetchSedes();
-    return () => { isMounted = false; };
+
+    const handleSedesChanged = () => {
+      fetchSedes();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('siga:sedes_changed', handleSedesChanged);
+    }
+
+    return () => {
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('siga:sedes_changed', handleSedesChanged);
+      }
+    };
   }, []);
 
   // Estado para modal de Detalle de Usuario

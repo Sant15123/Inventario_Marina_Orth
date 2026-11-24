@@ -225,8 +225,23 @@ export default function InventarioView({
         console.warn('Error al cargar sedes en InventarioView:', err.message);
       }
     };
+
     fetchSedesInventario();
-    return () => { isMounted = false; };
+
+    const handleSedesChanged = () => {
+      fetchSedesInventario();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('siga:sedes_changed', handleSedesChanged);
+    }
+
+    return () => {
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('siga:sedes_changed', handleSedesChanged);
+      }
+    };
   }, [propSedes]);
 
   // Pestaña activa: 'equipos' | 'consumibles'

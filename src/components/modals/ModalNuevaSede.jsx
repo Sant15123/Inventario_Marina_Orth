@@ -207,6 +207,15 @@ export default function ModalNuevaSede({
           onSedeUpdated(finalItem);
         }
 
+        // Notificar globalmente a todos los módulos y modales para sincronización reactiva inmediata
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('siga:sedes_changed', {
+              detail: { action: 'update', sede: finalItem },
+            })
+          );
+        }
+
         setSuccessMsg(`¡Sede "${finalItem.nombre}" actualizada exitosamente!`);
         setTimeout(() => {
           onClose();
@@ -250,6 +259,15 @@ export default function ModalNuevaSede({
       await fetchSedes();
       if (onSedeCreated) {
         onSedeCreated(itemToSave);
+      }
+
+      // Notificar globalmente a todos los módulos y modales para sincronización reactiva inmediata
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('siga:sedes_changed', {
+            detail: { action: 'create', sede: itemToSave },
+          })
+        );
       }
 
       setSuccessMsg(`¡Sede "${itemToSave.nombre}" registrada exitosamente!`);

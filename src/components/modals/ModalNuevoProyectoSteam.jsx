@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { SEDES } from '../../services/mockData';
+import React, { useState, useEffect, useCallback } from 'react';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
 import { useProyectos } from '../../hooks/useProyectos';
@@ -27,6 +26,7 @@ export default function ModalNuevoProyectoSteam({
   onProyectoCreated,
   onProyectoUpdated,
   initialMode = 'crear',
+  sedes: propSedes,
 }) {
   const { proyectos: listaProyectos, refetch: refetchProyectos } = useProyectos();
 
@@ -39,6 +39,142 @@ export default function ModalNuevoProyectoSteam({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [listaSedes, setListaSedes] = useState([]);
+
+  // Carga de sedes en vivo desde public.sedes en Supabase
+  const fetchSedes = useCallback(async () => {
+    try {
+      if (supabase) {
+        const { data, error: sbError } = await supabase
+          .from('sedes')
+          .select('id, nombre, municipio, direccion, activo')
+          .order('nombre', { ascending: true });
+
+        if (!sbError && Array.isArray(data) && data.length > 0) {
+          const unicas = [];
+          const seen = new Set();
+          for (const s of data) {
+            if (s.activo === false) continue;
+            const norm = (s.nombre || '').trim().toLowerCase();
+            if (!norm || seen.has(norm)) continue;
+            seen.add(norm);
+            unicas.push({
+              id: s.id || s.nombre,
+              nombre: (s.nombre || '').trim(),
+              municipio: (s.municipio || s.nombre || '').trim(),
+            });
+          }
+          if (unicas.length > 0) {
+            setListaSedes(unicas);
+            return unicas;
+          }
+        }
+      }
+
+      // Fallback API
+      const dataApi = await inventoryApi.getSedes();
+      if (Array.isArray(dataApi) && dataApi.length > 0) {
+        const unicas = [];
+        const seen = new Set();
+        for (const s of dataApi) {
+          if (s.activo === false) continue;
+          const norm = (s.nombre || '').trim().toLowerCase();
+          if (!norm || seen.has(norm)) continue;
+          seen.add(norm);
+          unicas.push({
+            id: s.id || s.nombre,
+            nombre: (s.nombre || '').trim(),
+            municipio: (s.municipio || s.nombre || '').trim(),
+          });
+        }
+        if (unicas.length > 0) {
+          setListaSedes(unicas);
+          return unicas;
+        }
+      }
+    } catch (err) {
+      console.warn('[ModalNuevoProyectoSteam] Error al consultar public.sedes:', err.message);
+    }
+
+    // Fallback propSedes
+    if (Array.isArray(propSedes) && propSedes.length > 0) {
+      const seen = new Set();
+      const fallbackList = [];
+      for (const s of propSedes) {
+        const n = (typeof s === 'string' ? s : s.nombre || '').trim();
+        const norm = n.toLowerCase();
+        if (norm && !seen.has(norm)) {
+          seen.add(norm);
+          fallbackList.push({
+            id: typeof s === 'string' ? s : s.id || s.nombre,
+            nombre: n,
+            municipio: typeof s === 'string' ? s : s.municipio || s.nombre,
+          });
+        }
+      }
+      setListaSedes(fallbackList);
+      return fallbackList;
+    }
+
+    return [];
+  }, [propSedes]);
+
+  // Consultar sedes cada vez que el modal se abre
+  useEffect(() => {
+    if (isOpen) {
+      fetchSedes();
+    }
+  }, [isOpen, fetchSedes]);
+
+  // Escuchar evento global siga:sedes_changed para sincronización inmediata sin recargar página
+  useEffect(() => {
+    const handleSedesChanged = () => {
+      fetchSedes();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('siga:sedes_changed', handleSedesChanged);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('siga:sedes_changed', handleSedesChanged);
+      }
+    };
+  }, [fetchSedes]);
+
+  // Si propSedes se actualiza desde el padre, sincronizar listaSedes
+  useEffect(() => {
+    if (Array.isArray(propSedes) && propSedes.length > 0 && listaSedes.length === 0) {
+      const seen = new Set();
+      const fallbackList = [];
+      for (const s of propSedes) {
+        const n = (typeof s === 'string' ? s : s.nombre || '').trim();
+        const norm = n.toLowerCase();
+        if (norm && !seen.has(norm)) {
+          seen.add(norm);
+          fallbackList.push({
+            id: typeof s === 'string' ? s : s.id || s.nombre,
+            nombre: n,
+            municipio: typeof s === 'string' ? s : s.municipio || s.nombre,
+          });
+        }
+      }
+      setListaSedes(fallbackList);
+    }
+  }, [propSedes, listaSedes.length]);
+
+  // Selección predeterminada en modo creación una vez cargadas las sedes
+  useEffect(() => {
+    if (modo === 'crear' && (!municipio || municipio === 'Medellín') && listaSedes.length > 0) {
+      const medellin = listaSedes.find(
+        (s) => s.nombre.toLowerCase() === 'medellín' || s.nombre.toLowerCase() === 'medellin'
+      );
+      if (medellin) {
+        setMunicipio(medellin.nombre);
+      } else {
+        setMunicipio(listaSedes[0].nombre);
+      }
+    }
+  }, [listaSedes, modo]);
 
   // Sincronizar proyecto seleccionado al cambiar a modo editar
   useEffect(() => {
@@ -474,12 +610,29 @@ export default function ModalNuevoProyectoSteam({
             <div className="form-group full">
               <label>Municipio / Sede Principal *</label>
               <select
+                required
                 value={municipio}
                 onChange={(e) => setMunicipio(e.target.value)}
               >
-                {SEDES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
+                {/* Si la sede actual del proyecto no está en listaSedes, mantenerla como opción para no romper datos */}
+                {municipio && !listaSedes.some((s) => s.nombre.toLowerCase() === municipio.toLowerCase()) && (
+                  <option value={municipio}>
+                    {municipio}
+                  </option>
+                )}
+                {listaSedes.map((s) => {
+                  const tieneDistintoMunicipio =
+                    s.municipio &&
+                    s.municipio.trim().toLowerCase() !== s.nombre.trim().toLowerCase();
+                  const label = tieneDistintoMunicipio
+                    ? `${s.nombre} (${s.municipio})`
+                    : s.nombre;
+                  return (
+                    <option key={s.id || s.nombre} value={s.nombre}>
+                      {label}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 

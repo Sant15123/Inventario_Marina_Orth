@@ -193,7 +193,31 @@ export default function PrestamosView({
 
     fetchProyectos();
     fetchSedes();
-    return () => { isMounted = false; };
+
+    const handleSedesChanged = (e) => {
+      fetchSedes();
+      if (e?.detail?.sede) {
+        const s = e.detail.sede;
+        const nombreNuevo = (s.nombre || s || '').trim();
+        const nombreViejo = (s._prevNombre || s.nombre || '').trim();
+        if (e.detail.action === 'update' && nombreViejo) {
+          setSedesList((prev) => Array.from(new Set(prev.map((item) => ((item || '').trim().toLowerCase() === nombreViejo.toLowerCase() ? nombreNuevo : item)))));
+        } else if (nombreNuevo) {
+          setSedesList((prev) => Array.from(new Set([...prev, nombreNuevo])));
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('siga:sedes_changed', handleSedesChanged);
+    }
+
+    return () => {
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('siga:sedes_changed', handleSedesChanged);
+      }
+    };
   }, []);
 
   // Bandeja de Solicitudes Entrantes (Rol Administrador / Supervisor)
@@ -3371,6 +3395,7 @@ export default function PrestamosView({
         <ModalNuevoProyectoSteam
           isOpen={showProyectoModal}
           onClose={() => setShowProyectoModal(false)}
+          sedes={sedesList}
           onProyectoCreated={(nuevoP) => {
             setProyectosList((prev) => [nuevoP, ...prev]);
             setLoanProyecto(nuevoP.nombre);
