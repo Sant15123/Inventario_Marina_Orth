@@ -32,7 +32,12 @@ export default function ModalDetalleActivo({
     Boolean(item.material_fabricacion) ||
     Boolean(item.dimensiones)
   );
-  const esActivoOMobiliario = esActivo || esMobiliario;
+  const esElectronica = Boolean(
+    item.itemType === 'electronica' ||
+    (item.placa && String(item.placa).toUpperCase().startsWith('ELE-')) ||
+    (item.codigo && String(item.codigo).toUpperCase().startsWith('ELE-'))
+  );
+  const esActivoOMobiliario = (esActivo || esMobiliario) && !esElectronica;
 
   // Estado operativo inferido o explícito
   const rawEstado = (item.estado || item.status || item.condicion || '').toLowerCase();
@@ -318,8 +323,8 @@ export default function ModalDetalleActivo({
             </div>
 
             <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-              {renderKeyValue('Marca / Fabricante', item.marca || 'Estándar')}
-              {renderKeyValue('Modelo Técnico', item.modelo || item.model || 'Estándar')}
+              {renderKeyValue('Marca / Fabricante', item.marca || (esElectronica ? '—' : 'Estándar'))}
+              {renderKeyValue('Modelo Técnico', item.modelo || item.model || (esElectronica ? '—' : 'Estándar'))}
               {renderKeyValue('Serial de Fábrica', item.serial, { isMono: true })}
               {renderKeyValue(
                 'Responsable / Custodio',
@@ -332,7 +337,9 @@ export default function ModalDetalleActivo({
                   Sede / Ubicación:
                 </span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {item.ubicacion || item.sede || 'Oficina Medellín'}
+                  {item.sede && item.ubicacion && item.sede !== item.ubicacion
+                    ? `${item.sede} · ${item.ubicacion}`
+                    : (item.ubicacion || item.sede || 'Oficina Medellín')}
                 </span>
               </div>
 
@@ -414,19 +421,23 @@ export default function ModalDetalleActivo({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4">
               {renderKeyValue('Proveedor', item.proveedor)}
               {renderKeyValue(
-                'Valor Compra',
-                item.valor_compra != null && item.valor_compra !== ''
-                  ? `$ ${Number(item.valor_compra).toLocaleString('es-CO')}`
+                esElectronica ? 'Valor Estimado (COP)' : 'Valor Compra',
+                (item.valor_compra ?? item.valor_estimado) != null &&
+                  (item.valor_compra ?? item.valor_estimado) !== '' &&
+                  Number.isFinite(Number(item.valor_compra ?? item.valor_estimado))
+                  ? `$ ${Number(item.valor_compra ?? item.valor_estimado).toLocaleString('es-CO')}`
                   : null
               )}
               {renderKeyValue(
-                'Fecha Compra',
-                item.fecha_compra ? item.fecha_compra.split('T')[0] : '—'
+                esElectronica ? 'Fecha Adquisición' : 'Fecha Compra',
+                (item.fecha_compra || item.fecha_adquisicion)
+                  ? String(item.fecha_compra || item.fecha_adquisicion).split('T')[0]
+                  : '—'
               )}
               {renderKeyValue(
                 'Vencimiento Garantía',
                 item.fecha_vencimiento_garantia || item.garantia
-                  ? (item.fecha_vencimiento_garantia || item.garantia).split('T')[0]
+                  ? String(item.fecha_vencimiento_garantia || item.garantia).split('T')[0]
                   : '—'
               )}
             </div>

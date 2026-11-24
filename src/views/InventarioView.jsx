@@ -685,6 +685,30 @@ export default function InventarioView({
     setModalRegistroElectronicaOpen(true);
   };
 
+  const handleOpenDetalleElectronica = (e) => {
+    if (!e) return;
+    setItemSeleccionado({
+      ...e,
+      itemType: 'electronica',
+      isEquipo: true,
+      placa: e.placa || e.codigo || e.id || 'S/C',
+      nombre: e.nombre || e.material || e.name || 'Equipo de Electrónica',
+      categoria: e.subcategoria || e.categoria || 'Equipos de Electrónica',
+      subcategoria: e.subcategoria || e.categoria || 'Instrumentación',
+      area_asignada: e.area_asignada || e.area || e.programa || 'Robótica',
+      condicion: e.condicion || e.estado_fisico || 'Bueno',
+      cantidad: e.cantidad ?? 1,
+      disponible: e.disponible ?? e.cantidad ?? 1,
+      sede: e.sede || 'Medellín',
+      ubicacion: e.ubicacion || '',
+      responsable: e.responsable || e.custodio || 'Bodega Central',
+      fecha_compra: e.fecha_compra || e.fecha_adquisicion || null,
+      valor_compra: e.valor_compra ?? e.valor_estimado ?? null,
+      observaciones: e.observaciones || e.notas || e.descripcion || '',
+    });
+    setModalDetalleOpen(true);
+  };
+
   const handleDeleteElectronica = (item) => {
     const placa = item.placa || item.id || item.code;
     const nombre = item.nombre || item.material || item.name || 'Equipo de Electrónica';
@@ -1788,6 +1812,11 @@ export default function InventarioView({
     // Prioridad por pestaña activa o tipo de ítem
     if (activeTab === 'mobiliario' || item.itemType === 'mobiliario') {
       handleOpenEditMobiliario(item);
+      return;
+    }
+
+    if (activeTab === 'electronica' || item.itemType === 'electronica') {
+      handleOpenEditElectronica(item);
       return;
     }
 
@@ -4035,7 +4064,7 @@ export default function InventarioView({
                         <td style={{ padding: '8px 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <button
                             type="button"
-                            onClick={() => setItemParaDetalle(normalizeItemForQR(e, 'electronica'))}
+                            onClick={() => handleOpenDetalleElectronica(e)}
                             className="badge-placa"
                             title={`Ver ficha técnica de ${code}`}
                             style={{
@@ -4237,7 +4266,7 @@ export default function InventarioView({
                               type="button"
                               className="btn-icon-crud shrink-0"
                               title="Ver ficha técnica completa"
-                              onClick={() => setItemParaDetalle(normalizeItemForQR(e, 'electronica'))}
+                              onClick={() => handleOpenDetalleElectronica(e)}
                               style={{
                                 width: '28px',
                                 height: '28px',
