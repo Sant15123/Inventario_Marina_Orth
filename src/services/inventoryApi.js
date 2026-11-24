@@ -1704,7 +1704,16 @@ export const inventoryApi = {
           .select('*')
           .order('nombre', { ascending: true });
         if (!error && Array.isArray(data) && data.length > 0) {
-          return data;
+          const seen = new Set();
+          const unicas = [];
+          for (const s of data) {
+            if (s.activo === false) continue;
+            const norm = (s.nombre || '').trim().toLowerCase();
+            if (!norm || seen.has(norm)) continue;
+            seen.add(norm);
+            unicas.push(s);
+          }
+          return unicas;
         }
       }
     } catch (_) {}

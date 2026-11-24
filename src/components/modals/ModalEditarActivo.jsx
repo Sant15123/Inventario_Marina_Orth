@@ -48,7 +48,7 @@ export default function ModalEditarActivo({
   const { showEditSuccess, showError } = useToast();
   const itemActivo = activo || equipo;
 
-  const [sedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Santuario']));
+  const [sedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : ['Medellín', 'El Carmen de Viboral', 'La Ceja', 'El Retiro', 'Santuario']));
   const [internalSubmitting, setInternalSubmitting] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
   const [internalPasoActual, setInternalPasoActual] = useState(1);

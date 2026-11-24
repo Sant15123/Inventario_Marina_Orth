@@ -154,7 +154,7 @@ export default function ModalEditarUsuario({
         if (lista.length === 0) {
           lista = [
             { id: 1, nombre: 'Medellín' },
-            { id: 2, nombre: 'Carmen de Viboral' },
+            { id: 2, nombre: 'El Carmen de Viboral' },
             { id: 3, nombre: 'La Ceja' },
             { id: 4, nombre: 'El Retiro' },
             { id: 5, nombre: 'Nacional' },

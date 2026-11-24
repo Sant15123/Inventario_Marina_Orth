@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import inventoryApi from '../../services/inventoryApi';
 import { supabase } from '../../services/supabase';
-import { SEDES } from '../../services/mockData';
 import { Building2, Plus, Edit3, Check, CheckCircle2 } from 'lucide-react';
 
 export default function ModalNuevaSede({
@@ -19,36 +18,68 @@ export default function ModalNuevaSede({
   const [municipio, setMunicipio] = useState('');
   const [direccion, setDireccion] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Cargar sedes al abrir el modal
+  // Cargar sedes exclusivamente desde public.sedes de Supabase (vía inventoryApi)
   const fetchSedes = async () => {
     try {
       const data = await inventoryApi.getSedes();
       if (Array.isArray(data) && data.length > 0) {
-        setListaSedes(data);
-        return data;
+        const seen = new Set();
+        const unicas = [];
+        for (const s of data) {
+          if (s.activo === false) continue;
+          const norm = (s.nombre || '').trim().toLowerCase();
+          if (!norm || seen.has(norm)) continue;
+          seen.add(norm);
+          unicas.push({
+            id: s.id || s.nombre,
+            nombre: (s.nombre || '').trim(),
+            municipio: (s.municipio || s.nombre || '').trim(),
+            direccion: s.direccion || '',
+          });
+        }
+        setListaSedes(unicas);
+        return unicas;
       }
     } catch (err) {
       console.warn('Aviso: no se pudieron cargar sedes desde API:', err.message);
     }
-    // Fallback con mockData o propSedes
-    const baseNames = Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES;
-    const fallbackList = baseNames.map((s) => ({
-      id: typeof s === 'string' ? s : s.id || s.nombre,
-      nombre: typeof s === 'string' ? s : s.nombre,
-      municipio: typeof s === 'string' ? s : s.municipio || s.nombre,
-      direccion: typeof s === 'string' ? '' : s.direccion || '',
-    }));
-    setListaSedes(fallbackList);
-    return fallbackList;
+    // Fallback con propSedes si existe
+    if (Array.isArray(propSedes) && propSedes.length > 0) {
+      const seen = new Set();
+      const fallbackList = [];
+      for (const s of propSedes) {
+        const n = (typeof s === 'string' ? s : s.nombre || '').trim();
+        const norm = n.toLowerCase();
+        if (norm && !seen.has(norm)) {
+          seen.add(norm);
+          fallbackList.push({
+            id: typeof s === 'string' ? s : s.id || s.nombre,
+            nombre: n,
+            municipio: typeof s === 'string' ? s : s.municipio || s.nombre,
+            direccion: typeof s === 'string' ? '' : s.direccion || '',
+          });
+        }
+      }
+      setListaSedes(fallbackList);
+      return fallbackList;
+    }
+    return [];
   };
 
   useEffect(() => {
     if (isOpen) {
+      setModo(initialMode || 'crear');
+      setError('');
+      setSuccessMsg('');
+      savingRef.current = false;
+      setSubmitting(false);
+
       fetchSedes().then((sedesCargadas) => {
-        if (modo === 'editar' && sedesCargadas && sedesCargadas.length > 0) {
+        if ((initialMode === 'editar' || modo === 'editar') && sedesCargadas && sedesCargadas.length > 0) {
           cargarSedeParaEdicion(sedesCargadas[0]);
         }
       });
@@ -85,66 +116,59 @@ export default function ModalNuevaSede({
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!nombre.trim()) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    // Bloqueo estricto para evitar doble envío en curso
+    if (savingRef.current || submitting) return;
+
+    const nombreLimpio = (nombre || '').trim();
+    if (!nombreLimpio) {
       setError('El nombre de la sede es obligatorio.');
       return;
     }
 
+    // Normalizar y validar duplicados por nombre (comparando en minúsculas)
+    const nombreLower = nombreLimpio.toLowerCase();
+    if (modo === 'crear') {
+      const yaExiste = listaSedes.some(
+        (s) => (s.nombre || '').trim().toLowerCase() === nombreLower
+      );
+      if (yaExiste) {
+        setError(`Ya existe una sede registrada con el nombre "${nombreLimpio}".`);
+        return;
+      }
+    } else if (modo === 'editar') {
+      const sedeOriginal = listaSedes.find((s) => s.id === sedeAEditarId || s.nombre === sedeAEditarId);
+      const targetId = sedeOriginal?.id || sedeAEditarId;
+      const yaExisteEnOtra = listaSedes.some(
+        (s) =>
+          s.id !== targetId &&
+          (s.nombre || '').trim().toLowerCase() !== (sedeOriginal?.nombre || '').trim().toLowerCase() &&
+          (s.nombre || '').trim().toLowerCase() === nombreLower
+      );
+      if (yaExisteEnOtra) {
+        setError(`Ya existe otra sede registrada con el nombre "${nombreLimpio}".`);
+        return;
+      }
+    }
+
     try {
+      savingRef.current = true;
       setSubmitting(true);
       setError('');
       setSuccessMsg('');
 
-      if (modo === 'crear') {
-        const payloadInsert = {
-          nombre: nombre.trim(),
-          municipio: municipio.trim() || nombre.trim(),
-          direccion: direccion.trim() || null,
-          activo: true,
-        };
-
-        let creada = null;
-        if (supabase) {
-          const { data: insertedSupabase, error: errorInsert } = await supabase
-            .from('sedes')
-            .insert([payloadInsert])
-            .select()
-            .single();
-
-          if (errorInsert) {
-            console.error('Error al insertar sede en Supabase:', errorInsert);
-            throw new Error(`Error en base de datos: ${errorInsert.message || 'No se pudo registrar la sede'}`);
-          }
-          if (insertedSupabase) {
-            creada = insertedSupabase;
-          }
-        }
-
-        if (!creada) {
-          creada = await inventoryApi.createSede(payloadInsert);
-        }
-
-        const itemToSave = creada || { id: `sede-${Date.now()}`, ...payloadInsert };
-
-        await fetchSedes();
-        if (onSedeCreated) {
-          onSedeCreated(itemToSave);
-        }
-
-        setSuccessMsg(`¡Sede "${itemToSave.nombre}" registrada exitosamente!`);
-        setTimeout(() => {
-          onClose();
-        }, 800);
-      } else {
-        // Modo EDITAR
+      // =========================================================================
+      // BIFURCACIÓN ESTRICTA: MODO EDITAR (SOLO UPDATE / PUT, NUNCA INSERT / POST)
+      // =========================================================================
+      if (modo === 'editar') {
         const sedeOriginal = listaSedes.find((s) => s.id === sedeAEditarId || s.nombre === sedeAEditarId);
         const targetId = sedeOriginal?.id || sedeAEditarId;
 
         const payloadUpdate = {
-          nombre: nombre.trim(),
-          municipio: municipio.trim() || nombre.trim(),
-          direccion: direccion.trim() || null,
+          nombre: nombreLimpio,
+          municipio: (municipio || '').trim() || nombreLimpio,
+          direccion: (direccion || '').trim() || null,
         };
 
         let sedeActualizada = null;
@@ -156,7 +180,7 @@ export default function ModalNuevaSede({
           } else if (sedeOriginal?.nombre) {
             query = query.eq('nombre', sedeOriginal.nombre);
           } else {
-            query = query.eq('nombre', nombre.trim());
+            query = query.eq('nombre', nombreLimpio);
           }
 
           const { data: updatedSupabase, error: errorSupabase } = await query.select().single();
@@ -178,21 +202,64 @@ export default function ModalNuevaSede({
 
         await fetchSedes();
 
+        // En modo edición llamamos ÚNICAMENTE a onSedeUpdated (nunca onSedeCreated)
         if (onSedeUpdated) {
           onSedeUpdated(finalItem);
-        }
-        if (onSedeCreated) {
-          onSedeCreated(finalItem);
         }
 
         setSuccessMsg(`¡Sede "${finalItem.nombre}" actualizada exitosamente!`);
         setTimeout(() => {
           onClose();
         }, 800);
+        return; // Retorno estricto para garantizar que nunca continúe a creación
       }
+
+      // =========================================================================
+      // BIFURCACIÓN ESTRICTA: MODO CREAR (SOLO INSERT / POST)
+      // =========================================================================
+      const payloadInsert = {
+        nombre: nombreLimpio,
+        municipio: (municipio || '').trim() || nombreLimpio,
+        direccion: (direccion || '').trim() || null,
+        activo: true,
+      };
+
+      let creada = null;
+      if (supabase) {
+        const { data: insertedSupabase, error: errorInsert } = await supabase
+          .from('sedes')
+          .insert([payloadInsert])
+          .select()
+          .single();
+
+        if (errorInsert) {
+          console.error('Error al insertar sede en Supabase:', errorInsert);
+          throw new Error(`Error en base de datos: ${errorInsert.message || 'No se pudo registrar la sede'}`);
+        }
+        if (insertedSupabase) {
+          creada = insertedSupabase;
+        }
+      }
+
+      if (!creada) {
+        creada = await inventoryApi.createSede(payloadInsert);
+      }
+
+      const itemToSave = creada || { id: `sede-${Date.now()}`, ...payloadInsert };
+
+      await fetchSedes();
+      if (onSedeCreated) {
+        onSedeCreated(itemToSave);
+      }
+
+      setSuccessMsg(`¡Sede "${itemToSave.nombre}" registrada exitosamente!`);
+      setTimeout(() => {
+        onClose();
+      }, 800);
     } catch (err) {
       setError(err.message || 'Error al procesar la sede');
     } finally {
+      savingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -260,6 +327,7 @@ export default function ModalNuevaSede({
           <button
             type="button"
             onClick={() => {
+              if (submitting) return;
               setModo('crear');
               setError('');
               setSuccessMsg('');
@@ -272,26 +340,27 @@ export default function ModalNuevaSede({
               fontSize: '12px',
               fontWeight: 700,
               fontFamily: "'Poppins', sans-serif",
-              borderBottom: modo === 'crear' ? '3px solid #2CACD0' : '3px solid transparent',
+              borderBottom: modo === 'crear' ? '3px solid #abd037' : '3px solid transparent',
               color: modo === 'crear' ? 'var(--text-h, #013a52)' : 'var(--text-dim, #6d6e71)',
               backgroundColor: 'transparent',
               borderTop: 'none',
               borderLeft: 'none',
               borderRight: 'none',
-              cursor: 'pointer',
+              cursor: submitting ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               transition: 'all 0.15s ease',
             }}
           >
-            <Plus size={15} style={{ color: modo === 'crear' ? '#2CACD0' : 'inherit' }} />
+            <Plus size={15} style={{ color: modo === 'crear' ? '#abd037' : 'inherit' }} />
             <span>Crear Nueva</span>
           </button>
 
           <button
             type="button"
             onClick={() => {
+              if (submitting) return;
               setModo('editar');
               setError('');
               setSuccessMsg('');
@@ -304,20 +373,20 @@ export default function ModalNuevaSede({
               fontSize: '12px',
               fontWeight: 700,
               fontFamily: "'Poppins', sans-serif",
-              borderBottom: modo === 'editar' ? '3px solid #2CACD0' : '3px solid transparent',
+              borderBottom: modo === 'editar' ? '3px solid #abd037' : '3px solid transparent',
               color: modo === 'editar' ? 'var(--text-h, #013a52)' : 'var(--text-dim, #6d6e71)',
               backgroundColor: 'transparent',
               borderTop: 'none',
               borderLeft: 'none',
               borderRight: 'none',
-              cursor: 'pointer',
+              cursor: submitting ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               transition: 'all 0.15s ease',
             }}
           >
-            <Edit3 size={14} style={{ color: modo === 'editar' ? '#2CACD0' : 'inherit' }} />
+            <Edit3 size={15} style={{ color: modo === 'editar' ? '#abd037' : 'inherit' }} />
             <span>Editar Existente ({listaSedes?.length || 0})</span>
           </button>
         </div>
@@ -389,8 +458,7 @@ export default function ModalNuevaSede({
                 className="form-group full"
                 style={{
                   padding: '12px',
-                  backgroundColor: 'rgba(44, 172, 208, 0.08)',
-                  border: '1.5px solid rgba(44, 172, 208, 0.35)',
+                  backgroundColor: 'rgba(171, 208, 55, 0.12)', border: '1.5px solid rgba(171, 208, 55, 0.45)',
                   borderRadius: '10px',
                   marginBottom: '6px',
                 }}
@@ -408,7 +476,7 @@ export default function ModalNuevaSede({
                   }}
                 >
                   <span className="flex items-center gap-1.5">
-                    <Building2 size={15} style={{ color: '#2CACD0' }} />
+                    <Building2 size={15} style={{ color: '#84CC16' }} />
                     <span>Selecciona la Sede a Editar *</span>
                   </span>
                   <span style={{ fontSize: '11px', color: 'var(--text-dim, #6d6e71)', fontWeight: 500 }}>
@@ -422,7 +490,7 @@ export default function ModalNuevaSede({
                   style={{
                     fontWeight: 700,
                     color: 'var(--text-h, #013a52)',
-                    borderColor: '#2CACD0',
+                    borderColor: '#abd037',
                     backgroundColor: 'var(--surface, #ffffff)',
                   }}
                 >
@@ -523,10 +591,7 @@ export default function ModalNuevaSede({
                 fontSize: '13px',
                 fontWeight: 700,
                 fontFamily: "'Poppins', sans-serif",
-                backgroundColor: modo === 'crear' ? '#2CACD0' : '#abd037',
-                color: modo === 'crear' ? '#ffffff' : '#013a52',
-                border: modo === 'crear' ? '1px solid #2395b5' : '1px solid #96bc28',
-                boxShadow: modo === 'crear' ? '0 2px 8px rgba(44, 172, 208, 0.35)' : '0 2px 8px rgba(171, 208, 55, 0.35)',
+                backgroundColor: '#abd037', color: '#013a52', border: '1px solid #96bc28', boxShadow: '0 2px 8px rgba(171, 208, 55, 0.35)',
                 cursor: submitting || !nombre.trim() ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -550,7 +615,7 @@ export default function ModalNuevaSede({
                 </>
               ) : modo === 'crear' ? (
                 <>
-                  <Plus size={16} strokeWidth={2.5} style={{ color: '#ffffff' }} />
+                  <Plus size={16} strokeWidth={2.5} style={{ color: '#013a52' }} />
                   <span>Guardar Sede</span>
                 </>
               ) : (

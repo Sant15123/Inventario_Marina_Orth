@@ -50,7 +50,7 @@ export default function ModalGestionSolicitud({
   }, [currentUser]);
 
   // Lista dinámica de sedes desde la base de datos
-  const [listaSedes, setListaSedes] = useState(SEDES || ['Medellín', 'Carmen de Viboral', 'La Ceja', 'El Retiro', 'Nacional']);
+  const [listaSedes, setListaSedes] = useState([]);
   // Lista dinámica de proyectos registrados desde la base de datos
   const [listaProyectos, setListaProyectos] = useState(() => (PROYECTOS || ['Clubes de Robótica', 'Ratón de Biblioteca', 'Semillero STEAM', 'Siembra de Colores']));
 

@@ -712,11 +712,14 @@ export const EMPLOYEES = [
 
 // Sedes operativas
 export const SEDES = [
-  'Medellín',
-  'Carmen de Viboral',
-  'La Ceja',
+  'El Carmen de Viboral',
   'El Retiro',
-  'Nacional'
+  'La Ceja',
+  'LABORATORIO (PARQUE EDUCATIVO)',
+  'Medellín',
+  'Nacional',
+  'Oficina FMO',
+  'Sabaneta'
 ];
 
 // Proyectos institucionales oficiales FMO (Fuente única de verdad)

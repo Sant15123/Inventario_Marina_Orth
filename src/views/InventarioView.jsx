@@ -175,7 +175,7 @@ export default function InventarioView({
   sedes: propSedes,
 }) {
   // Sedes dinámicas obtenidas de props o base de datos / catálogo
-  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES));
+  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : []));
 
   useEffect(() => {
     let isMounted = true;
@@ -207,11 +207,18 @@ export default function InventarioView({
           }
         }
 
-        const cleanLista = lista.map((s) => (s || '').replace(/Medell[^x-]*n/g, 'Medellín')).filter(Boolean);
-        const base = Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES;
-        const combinadas = Array.from(new Set([...cleanLista, ...base]));
-        if (isMounted) {
-          setSedesList(combinadas);
+        const cleanLista = lista.map((s) => (s || '').trim()).filter(Boolean);
+        const seen = new Set();
+        const unicas = [];
+        for (const s of cleanLista) {
+          const lower = s.toLowerCase();
+          if (!seen.has(lower)) {
+            seen.add(lower);
+            unicas.push(s);
+          }
+        }
+        if (isMounted && unicas.length > 0) {
+          setSedesList(unicas);
         }
       } catch (err) {
         console.warn('Error al cargar sedes en InventarioView:', err.message);

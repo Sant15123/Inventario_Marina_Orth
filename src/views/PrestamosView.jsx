@@ -89,6 +89,7 @@ export default function PrestamosView({
   movements = [],
   sedes: propSedes,
   onSedeCreated: propOnSedeCreated,
+  onSedeUpdated: propOnSedeUpdated,
   loading = false,
   error = null,
   onRetry,
@@ -129,7 +130,7 @@ export default function PrestamosView({
   const [showProyectoModal, setShowProyectoModal] = useState(false);
 
   // Catálogo dinámico de Sedes poblado desde /api/sedes y propSedes
-  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : SEDES));
+  const [sedesList, setSedesList] = useState(() => (Array.isArray(propSedes) && propSedes.length > 0 ? propSedes : []));
   const [showSedeModal, setShowSedeModal] = useState(false);
 
   useEffect(() => {
@@ -170,8 +171,20 @@ export default function PrestamosView({
       try {
         const data = await inventoryApi.getSedes();
         if (isMounted && Array.isArray(data) && data.length > 0) {
-          const nombres = data.map((s) => (s.nombre || s || '').replace(/Medell[^\x00-]*n/g, 'Medellín')).filter(Boolean);
-          setSedesList(Array.from(new Set([...nombres, ...SEDES])));
+          const nombres = data
+            .filter((s) => s.activo !== false)
+            .map((s) => (typeof s === 'string' ? s : s.nombre || '').trim())
+            .filter(Boolean);
+          const seen = new Set();
+          const unicas = [];
+          for (const n of nombres) {
+            const lower = n.toLowerCase();
+            if (!seen.has(lower)) {
+              seen.add(lower);
+              unicas.push(n);
+            }
+          }
+          setSedesList(unicas);
         }
       } catch (err) {
         console.warn('Aviso: no se pudieron cargar sedes desde API:', err.message);
@@ -3337,11 +3350,14 @@ export default function PrestamosView({
             showInfo('Sede Registrada', `Sede "${nombreS}" registrada exitosamente.`);
           }}
           onSedeUpdated={(sedeAct) => {
-            const nombreNuevo = sedeAct.nombre || sedeAct;
-            const nombreViejo = sedeAct._prevNombre || sedeAct.nombre;
-            setSedesList((prev) => Array.from(new Set(prev.map((s) => (s === nombreViejo ? nombreNuevo : s)))));
-            if (loanSede === nombreViejo) setLoanSede(nombreNuevo);
-            if (deliverySede === nombreViejo) setDeliverySede(nombreNuevo);
+            const nombreNuevo = (sedeAct.nombre || sedeAct || '').trim();
+            const nombreViejo = (sedeAct._prevNombre || sedeAct.nombre || '').trim();
+            setSedesList((prev) => Array.from(new Set(prev.map((s) => ((s || '').trim().toLowerCase() === nombreViejo.toLowerCase() ? nombreNuevo : s)))));
+            if (loanSede.trim().toLowerCase() === nombreViejo.toLowerCase()) setLoanSede(nombreNuevo);
+            if (deliverySede.trim().toLowerCase() === nombreViejo.toLowerCase()) setDeliverySede(nombreNuevo);
+            if (propOnSedeUpdated) {
+              propOnSedeUpdated(sedeAct);
+            }
             showInfo('Sede Actualizada', `Sede "${nombreNuevo}" actualizada exitosamente.`);
           }}
           sedes={sedesList}

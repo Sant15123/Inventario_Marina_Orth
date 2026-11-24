@@ -137,7 +137,7 @@ function App() {
   // Estado del inventario y movimientos (inicializados estrictamente con arreglos vacíos)
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
-  const [sedesList, setSedesList] = useState(SEDES);
+  const [sedesList, setSedesList] = useState([]);
 
   // Cargar datos reales desde Supabase / PostgreSQL al iniciar la aplicación
   const refreshFromApi = async () => {
@@ -172,9 +172,19 @@ function App() {
       ]);
 
       if (Array.isArray(sedesData) && sedesData.length > 0) {
-        const nombresApi = sedesData.map((s) => (s.nombre || s || '').replace(/Medell[^x-]*n/g, 'Medellín')).filter(Boolean);
-        const combinadas = Array.from(new Set([...nombresApi, ...SEDES]));
-        setSedesList(combinadas);
+        const nombresApi = sedesData
+          .map((s) => (s.nombre || s || '').trim())
+          .filter(Boolean);
+        const seen = new Set();
+        const deduplicadas = [];
+        for (const n of nombresApi) {
+          const lower = n.toLowerCase();
+          if (!seen.has(lower)) {
+            seen.add(lower);
+            deduplicadas.push(n);
+          }
+        }
+        setSedesList(deduplicadas);
       }
 
       const newItems = [];
@@ -1229,8 +1239,36 @@ function App() {
                       initialSolicitudId={prestamosParams.solicitudId}
                       sedes={sedesList}
                       onSedeCreated={(nuevaSede) => {
-                        const nombreSede = nuevaSede.nombre || nuevaSede;
-                        setSedesList((prev) => Array.from(new Set([...prev, nombreSede])));
+                        const nombreSede = (nuevaSede.nombre || nuevaSede || '').trim();
+                        setSedesList((prev) => {
+                          const seen = new Set();
+                          const res = [];
+                          for (const s of [...prev, nombreSede]) {
+                            const low = (s || '').trim().toLowerCase();
+                            if (low && !seen.has(low)) {
+                              seen.add(low);
+                              res.push(s.trim());
+                            }
+                          }
+                          return res;
+                        });
+                      }}
+                      onSedeUpdated={(sedeAct) => {
+                        const nombreNuevo = (sedeAct.nombre || sedeAct || '').trim();
+                        const nombreViejo = (sedeAct._prevNombre || sedeAct.nombre || '').trim();
+                        setSedesList((prev) => {
+                          const mapped = prev.map((s) => ((s || '').trim().toLowerCase() === nombreViejo.toLowerCase() ? nombreNuevo : s));
+                          const seen = new Set();
+                          const res = [];
+                          for (const s of mapped) {
+                            const low = (s || '').trim().toLowerCase();
+                            if (low && !seen.has(low)) {
+                              seen.add(low);
+                              res.push(s.trim());
+                            }
+                          }
+                          return res;
+                        });
                       }}
                     />
                   )}
