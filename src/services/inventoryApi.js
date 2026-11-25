@@ -1,6 +1,6 @@
 // Configuración dinámica y tolerante a fallos para la URL base de la API
 import { registrarAuditoria } from './historyAuditService';
-import { validateActiveSession, forceLogout } from './sessionManager';
+import { validateActiveSession, forceLogout, recordActivity } from './sessionManager';
 
 export const getBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
@@ -48,6 +48,9 @@ async function request(path, options = {}) {
 
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
   const token = getAuthToken();
+  if (token) {
+    recordActivity(false);
+  }
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

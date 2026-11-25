@@ -39,7 +39,7 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
       }
       if (expiredMsg) {
         const str = String(expiredMsg).toLowerCase();
-        return str.includes('inactiv') || str.includes('2 hora') ? 'inactividad' : 'token_caducado';
+        return str.includes('inactiv') || str.includes('1 hora') || str.includes('2 hora') ? 'inactividad' : 'token_caducado';
       }
       return null;
     } catch {
@@ -64,7 +64,7 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
   useEffect(() => {
     if (sessionExpiredMessage) {
       const str = String(sessionExpiredMessage).toLowerCase();
-      const resolved = str.includes('inactiv') || str.includes('2 hora') ? 'inactividad' : 'token_caducado';
+      const resolved = str.includes('inactiv') || str.includes('1 hora') || str.includes('2 hora') ? 'inactividad' : 'token_caducado';
       setExpiredReason(resolved);
     }
   }, [sessionExpiredMessage]);
@@ -419,7 +419,7 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
                 }}
               >
                 {expiredReason === 'inactividad'
-                  ? 'Tu sesión se cerró automáticamente tras 2 horas de inactividad por seguridad. Vuelve a iniciar sesión para continuar.'
+                  ? 'Tu sesión se cerró automáticamente tras 1 hora de inactividad por seguridad. Vuelve a iniciar sesión para continuar.'
                   : 'Tus credenciales vencieron. Inicia sesión nuevamente para guardar o consultar cambios.'}
               </div>
               <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

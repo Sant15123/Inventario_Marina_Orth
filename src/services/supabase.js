@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { validateActiveSession, forceLogout, registerSignOutHandler } from './sessionManager';
+import { validateActiveSession, forceLogout, registerSignOutHandler, recordActivity } from './sessionManager';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://maaggiefwtdtwhzmazau.supabase.co';
 const supabaseAnonKey =
@@ -23,6 +23,13 @@ const customSupabaseFetch = async (url, options = {}) => {
       throw new Error(`Operación bloqueada (${method}): Sesión caducada por inactividad o token vencido.`);
     }
   }
+
+  // Reiniciar contador de inactividad al realizar peticiones autenticadas
+  try {
+    if (typeof window !== 'undefined' && localStorage.getItem('siga_token')) {
+      recordActivity(false);
+    }
+  } catch (_) {}
 
   const res = await fetch(url, options);
 

@@ -1,20 +1,22 @@
 /**
- * sessionManager.js - Control Estricto de Inactividad (2 Horas) y Cierre Automático por Sesión/Token Caducado
+ * sessionManager.js - Control Estricto de Inactividad (1 Hora) y Cierre Automático por Sesión/Token Caducado
  * Sistema Integrado de Gestión de Activos (SIGA) - Fundación Marina Orth
  */
 
-import { decodeToken } from './jwtService.js';
+import { decodeToken, generateToken } from './jwtService.js';
 
 // Constantes de configuración de seguridad
-export const INACTIVITY_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 Horas = 7,200,000 ms
+export const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 Hora = 3,600,000 ms
 export const ACTIVITY_THROTTLE_MS = 15 * 1000; // 15 Segundos de throttle para no saturar localStorage
+export const MOUSEMOVE_THROTTLE_MS = 2 * 1000; // 2 Segundos de throttle para eventos mousemove
 export const CHECK_INTERVAL_MS = 60 * 1000; // Chequeo periódico cada 60 Segundos
 
 export const STORAGE_KEYS = {
   TOKEN: 'siga_token',
   CURRENT_USER: 'siga_current_user',
   USER: 'siga_user',
-  LAST_ACTIVITY: 'siga_last_activity',
+  LAST_ACTIVITY: 'last_activity_at',
+  LEGACY_LAST_ACTIVITY: 'siga_last_activity',
   SESSION_EXPIRED: 'siga_session_expired',
   SESSION_EXPIRED_REASON: 'siga_session_expired_reason',
   LOGOUT_REASON: 'logout_reason',
@@ -58,6 +60,18 @@ export function recordActivity(force = false) {
     lastRecordedActivityTime = now;
     try {
       localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, String(now));
+      localStorage.setItem(STORAGE_KEYS.LEGACY_LAST_ACTIVITY, String(now));
+
+      // Renovar silenciosamente el JWT si está próximo a vencer mientras el usuario sigue activo
+      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+      if (token) {
+        const decoded = decodeToken(token);
+        const nowSec = Math.floor(now / 1000);
+        if (decoded && decoded.exp && decoded.exp > nowSec && decoded.exp - nowSec < 2 * 60 * 60) {
+          const refreshed = generateToken(decoded);
+          localStorage.setItem(STORAGE_KEYS.TOKEN, refreshed);
+        }
+      }
     } catch (_) {}
   }
 }
@@ -69,7 +83,9 @@ export function recordActivity(force = false) {
 export function getLastActivity() {
   if (typeof window === 'undefined') return 0;
   try {
-    const saved = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY);
+    const saved =
+      localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY) ||
+      localStorage.getItem(STORAGE_KEYS.LEGACY_LAST_ACTIVITY);
     if (!saved) return 0;
     const parsed = Number(saved);
     return isNaN(parsed) ? 0 : parsed;
@@ -79,7 +95,7 @@ export function getLastActivity() {
 }
 
 /**
- * Determina si la sesión actual ha caducado por superar las 2 horas de inactividad
+ * Determina si la sesión actual ha caducado por superar 1 hora de inactividad
  * @returns {boolean}
  */
 export function isSessionExpiredByInactivity() {
@@ -180,6 +196,7 @@ export async function forceLogout(motivo = DEFAULT_EXPIRED_MESSAGE) {
     if (
       strMotivo === 'inactividad' ||
       strMotivo.includes('inactiv') ||
+      strMotivo.includes('1 hora') ||
       strMotivo.includes('2 hora') ||
       isSessionExpiredByInactivity()
     ) {
@@ -204,6 +221,7 @@ export async function forceLogout(motivo = DEFAULT_EXPIRED_MESSAGE) {
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
       localStorage.removeItem(STORAGE_KEYS.USER);
       localStorage.removeItem(STORAGE_KEYS.LAST_ACTIVITY);
+      localStorage.removeItem(STORAGE_KEYS.LEGACY_LAST_ACTIVITY);
     } catch (_) {}
 
     // 3. Ejecutar signOut externo (Supabase)
@@ -250,8 +268,17 @@ export async function forceLogout(motivo = DEFAULT_EXPIRED_MESSAGE) {
 export function initSessionGuard() {
   if (typeof window === 'undefined') return () => {};
 
+  let lastMouseMoveAt = 0;
+
   // Intercepción inmediata ante cualquier intento de interacción
   const handleUserActivity = (e) => {
+    // Aplicar throttle a mousemove para no afectar rendimiento
+    if (e && e.type === 'mousemove') {
+      const now = Date.now();
+      if (now - lastMouseMoveAt < MOUSEMOVE_THROTTLE_MS) return;
+      lastMouseMoveAt = now;
+    }
+
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     // Si no hay token guardado (pantalla de login o visitante), permitir interacción normal
     if (!token) return;
@@ -259,7 +286,7 @@ export function initSessionGuard() {
     // Validar sesión antes de permitir que la acción se ejecute
     const sessionCheck = validateActiveSession();
     if (!sessionCheck.isValid) {
-      if (e) {
+      if (e && e.type !== 'mousemove') {
         e.preventDefault();
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === 'function') {
@@ -275,9 +302,12 @@ export function initSessionGuard() {
   };
 
   // Eventos de interacción real del usuario con captura en fase capture para interceptar antes
-  const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+  const activityEvents = ['mousemove', 'mousedown', 'keydown', 'click', 'scroll', 'touchstart'];
   activityEvents.forEach((eventType) => {
-    window.addEventListener(eventType, handleUserActivity, { capture: true, passive: false });
+    window.addEventListener(eventType, handleUserActivity, {
+      capture: true,
+      passive: eventType === 'mousemove' || eventType === 'scroll',
+    });
   });
 
   // Chequeo periódico cada 60 segundos
@@ -291,27 +321,30 @@ export function initSessionGuard() {
     }
   }, CHECK_INTERVAL_MS);
 
-  // Escuchar cambio de visibilidad (cuando el usuario vuelve a la pestaña o despierta el equipo)
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-      if (!token) return;
+  // Validar tiempo transcurrido al volver a enfocar la pestaña o ventana (si estuvo suspendida en segundo plano)
+  const handleFocusOrVisibility = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    if (!token) return;
 
-      const sessionCheck = validateActiveSession();
-      if (!sessionCheck.isValid) {
-        forceLogout(sessionCheck.message || DEFAULT_EXPIRED_MESSAGE);
-      } else {
-        recordActivity(false);
-      }
+    const sessionCheck = validateActiveSession();
+    if (!sessionCheck.isValid) {
+      forceLogout(sessionCheck.message || DEFAULT_EXPIRED_MESSAGE);
+    } else {
+      recordActivity(false);
     }
   };
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+  document.addEventListener('visibilitychange', handleFocusOrVisibility);
+  window.addEventListener('focus', handleFocusOrVisibility);
 
   // Sincronización entre pestañas mediante el evento storage
   const handleStorageChange = (e) => {
     if (e.key === STORAGE_KEYS.TOKEN && !e.newValue) {
       forceLogout('La sesión fue cerrada en otra pestaña.');
-    } else if (e.key === STORAGE_KEYS.LAST_ACTIVITY && e.newValue) {
+    } else if (
+      (e.key === STORAGE_KEYS.LAST_ACTIVITY || e.key === STORAGE_KEYS.LEGACY_LAST_ACTIVITY) &&
+      e.newValue
+    ) {
       const val = Number(e.newValue);
       if (!isNaN(val) && val > lastRecordedActivityTime) {
         lastRecordedActivityTime = val;
@@ -325,7 +358,8 @@ export function initSessionGuard() {
       window.removeEventListener(eventType, handleUserActivity, { capture: true });
     });
     clearInterval(intervalId);
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener('visibilitychange', handleFocusOrVisibility);
+    window.removeEventListener('focus', handleFocusOrVisibility);
     window.removeEventListener('storage', handleStorageChange);
   };
 }

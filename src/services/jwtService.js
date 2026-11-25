@@ -56,10 +56,10 @@ export function base64UrlDecode(str) {
 /**
  * Genera un token JWT firmado según las especificaciones institucionales
  * @param {Object} payload Datos del usuario (id, documento, nombre, email, rol, sede, cargo)
- * @param {number} expiresInSeconds Tiempo de validez (por defecto 7 días: 604800s)
+ * @param {number} expiresInSeconds Tiempo de validez (por defecto 24 horas: 86400s, renovable por actividad)
  * @returns {string} Token en formato header.payload.signature
  */
-export function generateToken(payload, expiresInSeconds = 2 * 60 * 60) { // Sesión institucional de 2 horas
+export function generateToken(payload, expiresInSeconds = 24 * 60 * 60) { // Validez amplia para acompañar renovación por actividad (inactividad 1h)
   const header = {
     alg: 'HS256',
     typ: 'JWT',

@@ -431,6 +431,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('siga_token');
         localStorage.removeItem('siga_current_user');
         localStorage.removeItem('siga_user');
+        localStorage.removeItem('last_activity_at');
         localStorage.removeItem('siga_last_activity');
         try {
           sessionStorage.setItem('siga_session_expired', sessionCheck.message || DEFAULT_EXPIRED_MESSAGE);
@@ -639,9 +640,9 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('siga_token');
         localStorage.removeItem('siga_current_user');
         localStorage.removeItem('siga_user');
-        setSessionExpiredMessage('Tu sesión ha caducado por inactividad tras 2 horas. Por favor ingresa nuevamente.');
+        setSessionExpiredMessage('Tu sesión ha caducado por inactividad tras 1 hora. Por favor ingresa nuevamente.');
         try {
-          sessionStorage.setItem('siga_session_expired', 'Tu sesión ha caducado por inactividad tras 2 horas. Por favor ingresa nuevamente.');
+          sessionStorage.setItem('siga_session_expired', 'Tu sesión ha caducado por inactividad tras 1 hora. Por favor ingresa nuevamente.');
           sessionStorage.setItem('logout_reason', 'inactivity');
         } catch (_) {}
       }
@@ -898,6 +899,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('siga_token');
     localStorage.removeItem('siga_current_user');
     localStorage.removeItem('siga_user');
+    localStorage.removeItem('last_activity_at');
     localStorage.removeItem('siga_last_activity');
     setToken(null);
     setCurrentUser(null);
