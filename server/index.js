@@ -644,9 +644,74 @@ app.post('/api/consumibles/entregas', async (req, res) => {
   }
 });
 
+// Helpers de autorización por rol para rutas de solicitudes (soporta JWT institucional Base64URL)
+const normalizeRole = (raw) => String(raw || '').toLowerCase().trim();
+
+const decodeCallerFromRequest = async (req) => {
+  const authHeader = String(req.headers?.authorization || '');
+  if (!authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.slice(7).trim();
+  const parts = token.split('.');
+  if (parts.length !== 3) return { invalid: true };
+  try {
+    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) base64 += '=';
+    const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      return { expired: true };
+    }
+    let resolvedRole = normalizeRole(payload.rol || payload.role);
+    // Verificar rol autoritativo en DB si existe id o email
+    if (payload.id || payload.email) {
+      try {
+        const dbRes = await pool.query(
+          `SELECT rol FROM perfiles WHERE id::text = $1 OR LOWER(email) = LOWER($2) LIMIT 1`,
+          [String(payload.id || ''), String(payload.email || '')]
+        );
+        if (dbRes.rows[0]?.rol) {
+          resolvedRole = normalizeRole(dbRes.rows[0].rol);
+        }
+      } catch {
+        // Fallback al rol del token si perfiles no está disponible
+      }
+    }
+    return {
+      id: payload.id || null,
+      documento: payload.documento || null,
+      nombre: payload.nombre || payload.nombre_completo || '',
+      email: payload.email || '',
+      rol: resolvedRole || 'usuario',
+    };
+  } catch {
+    return { invalid: true };
+  }
+};
+
+const matchesCallerSolicitud = (sol, caller) => {
+  if (!sol || !caller) return false;
+  const ids = [caller.id, caller.documento].filter(Boolean).map(String);
+  if (sol.usuario_id && ids.includes(String(sol.usuario_id))) return true;
+  const solNom = String(sol.usuario_nombre || '').toLowerCase().trim();
+  const calNom = String(caller.nombre || '').toLowerCase().trim();
+  return Boolean(solNom && calNom && (solNom.includes(calNom) || calNom.includes(solNom)));
+};
+
+const ROLES_RADICACION_SOLICITUD = ['administrador', 'supervisor', 'operador', 'coordinador', 'usuario'];
+const ROLES_APROBACION_PRESTAMO = ['administrador', 'supervisor'];
+
 // 11. GET /api/solicitudes - Lista solicitudes de inventario con sus ítems entrelazados
 app.get('/api/solicitudes', async (req, res) => {
   try {
+    const caller = await decodeCallerFromRequest(req);
+    if (caller?.expired || caller?.invalid) {
+      return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
+    }
+    if (caller && !ROLES_RADICACION_SOLICITUD.includes(caller.rol)) {
+      return res.status(403).json({ success: false, error: 'Rol no autorizado para consultar solicitudes' });
+    }
+
     const result = await pool.query(`
       SELECT s.*, 
              s.tipo_solicitud AS tipo,
@@ -753,7 +818,17 @@ app.get('/api/solicitudes', async (req, res) => {
       console.warn('Aviso consulta solicitudes_compra en backend:', eC.message);
     }
 
-    const todas = [...result.rows, ...comprasRows].sort(
+    let invRows = result.rows || [];
+    if (caller?.rol === 'usuario') {
+      invRows = invRows.filter((s) => matchesCallerSolicitud(s, caller));
+      comprasRows = comprasRows.filter((s) => matchesCallerSolicitud(s, caller));
+    } else if (caller?.rol === 'coordinador') {
+      // Coordinador consulta únicamente sus propias solicitudes de inventario (préstamos/consumibles)
+      // y conserva acceso a compras para evaluación por proyectos asignados
+      invRows = invRows.filter((s) => matchesCallerSolicitud(s, caller));
+    }
+
+    const todas = [...invRows, ...comprasRows].sort(
       (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
     );
     res.json({ success: true, data: todas });
@@ -765,6 +840,14 @@ app.get('/api/solicitudes', async (req, res) => {
 
 // 12. POST /api/solicitudes - Registra una nueva solicitud con sus ítems
 app.post('/api/solicitudes', async (req, res) => {
+  const caller = await decodeCallerFromRequest(req);
+  if (caller?.expired || caller?.invalid) {
+    return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
+  }
+  if (caller && !ROLES_RADICACION_SOLICITUD.includes(caller.rol)) {
+    return res.status(403).json({ success: false, error: 'Rol no autorizado para radicar solicitudes' });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -780,6 +863,17 @@ app.post('/api/solicitudes', async (req, res) => {
       estado = 'PENDIENTE',
       observaciones_admin = null,
     } = req.body;
+
+    // Bloquear autoaprobación: usuario y coordinador siempre radican en estado PENDIENTE
+    const esRolAutoAprobacionRestringida =
+      !caller || caller.rol === 'usuario' || caller.rol === 'coordinador';
+    const estadoFinal = esRolAutoAprobacionRestringida ? 'PENDIENTE' : estado;
+    const usuarioIdFinal = caller?.rol === 'usuario' || caller?.rol === 'coordinador'
+      ? (caller.id || caller.documento || usuario_id || null)
+      : (usuario_id || null);
+    const usuarioNombreFinal = caller?.rol === 'usuario' || caller?.rol === 'coordinador'
+      ? (caller.nombre || usuario_nombre)
+      : usuario_nombre;
 
     const rawItems = req.body.items || req.body.items_solicitud || [];
     const items = Array.isArray(rawItems) ? rawItems : [];
@@ -857,15 +951,15 @@ app.post('/api/solicitudes', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *`,
       [
-        usuario_id || null,
-        usuario_nombre,
+        usuarioIdFinal,
+        usuarioNombreFinal,
         sede,
         tipoSolicitudFinal,
         proyecto_steam_id,
         motivoFinal,
         justificacion || motivoFinal,
         fechaDev,
-        estado,
+        estadoFinal,
         observaciones_admin,
       ]
     );
@@ -929,8 +1023,32 @@ app.post('/api/solicitudes', async (req, res) => {
 // 13. PATCH /api/solicitudes/:id - Actualiza estado u observaciones de una solicitud
 app.patch('/api/solicitudes/:id', async (req, res) => {
   try {
+    const caller = await decodeCallerFromRequest(req);
+    if (caller?.expired || caller?.invalid) {
+      return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
+    }
+
     const { id } = req.params;
     const { estado, observaciones_admin, motivo, sede, fecha_devolucion_estimada, proyecto_steam_id } = req.body;
+
+    // Verificar si la solicitud pertenece a solicitudes_inventario (préstamos/consumibles)
+    const invCheck = await pool.query(
+      `SELECT id, usuario_id, tipo_solicitud FROM solicitudes_inventario WHERE id::text = $1 LIMIT 1`,
+      [String(id)]
+    );
+    if (invCheck.rows.length > 0 && invCheck.rows[0].tipo_solicitud !== 'SUGERENCIA_COMPRA') {
+      if (caller && !ROLES_APROBACION_PRESTAMO.includes(caller.rol)) {
+        return res.status(403).json({
+          success: false,
+          error: 'No autorizado: la aprobación o modificación de préstamos de equipos corresponde únicamente a Administrador o Supervisor.',
+        });
+      }
+    } else if (caller && !['administrador', 'supervisor', 'coordinador'].includes(caller.rol)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Rol no autorizado para actualizar esta solicitud.',
+      });
+    }
 
     const updates = [];
     const values = [];

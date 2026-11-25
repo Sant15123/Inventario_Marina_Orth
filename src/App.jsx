@@ -1197,11 +1197,12 @@ function App() {
                     />
                   )}
 
-                  {/* VISTA RESUMEN (ADMINISTRATIVO / SUPERVISOR / OPERADOR) */}
+                  {/* VISTA RESUMEN (ADMINISTRATIVO / SUPERVISOR / OPERADOR / COORDINADOR) */}
                   {!isUsuario && currentView === 'resumen' && (
                     <ResumenView
                       items={filteredItems}
                       movements={filteredMovements}
+                      sedes={sedesList}
                       loading={loading}
                       error={apiError}
                       onRetry={refreshFromApi}

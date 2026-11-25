@@ -49,6 +49,12 @@ export default function ModalGestionSolicitud({
     return rol.includes('admin');
   }, [currentUser]);
 
+  // Solo Administrador o Supervisor pueden aprobar/rechazar préstamos de equipos (prohibido autoaprobación del Coordinador)
+  const puedeAutorizarPrestamos = useMemo(() => {
+    const rol = String(currentUser?.rol || currentUser?.role || '').toLowerCase().trim();
+    return rol.includes('admin') || rol.includes('superv');
+  }, [currentUser]);
+
   // Lista dinámica de sedes desde la base de datos
   const [listaSedes, setListaSedes] = useState([]);
   // Lista dinámica de proyectos registrados desde la base de datos
@@ -470,6 +476,12 @@ export default function ModalGestionSolicitud({
 
   // Manejador del Rechazo
   const handleRechazar = async () => {
+    if (!puedeAutorizarPrestamos) {
+      const msg = 'No autorizado: la gestión y rechazo de préstamos corresponde únicamente a Administrador o Supervisor.';
+      setValidationError(msg);
+      if (showError) showError('Acción no permitida', msg);
+      return;
+    }
     const motivoFinal = motivoRechazo.trim() || 'Rechazado por administración';
 
     try {
@@ -524,6 +536,12 @@ export default function ModalGestionSolicitud({
   // Manejador de la Aprobación y Despacho
   const handleAprobarYDespachar = async () => {
     setValidationError('');
+    if (!puedeAutorizarPrestamos) {
+      const msg = 'No autorizado: solo Administrador o Supervisor pueden aprobar préstamos y asignar placas físicas.';
+      setValidationError(msg);
+      if (showError) showError('Autoaprobación bloqueada', msg);
+      return;
+    }
 
     // Validar asignaciones de placas físicas en préstamos
     if (esPrestamo) {

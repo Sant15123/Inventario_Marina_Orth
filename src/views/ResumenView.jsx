@@ -6,10 +6,12 @@ import { useState, useEffect } from 'react';
 import { fmtDate, available, isOverdue, getDaysDiff, today } from '../services/mockData';
 import inventoryApi from '../services/inventoryApi';
 import { useAuth } from '../context/AuthContext';
+import CoordinadorMisSolicitudesSection from '../components/coordinador/CoordinadorMisSolicitudesSection';
 
 export default function ResumenView({
   items = [],
   movements = [],
+  sedes = [],
   loading = false,
   error = null,
   onRetry,
@@ -546,6 +548,15 @@ export default function ResumenView({
           </>
         )}
       </div>
+
+      {/* SECCIÓN EXCLUSIVA PARA COORDINADOR: MIS SOLICITUDES DE PRÉSTAMO Y ACTIVOS ASIGNADOS */}
+      {isCoordinador && (
+        <CoordinadorMisSolicitudesSection
+          items={effectiveItems}
+          movements={effectiveMovements}
+          sedes={sedes}
+        />
+      )}
 
       {/* TABLA 1: ALERTAS DE STOCK */}
       <section>
