@@ -665,7 +665,7 @@ export default function ResumenView({
                             <span>{it.location || '—'}</span>
                           </span>
                           {it.sede && (
-                            <span className="whitespace-nowrap text-[10.5px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                            <span className="alerta-sede-subtext whitespace-nowrap">
                               {it.sede}
                             </span>
                           )}
