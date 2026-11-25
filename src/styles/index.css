@@ -5921,3 +5921,98 @@ html.dark .alerta-sede-subtext {
 .animate-spin {
   animation: siga-spin 0.9s linear infinite;
 }
+
+@keyframes siga-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-pulse {
+  animation: siga-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* TableLoader institucional SIGA-FMO (Modo Claro / Oscuro) */
+.table-loader-spinner-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3.5px solid rgba(171, 208, 55, 0.25);
+  border-top-color: #ABD037;
+}
+
+[data-theme="dark"] .table-loader-ring,
+html.dark .table-loader-ring {
+  border-color: rgba(148, 163, 184, 0.22);
+  border-top-color: #ABD037;
+}
+
+.table-loader-icon {
+  color: #013A52;
+}
+
+[data-theme="dark"] .table-loader-icon,
+html.dark .table-loader-icon {
+  color: #ABD037;
+}
+
+.table-loader-track {
+  width: 192px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #E2E8F0;
+  overflow: hidden;
+  margin: 10px auto 0;
+}
+
+[data-theme="dark"] .table-loader-track,
+html.dark .table-loader-track {
+  background-color: #334155;
+}
+
+.table-loader-bar {
+  height: 100%;
+  width: 40%;
+  border-radius: 9999px;
+  background-color: #ABD037;
+}
+
+.table-loader-skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+[data-theme="dark"] .table-loader-skeleton-row,
+html.dark .table-loader-skeleton-row {
+  background-color: rgba(30, 41, 59, 0.45);
+  border-color: rgba(51, 65, 85, 0.65);
+}
+
+.table-loader-skeleton-cell {
+  height: 14px;
+  border-radius: 6px;
+  background-color: #E2E8F0;
+}
+
+[data-theme="dark"] .table-loader-skeleton-cell,
+html.dark .table-loader-skeleton-cell {
+  background-color: rgba(51, 65, 85, 0.75);
+}

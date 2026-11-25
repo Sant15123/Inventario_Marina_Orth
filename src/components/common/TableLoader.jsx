@@ -27,15 +27,15 @@ export default function TableLoader({
       }}
     >
       {/* Spinner institucional de doble anillo */}
-      <div className="relative w-14 h-14 flex items-center justify-center">
+      <div className="table-loader-spinner-wrap">
         <div
-          className="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-[#ABD037] siga-spinner"
+          className="table-loader-ring siga-spinner"
           aria-hidden="true"
         />
         {IconComponent && (
           <IconComponent
             size={22}
-            className="text-[#013A52] dark:text-[#ABD037] animate-pulse"
+            className="table-loader-icon animate-pulse"
             strokeWidth={2.2}
           />
         )}
@@ -52,8 +52,8 @@ export default function TableLoader({
           </p>
         )}
 
-        <div className="w-48 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mx-auto mt-3">
-          <div className="h-full w-2/5 rounded-full bg-[#ABD037] animate-table-shimmer" />
+        <div className="table-loader-track">
+          <div className="table-loader-bar animate-table-shimmer" />
         </div>
       </div>
 
@@ -63,13 +63,13 @@ export default function TableLoader({
           {[0, 1, 2, 3].map((rowIdx) => (
             <div
               key={rowIdx}
-              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/35 border border-slate-200/80 dark:border-slate-700/50"
+              className="table-loader-skeleton-row"
             >
-              <div className="h-4 w-16 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse shrink-0" />
-              <div className="h-4 w-44 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse flex-1 max-w-[11rem]" />
-              <div className="h-4 w-28 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse hidden sm:block shrink-0" />
-              <div className="h-4 w-24 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse hidden md:block shrink-0" />
-              <div className="h-5 w-20 rounded-full bg-slate-200/80 dark:bg-slate-700/70 animate-pulse shrink-0" />
+              <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '64px', flexShrink: 0 }} />
+              <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '176px', flex: '1 1 0%', maxWidth: '11rem' }} />
+              <div className="table-loader-skeleton-cell animate-pulse hidden sm:block" style={{ width: '112px', flexShrink: 0 }} />
+              <div className="table-loader-skeleton-cell animate-pulse hidden md:block" style={{ width: '96px', flexShrink: 0 }} />
+              <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '80px', height: '20px', borderRadius: '9999px', flexShrink: 0 }} />
             </div>
           ))}
         </div>
