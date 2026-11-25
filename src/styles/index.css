@@ -5734,21 +5734,34 @@ html.dark .theme-modal-papeleria textarea:focus {
   }
 }
 
+@keyframes welcomeBgZoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
 .animate-login-shake {
   animation: loginShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .animate-welcome-logo {
-  animation: welcomeLogoEnter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: welcomeLogoEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-welcome-text {
-  animation: welcomeTextEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+  animation: welcomeTextEnter 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 .animate-welcome-progress {
   transform-origin: left center;
-  animation: welcomeProgressFill 0.88s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: welcomeProgressFill 2.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-welcome-bg {
+  animation: welcomeBgZoom 2.5s ease-out both;
 }
 
 .animate-dashboard-enter {
@@ -5760,6 +5773,7 @@ html.dark .theme-modal-papeleria textarea:focus {
   .animate-welcome-logo,
   .animate-welcome-text,
   .animate-welcome-progress,
+  .animate-welcome-bg,
   .animate-dashboard-enter {
     animation: none !important;
     transition: none !important;

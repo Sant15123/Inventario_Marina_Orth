@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+const SPLASH_IMAGES = [
+  'https://maaggiefwtdtwhzmazau.supabase.co/storage/v1/object/public/splash-fmo/images%20(1).jpg',
+  'https://maaggiefwtdtwhzmazau.supabase.co/storage/v1/object/public/splash-fmo/images%20(2).jpg',
+  'https://maaggiefwtdtwhzmazau.supabase.co/storage/v1/object/public/splash-fmo/images.jpg',
+];
+
 const ROLE_LABELS = {
   administrador: 'Administrador',
   admin: 'Administrador',
@@ -39,6 +45,10 @@ export default function LoginWelcomeOverlay({
     }
   });
   const [fadingOut, setFadingOut] = useState(false);
+  const [bgImage] = useState(
+    () => SPLASH_IMAGES[Math.floor(Math.random() * SPLASH_IMAGES.length)]
+  );
+  const [bgError, setBgError] = useState(false);
 
   const onFadeStartRef = useRef(onFadeStart);
   const onCompleteRef = useRef(onComplete);
@@ -53,7 +63,7 @@ export default function LoginWelcomeOverlay({
     const fadeTimer = setTimeout(() => {
       setFadingOut(true);
       if (typeof onFadeStartRef.current === 'function') onFadeStartRef.current();
-    }, 850);
+    }, 2220);
 
     const finishTimer = setTimeout(() => {
       try {
@@ -63,7 +73,7 @@ export default function LoginWelcomeOverlay({
       }
       setVisible(false);
       if (typeof onCompleteRef.current === 'function') onCompleteRef.current();
-    }, 1070);
+    }, 2500);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -94,13 +104,49 @@ export default function LoginWelcomeOverlay({
         padding: '24px',
         backgroundColor: isDark ? '#081120' : '#013A52',
         opacity: fadingOut ? 0 : 1,
-        transition: 'opacity 220ms ease-out',
+        transition: 'opacity 280ms ease-out',
         pointerEvents: fadingOut ? 'none' : 'all',
         fontFamily: "'Poppins', sans-serif",
+        overflow: 'hidden',
       }}
     >
+      {/* Fotografía oficial FMO de fondo con velo institucional */}
+      {!bgError && bgImage && (
+        <img
+          src={bgImage}
+          alt=""
+          aria-hidden="true"
+          onError={() => setBgError(true)}
+          className="animate-welcome-bg"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(8, 17, 32, 0.86) 0%, rgba(1, 58, 82, 0.80) 100%)'
+            : 'linear-gradient(135deg, rgba(1, 58, 82, 0.82) 0%, rgba(11, 19, 43, 0.84) 100%)',
+          backdropFilter: 'blur(2px)',
+          WebkitBackdropFilter: 'blur(2px)',
+          pointerEvents: 'none',
+        }}
+      />
+
       <div
         style={{
+          position: 'relative',
+          zIndex: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
