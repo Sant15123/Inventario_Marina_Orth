@@ -17,6 +17,7 @@ export const STORAGE_KEYS = {
   LAST_ACTIVITY: 'siga_last_activity',
   SESSION_EXPIRED: 'siga_session_expired',
   SESSION_EXPIRED_REASON: 'siga_session_expired_reason',
+  LOGOUT_REASON: 'logout_reason',
   REMEMBER_USER: 'siga_remember_user',
 };
 
@@ -187,8 +188,12 @@ export async function forceLogout(motivo = DEFAULT_EXPIRED_MESSAGE) {
       reasonKey = 'token_caducado';
     }
 
-    // 1. Guardar motivo de expiración en sessionStorage para que LoginView muestre el banner
+    // 1. Guardar motivo de expiración en sessionStorage para que LoginView muestre el banner persistente
     try {
+      sessionStorage.setItem(
+        STORAGE_KEYS.LOGOUT_REASON,
+        reasonKey === 'inactividad' ? 'inactivity' : 'token_expired'
+      );
       sessionStorage.setItem(STORAGE_KEYS.SESSION_EXPIRED_REASON, reasonKey);
       sessionStorage.setItem(STORAGE_KEYS.SESSION_EXPIRED, finalMsg);
     } catch (_) {}
