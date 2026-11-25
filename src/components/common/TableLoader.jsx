@@ -27,25 +27,23 @@ export default function TableLoader({
       }}
     >
       {/* Spinner institucional de doble anillo */}
-      <div className="relative flex items-center justify-center w-14 h-14">
+      <div className="relative w-14 h-14 flex items-center justify-center">
         <div
-          className="absolute inset-0 rounded-full border-[3px] border-slate-200 dark:border-slate-700/80"
+          className="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-[#ABD037] animate-spin"
           aria-hidden="true"
         />
-        <div
-          className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-[#abd037] border-r-[#abd037]/70 animate-spin"
-          aria-hidden="true"
-        />
-        <div className="w-9 h-9 rounded-full bg-[#013a52] dark:bg-[#0f293a] flex items-center justify-center shadow-sm animate-pulse border border-[#abd037]/40">
-          {IconComponent && (
-            <IconComponent size={17} className="text-[#abd037]" strokeWidth={2.2} />
-          )}
-        </div>
+        {IconComponent && (
+          <IconComponent
+            size={22}
+            className="text-[#013A52] dark:text-[#ABD037] animate-pulse"
+            strokeWidth={2.2}
+          />
+        )}
       </div>
 
       {/* Título, subtítulo y barra indeterminada shimmer */}
       <div className="flex flex-col items-center text-center gap-1.5 max-w-md w-full">
-        <strong className="text-sm sm:text-base font-bold text-[#013a52] dark:text-slate-100">
+        <strong className="text-sm sm:text-base font-bold text-[#013A52] dark:text-slate-100">
           {title}
         </strong>
         {subtitle && (
@@ -54,23 +52,24 @@ export default function TableLoader({
           </p>
         )}
 
-        <div className="w-48 h-1 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mt-2">
-          <div className="h-full w-2/5 rounded-full bg-[#abd037] animate-table-shimmer" />
+        <div className="w-48 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mx-auto mt-3">
+          <div className="h-full w-2/5 rounded-full bg-[#ABD037] animate-table-shimmer" />
         </div>
       </div>
 
-      {/* 4 filas skeleton sutiles simulando estructura de tabla */}
+      {/* 4 filas skeleton con bloques simulando columnas reales */}
       {showSkeleton && (
-        <div className="w-full max-w-4xl space-y-2.5 pt-2 opacity-65" aria-hidden="true">
+        <div className="w-full max-w-4xl space-y-2.5 pt-2" aria-hidden="true">
           {[0, 1, 2, 3].map((rowIdx) => (
             <div
               key={rowIdx}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/40 animate-pulse"
+              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/35 border border-slate-200/80 dark:border-slate-700/50"
             >
-              <div className="h-5 w-20 rounded bg-slate-200 dark:bg-slate-700 shrink-0" />
-              <div className="h-4 flex-1 rounded bg-slate-200 dark:bg-slate-700" />
-              <div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700 hidden sm:block shrink-0" />
-              <div className="h-5 w-20 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
+              <div className="h-4 w-16 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse shrink-0" />
+              <div className="h-4 w-44 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse flex-1 max-w-[11rem]" />
+              <div className="h-4 w-28 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse hidden sm:block shrink-0" />
+              <div className="h-4 w-24 rounded-md bg-slate-200/80 dark:bg-slate-700/70 animate-pulse hidden md:block shrink-0" />
+              <div className="h-5 w-20 rounded-full bg-slate-200/80 dark:bg-slate-700/70 animate-pulse shrink-0" />
             </div>
           ))}
         </div>
