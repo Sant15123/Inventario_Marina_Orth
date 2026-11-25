@@ -559,22 +559,24 @@ export default function ResumenView({
       )}
 
       {/* TABLA 1: ALERTAS DE STOCK */}
-      <section>
-        <div className="section-header">
-          <h2>
-            <span>Alertas de stock</span>
+      <section className="font-['Poppins',sans-serif]">
+        <div className="mb-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-bold tracking-tight text-[#013A52] dark:text-white m-0">
+              Alertas de stock
+            </h2>
             {lowStockItems.length > 0 && (
-              <span className="pill low">
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800 whitespace-nowrap">
                 {lowStockItems.length} por reabastecer
               </span>
             )}
-          </h2>
-          <span className="section-subtitle">
+          </div>
+          <p className="text-xs font-normal text-slate-500 dark:text-slate-400 mt-1 mb-0">
             Monitoreo en tiempo real de consumibles y equipos con existencias bajas
-          </span>
+          </p>
         </div>
 
-        <div className="panel table-responsive">
+        <div className="panel table-responsive overflow-hidden">
           {effectiveLoading && effectiveItems.length === 0 ? (
             <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div className="kpi-skeleton-box animate-pulse" style={{ height: '36px', width: '100%' }} />
@@ -586,54 +588,100 @@ export default function ResumenView({
               <span>✅</span> Todos los materiales y equipos se encuentran por encima de su stock de seguridad.
             </div>
           ) : (
-            <table>
+            <table className="w-full border-collapse">
               <thead>
-                <tr>
-                  <th>Código / Material</th>
-                  <th>Categoría</th>
-                  <th>Disponible</th>
-                  <th>Mínimo</th>
-                  <th>Ubicación / Sede</th>
-                  <th>Estado</th>
+                <tr className="bg-slate-50/90 dark:bg-slate-800/70 border-b-2 border-[#ABD037]">
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Código / Material
+                  </th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Categoría
+                  </th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Disponible
+                  </th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Mínimo
+                  </th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Ubicación / Sede
+                  </th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Estado
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {alertasVisibles.map((it) => {
                   const disp = available(it);
                   const min = it.minStock || 0;
                   const isCritical = disp === 0;
 
                   return (
-                    <tr key={it.id} className={isCritical ? 'row-critical' : 'row-warning'}>
-                      <td>
-                        <div className="item-cell">
-                          <strong className="item-title">{it.name}</strong>
+                    <tr
+                      key={it.id}
+                      className={`transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-800/50 ${
+                        isCritical ? 'bg-rose-50/35 dark:bg-rose-950/15' : ''
+                      }`}
+                    >
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="flex flex-col gap-0.5">
+                          <strong className="text-[13.5px] font-semibold text-[#013A52] dark:text-slate-100 leading-snug">
+                            {it.name}
+                          </strong>
                           {it.codigoItem && (
-                            <span className="item-code mono-num">{it.codigoItem}</span>
+                            <span className="text-[11px] font-medium text-slate-400 tabular-nums">
+                              {it.codigoItem}
+                            </span>
                           )}
                         </div>
                       </td>
-                      <td>
-                        <ProgramBadgeIcon categoria={it.category} variant="badge" label={it.category || 'General'} />
+                      <td className="py-3.5 px-4 align-middle">
+                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200/80 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                          <ProgramBadgeIcon categoria={it.category} variant="icon" size={13} />
+                          <span>{it.category || 'General'}</span>
+                        </span>
                       </td>
-                      <td className="mono-num">
-                        <span className={`qty-indicator ${isCritical ? 'qty-zero' : 'qty-low'}`}>
+                      <td className="py-3.5 px-4 align-middle">
+                        <span
+                          className={`inline-flex justify-center min-w-[64px] px-2.5 py-1 rounded-lg text-xs tabular-nums ${
+                            isCritical
+                              ? 'font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-700'
+                              : 'font-semibold bg-amber-50 text-amber-800 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-700'
+                          }`}
+                        >
                           {disp} {it.unit || 'und'}
                         </span>
                       </td>
-                      <td className="mono-num">
-                        <span className="qty-min">{min} {it.unit || 'und'}</span>
+                      <td className="py-3.5 px-4 align-middle">
+                        <span className="text-[13px] font-medium text-slate-600 dark:text-slate-300 tabular-nums whitespace-nowrap">
+                          {min} {it.unit || 'und'}
+                        </span>
                       </td>
-                      <td>
-                        <div className="location-cell">
-                          <span className="location-name inline-flex items-center gap-1.5"><FmoStarIcon indicator="sede" size={12} color="#6d6e71" /><span>{it.location || '—'}</span></span>
-                          {it.sede && <span className="sede-badge">{it.sede}</span>}
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                            <FmoStarIcon indicator="sede" size={12} color="#6d6e71" />
+                            <span>{it.location || '—'}</span>
+                          </span>
+                          {it.sede && (
+                            <span className="whitespace-nowrap text-[10.5px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                              {it.sede}
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td>
-                        <span className={`pill ${isCritical ? 'vencido' : 'low'}`}>
-                          {isCritical ? 'Sin stock' : 'Stock bajo'}
-                        </span>
+                      <td className="py-3.5 px-4 align-middle">
+                        {isCritical ? (
+                          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1 rounded-full whitespace-nowrap bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400" aria-hidden="true" />
+                            <span>Sin stock</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1 rounded-full whitespace-nowrap bg-amber-50 text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700">
+                            <span>Stock bajo</span>
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -642,26 +690,16 @@ export default function ResumenView({
             </table>
           )}
           {lowStockItems.length > 5 && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 18px',
-                borderTop: '1px solid var(--border)',
-                background: 'rgba(255, 255, 255, 0.02)',
-                fontSize: '0.88rem',
-              }}
-            >
-              <span style={{ color: 'var(--text-dim)' }}>
-                Mostrando las <strong>5</strong> alertas más críticas de <strong>{lowStockItems.length}</strong> registradas.
+            <div className="flex flex-wrap justify-between items-center gap-3 px-4 py-3 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Mostrando las <strong className="font-semibold text-slate-700 dark:text-slate-200">5</strong> alertas más críticas de{' '}
+                <strong className="font-semibold text-slate-700 dark:text-slate-200">{lowStockItems.length}</strong> registradas.
               </span>
               {onNavigate && (
                 <button
                   type="button"
-                  className="btn btn-secondary btn-sm"
                   onClick={() => onNavigate('inventario')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#013A52] dark:text-[#ABD037] border border-slate-200 dark:border-slate-700 hover:border-[#013A52] dark:hover:border-[#ABD037] rounded-xl px-4 py-2 transition-all cursor-pointer bg-transparent"
                 >
                   Ver inventario completo →
                 </button>
