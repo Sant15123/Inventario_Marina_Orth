@@ -12,7 +12,7 @@ const ROLE_LABELS = {
   coordinador: 'Coordinador',
   supervisor: 'Supervisor',
   operador: 'Operador',
-  usuario: 'Docente / Formador',
+  usuario: 'Usuario',
 };
 
 const checkReducedMotion = () => {
@@ -85,8 +85,11 @@ export default function LoginWelcomeOverlay({
 
   const isDark = theme === 'dark';
   const displayName = user.nombre_completo || user.nombre || user.name || 'Usuario FMO';
+  const rawCargo = String(user.cargo || user.cargo_operativo || '').trim();
   const rawRole = String(user.rol || user.role || 'usuario').toLowerCase().trim();
-  const roleLabel = ROLE_LABELS[rawRole] || (rawRole ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1) : 'Usuario');
+  const roleFallback =
+    ROLE_LABELS[rawRole] || (rawRole ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1) : 'Usuario');
+  const badgeLabel = rawCargo || roleFallback;
 
   return (
     <div
@@ -212,7 +215,7 @@ export default function LoginWelcomeOverlay({
               border: '1px solid rgba(171, 208, 55, 0.4)',
             }}
           >
-            {roleLabel}
+            {badgeLabel}
           </span>
         </div>
 
