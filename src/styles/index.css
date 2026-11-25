@@ -5806,3 +5806,77 @@ html.dark .theme-modal-papeleria textarea:focus {
     width: 100% !important;
   }
 }
+
+
+/* ==========================================================================
+   ALERTAS DE STOCK (INDICADORES ROJOS EXPLÍCITOS MODO CLARO / OSCURO)
+   ========================================================================== */
+.alerta-badge-total {
+  background-color: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+}
+[data-theme="dark"] .alerta-badge-total,
+html.dark .alerta-badge-total {
+  background-color: rgba(69, 10, 10, 0.7);
+  color: #FCA5A5;
+  border-color: #991B1B;
+}
+
+.alerta-row-critical {
+  background-color: rgba(254, 242, 242, 0.6);
+}
+[data-theme="dark"] .alerta-row-critical,
+html.dark .alerta-row-critical {
+  background-color: rgba(69, 10, 10, 0.2);
+}
+
+.alerta-qty-zero {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #F87171;
+  font-weight: 700;
+}
+[data-theme="dark"] .alerta-qty-zero,
+html.dark .alerta-qty-zero {
+  background-color: rgba(127, 29, 29, 0.7);
+  color: #FECACA;
+  border-color: #EF4444;
+}
+
+.alerta-qty-low {
+  background-color: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+  font-weight: 600;
+}
+[data-theme="dark"] .alerta-qty-low,
+html.dark .alerta-qty-low {
+  background-color: rgba(69, 10, 10, 0.6);
+  color: #FCA5A5;
+  border-color: #B91C1C;
+}
+
+.alerta-estado-sin-stock {
+  background-color: #DC2626;
+  color: #FFFFFF;
+  border: 1px solid #B91C1C;
+}
+[data-theme="dark"] .alerta-estado-sin-stock,
+html.dark .alerta-estado-sin-stock {
+  background-color: #B91C1C;
+  color: #FFFFFF;
+  border-color: #DC2626;
+}
+
+.alerta-estado-stock-bajo {
+  background-color: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #F87171;
+}
+[data-theme="dark"] .alerta-estado-stock-bajo,
+html.dark .alerta-estado-stock-bajo {
+  background-color: rgba(69, 10, 10, 0.6);
+  color: #FCA5A5;
+  border-color: #DC2626;
+}
