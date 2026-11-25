@@ -566,7 +566,7 @@ export default function ResumenView({
               Alertas de stock
             </h2>
             {lowStockItems.length > 0 && (
-              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800 whitespace-nowrap">
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA] dark:bg-[#450A0A]/70 dark:text-[#FCA5A5] dark:border-[#991B1B] whitespace-nowrap">
                 {lowStockItems.length} por reabastecer
               </span>
             )}
@@ -621,7 +621,7 @@ export default function ResumenView({
                     <tr
                       key={it.id}
                       className={`transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-800/50 ${
-                        isCritical ? 'bg-rose-50/35 dark:bg-rose-950/15' : ''
+                        isCritical ? 'bg-[#FEF2F2]/60 dark:bg-[#450A0A]/20' : ''
                       }`}
                     >
                       <td className="py-3.5 px-4 align-middle">
@@ -646,8 +646,8 @@ export default function ResumenView({
                         <span
                           className={`inline-flex justify-center min-w-[64px] px-2.5 py-1 rounded-lg text-xs tabular-nums ${
                             isCritical
-                              ? 'font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-700'
-                              : 'font-semibold bg-amber-50 text-amber-800 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-700'
+                              ? 'bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] dark:bg-[#7F1D1D]/70 dark:text-[#FECACA] dark:border-[#EF4444] font-bold'
+                              : 'bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5] dark:bg-[#450A0A]/60 dark:text-[#FCA5A5] dark:border-[#B91C1C] font-semibold'
                           }`}
                         >
                           {disp} {it.unit || 'und'}
@@ -673,12 +673,12 @@ export default function ResumenView({
                       </td>
                       <td className="py-3.5 px-4 align-middle">
                         {isCritical ? (
-                          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1 rounded-full whitespace-nowrap bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-700">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400" aria-hidden="true" />
+                          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1 rounded-full whitespace-nowrap bg-[#DC2626] text-white border border-[#B91C1C] dark:bg-[#B91C1C] dark:text-white">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" aria-hidden="true" />
                             <span>Sin stock</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1 rounded-full whitespace-nowrap bg-amber-50 text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700">
+                          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1 rounded-full whitespace-nowrap bg-[#FEF2F2] text-[#DC2626] border border-[#F87171] dark:bg-[#450A0A]/60 dark:text-[#FCA5A5] dark:border-[#DC2626]">
                             <span>Stock bajo</span>
                           </span>
                         )}
