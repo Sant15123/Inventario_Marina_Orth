@@ -19,6 +19,7 @@ import EditarPrestamoModal from '../components/modals/EditarPrestamoModal';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
 import { Building2, FolderKanban, Plus, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info, ShoppingCart, ExternalLink, PackagePlus, Search, FileSpreadsheet, Download, RotateCcw, X, ChevronDown, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import TableLoader from '../components/common/TableLoader';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 import { formatItemOptionLabel } from '../services/prestamosCatalogService';
@@ -1381,15 +1382,11 @@ export default function PrestamosView({
           </div>
 
           {loading ? (
-            <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
-              <strong style={{ fontSize: '1.05rem', color: 'var(--text)' }}>
-                Cargando datos de Supabase...
-              </strong>
-              <p style={{ color: 'var(--text-dim)', marginTop: '6px', fontSize: '0.9rem' }}>
-                Consultando préstamos activos en tiempo real
-              </p>
-            </div>
+            <TableLoader
+              title="Sincronizando préstamos..."
+              subtitle="Consultando préstamos activos en tiempo real"
+              icon={Repeat}
+            />
           ) : error ? (
             <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
@@ -2069,9 +2066,11 @@ export default function PrestamosView({
             style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
             {solicitudesLoading ? (
-              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span>⏳</span> Cargando solicitudes entrelazadas...
-              </div>
+              <TableLoader
+                title="Cargando datos..."
+                subtitle="Sincronizando bandeja de solicitudes entrelazadas"
+                showSkeleton={false}
+              />
             ) : solicitudesEstandar.length === 0 ? (
               <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <span>✨</span> ¡Todo al día! En este momento no hay solicitudes pendientes por revisar.

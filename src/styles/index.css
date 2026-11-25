@@ -5781,3 +5781,28 @@ html.dark .theme-modal-papeleria textarea:focus {
     transform: none !important;
   }
 }
+
+
+/* ==========================================================================
+   ANIMACIÓN DE CARGA DE TABLAS (TABLE LOADER SHIMMER) SIGA-FMO
+   ========================================================================== */
+@keyframes tableLoaderShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.animate-table-shimmer {
+  animation: tableLoaderShimmer 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-table-shimmer {
+    animation: none !important;
+    transform: translateX(0) !important;
+    width: 100% !important;
+  }
+}

@@ -33,6 +33,7 @@ import inventoryApi from '../services/inventoryApi';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalQR from '../components/modals/ModalQR';
 import ModalSolicitudMaterial from '../components/modals/ModalSolicitudMaterial';
+import TableLoader from '../components/common/TableLoader';
 
 // Normalizadores visuales institucionales
 const formatSede = (sede) => {
@@ -1133,9 +1134,12 @@ export default function MiPanelUsuarioView({
             style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
           >
             {solicitudesLoading ? (
-              <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span>⏳</span> Cargando tus solicitudes...
-              </div>
+              <TableLoader
+                title="Cargando datos..."
+                subtitle="Consultando tus solicitudes radicadas"
+                icon={ClipboardList}
+                showSkeleton={false}
+              />
             ) : solicitudes.length === 0 ? (
               <div className="empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <span>📋</span>

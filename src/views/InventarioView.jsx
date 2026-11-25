@@ -13,6 +13,7 @@ import { QrCode, Eye, Pencil, Trash2, X, Laptop, Cpu, Plug, FileText, Armchair, 
 import ModalQR from '../components/modals/ModalQR';
 import ImpresionMasivaQRModal from '../components/modals/ImpresionMasivaQRModal';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
+import TableLoader from '../components/common/TableLoader';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalRegistroMobiliario from '../components/modals/ModalRegistroMobiliario';
 import ModalRegistroElectronica from '../components/modals/ModalRegistroElectronica';
@@ -3436,15 +3437,11 @@ export default function InventarioView({
           {renderQRSelectionBanner()}
 
           {effectiveLoading ? (
-            <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
-              <strong style={{ fontSize: '1.05rem', color: 'var(--text)' }}>
-                Cargando datos de Supabase...
-              </strong>
-              <p style={{ color: 'var(--text-dim)', marginTop: '6px', fontSize: '0.9rem' }}>
-                Consultando inventario de activos tecnológicos en tiempo real
-              </p>
-            </div>
+            <TableLoader
+              title="Sincronizando inventario..."
+              subtitle="Consultando inventario de activos tecnológicos en tiempo real"
+              icon={Laptop}
+            />
           ) : effectiveError ? (
             <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
@@ -4515,15 +4512,11 @@ export default function InventarioView({
           {renderQRSelectionBanner()}
 
           {effectiveLoading ? (
-            <div className="panel empty" style={{ padding: '40px', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
-              <strong style={{ fontSize: '1.05rem', color: 'var(--text)' }}>
-                Cargando datos de Supabase...
-              </strong>
-              <p style={{ color: 'var(--text-dim)', marginTop: '6px', fontSize: '0.9rem' }}>
-                Consultando inventario de materiales e insumos en tiempo real
-              </p>
-            </div>
+            <TableLoader
+              title="Sincronizando inventario..."
+              subtitle="Consultando inventario de materiales e insumos en tiempo real"
+              icon={activeTab === 'papeleria' ? FileText : Package}
+            />
           ) : effectiveError ? (
             <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
