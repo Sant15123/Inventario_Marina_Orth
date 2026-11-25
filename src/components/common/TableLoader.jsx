@@ -29,7 +29,7 @@ export default function TableLoader({
       {/* Spinner institucional de doble anillo */}
       <div className="relative w-14 h-14 flex items-center justify-center">
         <div
-          className="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-[#ABD037] animate-spin"
+          className="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-[#ABD037] siga-spinner"
           aria-hidden="true"
         />
         {IconComponent && (

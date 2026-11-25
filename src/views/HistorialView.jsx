@@ -974,7 +974,7 @@ export default function HistorialView({ movements = [] }) {
         <div className="panel table-responsive" style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           {isCoordinador && (authLoading || loading) ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500 dark:text-slate-400" style={{ flex: 1 }}>
-              <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full siga-spinner" />
               <p className="text-sm font-medium">Cargando tu historial de gestión...</p>
             </div>
           ) : filteredList.length === 0 ? (

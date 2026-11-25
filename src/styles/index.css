@@ -5892,3 +5892,32 @@ html.dark .alerta-estado-stock-bajo {
 html.dark .alerta-sede-subtext {
   color: #94a3b8;
 }
+
+/* ==========================================================================
+   SPINNERS / LOADERS DEL SISTEMA SIGA-FMO
+   ========================================================================== */
+@keyframes siga-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.siga-spinner {
+  animation: siga-spin 0.9s linear infinite !important;
+}
+
+.animate-spin {
+  animation: siga-spin 0.9s linear infinite;
+}

@@ -2151,6 +2151,7 @@ export default function GestionComprasView({
           }}
         >
           <div
+            className="siga-spinner"
             style={{
               display: 'inline-block',
               width: '36px',
@@ -2158,7 +2159,6 @@ export default function GestionComprasView({
               border: '3px solid rgba(171, 208, 55, 0.25)',
               borderTopColor: '#abd037',
               borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
               marginBottom: '12px',
             }}
           />
