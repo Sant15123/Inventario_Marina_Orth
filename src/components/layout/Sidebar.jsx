@@ -1,5 +1,5 @@
 import FmoBrandLogo from '../common/FmoBrandLogo';
-import React from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard,
   Box,
@@ -98,6 +98,66 @@ export default function Sidebar({ currentView, onViewChange }) {
           : []),
       ];
 
+  const navRef = useRef(null);
+  const itemRefs = useRef({});
+  const hasMountedRef = useRef(false);
+  const [pillStyle, setPillStyle] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    ready: false,
+  });
+  const [enableTransition, setEnableTransition] = useState(false);
+
+  const updatePillPosition = useCallback(() => {
+    const activeEl = itemRefs.current[currentView];
+    if (!activeEl) return;
+    setPillStyle({
+      top: activeEl.offsetTop,
+      left: activeEl.offsetLeft,
+      width: activeEl.offsetWidth,
+      height: activeEl.offsetHeight,
+      ready: true,
+    });
+  }, [currentView]);
+
+  useLayoutEffect(() => {
+    updatePillPosition();
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      const prefersReduced =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReduced) {
+        const rafId = requestAnimationFrame(() => setEnableTransition(true));
+        return () => cancelAnimationFrame(rafId);
+      }
+    }
+    return undefined;
+  }, [updatePillPosition, currentUser?.rol]);
+
+  useEffect(() => {
+    const navEl = navRef.current;
+    if (!navEl) return undefined;
+
+    let observer = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        updatePillPosition();
+      });
+      observer.observe(navEl);
+    }
+    window.addEventListener('resize', updatePillPosition);
+
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', updatePillPosition);
+    };
+  }, [updatePillPosition]);
+
   return (
     <aside className="sidebar">
       <div>
@@ -105,25 +165,57 @@ export default function Sidebar({ currentView, onViewChange }) {
           <FmoBrandLogo variant="auto" />
         </div>
 
-        <nav aria-label="Navegación principal" style={{ marginTop: '20px' }}>
+        <nav
+          ref={navRef}
+          aria-label="Navegación principal"
+          className="relative"
+          style={{ marginTop: '20px', position: 'relative' }}
+        >
+          {pillStyle.ready && (
+            <div
+              aria-hidden="true"
+              className={`sidebar-sliding-pill pointer-events-none z-0 ${
+                enableTransition
+                  ? 'transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
+                  : ''
+              }`}
+              style={{
+                position: 'absolute',
+                top: `${pillStyle.top}px`,
+                left: `${pillStyle.left}px`,
+                width: `${pillStyle.width}px`,
+                height: `${pillStyle.height}px`,
+                borderRadius: 'var(--radius, 12px)',
+                backgroundColor: '#abd037',
+                boxShadow: '0 2px 10px rgba(171, 208, 55, 0.3)',
+                transition: enableTransition
+                  ? 'top 300ms cubic-bezier(0.22, 1, 0.36, 1), left 300ms cubic-bezier(0.22, 1, 0.36, 1), width 300ms cubic-bezier(0.22, 1, 0.36, 1), height 300ms cubic-bezier(0.22, 1, 0.36, 1)'
+                  : 'none',
+              }}
+            />
+          )}
+
           <ul className="nav-menu">
             {navItems.map((item) => {
               const isActive = currentView === item.id;
               return (
                 <li key={item.id}>
                   <button
+                    ref={(el) => {
+                      itemRefs.current[item.id] = el;
+                    }}
                     type="button"
                     onClick={() => onViewChange(item.id)}
-                    className={`nav-item-btn group ${
+                    className={`nav-item-btn group relative z-10 w-fit transition-colors duration-200 ${
                       isActive
-                        ? 'active bg-[#abd037] text-[#013a52] font-bold dark:bg-[#abd037] dark:text-[#013a52]'
+                        ? 'active text-[#013a52] font-bold dark:text-[#013a52]'
                         : 'text-[#6d6e71] hover:text-[#013a52] dark:text-slate-300 dark:hover:text-[#abd037]'
                     }`}
                     aria-current={isActive ? 'page' : undefined}
-                    style={isActive ? { backgroundColor: '#abd037', color: '#013a52' } : {}}
+                    style={isActive ? { color: '#013a52' } : {}}
                   >
                     <span
-                      className={`dot ${
+                      className={`dot transition-colors duration-200 ${
                         isActive
                           ? 'bg-[#013a52]'
                           : 'bg-slate-300 dark:bg-[#6d6e71]/40 group-hover:bg-[#013a52]'
@@ -132,7 +224,7 @@ export default function Sidebar({ currentView, onViewChange }) {
                       aria-hidden="true"
                     ></span>
                     <span
-                      className={`nav-icon ${
+                      className={`nav-icon transition-colors duration-200 ${
                         isActive
                           ? 'text-[#013a52]'
                           : 'text-[#6d6e71] group-hover:text-[#013a52] dark:text-slate-400 dark:group-hover:text-[#abd037]'
@@ -142,7 +234,9 @@ export default function Sidebar({ currentView, onViewChange }) {
                     >
                       {item.icon}
                     </span>
-                    <span className={isActive ? 'text-[#013a52] font-bold' : ''}>{item.label}</span>
+                    <span className={`transition-colors duration-200 ${isActive ? 'text-[#013a52] font-bold' : ''}`}>
+                      {item.label}
+                    </span>
                   </button>
                 </li>
               );
