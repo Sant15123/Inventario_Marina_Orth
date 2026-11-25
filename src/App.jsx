@@ -15,6 +15,7 @@ import MiPanelUsuarioView from './views/MiPanelUsuarioView';
 import GestionComprasView from './views/GestionComprasView';
 import LoginView from './views/LoginView';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoginWelcomeOverlay from './components/auth/LoginWelcomeOverlay';
 
 import { useAuth } from './context/AuthContext';
 import { useSessionGuard } from './hooks/useSessionGuard';
@@ -53,6 +54,7 @@ function App() {
   };
 
   const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario, isCoordinador } = useAuth();
+  const [dashboardEntering, setDashboardEntering] = useState(false);
 
   // Estado simple de navegación para las vistas
   const [currentView, setCurrentView] = useState(() => {
@@ -1158,7 +1160,13 @@ function App() {
         path="/*"
         element={
           <ProtectedRoute>
-            <div className="layout">
+            <LoginWelcomeOverlay
+              user={currentUser}
+              theme={theme}
+              onFadeStart={() => setDashboardEntering(true)}
+              onComplete={() => setDashboardEntering(false)}
+            />
+            <div className={`layout ${dashboardEntering ? 'animate-dashboard-enter' : ''}`}>
               <Sidebar
                 currentView={currentView}
                 onViewChange={(view) => {

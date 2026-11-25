@@ -5669,3 +5669,100 @@ html.dark .theme-modal-papeleria textarea:focus {
   box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.45) !important;
   outline: none !important;
 }
+
+
+/* ==========================================================================
+   ANIMACIONES DE AUTENTICACIÓN Y BIENVENIDA SIGA-FMO
+   ========================================================================== */
+@keyframes loginShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes welcomeLogoEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.84);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes welcomeTextEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes welcomeProgressFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes dashboardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-login-shake {
+  animation: loginShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.animate-welcome-logo {
+  animation: welcomeLogoEnter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-welcome-text {
+  animation: welcomeTextEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+.animate-welcome-progress {
+  transform-origin: left center;
+  animation: welcomeProgressFill 0.88s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-dashboard-enter {
+  animation: dashboardEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-login-shake,
+  .animate-welcome-logo,
+  .animate-welcome-text,
+  .animate-welcome-progress,
+  .animate-dashboard-enter {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

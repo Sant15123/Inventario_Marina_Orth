@@ -128,13 +128,26 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
   });
 
   const [cargando, setCargando] = useState(false);
+  const [shakeCard, setShakeCard] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
   // Manejador de inicio de sesión
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (cargando || authLoading) return;
     setErrorMsg('');
+    setShakeCard(false);
     setCargando(true);
+
+    try {
+      const prefersReduced =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReduced) {
+        sessionStorage.setItem('siga_welcome_transition', '1');
+      }
+    } catch (_) {}
 
     try {
       const result = await login({
@@ -153,14 +166,26 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
         } catch (_) {}
         const from = location.state?.from?.pathname || (result.user?.rol === 'usuario' ? '/mi-panel' : '/');
         navigate(from, { replace: true });
+      } else {
+        try {
+          sessionStorage.removeItem('siga_welcome_transition');
+        } catch (_) {}
       }
     } catch (err) {
+      try {
+        sessionStorage.removeItem('siga_welcome_transition');
+      } catch (_) {}
       console.error('Error al iniciar sesión:', err);
       setErrorMsg(
         err.response?.data?.message ||
         err.message ||
         'Credenciales incorrectas. Verifica tu correo o documento y contraseña.'
       );
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => setShakeCard(true));
+      } else {
+        setShakeCard(true);
+      }
     } finally {
       setCargando(false);
     }
@@ -227,7 +252,8 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
 
       {/* Tarjeta Principal (Card de Login) */}
       <div
-        className="login-card"
+        className={`login-card ${shakeCard ? 'animate-login-shake' : ''}`}
+        onAnimationEnd={() => setShakeCard(false)}
         style={{
           width: '100%',
           maxWidth: '28rem',
@@ -700,12 +726,13 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
               justifyContent: 'center',
               gap: '8px',
               fontSize: '0.875rem',
-              cursor: 'pointer',
+              cursor: cargando || authLoading ? 'not-allowed' : 'pointer',
+              opacity: cargando || authLoading ? 0.85 : 1,
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
               transition: 'all 0.15s ease',
             }}
           >
-            {cargando ? (
+            {cargando || authLoading ? (
               <>
                 <div
                   style={{
@@ -717,7 +744,7 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
                     animation: 'spin 0.6s linear infinite',
                   }}
                 ></div>
-                <span>Validando Sesión JWT...</span>
+                <span>Validando Sesión...</span>
               </>
             ) : (
               <>
