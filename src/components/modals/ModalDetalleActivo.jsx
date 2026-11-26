@@ -449,8 +449,14 @@ export default function ModalDetalleActivo({
               <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                 {renderKeyValue('Categoría', detalle.categoria || detalle.category)}
                 {renderKeyValue('Condición', detalle.condicion || detalle.estado_fisico)}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <div
+                  className="flex flex-col items-start gap-1 min-w-0"
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', minWidth: 0 }}
+                >
+                  <span
+                    className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em' }}
+                  >
                     Área / Programa FMO:
                   </span>
                   <ProgramAreaBadge
@@ -471,6 +477,16 @@ export default function ModalDetalleActivo({
                         : 'tecnologia'
                     }
                     iconSize={16}
+                    className="w-fit self-start px-3 py-1 gap-1.5"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      width: 'fit-content',
+                      maxWidth: '100%',
+                      alignSelf: 'flex-start',
+                      padding: '5px 12px',
+                      gap: '6px',
+                    }}
                   />
                 </div>
                 {renderKeyValue(
@@ -533,18 +549,27 @@ export default function ModalDetalleActivo({
                     : (detalle.ubicacion || detalle.sede)
                 )}
 
-                <div className="flex flex-col gap-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <div
+                  className="flex flex-col items-start gap-1 min-w-0"
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', minWidth: 0 }}
+                >
+                  <span
+                    className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em' }}
+                  >
                     Estante / Caja / Gaveta:
                   </span>
                   {detalle.ubicacion_estante ? (
                     <span
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-lime-50 text-lime-800 dark:bg-lime-950/60 dark:text-lime-300 border border-lime-200 dark:border-lime-700/60 w-fit"
+                      className="inline-flex items-center gap-1.5 w-fit max-w-full self-start px-3 py-1 rounded-md text-xs font-semibold bg-lime-50 text-lime-800 dark:bg-lime-950/60 dark:text-lime-300 border border-lime-200 dark:border-lime-700/60"
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        padding: '2px 8px',
+                        gap: '6px',
+                        width: 'fit-content',
+                        maxWidth: '100%',
+                        alignSelf: 'flex-start',
+                        padding: '5px 12px',
                         borderRadius: '6px',
                         backgroundColor: 'rgba(171, 222, 22, 0.16)',
                         border: '1px solid rgba(171, 222, 22, 0.45)',

@@ -299,10 +299,14 @@ export default function ProgramAreaBadge({
 
   return (
     <span
-      className={`program-area-badge inline-flex items-center gap-1.5 ${isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'} font-semibold rounded-full leading-none shadow-2xs transition-all max-w-full min-w-0 overflow-hidden ${config.badgeClass} ${className}`}
+      className={`program-area-badge inline-flex items-center w-fit self-start gap-1.5 ${isSm ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1 text-xs'} font-semibold rounded-full leading-none shadow-2xs transition-all max-w-full min-w-0 overflow-hidden ${config.badgeClass} ${className}`}
       style={{
         fontFamily: "'Poppins', sans-serif",
+        display: 'inline-flex',
+        alignItems: 'center',
+        width: 'fit-content',
         maxWidth: '100%',
+        alignSelf: 'flex-start',
         minWidth: 0,
         boxSizing: 'border-box',
         overflow: 'hidden',
@@ -319,14 +323,14 @@ export default function ProgramAreaBadge({
         </span>
       )}
       <span
-        className="truncate block flex-1 min-w-0"
+        className="truncate block min-w-0"
         style={{
           display: 'block',
           minWidth: 0,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          flex: '1 1 auto',
+          flex: '0 1 auto',
         }}
       >
         {typeof displayLabel === 'string' ? displayLabel : 'Sin asignar'}
