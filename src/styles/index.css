@@ -798,6 +798,28 @@ html.dark .brand-divider {
 }
 
 /* --------------------------------------------------------------------------
+   VIEW TRANSITIONS API: TRANSICIÓN CIRCULAR MODO CLARO <-> MODO OSCURO
+   -------------------------------------------------------------------------- */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+html.theme-transition,
+html.theme-transition *:not(.theme-toggle-svg) {
+  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease !important;
+}
+
+/* --------------------------------------------------------------------------
    CAMPANITA DE NOTIFICACIONES REALTIME
    -------------------------------------------------------------------------- */
 .notification-bell-btn {

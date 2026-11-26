@@ -91,10 +91,10 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
     }
   }, [isAuthenticated, currentUser, navigate, location]);
 
-  // Manejador robusto para alternar tema
-  const handleToggleTheme = () => {
+  // Manejador robusto para alternar tema (propaga el evento para transición circular)
+  const handleToggleTheme = (e) => {
     if (typeof onToggleTheme === 'function') {
-      onToggleTheme();
+      onToggleTheme(e);
     } else {
       const newTheme = isDark ? 'light' : 'dark';
       const root = document.documentElement;

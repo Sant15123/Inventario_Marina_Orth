@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { Routes, Route } from 'react-router-dom';
 import './styles/index.css';
 
@@ -38,29 +39,111 @@ function App() {
     return 'light';
   });
 
-  useEffect(() => {
+  const applyThemeToDom = useCallback((nextTheme) => {
     const root = document.documentElement;
-    root.setAttribute('data-theme', theme);
-    if (theme === 'dark') {
+    root.setAttribute('data-theme', nextTheme);
+    if (nextTheme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('siga_theme', theme);
-    localStorage.setItem('marina_orth_theme', theme);
-  }, [theme]);
+    try {
+      localStorage.setItem('siga_theme', nextTheme);
+      localStorage.setItem('marina_orth_theme', nextTheme);
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    applyThemeToDom(theme);
+  }, [theme, applyThemeToDom]);
 
   const [showDarkModeToast, setShowDarkModeToast] = useState(false);
+  const themeTransitionTimerRef = useRef(null);
 
-  const toggleTheme = () => {
-    if (theme === 'light') {
-      setTheme('dark');
-      setShowDarkModeToast(true);
-    } else {
-      setTheme('light');
-      setShowDarkModeToast(false);
+  useEffect(() => {
+    return () => {
+      if (themeTransitionTimerRef.current) {
+        clearTimeout(themeTransitionTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleToggleTheme = (e) => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+
+    const updateThemeState = () => {
+      applyThemeToDom(nextTheme);
+      setTheme(nextTheme);
+      setShowDarkModeToast(nextTheme === 'dark');
+    };
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (typeof document === 'undefined' || !document.startViewTransition || prefersReducedMotion) {
+      if (typeof document !== 'undefined' && !prefersReducedMotion) {
+        const root = document.documentElement;
+        root.classList.add('theme-transition');
+        if (themeTransitionTimerRef.current) {
+          clearTimeout(themeTransitionTimerRef.current);
+        }
+        themeTransitionTimerRef.current = setTimeout(() => {
+          root.classList.remove('theme-transition');
+        }, 350);
+      }
+      updateThemeState();
+      return;
     }
+
+    const rect = e?.currentTarget?.getBoundingClientRect?.();
+    const hasClientCoords =
+      typeof e?.clientX === 'number' &&
+      typeof e?.clientY === 'number' &&
+      (e.clientX !== 0 || e.clientY !== 0);
+    const x = hasClientCoords
+      ? e.clientX
+      : rect
+        ? rect.left + rect.width / 2
+        : window.innerWidth / 2;
+    const y = hasClientCoords
+      ? e.clientY
+      : rect
+        ? rect.top + rect.height / 2
+        : window.innerHeight / 2;
+
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    const transition = document.startViewTransition(() => {
+      flushSync(() => {
+        updateThemeState();
+      });
+    });
+
+    transition.ready
+      .then(() => {
+        document.documentElement.animate(
+          {
+            clipPath: [
+              `circle(0px at ${x}px ${y}px)`,
+              `circle(${endRadius}px at ${x}px ${y}px)`,
+            ],
+          },
+          {
+            duration: 500,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            pseudoElement: '::view-transition-new(root)',
+          }
+        );
+      })
+      .catch(() => {});
   };
+
+  const toggleTheme = handleToggleTheme;
 
   const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario, isCoordinador } = useAuth();
   const [dashboardEntering, setDashboardEntering] = useState(false);
