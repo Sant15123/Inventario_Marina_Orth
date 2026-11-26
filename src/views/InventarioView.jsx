@@ -14,6 +14,7 @@ import ModalQR from '../components/modals/ModalQR';
 import ImpresionMasivaQRModal from '../components/modals/ImpresionMasivaQRModal';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import TableLoader from '../components/common/TableLoader';
+import ModuleConnectionState from '../components/common/ModuleConnectionState';
 import ModalEditarActivo from '../components/modals/ModalEditarActivo';
 import ModalRegistroMobiliario from '../components/modals/ModalRegistroMobiliario';
 import ModalRegistroElectronica from '../components/modals/ModalRegistroElectronica';
@@ -167,6 +168,7 @@ export default function InventarioView({
   searchTerm = '',
   loading = false,
   error = null,
+  isRetryingOrSlow = false,
   onRetry,
   onAddItem,
   onEditItem,
@@ -307,9 +309,11 @@ export default function InventarioView({
     }
   };
 
-  // Consulta automática en tiempo real al montar la vista de Inventario
+  // Consulta automática al montar solo si es modo autónomo o no hay carga global en curso
   useEffect(() => {
-    cargarConsumibles();
+    if (!onRetry || (!loading && items.length === 0 && error)) {
+      cargarConsumibles();
+    }
   }, []);
 
   // Determinar los datos vigentes (props del App o estado local)
@@ -3452,31 +3456,20 @@ export default function InventarioView({
           {renderQRSelectionBanner()}
 
           {effectiveLoading ? (
-            <TableLoader
-              title="Sincronizando inventario..."
-              subtitle="Consultando inventario de activos tecnológicos en tiempo real"
-              icon={Laptop}
-            />
+            isRetryingOrSlow ? (
+              <ModuleConnectionState mode="loading" isRetryingOrSlow={true} />
+            ) : (
+              <TableLoader
+                title="Sincronizando inventario..."
+                subtitle="Consultando inventario de activos tecnológicos en tiempo real"
+                icon={Laptop}
+              />
+            )
           ) : effectiveError ? (
-            <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
-              <strong style={{ color: 'var(--red)', fontSize: '1.05rem' }}>
-                Error al conectar con el backend / Supabase
-              </strong>
-              <p style={{ color: 'var(--text-dim)', margin: '8px auto', maxWidth: '500px' }}>
-                {effectiveError}
-              </p>
-              {onRetry && (
-                <button
-                  type="button"
-                  className="btn small btn-primary"
-                  style={{ marginTop: '12px' }}
-                  onClick={onRetry}
-                >
-                  🔄 Reintentar conexión
-                </button>
-              )}
-            </div>
+            <ModuleConnectionState
+              mode="error"
+              onRetry={onRetry || cargarConsumibles}
+            />
           ) : allEquiposUnits.length === 0 ? (
             <div className="panel empty">
               <span>📦</span> {equipos.length === 0 ? 'No hay registros en Supabase.' : 'No se encontraron equipos con los filtros seleccionados.'}
@@ -4527,31 +4520,20 @@ export default function InventarioView({
           {renderQRSelectionBanner()}
 
           {effectiveLoading ? (
-            <TableLoader
-              title="Sincronizando inventario..."
-              subtitle="Consultando inventario de materiales e insumos en tiempo real"
-              icon={activeTab === 'papeleria' ? FileText : Package}
-            />
+            isRetryingOrSlow ? (
+              <ModuleConnectionState mode="loading" isRetryingOrSlow={true} />
+            ) : (
+              <TableLoader
+                title="Sincronizando inventario..."
+                subtitle="Consultando inventario de materiales e insumos en tiempo real"
+                icon={activeTab === 'papeleria' ? FileText : Package}
+              />
+            )
           ) : effectiveError ? (
-            <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
-              <strong style={{ color: 'var(--red)', fontSize: '1.05rem' }}>
-                Error al conectar con el backend / Supabase
-              </strong>
-              <p style={{ color: 'var(--text-dim)', margin: '8px auto', maxWidth: '500px' }}>
-                {effectiveError}
-              </p>
-              {onRetry && (
-                <button
-                  type="button"
-                  className="btn small btn-primary"
-                  style={{ marginTop: '12px' }}
-                  onClick={onRetry}
-                >
-                  🔄 Reintentar conexión
-                </button>
-              )}
-            </div>
+            <ModuleConnectionState
+              mode="error"
+              onRetry={onRetry || cargarConsumibles}
+            />
           ) : consumibles.length === 0 ? (
             <div className="panel empty">
               <span>📦</span> No hay registros en Supabase.

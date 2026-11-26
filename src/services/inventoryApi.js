@@ -248,8 +248,8 @@ export const DEFAULT_EQUIPOS_ELECTRONICA = [
 
 export const inventoryApi = {
   // 1. Activos
-  getActivos: async () => {
-    const json = await request('/activos');
+  getActivos: async (options = {}) => {
+    const json = await request('/activos', options);
     return extraerArreglo(json);
   },
 
@@ -314,18 +314,29 @@ export const inventoryApi = {
   },
 
   // 2. Consumibles
-  getConsumibles: async () => {
+  getConsumibles: async (options = {}) => {
     let list = [];
     try {
-      const json = await request('/consumibles');
+      const json = await request('/consumibles', options);
       list = extraerArreglo(json);
-    } catch (_) { }
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
 
     // Fallback o enriquecimiento con Supabase si está disponible
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        const { data, error } = await supabase.from('consumibles').select('*');
+        let query = supabase.from('consumibles').select('*');
+        if (options?.signal && typeof query.abortSignal === 'function') {
+          query = query.abortSignal(options.signal);
+        }
+        const { data, error } = await query;
+        if (options?.signal?.aborted) {
+          const abortErr = new Error('Consulta cancelada');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
         if (!error && Array.isArray(data) && data.length > 0) {
           const sbMap = new Map(data.map(item => [item.id, item]));
           if (list.length > 0) {
@@ -338,7 +349,9 @@ export const inventoryApi = {
           }
         }
       }
-    } catch (_) { }
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
 
     // Enriquecer con customAreas guardadas en localStorage
     try {
@@ -636,8 +649,8 @@ export const inventoryApi = {
   },
 
   // 3. Préstamos
-  getPrestamos: async () => {
-    const json = await request('/prestamos');
+  getPrestamos: async (options = {}) => {
+    const json = await request('/prestamos', options);
     return extraerArreglo(json);
   },
 
@@ -768,8 +781,8 @@ export const inventoryApi = {
   },
 
   // 2.1 Entregas y Remisiones de Consumibles
-  getRemisiones: async () => {
-    const json = await request('/consumibles/remisiones');
+  getRemisiones: async (options = {}) => {
+    const json = await request('/consumibles/remisiones', options);
     return extraerArreglo(json);
   },
 
@@ -781,8 +794,8 @@ export const inventoryApi = {
     return json?.data !== undefined ? json.data : json;
   },
 
-  getEntregas: async () => {
-    const json = await request('/consumibles/entregas');
+  getEntregas: async (options = {}) => {
+    const json = await request('/consumibles/entregas', options);
     return extraerArreglo(json);
   },
 
@@ -825,19 +838,30 @@ export const inventoryApi = {
   },
 
   // 2.3 Equipos de Electrónica & Instrumentación Reutilizables (SIGA-FMO)
-  getEquiposElectronica: async () => {
+  getEquiposElectronica: async (options = {}) => {
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        const { data, error } = await supabase
+        let query = supabase
           .from('equipos_electronica')
           .select('*')
           .order('created_at', { ascending: false });
+        if (options?.signal && typeof query.abortSignal === 'function') {
+          query = query.abortSignal(options.signal);
+        }
+        const { data, error } = await query;
+        if (options?.signal?.aborted) {
+          const abortErr = new Error('Consulta cancelada');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
         if (!error && Array.isArray(data) && data.length > 0) {
           return data;
         }
       }
-    } catch (_) { }
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
 
     // Fallback con catálogo oficial de semillas FMO si Supabase estuviera temporalmente inaccesible
     return DEFAULT_EQUIPOS_ELECTRONICA;
@@ -1011,23 +1035,34 @@ export const inventoryApi = {
   },
 
   // 4. Historial Universal y Auditoría
-  getHistorial: async (params = {}) => {
+  getHistorial: async (params = {}, options = {}) => {
     let list = [];
     try {
       const qs = new URLSearchParams(params).toString();
       const endpoint = qs ? `/historial?${qs}` : '/historial';
-      const json = await request(endpoint);
+      const json = await request(endpoint, options);
       list = extraerArreglo(json);
-    } catch (_) { }
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
 
     // Complementar directamente con registros de Supabase (historial_movimientos)
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        const { data: supaHist, error: errH } = await supabase
+        let query = supabase
           .from('historial_movimientos')
           .select('*')
           .order('fecha', { ascending: false });
+        if (options?.signal && typeof query.abortSignal === 'function') {
+          query = query.abortSignal(options.signal);
+        }
+        const { data: supaHist, error: errH } = await query;
+        if (options?.signal?.aborted) {
+          const abortErr = new Error('Consulta cancelada');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
 
         if (!errH && Array.isArray(supaHist) && supaHist.length > 0) {
           const existingKeys = new Set(
@@ -1857,14 +1892,23 @@ export const inventoryApi = {
   },
 
   // 5.1 Sedes y Municipios
-  getSedes: async () => {
+  getSedes: async (options = {}) => {
     try {
       const { supabase } = await import('./supabase');
       if (supabase) {
-        const { data, error } = await supabase
+        let query = supabase
           .from('sedes')
           .select('*')
           .order('nombre', { ascending: true });
+        if (options?.signal && typeof query.abortSignal === 'function') {
+          query = query.abortSignal(options.signal);
+        }
+        const { data, error } = await query;
+        if (options?.signal?.aborted) {
+          const abortErr = new Error('Consulta cancelada');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
         if (!error && Array.isArray(data) && data.length > 0) {
           const seen = new Set();
           const unicas = [];
@@ -1878,8 +1922,10 @@ export const inventoryApi = {
           return unicas;
         }
       }
-    } catch (_) { }
-    const json = await request('/sedes');
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
+    const json = await request('/sedes', options);
     return extraerArreglo(json);
   },
 

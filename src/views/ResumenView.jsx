@@ -7,6 +7,7 @@ import { fmtDate, available, isOverdue, getDaysDiff, today } from '../services/m
 import inventoryApi from '../services/inventoryApi';
 import { useAuth } from '../context/AuthContext';
 import CoordinadorMisSolicitudesSection from '../components/coordinador/CoordinadorMisSolicitudesSection';
+import ModuleConnectionState from '../components/common/ModuleConnectionState';
 
 export default function ResumenView({
   items = [],
@@ -14,6 +15,7 @@ export default function ResumenView({
   sedes = [],
   loading = false,
   error = null,
+  isRetryingOrSlow = false,
   onRetry,
   onNavigate,
 }) {
@@ -259,25 +261,21 @@ export default function ResumenView({
   if (effectiveError && !kpisData && effectiveItems.length === 0) {
     return (
       <div className="resumen-container">
-        <div className="panel empty" style={{ padding: '48px 20px', textAlign: 'center', borderColor: 'var(--red)' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⚠️</div>
-          <strong style={{ color: 'var(--red)', fontSize: '1.2rem' }}>
-            Error al conectar con el backend / Supabase
-          </strong>
-          <p style={{ color: 'var(--text-dim)', margin: '10px auto', maxWidth: '520px' }}>
-            {effectiveError}
-          </p>
-          {onRetry && (
-            <button
-              type="button"
-              className="btn small btn-primary"
-              style={{ marginTop: '14px' }}
-              onClick={onRetry}
-            >
-              🔄 Reintentar conexión
-            </button>
-          )}
-        </div>
+        <ModuleConnectionState
+          mode="error"
+          onRetry={onRetry}
+        />
+      </div>
+    );
+  }
+
+  if ((loading || localLoading) && !kpisData && effectiveItems.length === 0) {
+    return (
+      <div className="resumen-container">
+        <ModuleConnectionState
+          mode="loading"
+          isRetryingOrSlow={isRetryingOrSlow}
+        />
       </div>
     );
   }

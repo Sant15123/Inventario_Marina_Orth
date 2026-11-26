@@ -19,13 +19,22 @@ import ModalNuevoUsuario from '../components/modals/ModalNuevoUsuario';
 import ModalEditarUsuario from '../components/modals/ModalEditarUsuario';
 import UserAvatar from '../components/common/UserAvatar';
 import DetalleUsuarioModal from '../components/modals/DetalleUsuarioModal';
+import ModuleConnectionState from '../components/common/ModuleConnectionState';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
 import { registrarAuditoria } from '../services/historyAuditService';
 import { resolveAreaConfig } from '../components/common/ProgramAreaBadge';
 import { RoboticaIcon } from '../components/common/FmoProgramIcons';
 
-export default function UsuariosView({ sedes: propSedes, searchTerm = '', busquedaGlobal = '' }) {
+export default function UsuariosView({
+  sedes: propSedes,
+  searchTerm = '',
+  busquedaGlobal = '',
+  loading = false,
+  error = null,
+  isRetryingOrSlow = false,
+  onRetry,
+}) {
   const { usuarios, crearUsuario, editarUsuario, eliminarUsuario, currentUser, isAdmin, isSupervisor } = useAuth();
   const { showNewItemSuccess, showEditSuccess, showConfirmAction, showError } = useToast();
 
@@ -648,6 +657,20 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
             TABLA PRINCIPAL (DISTRIBUCIÓN 100% BALANCEADA SIN COLISIONES)
             ========================================================================= */}
         <div className="panel" style={{ paddingBottom: '0', overflow: 'hidden' }}>
+          {loading && usuarios.length === 0 ? (
+            <ModuleConnectionState
+              mode="loading"
+              isRetryingOrSlow={isRetryingOrSlow}
+              className="border-0 shadow-none"
+            />
+          ) : error && usuarios.length === 0 ? (
+            <ModuleConnectionState
+              mode="error"
+              onRetry={onRetry}
+              className="border-0 shadow-none"
+            />
+          ) : (
+            <>
           <table style={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -1019,6 +1042,8 @@ export default function UsuariosView({ sedes: propSedes, searchTerm = '', busque
             </div>
           </div>
         </div>
+        </>
+          )}
       </div>
     </section>
 

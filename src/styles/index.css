@@ -6016,3 +6016,111 @@ html.dark .table-loader-skeleton-row {
 html.dark .table-loader-skeleton-cell {
   background-color: rgba(51, 65, 85, 0.75);
 }
+
+/* ==========================================================================
+   ESTADO DE CONEXIÓN / REINTENTO Y ERROR ELEGANTE SIGA-FMO (POPPINS)
+   ========================================================================== */
+.connection-state-card {
+  font-family: 'Poppins', sans-serif;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 44px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+[data-theme="dark"] .connection-state-card,
+html.dark .connection-state-card {
+  background-color: var(--surface, #062838);
+  border-color: #334155;
+}
+
+.connection-state-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.35;
+  color: #013A52;
+  margin: 0;
+}
+
+[data-theme="dark"] .connection-state-title,
+html.dark .connection-state-title {
+  color: #FFFFFF;
+}
+
+.connection-state-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #64748B;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+[data-theme="dark"] .connection-state-subtitle,
+html.dark .connection-state-subtitle {
+  color: #94A3B8;
+}
+
+.connection-error-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  background-color: #FEF3C7;
+  border: 1px solid #FDE68A;
+  color: #D97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 6px;
+}
+
+[data-theme="dark"] .connection-error-icon-wrap,
+html.dark .connection-error-icon-wrap {
+  background-color: rgba(120, 53, 15, 0.35);
+  border-color: rgba(217, 119, 6, 0.45);
+  color: #FBBF24;
+}
+
+.connection-retry-btn {
+  margin-top: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 10px 22px;
+  border-radius: 12px;
+  border: none;
+  background-color: #013A52;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(1, 58, 82, 0.18);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.connection-retry-btn:hover {
+  background-color: #012a3c;
+}
+
+[data-theme="dark"] .connection-retry-btn,
+html.dark .connection-retry-btn {
+  background-color: #ABD037;
+  color: #013A52;
+  box-shadow: 0 2px 10px rgba(171, 208, 55, 0.22);
+}
+
+[data-theme="dark"] .connection-retry-btn:hover,
+html.dark .connection-retry-btn:hover {
+  background-color: #96bc28;
+}

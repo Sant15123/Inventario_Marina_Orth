@@ -20,6 +20,7 @@ import SearchableUserSelect from '../components/common/SearchableUserSelect';
 import { Building2, FolderKanban, Plus, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info, ShoppingCart, ExternalLink, PackagePlus, Search, FileSpreadsheet, Download, RotateCcw, X, ChevronDown, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TableLoader from '../components/common/TableLoader';
+import ModuleConnectionState from '../components/common/ModuleConnectionState';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
 import { formatItemOptionLabel } from '../services/prestamosCatalogService';
@@ -94,6 +95,7 @@ export default function PrestamosView({
   onSedeUpdated: propOnSedeUpdated,
   loading = false,
   error = null,
+  isRetryingOrSlow = false,
   onRetry,
   onRegisterLoan,
   onRegisterDelivery,
@@ -1323,31 +1325,20 @@ export default function PrestamosView({
           </div>
 
           {loading ? (
-            <TableLoader
-              title="Sincronizando préstamos..."
-              subtitle="Consultando préstamos activos en tiempo real"
-              icon={Repeat}
-            />
+            isRetryingOrSlow ? (
+              <ModuleConnectionState mode="loading" isRetryingOrSlow={true} />
+            ) : (
+              <TableLoader
+                title="Sincronizando préstamos..."
+                subtitle="Consultando préstamos activos en tiempo real"
+                icon={Repeat}
+              />
+            )
           ) : error ? (
-            <div className="panel empty" style={{ padding: '36px', textAlign: 'center', borderColor: 'var(--red)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⚠️</div>
-              <strong style={{ color: 'var(--red)', fontSize: '1.05rem' }}>
-                Error al conectar con el backend / Supabase
-              </strong>
-              <p style={{ color: 'var(--text-dim)', margin: '8px auto', maxWidth: '500px' }}>
-                {error}
-              </p>
-              {onRetry && (
-                <button
-                  type="button"
-                  className="btn small btn-primary"
-                  style={{ marginTop: '12px' }}
-                  onClick={onRetry}
-                >
-                  🔄 Reintentar conexión
-                </button>
-              )}
-            </div>
+            <ModuleConnectionState
+              mode="error"
+              onRetry={onRetry}
+            />
           ) : activeLoans.length === 0 ? (
             <div className="panel empty">
               <span>📦</span> {movements.length === 0 ? 'No hay registros en Supabase.' : 'No hay préstamos de equipos activos en este momento. Todos los equipos están en bodega.'}

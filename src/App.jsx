@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './styles/index.css';
 
@@ -136,46 +136,120 @@ function App() {
     setCurrentView(view);
   };
 
-  // Estado de carga y error de la API de Supabase / Backend
+  // Estado de carga, reintento automático y error de la API de Supabase / Backend
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
+  const [isRetryingOrSlow, setIsRetryingOrSlow] = useState(false);
+  const fetchAbortRef = useRef(null);
 
   // Estado del inventario y movimientos (inicializados estrictamente con arreglos vacíos)
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [sedesList, setSedesList] = useState([]);
 
-  // Cargar datos reales desde Supabase / PostgreSQL al iniciar la aplicación
-  const refreshFromApi = async () => {
-    try {
-      setLoading(true);
-      setApiError(null);
+  // Cargar datos reales desde Supabase / PostgreSQL con hasta 3 reintentos automáticos y AbortController
+  const refreshFromApi = useCallback(async () => {
+    if (fetchAbortRef.current) {
+      fetchAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
+    const signal = controller.signal;
 
-      const [activosData, electronicaData, consumiblesData, prestamosData, entregasData, remisionesData, historialData, sedesData] = await Promise.all([
-        inventoryApi.getActivos(),
-        inventoryApi.getEquiposElectronica().catch((err) => {
+    const isTransientError = (err) => {
+      if (!err || err.name === 'AbortError') return false;
+      const msg = String(err.message || err).toLowerCase();
+      return (
+        msg.includes('failed to fetch') ||
+        msg.includes('networkerror') ||
+        msg.includes('load failed') ||
+        msg.includes('network request failed') ||
+        msg.includes('timeout') ||
+        msg.includes('econnreset') ||
+        msg.includes('err_network') ||
+        err.status === 502 ||
+        err.status === 503 ||
+        err.status === 504
+      );
+    };
+
+    const waitMs = (ms) =>
+      new Promise((resolve, reject) => {
+        if (signal.aborted) {
+          const abortErr = new Error('AbortError');
+          abortErr.name = 'AbortError';
+          reject(abortErr);
+          return;
+        }
+        const timer = setTimeout(() => {
+          signal.removeEventListener('abort', onAbort);
+          resolve();
+        }, ms);
+        const onAbort = () => {
+          clearTimeout(timer);
+          const abortErr = new Error('AbortError');
+          abortErr.name = 'AbortError';
+          reject(abortErr);
+        };
+        signal.addEventListener('abort', onAbort, { once: true });
+      });
+
+    setLoading(true);
+    setApiError(null);
+    setIsRetryingOrSlow(false);
+
+    const slowTimer = setTimeout(() => {
+      if (fetchAbortRef.current === controller && !signal.aborted) {
+        setIsRetryingOrSlow(true);
+      }
+    }, 3000);
+
+    const MAX_ATTEMPTS = 3;
+
+    try {
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        if (signal.aborted) return;
+
+        if (attempt > 0) {
+          setIsRetryingOrSlow(true);
+          await waitMs(3000);
+          if (signal.aborted) return;
+        }
+
+        try {
+
+          const [activosData, electronicaData, consumiblesData, prestamosData, entregasData, remisionesData, historialData, sedesData] = await Promise.all([
+            inventoryApi.getActivos({ signal }),
+            inventoryApi.getEquiposElectronica({ signal }).catch((err) => {
+              if (signal.aborted || err?.name === 'AbortError') throw err;
           console.warn('Aviso: no se pudieron cargar equipos de electrónica:', err.message);
           return [];
         }),
-        inventoryApi.getConsumibles(),
-        inventoryApi.getPrestamos(),
-        inventoryApi.getEntregas().catch((err) => {
+            inventoryApi.getConsumibles({ signal }),
+            inventoryApi.getPrestamos({ signal }),
+            inventoryApi.getEntregas({ signal }).catch((err) => {
+              if (signal.aborted || err?.name === 'AbortError') throw err;
           console.warn('Aviso: no se pudieron cargar entregas de consumibles:', err.message);
           return [];
         }),
-        inventoryApi.getRemisiones().catch((err) => {
+            inventoryApi.getRemisiones({ signal }).catch((err) => {
+              if (signal.aborted || err?.name === 'AbortError') throw err;
           console.warn('Aviso: no se pudieron cargar remisiones:', err.message);
           return [];
         }),
-        inventoryApi.getHistorial().catch((err) => {
+            inventoryApi.getHistorial({}, { signal }).catch((err) => {
+              if (signal.aborted || err?.name === 'AbortError') throw err;
           console.warn('Aviso: no se pudo cargar historial de movimientos:', err.message);
           return [];
         }),
-        inventoryApi.getSedes().catch((err) => {
-          console.warn('Aviso: no se pudieron cargar sedes:', err.message);
-          return [];
-        }),
-      ]);
+            inventoryApi.getSedes({ signal }).catch((err) => {
+              if (signal.aborted || err?.name === 'AbortError') throw err;
+              console.warn('Aviso: no se pudieron cargar sedes:', err.message);
+              return [];
+            }),
+          ]);
+
+          if (signal.aborted) return;
 
       if (Array.isArray(sedesData) && sedesData.length > 0) {
         const nombresApi = sedesData
@@ -575,16 +649,36 @@ function App() {
         return (Number(b.dbId) || 0) - (Number(a.dbId) || 0);
       });
 
-      setMovements(newMovs);
-    } catch (err) {
-      console.error('Error al consultar datos de Supabase / backend:', err);
-      setApiError(err.message || 'No se pudo conectar con el servidor backend');
-      setItems([]);
-      setMovements([]);
+          setMovements(newMovs);
+          setApiError(null);
+          return;
+        } catch (err) {
+          if (signal.aborted || err?.name === 'AbortError') return;
+
+          if (isTransientError(err) && attempt < MAX_ATTEMPTS - 1) {
+            console.warn(`Reintentando conexión (${attempt + 2}/${MAX_ATTEMPTS}) en 3 segundos...`, err.message);
+            continue;
+          }
+
+          console.error('Error al consultar datos del servidor tras reintentos:', err);
+          setApiError(err.message || 'No se pudo completar la conexión con el servidor');
+          setItems([]);
+          setMovements([]);
+          return;
+        }
+      }
+    } catch (outerErr) {
+      if (signal.aborted || outerErr?.name === 'AbortError') return;
+      console.error('Error al consultar datos del servidor:', outerErr);
+      setApiError(outerErr.message || 'No se pudo completar la conexión con el servidor');
     } finally {
-      setLoading(false);
+      clearTimeout(slowTimer);
+      if (fetchAbortRef.current === controller && !signal.aborted) {
+        setLoading(false);
+        setIsRetryingOrSlow(false);
+      }
     }
-  };
+  }, []);
 
   // Función para purgar cualquier caché local obsoleta y asegurar sincronización pura con Supabase
   const purgeLocalCache = () => {
@@ -678,13 +772,28 @@ function App() {
     })();
 
     return () => {
+      if (fetchAbortRef.current) {
+        fetchAbortRef.current.abort();
+      }
       if (canal) {
         import('./services/supabase').then(({ supabase }) => {
           if (supabase && canal) supabase.removeChannel(canal);
         });
       }
     };
-  }, []);
+  }, [refreshFromApi]);
+
+  // Al cambiar de rol activo, cancelar peticiones previas y recargar datos limpios
+  const activeRoleKey = currentUser?.role || currentUser?.rol || '';
+  const prevRoleRef = useRef(activeRoleKey);
+  useEffect(() => {
+    if (prevRoleRef.current !== activeRoleKey) {
+      prevRoleRef.current = activeRoleKey;
+      if (activeRoleKey) {
+        refreshFromApi();
+      }
+    }
+  }, [activeRoleKey, refreshFromApi]);
 
   const handleSyncAndPurge = async () => {
     purgeLocalCache();
@@ -1213,6 +1322,7 @@ function App() {
                       sedes={sedesList}
                       loading={loading}
                       error={apiError}
+                      isRetryingOrSlow={isRetryingOrSlow}
                       onRetry={refreshFromApi}
                       onNavigate={handleNavigateFromSummary}
                     />
@@ -1225,6 +1335,7 @@ function App() {
                       searchTerm={searchTerm}
                       loading={loading}
                       error={apiError}
+                      isRetryingOrSlow={isRetryingOrSlow}
                       onRetry={refreshFromApi}
                       onAddItem={handleAddItem}
                       onEditItem={handleEditItem}
@@ -1243,6 +1354,7 @@ function App() {
                       movements={filteredMovements}
                       loading={loading}
                       error={apiError}
+                      isRetryingOrSlow={isRetryingOrSlow}
                       onRetry={refreshFromApi}
                       onRegisterLoan={handleRegisterLoan}
                       onRegisterDelivery={handleRegisterDelivery}
@@ -1288,7 +1400,13 @@ function App() {
 
                   {/* VISTA HISTORIAL */}
                   {currentView === 'historial' && (
-                    <HistorialView movements={filteredMovements} />
+                    <HistorialView
+                      movements={filteredMovements}
+                      loading={loading}
+                      error={apiError}
+                      isRetryingOrSlow={isRetryingOrSlow}
+                      onRetry={refreshFromApi}
+                    />
                   )}
 
                   {/* VISTA GESTIÓN DE COMPRAS (COORDINADOR / ADMINISTRADOR) */}
@@ -1303,7 +1421,15 @@ function App() {
 
                   {/* VISTA MODULO DE USUARIOS (VISIBLE PARA ADMINISTRADORES Y SUPERVISORES) */}
                   {!isUsuario && (isAdmin || isSupervisor) && currentView === 'usuarios' && (
-                    <UsuariosView sedes={sedesList} searchTerm={searchTerm} busquedaGlobal={searchTerm} />
+                    <UsuariosView
+                      sedes={sedesList}
+                      searchTerm={searchTerm}
+                      busquedaGlobal={searchTerm}
+                      loading={loading}
+                      error={apiError}
+                      isRetryingOrSlow={isRetryingOrSlow}
+                      onRetry={refreshFromApi}
+                    />
                   )}
                 </main>
 

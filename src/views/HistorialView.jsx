@@ -4,6 +4,7 @@ import { fmtDate, isOverdue } from '../data/initialData';
 import { useAuth } from '../context/AuthContext';
 import BarraFiltrosHistorial from '../components/historial/BarraFiltrosHistorial';
 import DetalleMovimientoModal from '../components/modals/DetalleMovimientoModal';
+import ModuleConnectionState from '../components/common/ModuleConnectionState';
 import { supabase } from '../services/supabase';
 import inventoryApi from '../services/inventoryApi';
 import { exportarHistorialExcelFMO } from '../services/excelExportService';
@@ -166,7 +167,13 @@ function formatHistorialItem(h) {
   };
 }
 
-export default function HistorialView({ movements = [] }) {
+export default function HistorialView({
+  movements = [],
+  loading: parentLoading = false,
+  error = null,
+  isRetryingOrSlow = false,
+  onRetry,
+}) {
   const { currentUser, isUsuario, isOperador, isSupervisor, isCoordinador: authIsCoordinador, authLoading } = useAuth();
   const isCoordinador = Boolean(authIsCoordinador || currentUser?.rol === 'coordinador');
   const [loading, setLoading] = useState(true);
@@ -972,11 +979,18 @@ export default function HistorialView({ movements = [] }) {
         </div>
 
         <div className="panel table-responsive" style={{ minHeight: '340px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {isCoordinador && (authLoading || loading) ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500 dark:text-slate-400" style={{ flex: 1 }}>
-              <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full siga-spinner" />
-              <p className="text-sm font-medium">Cargando tu historial de gestión...</p>
-            </div>
+          {(parentLoading || authLoading || loading) && filteredList.length === 0 ? (
+            <ModuleConnectionState
+              mode="loading"
+              isRetryingOrSlow={isRetryingOrSlow}
+              className="border-0 shadow-none"
+            />
+          ) : error && filteredList.length === 0 ? (
+            <ModuleConnectionState
+              mode="error"
+              onRetry={onRetry || fetchHistorial}
+              className="border-0 shadow-none"
+            />
           ) : filteredList.length === 0 ? (
             <div className="empty" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span>📋</span> No se encontraron movimientos para el filtro seleccionado.
