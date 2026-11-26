@@ -1381,8 +1381,8 @@ export default function MiPanelUsuarioView({
                               )}
                               {(() => {
                                 const fDev = sol.fecha_devolucion_estimada || sol.fecha_devolucion_esperada || sol.fecha_devolucion || sol.fecha_retorno || sol.fecha_limite;
-                                if (!fDev) return null;
                                 if (esCompra) {
+                                  if (!fDev) return null;
                                   return (
                                     <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>
                                       Requerido para: <strong className="mono-num" style={{ color: '#15803d', fontWeight: 800 }}>{formatearFechaSegura(sol.fecha_requerida || fDev)}</strong>
@@ -1390,9 +1390,15 @@ export default function MiPanelUsuarioView({
                                   );
                                 }
                                 if (esConsumible) return null;
+                                const fechaFormateada = fDev ? formatearFechaSegura(fDev) : '';
                                 return (
                                   <span style={{ fontSize: '11px', color: 'var(--text-dim, #94a3b8)' }}>
-                                    Retorno pactado: <strong className="mono-num" style={{ color: 'var(--text, #f8fafc)' }}>{formatearFechaSegura(fDev)}</strong>
+                                    Retorno pactado:{' '}
+                                    {fechaFormateada ? (
+                                      <strong className="mono-num" style={{ color: 'var(--text, #f8fafc)' }}>{fechaFormateada}</strong>
+                                    ) : (
+                                      <span style={{ color: 'var(--text-dim, #94a3b8)', fontStyle: 'italic' }}>Sin fecha pactada</span>
+                                    )}
                                   </span>
                                 );
                               })()}

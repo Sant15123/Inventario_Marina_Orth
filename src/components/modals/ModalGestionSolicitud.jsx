@@ -570,8 +570,8 @@ export default function ModalGestionSolicitud({
 
       const sedeFinal = (esAdmin && formGestion.sede) ? formGestion.sede : (solicitud.sede || 'Medellín');
       const motivoFinal = solicitud.motivo || 'Solicitud de material autorizada';
-      const rawFechaDev = (esAdmin && formGestion.fecha_devolucion) ? formGestion.fecha_devolucion : (solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada || today());
-      const fechaDevolucionFinal = rawFechaDev ? rawFechaDev.split('T')[0] : today();
+      const rawFechaDev = (esAdmin && formGestion.fecha_devolucion) ? formGestion.fecha_devolucion : (solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada || null);
+      const fechaDevolucionFinal = rawFechaDev ? String(rawFechaDev).split('T')[0] : null;
       const usuarioDocumentoFinal = solicitud.usuario_documento || solicitud.custodio_documento || null;
       const usuarioIdFinal = solicitud.usuario_id || null;
 
@@ -1044,7 +1044,7 @@ export default function ModalGestionSolicitud({
                     {isCompra
                       ? (formatearFechaSegura(solicitud.fecha_devolucion_estimada || solicitud.fecha_devolucion) || 'Lo antes posible')
                       : esPrestamo
-                        ? formatearFechaSegura(solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada)
+                        ? (formatearFechaSegura(solicitud.fecha_devolucion || solicitud.fecha_retorno || solicitud.fecha_limite || solicitud.fecha_devolucion_estimada) || 'Sin fecha pactada')
                         : 'Consumibles / Insumos Robótica'}
                   </div>
                 )}
@@ -1053,7 +1053,7 @@ export default function ModalGestionSolicitud({
                 <small className="help-text" style={{ marginTop: '3px' }}>
                   {isCompra ? 'Fecha estimada de entrega:' : 'Fecha pactada:'}{' '}
                   <strong style={{ color: isCompra ? '#818cf8' : '#84CC16' }}>
-                    {formGestion.fecha_devolucion ? formatearFechaSegura(formGestion.fecha_devolucion) : 'Pendiente'}
+                    {formGestion.fecha_devolucion ? formatearFechaSegura(formGestion.fecha_devolucion) : (esPrestamo ? 'Sin fecha pactada' : 'Pendiente')}
                   </strong>
                 </small>
               )}

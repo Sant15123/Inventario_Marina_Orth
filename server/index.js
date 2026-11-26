@@ -898,7 +898,8 @@ app.post('/api/solicitudes', async (req, res) => {
       ? 'SUGERENCIA_COMPRA'
       : (esConsumibleReq ? 'CONSUMIBLES' : 'PRESTAMO_EQUIPO');
 
-    const fechaDev = fecha_devolucion_estimada || fecha_devolucion || null;
+    const rawFechaDev = fecha_devolucion_estimada !== undefined ? fecha_devolucion_estimada : fecha_devolucion;
+    const fechaDev = (typeof rawFechaDev === 'string' && rawFechaDev.trim() === '') ? null : (rawFechaDev || null);
     const motivoFinal = motivo || justificacion || 'Sin motivo especificado';
 
     if (esCompraReq) {
@@ -1080,7 +1081,7 @@ app.patch('/api/solicitudes/:id', async (req, res) => {
     }
     if (fecha_devolucion_estimada !== undefined) {
       updates.push(`fecha_devolucion_estimada = $${idx++}`);
-      values.push(fecha_devolucion_estimada);
+      values.push(typeof fecha_devolucion_estimada === 'string' && fecha_devolucion_estimada.trim() === '' ? null : (fecha_devolucion_estimada || null));
     }
     if (proyecto_steam_id !== undefined) {
       updates.push(`proyecto_steam_id = $${idx++}`);

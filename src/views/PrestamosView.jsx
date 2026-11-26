@@ -986,6 +986,9 @@ export default function PrestamosView({
         if (data.sede) {
           updateFields.sede = data.sede;
         }
+        if (data.custodio_nombre) {
+          updateFields.solicitante = data.custodio_nombre;
+        }
 
         const { error: sbError } = await supabase
           .from('prestamos')
@@ -1010,6 +1013,7 @@ export default function PrestamosView({
           observaciones: data.observaciones,
           motivo: data.motivo || data.observaciones,
           sede: data.sede,
+          ...(data.custodio_nombre ? { solicitante: data.custodio_nombre } : {}),
         });
       }
     } catch (apiErr) {
@@ -1023,6 +1027,7 @@ export default function PrestamosView({
         await inventoryApi.updateActivo(placa, {
           fecha_devolucion: fechaNormalizada,
           ...(data.sede ? { sede: data.sede } : {}),
+          ...(data.custodio_nombre ? { custodio: data.custodio_nombre } : {}),
         });
       }
     } catch (_) { }
@@ -1046,6 +1051,13 @@ export default function PrestamosView({
         loanObj.proyecto = data.proyecto_steam;
       }
       if (data.custodio_id) {
+        loanObj.custodio_id = data.custodio_id;
+      }
+      if (data.custodio_nombre) {
+        loanObj.person = data.custodio_nombre;
+        loanObj.custodian = data.custodio_nombre;
+        loanObj.responsable = data.custodio_nombre;
+      } else if (data.custodio_id) {
         loanObj.custodian = data.custodio_id;
         loanObj.responsable = data.custodio_id;
       }
@@ -2131,7 +2143,7 @@ export default function PrestamosView({
                                 ) : '—';
                               }
                               if (!esPrestamo) return '—';
-                              return fDev ? formatearFechaSegura(fDev) : 'No especificada';
+                              return fDev ? formatearFechaSegura(fDev) : 'Sin fecha pactada';
                             })()}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' }}>

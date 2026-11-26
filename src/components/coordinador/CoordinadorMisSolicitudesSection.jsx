@@ -641,9 +641,14 @@ export default function CoordinadorMisSolicitudesSection({
                                 <span className="text-xs text-slate-400">Sin ítems detallados</span>
                               )}
                             </div>
-                            {fDev && (
+                            {(fDev || String(sol.tipo || '').toUpperCase().includes('EQUIPO') || String(sol.tipo || '').toUpperCase() === 'PRESTAMO') && (
                               <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                                Retorno/Fecha: <strong>{formatearFechaSegura(fDev)}</strong>
+                                {String(sol.tipo || '').toUpperCase().includes('COMPRA') ? 'Fecha requerida:' : 'Retorno pactado:'}{' '}
+                                {fDev && formatearFechaSegura(fDev) ? (
+                                  <strong>{formatearFechaSegura(fDev)}</strong>
+                                ) : (
+                                  <span className="italic">Sin fecha pactada</span>
+                                )}
                               </span>
                             )}
                           </div>

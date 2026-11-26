@@ -229,9 +229,9 @@ export default function ModalSolicitudMaterial({
     const tieneItems = itemsSolicitud.length > 0 || (esCompra && Boolean(compraForm.nombre?.trim() && compraForm.url?.trim()));
     if (!tieneItems) return false;
 
-    // 2. Fecha requerida (préstamos y sugerencias de compra)
-    if (tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) {
-      if (!fechaEstimada) return false;
+    // 2. Fecha requerida (solo obligatoria para sugerencias de compra; opcional en préstamo de equipo)
+    if (esCompra && !fechaEstimada) {
+      return false;
     }
 
     // 3. Sede / Municipio destino
@@ -478,16 +478,15 @@ export default function ModalSolicitudMaterial({
       return;
     }
 
-    if (tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) {
-      if (!fechaEstimada) {
-        triggerErrorToast(
-          'Validación',
-          esCompra
-            ? 'La fecha ideal requerida es obligatoria para la sugerencia de compra.'
-            : 'La fecha estimada de devolución es obligatoria para préstamos de equipo.'
-        );
-        return;
-      }
+    if (esCompra && !fechaEstimada) {
+      triggerErrorToast(
+        'Validación',
+        'La fecha ideal requerida es obligatoria para la sugerencia de compra.'
+      );
+      return;
+    }
+
+    if ((tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) && fechaEstimada) {
       const fechaActual = today();
       if (fechaEstimada < fechaActual) {
         triggerErrorToast(
@@ -665,7 +664,10 @@ export default function ModalSolicitudMaterial({
         return;
       }
 
-      const fechaDevolucionVal = tipoSolicitud === 'PRESTAMO_EQUIPO' ? fechaEstimada : null;
+      const fechaDevolucionVal =
+        tipoSolicitud === 'PRESTAMO_EQUIPO' && fechaEstimada && String(fechaEstimada).trim() !== ''
+          ? String(fechaEstimada).trim()
+          : null;
 
       // 1. Cabecera con tipo_solicitud literal de BD: 'PRESTAMO_EQUIPO' | 'CONSUMIBLES' | 'SUGERENCIA_COMPRA'
       const payloadSolicitud = {
@@ -1865,7 +1867,7 @@ export default function ModalSolicitudMaterial({
             )}
 
             {/* 5. Campos de Formulario y Tipografía */}
-            {/* Fecha de Devolución Estimada (Para préstamos) o Fecha Ideal Requerida (Para sugerencias de compra) */}
+            {/* Fecha de Devolución Pactada (Opcional para préstamos) o Fecha Ideal Requerida (Para sugerencias de compra) */}
             {(tipoSolicitud === 'PRESTAMO_EQUIPO' || esCompra) && (
               <div>
                 <label
@@ -1874,16 +1876,16 @@ export default function ModalSolicitudMaterial({
                 >
                   <Calendar size={14} style={{ color: '#6d6e71' }} />
                   <span>
-                    {esCompra ? 'Fecha Ideal Requerida' : 'Fecha de Devolución Estimada'}
+                    {esCompra ? 'Fecha Ideal Requerida' : 'Fecha de devolución pactada (Opcional)'}
                   </span>
-                  <span className="text-rose-400">*</span>
+                  {esCompra && <span className="text-rose-400">*</span>}
                 </label>
                 <input
                   type="date"
                   min={today()}
                   value={fechaEstimada}
                   onChange={(e) => setFechaEstimada(e.target.value)}
-                  required
+                  required={esCompra}
                   className="w-full rounded-xl px-3.5 py-2.5 text-sm border focus:outline-none focus:ring-2 focus:ring-[#84CC16]/30 focus:border-[#84CC16] transition-all"
                   style={{
                     backgroundColor: 'var(--bg, #0b1120)',
@@ -1897,7 +1899,7 @@ export default function ModalSolicitudMaterial({
                 >
                   {esCompra
                     ? 'Fecha estimada en la que se necesita disponer de los materiales para las clases o actividades.'
-                    : 'Fecha límite pactada para retornar los equipos a la bodega o sede central.'}
+                    : 'Opcional: fecha límite pactada para retornar los equipos a la bodega o sede central.'}
                 </span>
               </div>
             )}

@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Laptop, Sparkles, Building2, User, FileText, Calendar, Pencil } from 'lucide-react';
 import inventoryApi from '../../services/inventoryApi';
 import { useProyectos } from '../../hooks/useProyectos';
 import { formatProyectoLabel, normalizeProyectoNombre } from '../../constants/proyectos';
+
+const normalizeNombreCustodio = (str) =>
+  String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 
 export const EditarPrestamoModal = ({
   prestamo,
@@ -35,6 +43,17 @@ export const EditarPrestamoModal = ({
     }
   }, [proyectos, proyectosFromHook]);
 
+  const rawCustodioNombreActual = prestamo
+    ? (
+        prestamo.person ||
+        prestamo.responsable ||
+        prestamo.custodian ||
+        prestamo.solicitante ||
+        prestamo.usuario_nombre ||
+        ''
+      )
+    : '';
+
   useEffect(() => {
     if (prestamo) {
       const fechaVal =
@@ -48,16 +67,59 @@ export const EditarPrestamoModal = ({
       const rawProj = prestamo.proyecto_steam || prestamo.proyecto || prestamo.project || '';
       setProyectoSteam(normalizeProyectoNombre(rawProj));
       setObservaciones(prestamo.observaciones || prestamo.motivo || prestamo.motive || '');
-      setCustodioId(
+
+      const rawId =
         prestamo.custodio_id ||
         prestamo.usuario_id ||
         prestamo.userId ||
+        '';
+      const rawName =
+        prestamo.person ||
         prestamo.responsable ||
         prestamo.custodian ||
-        ''
-      );
+        prestamo.solicitante ||
+        prestamo.usuario_nombre ||
+        '';
+
+      let matchedVal = '';
+      if (Array.isArray(usuarios) && usuarios.length > 0) {
+        const byId = rawId
+          ? usuarios.find((u) => String(u.id) === String(rawId))
+          : null;
+        const targetNorm = normalizeNombreCustodio(rawName);
+        const byName = !byId && targetNorm
+          ? usuarios.find((u) => {
+              const uNorm = normalizeNombreCustodio(u.nombre || u.nombre_completo || u.name);
+              return uNorm && (uNorm === targetNorm || uNorm.includes(targetNorm) || targetNorm.includes(uNorm));
+            })
+          : null;
+        const matched = byId || byName;
+        if (matched) {
+          matchedVal = String(matched.id || matched.nombre || matched.name);
+        }
+      }
+
+      setCustodioId(matchedVal || String(rawId || rawName || ''));
     }
-  }, [prestamo]);
+  }, [prestamo, usuarios]);
+
+  const custodioOptions = useMemo(() => {
+    const opts = (Array.isArray(usuarios) ? usuarios : []).map((u) => ({
+      val: String(u.id || u.nombre || u.name),
+      label: `${u.nombre || u.nombre_completo || u.name}${u.documento ? ` - ${u.documento}` : ''}`,
+      nombre: u.nombre || u.nombre_completo || u.name || '',
+    }));
+    if (custodioId && !opts.some((o) => o.val === String(custodioId))) {
+      opts.unshift({
+        val: String(custodioId),
+        label: rawCustodioNombreActual
+          ? `${rawCustodioNombreActual} (Custodio actual)`
+          : `${custodioId} (Custodio actual)`,
+        nombre: rawCustodioNombreActual || String(custodioId),
+      });
+    }
+    return opts;
+  }, [usuarios, custodioId, rawCustodioNombreActual]);
 
   if (!isOpen || !prestamo) return null;
 
@@ -76,6 +138,7 @@ export const EditarPrestamoModal = ({
 
     try {
       setCargando(true);
+      const selectedOpt = custodioOptions.find((o) => o.val === String(custodioId));
       const payload = {
         fecha_devolucion_esperada: fechaNormalizada,
         sede,
@@ -83,6 +146,7 @@ export const EditarPrestamoModal = ({
         observaciones,
         motivo: observaciones,
         custodio_id: custodioId,
+        custodio_nombre: selectedOpt?.nombre || rawCustodioNombreActual || '',
       };
 
       const handler = onGuardar || onActualizar;
@@ -264,7 +328,7 @@ export const EditarPrestamoModal = ({
                 <User size={14} className="text-slate-400" />
                 Custodio / Responsable *
               </label>
-              {usuarios.length > 0 ? (
+              {custodioOptions.length > 0 ? (
                 <select
                   value={custodioId}
                   onChange={(e) => setCustodioId(e.target.value)}
@@ -272,15 +336,11 @@ export const EditarPrestamoModal = ({
                   className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
                 >
                   <option value="">Seleccione un custodio...</option>
-                  {usuarios.map((u) => {
-                    const val = u.id || u.nombre || u.name;
-                    const label = `${u.nombre || u.name}${u.documento ? ` - ${u.documento}` : ''}`;
-                    return (
-                      <option key={val} value={val}>
-                        {label}
-                      </option>
-                    );
-                  })}
+                  {custodioOptions.map((opt) => (
+                    <option key={opt.val} value={opt.val}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               ) : (
                 <input
