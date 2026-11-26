@@ -1,4 +1,3 @@
-import FmoEmailSignature from '../common/FmoEmailSignature';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   User,
@@ -18,7 +17,6 @@ import {
   Check,
   PackagePlus,
   Loader2,
-  Mail,
 } from 'lucide-react';
 import { fmtDate, formatearFechaSegura, today, SEDES, PROYECTOS } from '../../services/mockData';
 import inventoryApi from '../../services/inventoryApi';
@@ -37,7 +35,6 @@ export default function ModalGestionSolicitud({
 }) {
   const { currentUser } = useAuth();
   const [resolucion, setResolucion] = useState(null);
-  const [showEmailTemplate, setShowEmailTemplate] = useState(false); // null | 'aprobar' | 'rechazar'
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
@@ -1741,20 +1738,6 @@ export default function ModalGestionSolicitud({
           )}
         </div>
 
-
-          {/* Plantilla Oficial de Correo con Tipografía Aptos y Firma Bicolor (Página 17) */}
-          {showEmailTemplate && (
-            <div style={{ margin: '14px 0' }}>
-              <FmoEmailSignature
-                nombre="Santiago Galeano"
-                cargo="Administrador de Inventario & Bodega Central STEAM"
-                sede={solicitud.sede || 'Sede Medellín'}
-                email="inventario@fundorth.org"
-                asunto={`Notificación SIGA FMO: Solicitud ${solicitud.id} - ${solicitud.usuario_nombre || 'Docente'}`}
-                mensajeCuerpo={`Estimado(a) ${solicitud.usuario_nombre || 'Docente'},\n\nTe informamos que tu solicitud para la sede ${solicitud.sede || 'Medellín'} se encuentra en estado: ${isCompra ? normalizarEstadoCompra(estadoCompra) : (solicitud.estado || 'GESTIONADA')}.\n\nPara cualquier inquietud pedagógica o coordinación de entrega en territorio, puedes comunicarte con Bodega Central FMO.`}
-              />
-            </div>
-          )}
         {/* Barra de Acciones / Pie estándar del modal */}
         <div className="modal-footer" style={{ padding: '16px 24px', justifyContent: 'space-between' }}>
           <button
@@ -1764,25 +1747,6 @@ export default function ModalGestionSolicitud({
             disabled={submitting}
           >
             Cerrar
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowEmailTemplate(!showEmailTemplate)}
-            className="btn small ghost"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              borderColor: '#7b2cbf',
-              color: '#7b2cbf',
-              fontWeight: 700,
-              fontSize: '12px',
-            }}
-            title="Generar plantilla de correo con tipografía Aptos y firma bicolor FMO"
-          >
-            <Mail size={14} />
-            <span>{showEmailTemplate ? 'Ocultar Correo' : '📧 Plantilla Correo FMO'}</span>
           </button>
 
           {!yaResuelta && resolucion !== 'rechazar' && (
