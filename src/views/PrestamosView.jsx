@@ -17,7 +17,7 @@ import ModalActaPrestamo from '../components/modals/ModalActaPrestamo';
 import ModalGestionSolicitud from '../components/modals/ModalGestionSolicitud';
 import EditarPrestamoModal from '../components/modals/EditarPrestamoModal';
 import SearchableUserSelect from '../components/common/SearchableUserSelect';
-import { Building2, FolderKanban, Plus, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info, ShoppingCart, ExternalLink, PackagePlus, Search, FileSpreadsheet, Download, RotateCcw, X, ChevronDown, Calendar } from 'lucide-react';
+import { Building2, FolderKanban, Plus, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info, ShoppingCart, ExternalLink, PackagePlus, Search, FileSpreadsheet, Download, RotateCcw, Repeat, X, ChevronDown, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TableLoader from '../components/common/TableLoader';
 import ModuleConnectionState from '../components/common/ModuleConnectionState';
@@ -269,7 +269,7 @@ export default function PrestamosView({
                 tipo: s.tipo_solicitud || 'PRESTAMO_EQUIPO',
               }));
             }
-          } catch (_) {}
+          } catch (_) { }
 
           try {
             const { data: cData, error: cErr } = await supabase
@@ -322,7 +322,7 @@ export default function PrestamosView({
                 };
               });
             }
-          } catch (_) {}
+          } catch (_) { }
 
           dataFinal = [...invList, ...compList].sort(
             (a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0)
@@ -954,8 +954,8 @@ export default function PrestamosView({
       const placa = loanObj?.unitCodes?.[0] || loanObj?.itemId || loanObj?.placa;
       const prestamoReal = movements.find(
         (m) => (m.type || '').toLowerCase() === 'prestamo' &&
-               String(m.id).startsWith('mov-db-') &&
-               (m.unitCodes?.[0] === placa || m.itemId === placa)
+          String(m.id).startsWith('mov-db-') &&
+          (m.unitCodes?.[0] === placa || m.itemId === placa)
       );
       if (prestamoReal) {
         rawDbId = prestamoReal.dbId || String(prestamoReal.id).replace('mov-db-', '');
@@ -1781,24 +1781,24 @@ export default function PrestamosView({
                       ← Anterior
                     </button>
 
-                  <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
-                    Página {currentLoanPage} de {totalLoanPages}
-                  </span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
+                      Página {currentLoanPage} de {totalLoanPages}
+                    </span>
 
-                  <button
-                    type="button"
-                    className="btn small ghost"
-                    disabled={currentLoanPage >= totalLoanPages}
-                    onClick={() => setCurrentLoanPage((p) => Math.min(totalLoanPages, p + 1))}
-                    style={{ padding: '3px 10px', fontSize: '12px', cursor: currentLoanPage >= totalLoanPages ? 'not-allowed' : 'pointer' }}
-                  >
-                    Siguiente →
-                  </button>
+                    <button
+                      type="button"
+                      className="btn small ghost"
+                      disabled={currentLoanPage >= totalLoanPages}
+                      onClick={() => setCurrentLoanPage((p) => Math.min(totalLoanPages, p + 1))}
+                      style={{ padding: '3px 10px', fontSize: '12px', cursor: currentLoanPage >= totalLoanPages ? 'not-allowed' : 'pointer' }}
+                    >
+                      Siguiente →
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
         </section>
       )}
 
@@ -2321,33 +2321,33 @@ export default function PrestamosView({
                       ← Anterior
                     </button>
 
-                  <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
-                    Página {solicitudesPage} de {Math.max(1, Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE))}
-                  </span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)', padding: '0 4px', fontSize: '12px' }}>
+                      Página {solicitudesPage} de {Math.max(1, Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE))}
+                    </span>
 
-                  <button
-                    type="button"
-                    className="btn small ghost"
-                    disabled={solicitudesPage >= Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE)}
-                    onClick={() =>
-                      setSolicitudesPage((p) =>
-                        Math.min(Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE), p + 1)
-                      )
-                    }
-                    style={{
-                      padding: '3px 10px',
-                      fontSize: '12px',
-                      cursor:
-                        solicitudesPage >= Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE)
-                          ? 'not-allowed'
-                          : 'pointer',
-                    }}
-                  >
-                    Siguiente →
-                  </button>
+                    <button
+                      type="button"
+                      className="btn small ghost"
+                      disabled={solicitudesPage >= Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE)}
+                      onClick={() =>
+                        setSolicitudesPage((p) =>
+                          Math.min(Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE), p + 1)
+                        )
+                      }
+                      style={{
+                        padding: '3px 10px',
+                        fontSize: '12px',
+                        cursor:
+                          solicitudesPage >= Math.ceil(solicitudesEstandar.length / SOLICITUDES_PER_PAGE)
+                            ? 'not-allowed'
+                            : 'pointer',
+                      }}
+                    >
+                      Siguiente →
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
             )}
           </div>
         </section>
@@ -3401,8 +3401,16 @@ export default function PrestamosView({
               setLoanPersonEmail(userCreado.email);
               if (userCreado.sede) setLoanSede(userCreado.sede);
             } else if (targetModalForUser === 'editLoan') {
-              setEditPerson(userCreado.nombre);
-              if (userCreado.sede) setEditSede(userCreado.sede);
+              setEditingLoan((prev) =>
+                prev
+                  ? {
+                    ...prev,
+                    person: userCreado.nombre,
+                    responsable: userCreado.nombre,
+                    ...(userCreado.sede ? { sede: userCreado.sede } : {}),
+                  }
+                  : prev
+              );
             } else {
               setDeliveryPerson(userCreado.nombre);
               setDeliveryPersonDocumento(userCreado.documento);

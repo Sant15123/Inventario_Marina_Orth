@@ -9,7 +9,7 @@ import {
 } from '../components/common/FmoProgramIcons';
 import { useState, useMemo, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { QrCode, Eye, Pencil, Trash2, X, Laptop, Cpu, Plug, FileText, Armchair, Printer, Plus } from 'lucide-react';
+import { QrCode, Eye, Pencil, Trash2, X, Laptop, Cpu, Plug, FileText, Armchair, Printer, Plus, Package } from 'lucide-react';
 import ModalQR from '../components/modals/ModalQR';
 import ImpresionMasivaQRModal from '../components/modals/ImpresionMasivaQRModal';
 import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
@@ -881,8 +881,8 @@ export default function InventarioView({
 
       // 2. Filtro Sede
       if (filterSedeElectronica !== 'todas') {
-        const itemSede = normalizeSedeName(e.sede || e.ubicacion || 'Medellín');
-        if (itemSede !== normalizeSedeName(filterSedeElectronica)) {
+        const itemSede = normalizeText(e.sede || e.ubicacion || 'Medellín');
+        if (itemSede !== normalizeText(filterSedeElectronica)) {
           return false;
         }
       }
