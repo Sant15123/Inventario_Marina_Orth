@@ -1,18 +1,54 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { QrCode, Pencil, X, AlertCircle } from 'lucide-react';
 import ProgramAreaBadge from '../common/ProgramAreaBadge';
+import DetailModalLoader from '../common/DetailModalLoader';
 import { inventoryApi } from '../../services/inventoryApi';
+
+const DETAIL_LOADER_CONFIG = {
+  equipo: {
+    title: 'Consultando ficha técnica del equipo...',
+    subtitle: 'Obteniendo datos reales y estado actualizado...',
+    accentColor: '#ABD037',
+    ringTrackColor: 'rgba(171, 208, 55, 0.25)',
+  },
+  electronica: {
+    title: 'Consultando ficha del equipo de electrónica...',
+    subtitle: 'Obteniendo datos reales y estado actualizado...',
+    accentColor: '#ABD037',
+    ringTrackColor: 'rgba(171, 208, 55, 0.25)',
+  },
+  consumible: {
+    title: 'Consultando detalle del consumible...',
+    subtitle: 'Obteniendo datos reales y estado actualizado...',
+    accentColor: '#ABD037',
+    ringTrackColor: 'rgba(171, 208, 55, 0.25)',
+  },
+  papeleria: {
+    title: 'Consultando detalle de papelería...',
+    subtitle: 'Obteniendo datos reales y estado actualizado...',
+    accentColor: '#7C3AED',
+    ringTrackColor: 'rgba(124, 58, 237, 0.22)',
+  },
+  mobiliario: {
+    title: 'Consultando ficha de mobiliario...',
+    subtitle: 'Obteniendo datos reales y estado actualizado...',
+    accentColor: '#84CC16',
+    ringTrackColor: 'rgba(132, 204, 22, 0.25)',
+  },
+};
 
 /**
  * ModalDetalleActivo: Componente modal unificado para consultar la ficha técnica
- * y detalle completo de un equipo tecnológico o material consumible.
- * Bloquea el renderizado de las secciones de detalle hasta recibir la respuesta real
- * del backend cuando se consulta por placa (fetchPlaca), evitando parpadeos y fallbacks engañosos.
+ * y detalle completo de un equipo tecnológico, equipo de electrónica, consumible,
+ * papelería o mobiliario.
+ * Bloquea el renderizado hasta recibir la respuesta real del backend cuando se
+ * consulta por código/placa (fetchPlaca), evitando parpadeos y fallbacks engañosos.
  */
 export default function ModalDetalleActivo({
   isOpen = true,
   item = null,
   fetchPlaca = null,
+  fetchTipo = 'equipo',
   headerPreview = null,
   mapFetchedItem = null,
   loading = false,
@@ -53,22 +89,32 @@ export default function ModalDetalleActivo({
 
     (async () => {
       try {
-        const activoFresco = await inventoryApi.getActivoByPlaca(fetchPlaca, {
-          signal: controller.signal,
-        });
+        let datoFresco = null;
+        if (fetchTipo === 'electronica') {
+          datoFresco = await inventoryApi.getEquipoElectronicaById(fetchPlaca, { signal: controller.signal });
+        } else if (fetchTipo === 'consumible') {
+          datoFresco = await inventoryApi.getConsumibleById(fetchPlaca, { signal: controller.signal });
+        } else if (fetchTipo === 'papeleria') {
+          datoFresco = await inventoryApi.getPapeleriaById(fetchPlaca, { signal: controller.signal });
+        } else if (fetchTipo === 'mobiliario') {
+          datoFresco = await inventoryApi.getMobiliarioById(fetchPlaca, { signal: controller.signal });
+        } else {
+          datoFresco = await inventoryApi.getActivoByPlaca(fetchPlaca, { signal: controller.signal });
+        }
+
         if (!isMounted || controller.signal.aborted) return;
 
-        if (activoFresco) {
+        if (datoFresco) {
           const transformed = mapFetchedItemRef.current
-            ? mapFetchedItemRef.current(activoFresco)
-            : activoFresco;
+            ? mapFetchedItemRef.current(datoFresco, fetchTipo)
+            : datoFresco;
           setDetalle(transformed);
         } else {
-          setErrorDetalle('No se encontró información registrada para este equipo.');
+          setErrorDetalle('No se encontró información registrada para este ítem.');
         }
       } catch (err) {
         if (!isMounted || controller.signal.aborted || err?.name === 'AbortError') return;
-        setErrorDetalle(err?.message || 'No se pudo cargar el detalle del equipo desde el servidor.');
+        setErrorDetalle(err?.message || 'No se pudo cargar el detalle desde el servidor.');
       } finally {
         if (isMounted && !controller.signal.aborted) {
           setLoadingDetalle(false);
@@ -80,38 +126,53 @@ export default function ModalDetalleActivo({
       isMounted = false;
       controller.abort();
     };
-  }, [isOpen, fetchPlaca, item, loading]);
+  }, [isOpen, fetchPlaca, fetchTipo, item, loading]);
 
   if (!isOpen || (!fetchPlaca && !item && !loadingDetalle && !errorDetalle)) return null;
 
   const isReady = !loadingDetalle && Boolean(detalle);
+  const loaderCfg = DETAIL_LOADER_CONFIG[fetchTipo] || DETAIL_LOADER_CONFIG.equipo;
 
   const esEquipo = Boolean(
     detalle
-      ? (detalle.isEquipo || detalle.serial || detalle.placa || detalle.marca || detalle.area || detalle.itemType === 'equipo')
-      : (headerPreview?.isEquipo ?? Boolean(fetchPlaca))
+      ? (detalle.isEquipo || detalle.serial || detalle.placa || detalle.marca || detalle.area || detalle.itemType === 'equipo' || detalle.itemType === 'electronica')
+      : (headerPreview?.isEquipo ?? (fetchTipo === 'equipo' || fetchTipo === 'electronica'))
   );
 
   const esActivo = Boolean(
     detalle && (detalle.isEquipo || detalle.serial || detalle.itemType === 'equipo' || (detalle.placa && String(detalle.placa).toUpperCase().startsWith('ACT-')))
   );
   const esMobiliario = Boolean(
-    detalle && (
-      detalle.itemType === 'mobiliario' ||
-      detalle.categoria === 'Mobiliario' ||
-      detalle.category === 'Mobiliario' ||
-      (detalle.placa && String(detalle.placa).toUpperCase().startsWith('MOB-')) ||
-      (detalle.codigo && String(detalle.codigo).toUpperCase().startsWith('MOB-')) ||
-      Boolean(detalle.material_fabricacion) ||
-      Boolean(detalle.dimensiones)
-    )
+    detalle
+      ? (
+          detalle.itemType === 'mobiliario' ||
+          detalle.categoria === 'Mobiliario' ||
+          detalle.category === 'Mobiliario' ||
+          (detalle.placa && String(detalle.placa).toUpperCase().startsWith('MOB-')) ||
+          (detalle.codigo && String(detalle.codigo).toUpperCase().startsWith('MOB-')) ||
+          Boolean(detalle.material_fabricacion) ||
+          Boolean(detalle.dimensiones)
+        )
+      : fetchTipo === 'mobiliario'
+  );
+  const esPapeleria = Boolean(
+    detalle
+      ? (
+          detalle.subtipo === 'papeleria' ||
+          detalle.categoria === 'Papelería' ||
+          detalle.category === 'Papelería' ||
+          String(detalle.id || detalle.placa || '').toLowerCase().startsWith('pape')
+        )
+      : fetchTipo === 'papeleria'
   );
   const esElectronica = Boolean(
-    detalle && (
-      detalle.itemType === 'electronica' ||
-      (detalle.placa && String(detalle.placa).toUpperCase().startsWith('ELE-')) ||
-      (detalle.codigo && String(detalle.codigo).toUpperCase().startsWith('ELE-'))
-    )
+    detalle
+      ? (
+          detalle.itemType === 'electronica' ||
+          (detalle.placa && String(detalle.placa).toUpperCase().startsWith('ELE-')) ||
+          (detalle.codigo && String(detalle.codigo).toUpperCase().startsWith('ELE-'))
+        )
+      : fetchTipo === 'electronica'
   );
   const esActivoOMobiliario = (esActivo || esMobiliario) && !esElectronica;
 
@@ -232,11 +293,15 @@ export default function ModalDetalleActivo({
               style={{
                 fontFamily: "'Poppins', sans-serif",
                 flexShrink: 0,
-                backgroundColor: esEquipo
+                backgroundColor: esPapeleria
+                  ? 'rgba(124, 58, 237, 0.14)'
+                  : esEquipo
                   ? 'rgba(56, 189, 248, 0.12)'
                   : 'rgba(171, 222, 22, 0.16)',
-                color: esEquipo ? '#0284c7' : '#65a30d',
-                border: esEquipo
+                color: esPapeleria ? '#7C3AED' : esEquipo ? '#0284c7' : '#65a30d',
+                border: esPapeleria
+                  ? '1px solid rgba(124, 58, 237, 0.4)'
+                  : esEquipo
                   ? '1px solid rgba(56, 189, 248, 0.4)'
                   : '1px solid rgba(171, 222, 22, 0.45)',
                 padding: '4px 10px',
@@ -322,79 +387,12 @@ export default function ModalDetalleActivo({
 
         {/* Cuerpo del Modal: Loader limpio mientras responde la API, error o detalle real */}
         {loadingDetalle ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              padding: '12px 0 8px',
-              overflowY: 'auto',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '20px 16px 12px',
-                gap: '10px',
-                textAlign: 'center',
-              }}
-            >
-              <div
-                className="siga-spinner"
-                aria-hidden="true"
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '9999px',
-                  border: '3px solid rgba(171, 208, 55, 0.25)',
-                  borderTopColor: '#ABD037',
-                }}
-              />
-              <strong style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-h, #013A52)' }}>
-                Consultando ficha técnica del equipo...
-              </strong>
-              <span style={{ fontSize: '12px', color: 'var(--text-dim, #64748b)' }}>
-                Obteniendo datos reales y estado actualizado desde Supabase
-              </span>
-            </div>
-
-            {/* Skeleton limpio de las dos tarjetas principales */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '12px',
-              }}
-              aria-hidden="true"
-            >
-              {[0, 1].map((cardIdx) => (
-                <div
-                  key={cardIdx}
-                  style={{
-                    backgroundColor: 'var(--surface-2, #131b26)',
-                    border: '1px solid var(--line, #1e293b)',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                  }}
-                >
-                  <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '58%', height: '14px' }} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '80%', height: '28px' }} />
-                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '75%', height: '28px' }} />
-                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '85%', height: '28px' }} />
-                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '70%', height: '28px' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DetailModalLoader
+            title={loaderCfg.title}
+            subtitle={loaderCfg.subtitle}
+            accentColor={loaderCfg.accentColor}
+            ringTrackColor={loaderCfg.ringTrackColor}
+          />
         ) : errorDetalle && !detalle ? (
           <div
             style={{

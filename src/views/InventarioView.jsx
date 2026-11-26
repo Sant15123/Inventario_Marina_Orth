@@ -688,26 +688,11 @@ export default function InventarioView({
 
   const handleOpenDetalleElectronica = (e) => {
     if (!e) return;
-    setItemSeleccionado({
-      ...e,
-      itemType: 'electronica',
-      isEquipo: true,
-      placa: e.placa || e.codigo || e.id || 'S/C',
-      nombre: e.nombre || e.material || e.name || 'Equipo de Electrónica',
-      categoria: e.subcategoria || e.categoria || 'Equipos de Electrónica',
-      subcategoria: e.subcategoria || e.categoria || 'Instrumentación',
-      area_asignada: e.area_asignada || e.area || e.programa || 'Robótica',
-      condicion: e.condicion || e.estado_fisico || 'Bueno',
-      cantidad: e.cantidad ?? 1,
-      disponible: e.disponible ?? e.cantidad ?? 1,
-      sede: e.sede || 'Medellín',
-      ubicacion: e.ubicacion || '',
-      responsable: e.responsable || e.custodio || 'Bodega Central',
-      fecha_compra: e.fecha_compra || e.fecha_adquisicion || null,
-      valor_compra: e.valor_compra ?? e.valor_estimado ?? null,
-      observaciones: e.observaciones || e.notas || e.descripcion || '',
-    });
-    setModalDetalleOpen(true);
+    abrirModalDetalle(
+      e.placa || e.codigo || e.id,
+      { nombre: e.nombre || e.material || e.name || 'Equipo de Electrónica' },
+      'electronica'
+    );
   };
 
   const handleDeleteElectronica = (item) => {
@@ -1268,6 +1253,7 @@ export default function InventarioView({
   // Modal de detalle sólo lectura para CRUD (estados solicitados)
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
   const [detalleFetchPlaca, setDetalleFetchPlaca] = useState(null);
+  const [detalleFetchTipo, setDetalleFetchTipo] = useState('equipo');
   const [detalleHeaderPreview, setDetalleHeaderPreview] = useState(null);
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
@@ -2517,17 +2503,90 @@ export default function InventarioView({
     }
   };
 
+  // Mapeador por categoría al recibir la respuesta real del backend para el modal de detalle
+  const mapDetalleByTipo = (raw, tipo = 'equipo') => {
+    if (!raw) return null;
+    if (tipo === 'electronica') {
+      return {
+        ...raw,
+        itemType: 'electronica',
+        isEquipo: true,
+        placa: raw.placa || raw.codigo || raw.id || 'S/C',
+        nombre: raw.nombre || raw.material || raw.name || 'Equipo de Electrónica',
+        categoria: raw.subcategoria || raw.categoria || 'Equipos de Electrónica',
+        subcategoria: raw.subcategoria || raw.categoria || 'Instrumentación',
+        area_asignada: raw.area_asignada || raw.area || raw.programa || 'Robótica',
+        condicion: raw.condicion || raw.estado_fisico || '',
+        cantidad: raw.cantidad ?? 1,
+        disponible: raw.disponible ?? raw.cantidad ?? 1,
+        sede: raw.sede || 'Medellín',
+        ubicacion: raw.ubicacion || '',
+        responsable: raw.responsable || raw.custodio || '',
+        fecha_compra: raw.fecha_compra || raw.fecha_adquisicion || null,
+        valor_compra: raw.valor_compra ?? raw.valor_estimado ?? null,
+        observaciones: raw.observaciones || raw.notas || raw.descripcion || '',
+      };
+    }
+    if (tipo === 'consumible') {
+      return mapConsumibleItem(raw);
+    }
+    if (tipo === 'papeleria') {
+      const mapped = mapConsumibleItem(raw);
+      return {
+        ...mapped,
+        ...raw,
+        id: raw.id || mapped.id,
+        placa: raw.id || raw.codigo || mapped.id,
+        nombre: raw.material || raw.name || mapped.material,
+        name: raw.material || raw.name || mapped.material,
+        equipo: raw.material || raw.name || mapped.material,
+        material: raw.material || raw.name || mapped.material,
+        categoria: 'Papelería',
+        category: 'Papelería',
+        subtipo: 'papeleria',
+        disponible: Number(raw.disponible ?? raw.quantity ?? mapped.disponible ?? 0),
+        quantity: Number(raw.disponible ?? raw.quantity ?? mapped.disponible ?? 0),
+        ubicacion: raw.ubicacion || raw.location || mapped.ubicacion || 'Oficina FMO',
+        ubicacion_estante: raw.ubicacion_estante || raw.caja || '',
+        condicion: raw.condicion || 'Nuevos',
+        estado: raw.estado || 'Bueno',
+        descripcion: raw.descripcion || 'Insumo de papelería institucional FMO.',
+        isEquipo: false,
+      };
+    }
+    if (tipo === 'mobiliario') {
+      return {
+        ...raw,
+        itemType: 'mobiliario',
+        isEquipo: false,
+        placa: raw.placa || raw.codigo || raw.id || 'S/C',
+        nombre: raw.nombre || raw.material || raw.name || 'Mobiliario',
+        categoria: raw.categoria || 'Mobiliario',
+        category: raw.categoria || 'Mobiliario',
+      };
+    }
+    return mapEquipoItem(raw);
+  };
+
   // Función reutilizable para abrir el modal de consulta / detalle consultando siempre el backend sin fallbacks engañosos
-  const abrirModalDetalle = (placaOCodigo, fallbackData = null) => {
-    const searchCode = String(placaOCodigo || fallbackData?.placa || fallbackData?.id || '').replace(/^eq-/, '').trim();
+  const abrirModalDetalle = (placaOCodigo, fallbackData = null, tipo = 'equipo') => {
+    const rawCode = String(placaOCodigo || fallbackData?.placa || fallbackData?.codigo || fallbackData?.id || '').trim();
+    const searchCode = tipo === 'equipo' ? rawCode.replace(/^eq-/, '').trim() : rawCode;
     if (!searchCode) return;
 
     setItemSeleccionado(null);
     setDetalleFetchPlaca(searchCode);
+    setDetalleFetchTipo(tipo);
     setDetalleHeaderPreview({
       placa: searchCode,
-      nombre: fallbackData?.parentName || fallbackData?.itemName || fallbackData?.nombre || fallbackData?.name || `Equipo ${searchCode}`,
-      isEquipo: true,
+      nombre:
+        fallbackData?.parentName ||
+        fallbackData?.itemName ||
+        fallbackData?.nombre ||
+        fallbackData?.material ||
+        fallbackData?.name ||
+        `${searchCode}`,
+      isEquipo: tipo === 'equipo' || tipo === 'electronica',
     });
     setModalDetalleOpen(true);
   };
@@ -4551,10 +4610,7 @@ export default function InventarioView({
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, overflow: 'hidden', gap: '3px' }}>
                             <button
                               type="button"
-                              onClick={() => {
-                                setItemSeleccionado(it);
-                                setModalDetalleOpen(true);
-                              }}
+                              onClick={() => abrirModalDetalle(it.id || it.codigo, { nombre: matName }, 'consumible')}
                               className="badge-placa"
                               title={`Ver detalle de ${it.id}`}
                             >
@@ -4690,10 +4746,7 @@ export default function InventarioView({
                               type="button"
                               className="btn-icon-crud shrink-0"
                               title="Ver detalle del material"
-                              onClick={() => {
-                                setItemSeleccionado(it);
-                                setModalDetalleOpen(true);
-                              }}
+                              onClick={() => abrirModalDetalle(it.id || it.codigo, { nombre: matName }, 'consumible')}
                               style={{
                                 width: '28px',
                                 height: '28px',
@@ -5042,28 +5095,7 @@ export default function InventarioView({
                         <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <button
                             type="button"
-                            onClick={() => {
-                              setItemSeleccionado({
-                                ...it,
-                                id: it.id,
-                                placa: it.id,
-                                nombre: it.material || it.name,
-                                name: it.material || it.name,
-                                equipo: it.material || it.name,
-                                material: it.material || it.name,
-                                categoria: 'Papelería',
-                                category: 'Papelería',
-                                disponible: disp,
-                                quantity: disp,
-                                ubicacion: ubi,
-                                ubicacion_estante: estante,
-                                condicion: it.condicion || 'Nuevos',
-                                estado: it.estado || 'Bueno',
-                                descripcion: it.descripcion || 'Insumo de papelería institucional FMO.',
-                                isEquipo: false,
-                              });
-                              setModalDetalleOpen(true);
-                            }}
+                            onClick={() => abrirModalDetalle(it.id || it.codigo, { nombre: matName }, 'papeleria')}
                             className="badge-placa"
                             title={`Ver ficha técnica y detalle de ${it.id}`}
                           >
@@ -5230,28 +5262,7 @@ export default function InventarioView({
                               type="button"
                               className="btn-icon-crud shrink-0"
                               title="Ver detalle del material"
-                              onClick={() => {
-                                setItemSeleccionado({
-                                  ...it,
-                                  id: it.id,
-                                  placa: it.id,
-                                  nombre: it.material || it.name,
-                                  name: it.material || it.name,
-                                  equipo: it.material || it.name,
-                                  material: it.material || it.name,
-                                  categoria: 'Papelería',
-                                  category: 'Papelería',
-                                  disponible: disp,
-                                  quantity: disp,
-                                  ubicacion: ubi,
-                                  ubicacion_estante: estante,
-                                  condicion: it.condicion || 'Nuevos',
-                                  estado: it.estado || 'Bueno',
-                                  descripcion: it.descripcion || 'Insumo de papelería institucional FMO.',
-                                  isEquipo: false,
-                                });
-                                setModalDetalleOpen(true);
-                              }}
+                              onClick={() => abrirModalDetalle(it.id || it.codigo, { nombre: matName }, 'papeleria')}
                               style={{
                                 width: '28px',
                                 height: '28px',
@@ -5534,10 +5545,7 @@ export default function InventarioView({
                         <td className="py-2.5" style={{ paddingLeft: '14px', paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <button
                             type="button"
-                            onClick={() => {
-                              setItemSeleccionado(m);
-                              setModalDetalleOpen(true);
-                            }}
+                            onClick={() => abrirModalDetalle(code, { nombre }, 'mobiliario')}
                             className="badge-placa"
                             title={`Ver ficha técnica y detalle de ${code}`}
                           >
@@ -5638,10 +5646,7 @@ export default function InventarioView({
                               type="button"
                               className="btn-icon-crud shrink-0"
                               title="Ver detalle de mobiliario"
-                              onClick={() => {
-                                setItemSeleccionado(m);
-                                setModalDetalleOpen(true);
-                              }}
+                              onClick={() => abrirModalDetalle(code, { nombre }, 'mobiliario')}
                               style={{
                                 width: '28px',
                                 height: '28px',
@@ -6432,18 +6437,21 @@ export default function InventarioView({
           isOpen={modalDetalleOpen}
           item={itemSeleccionado}
           fetchPlaca={detalleFetchPlaca}
+          fetchTipo={detalleFetchTipo}
           headerPreview={detalleHeaderPreview}
-          mapFetchedItem={mapEquipoItem}
+          mapFetchedItem={mapDetalleByTipo}
           onClose={() => {
             setModalDetalleOpen(false);
             setItemSeleccionado(null);
             setDetalleFetchPlaca(null);
+            setDetalleFetchTipo('equipo');
             setDetalleHeaderPreview(null);
           }}
           onEdit={(it) => {
             setModalDetalleOpen(false);
             setItemSeleccionado(null);
             setDetalleFetchPlaca(null);
+            setDetalleFetchTipo('equipo');
             setDetalleHeaderPreview(null);
             handleOpenEdit(it);
           }}
@@ -6453,6 +6461,7 @@ export default function InventarioView({
             if (!itemActual) return;
             setModalDetalleOpen(false);
             setDetalleFetchPlaca(null);
+            setDetalleFetchTipo('equipo');
             setDetalleHeaderPreview(null);
             setQrModalItem({
               ...itemActual,

@@ -354,18 +354,19 @@ export const inventoryApi = {
     return list;
   },
 
-  getConsumibleById: async (id) => {
+  getConsumibleById: async (id, options = {}) => {
     // Intentar consulta directa al endpoint específico si existe
     try {
-      const json = await request(`/consumibles/${encodeURIComponent(id)}`);
+      const json = await request(`/consumibles/${encodeURIComponent(id)}`, options);
       const data = json?.data !== undefined ? json.data : json;
       if (data && typeof data === 'object' && (data.id || data.codigo)) return data;
-    } catch {
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
       // Fallback a lista completa
     }
 
     // Buscar en la lista de consumibles
-    const jsonAll = await request('/consumibles');
+    const jsonAll = await request('/consumibles', options);
     const list = extraerArreglo(jsonAll);
     const normalizedId = String(id).toLowerCase().trim();
     const found = list.find((c) => String(c.id || c.codigo || '').toLowerCase().trim() === normalizedId);
@@ -373,6 +374,110 @@ export const inventoryApi = {
       throw new Error(`Material o consumible con código "${id}" no encontrado`);
     }
     return found;
+  },
+
+  getEquipoElectronicaById: async (idOrPlaca, options = {}) => {
+    const rawId = String(idOrPlaca || '').trim();
+    const normalizedId = rawId.toLowerCase();
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        let query = supabase
+          .from('equipos_electronica')
+          .select('*')
+          .or(`placa.ilike.${rawId},id.ilike.${rawId}`)
+          .limit(1);
+        if (options?.signal && typeof query.abortSignal === 'function') {
+          query = query.abortSignal(options.signal);
+        }
+        const { data, error } = await query.maybeSingle();
+        if (options?.signal?.aborted) {
+          const abortErr = new Error('Consulta cancelada');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
+        if (!error && data) return data;
+      }
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
+
+    const fallback = DEFAULT_EQUIPOS_ELECTRONICA.find(
+      (it) => String(it.placa || it.codigo || it.id || '').toLowerCase().trim() === normalizedId
+    );
+    if (!fallback) {
+      throw new Error(`No se encontró el equipo de electrónica con código "${rawId}"`);
+    }
+    return fallback;
+  },
+
+  getPapeleriaById: async (id, options = {}) => {
+    const rawId = String(id || '').trim();
+    const normalizedId = rawId.toLowerCase();
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        let query = supabase
+          .from('papeleria')
+          .select('*')
+          .eq('id', rawId)
+          .limit(1);
+        if (options?.signal && typeof query.abortSignal === 'function') {
+          query = query.abortSignal(options.signal);
+        }
+        const { data, error } = await query.maybeSingle();
+        if (options?.signal?.aborted) {
+          const abortErr = new Error('Consulta cancelada');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
+        if (!error && data) return data;
+      }
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
+
+    try {
+      const catalogoModule = await import('../data/catalogoPapeleriaFMO.json');
+      const cat = catalogoModule.default || catalogoModule;
+      const found = Array.isArray(cat) && cat.find((p) => String(p.id || '').toLowerCase().trim() === normalizedId);
+      if (found) return found;
+    } catch (_) {}
+
+    throw new Error(`No se encontró el material de papelería con código "${rawId}"`);
+  },
+
+  getMobiliarioById: async (idOrPlaca, options = {}) => {
+    const rawId = String(idOrPlaca || '').trim();
+    try {
+      const { supabase } = await import('./supabase');
+      if (supabase) {
+        let query = supabase
+          .from('mobiliario')
+          .select('*')
+          .or(`placa.ilike.${rawId},id.ilike.${rawId}`)
+          .limit(1);
+        if (options?.signal && typeof query.abortSignal === 'function') {
+          query = query.abortSignal(options.signal);
+        }
+        const { data, error } = await query.maybeSingle();
+        if (options?.signal?.aborted) {
+          const abortErr = new Error('Consulta cancelada');
+          abortErr.name = 'AbortError';
+          throw abortErr;
+        }
+        if (!error && data) return data;
+      }
+    } catch (err) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') throw err;
+    }
+
+    const json = await request(`/mobiliario/${encodeURIComponent(rawId)}`, options);
+    const data = json?.data !== undefined ? json.data : json;
+    if (!data || (!data.placa && !data.id)) {
+      throw new Error(`No se encontró el mobiliario con código "${rawId}"`);
+    }
+    return data;
   },
 
   // Obtener ítem universal (sea equipo tecnológico, mobiliario, robótica o papelería)
