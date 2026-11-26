@@ -539,7 +539,7 @@ export default function NotificationBell({ onNavigateToSolicitudes }) {
         aria-label="Notificaciones de solicitudes en tiempo real"
         aria-expanded={isOpen}
       >
-        <Bell size={18} />
+        <Bell size={18} className="siga-bell-shake" />
 
         {/* BADGE NUMÉRICO ROJO CON ANIMACIÓN SUAVE */}
         {unreadCount > 0 && (

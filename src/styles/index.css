@@ -847,6 +847,38 @@ html.theme-transition *:not(.theme-toggle-svg) {
   transform: translateY(-1px);
 }
 
+@keyframes siga-bell-shake {
+  0%, 24%, 100% {
+    transform: rotate(0deg);
+  }
+  4% {
+    transform: rotate(15deg);
+  }
+  8% {
+    transform: rotate(-14deg);
+  }
+  12% {
+    transform: rotate(11deg);
+  }
+  16% {
+    transform: rotate(-9deg);
+  }
+  20% {
+    transform: rotate(5deg);
+  }
+}
+
+.siga-bell-shake {
+  transform-origin: top center;
+  animation: siga-bell-shake 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .siga-bell-shake {
+    animation: none !important;
+  }
+}
+
 .notification-badge {
   position: absolute;
   top: -4px;
