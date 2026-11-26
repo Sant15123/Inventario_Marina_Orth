@@ -1125,7 +1125,7 @@ export default function GestionComprasView({
 
   // Paginación de solicitudes en Gestión de Compras
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const totalPages = Math.max(1, Math.ceil(solicitudesFiltradas.length / itemsPerPage));
   const currentComprasPage = Math.min(currentPage, totalPages);
 

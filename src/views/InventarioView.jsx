@@ -161,7 +161,7 @@ const mapEquipoItem = (a) => {
 };
 
 // Número de filas por página por defecto para tablas de inventario (configurable reactivamente)
-const DEFAULT_ITEMS_PER_PAGE = 25;
+const DEFAULT_ITEMS_PER_PAGE = 5;
 
 export default function InventarioView({
   items = [],
@@ -328,7 +328,7 @@ export default function InventarioView({
   const [managingUnitsItem, setManagingUnitsItem] = useState(null);
   const [qrModalItem, setQrModalItem] = useState(null);
 
-  // Paginación reactiva configurable (10, 25, 50, 100 o Todos)
+  // Paginación reactiva configurable (5, 10, 25, 50, 100 o Todos)
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const ITEMS_PER_PAGE = itemsPerPage;
 
@@ -1117,11 +1117,26 @@ export default function InventarioView({
     });
   }, [rawConsumibles, filterStockConsumibles, filterSubcategoriaConsumibles, searchTerm]);
 
-  // Reset de paginación consistente al cambiar búsqueda global o filtros
+  // Reset de paginación consistente al cambiar pestaña, búsqueda global o filtros
   useEffect(() => {
     setEquiposPage(1);
+    setElectronicaPage(1);
     setConsumiblesPage(1);
-  }, [searchTerm, filterSede, filterStatus, filterStockConsumibles, filterSubcategoriaConsumibles]);
+    setPapeleriaPage(1);
+    setMobiliarioPage(1);
+  }, [
+    activeTab,
+    searchTerm,
+    filterSede,
+    filterStatus,
+    filterSedeElectronica,
+    filterStatusElectronica,
+    filterStockConsumibles,
+    filterSubcategoriaConsumibles,
+    filterStockPapeleria,
+    filterCajaPapeleria,
+    filterSedeMobiliario,
+  ]);
 
   // Render plano de todas las unidades de equipos devueltas por PostgreSQL / Supabase
   const rawEquiposUnits = useMemo(() => {

@@ -20,6 +20,7 @@ import SearchableUserSelect from '../components/common/SearchableUserSelect';
 import { Building2, FolderKanban, Plus, CheckSquare, Clock, Inbox, Eye, Laptop, Box, XCircle, Info, ShoppingCart, ExternalLink, PackagePlus, Search, FileSpreadsheet, Download, RotateCcw, Repeat, X, ChevronDown, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TableLoader from '../components/common/TableLoader';
+import TablePagination from '../components/common/TablePagination';
 import ModuleConnectionState from '../components/common/ModuleConnectionState';
 import { useToast } from '../context/ToastContext';
 import inventoryApi, { API_BASE_URL } from '../services/inventoryApi';
@@ -799,9 +800,21 @@ export default function PrestamosView({
     currentLoanPage * LOANS_PER_PAGE
   );
 
+  // Paginación para entregas de consumibles realizadas
+  const [deliveriesPage, setDeliveriesPage] = useState(1);
+  const [deliveriesPerPage, setDeliveriesPerPage] = useState(5);
+  const totalDeliveryPages = Math.max(1, Math.ceil(recentDeliveries.length / deliveriesPerPage));
+  const currentDeliveryPage = Math.min(deliveriesPage, totalDeliveryPages);
+  const paginatedDeliveries = recentDeliveries.slice(
+    (currentDeliveryPage - 1) * deliveriesPerPage,
+    currentDeliveryPage * deliveriesPerPage
+  );
+
   // Resetear a la página 1 cuando cambia el filtro de estado o la sección
   useEffect(() => {
     setCurrentLoanPage(1);
+    setDeliveriesPage(1);
+    setSolicitudesPage(1);
   }, [filterEstadoPrestamo, activeSection]);
 
   // Modales de acciones para préstamos
@@ -1835,7 +1848,7 @@ export default function PrestamosView({
                   </tr>
                 </thead>
                 <tbody>
-                  {recentDeliveries.map((m) => {
+                  {paginatedDeliveries.map((m) => {
                     const rawItems = Array.isArray(m.items) && m.items.length > 0 ? m.items : [
                       {
                         material_id: m.itemId,
@@ -1992,6 +2005,16 @@ export default function PrestamosView({
                   })}
                 </tbody>
               </table>
+            )}
+            {recentDeliveries.length > 0 && (
+              <TablePagination
+                totalItems={recentDeliveries.length}
+                currentPage={currentDeliveryPage}
+                perPage={deliveriesPerPage}
+                onPageChange={setDeliveriesPage}
+                onPerPageChange={setDeliveriesPerPage}
+                itemLabel="entregas"
+              />
             )}
           </div>
         </section>

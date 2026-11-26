@@ -208,7 +208,7 @@ export default function UsuariosView({
 
   // 4. Paginación de usuarios
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const ITEMS_PER_PAGE_USUARIOS = itemsPerPage;
 
   // Resetear a página 1 cada vez que cambie la búsqueda o el filtro de rol superior

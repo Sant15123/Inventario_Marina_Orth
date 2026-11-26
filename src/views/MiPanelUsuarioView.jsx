@@ -34,6 +34,7 @@ import ModalDetalleActivo from '../components/modals/ModalDetalleActivo';
 import ModalQR from '../components/modals/ModalQR';
 import ModalSolicitudMaterial from '../components/modals/ModalSolicitudMaterial';
 import TableLoader from '../components/common/TableLoader';
+import TablePagination from '../components/common/TablePagination';
 
 // Normalizadores visuales institucionales
 const formatSede = (sede) => {
@@ -219,10 +220,20 @@ export default function MiPanelUsuarioView({
     highlightTimersRef.current.set(solId, timer);
   }, []);
 
-  // Paginación para la pestaña "Mis Solicitudes"
+  // Paginación para las 3 pestañas de Mis Asignaciones (5 filas por defecto)
+  const [equiposPage, setEquiposPage] = useState(1);
+  const [equiposPerPage, setEquiposPerPage] = useState(5);
+  const [consumiblesPage, setConsumiblesPage] = useState(1);
+  const [consumiblesPerPage, setConsumiblesPerPage] = useState(5);
   const [solicitudesPage, setSolicitudesPage] = useState(1);
   const [solicitudesPerPage, setSolicitudesPerPage] = useState(5);
   const SOLICITUDES_PER_PAGE = solicitudesPerPage;
+
+  useEffect(() => {
+    setEquiposPage(1);
+    setConsumiblesPage(1);
+    setSolicitudesPage(1);
+  }, [activeTab]);
 
   // Cargar solicitudes del usuario (con soporte de recarga silenciosa en tiempo real)
   const fetchSolicitudes = useCallback(async ({ silent = false } = {}) => {
@@ -938,7 +949,12 @@ export default function MiPanelUsuarioView({
                       </td>
                     </tr>
                   ) : (
-                    misEquiposAsignados.map((eq, i) => (
+                    misEquiposAsignados
+                      .slice(
+                        (Math.min(equiposPage, Math.max(1, Math.ceil(misEquiposAsignados.length / equiposPerPage))) - 1) * equiposPerPage,
+                        Math.min(equiposPage, Math.max(1, Math.ceil(misEquiposAsignados.length / equiposPerPage))) * equiposPerPage
+                      )
+                      .map((eq, i) => (
                       <tr
                         key={i}
                         className="h-auto hover:bg-slate-500/5"
@@ -1081,6 +1097,16 @@ export default function MiPanelUsuarioView({
                 </tbody>
               </table>
             </div>
+            {misEquiposAsignados.length > 0 && (
+              <TablePagination
+                totalItems={misEquiposAsignados.length}
+                currentPage={Math.min(equiposPage, Math.max(1, Math.ceil(misEquiposAsignados.length / equiposPerPage)))}
+                perPage={equiposPerPage}
+                onPageChange={setEquiposPage}
+                onPerPageChange={setEquiposPerPage}
+                itemLabel="equipos"
+              />
+            )}
           </div>
         </section>
       )}
@@ -1103,7 +1129,18 @@ export default function MiPanelUsuarioView({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {misConsumiblesRecibidos.map((rem, idx) => (
+            {misConsumiblesRecibidos.length === 0 ? (
+              <div className="panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-dim)' }}>
+                Aún no tienes remisiones de consumibles registradas.
+              </div>
+            ) : (
+              <>
+                {misConsumiblesRecibidos
+                  .slice(
+                    (Math.min(consumiblesPage, Math.max(1, Math.ceil(misConsumiblesRecibidos.length / consumiblesPerPage))) - 1) * consumiblesPerPage,
+                    Math.min(consumiblesPage, Math.max(1, Math.ceil(misConsumiblesRecibidos.length / consumiblesPerPage))) * consumiblesPerPage
+                  )
+                  .map((rem, idx) => (
               <div
                 key={idx}
                 className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4 mb-4"
@@ -1178,7 +1215,20 @@ export default function MiPanelUsuarioView({
                   </div>
                 </div>
               </div>
-            ))}
+                ))}
+                <div className="panel" style={{ overflow: 'hidden', padding: 0 }}>
+                  <TablePagination
+                    totalItems={misConsumiblesRecibidos.length}
+                    currentPage={Math.min(consumiblesPage, Math.max(1, Math.ceil(misConsumiblesRecibidos.length / consumiblesPerPage)))}
+                    perPage={consumiblesPerPage}
+                    onPageChange={setConsumiblesPage}
+                    onPerPageChange={setConsumiblesPerPage}
+                    itemLabel="remisiones"
+                    style={{ borderTop: 'none' }}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </section>
       )}

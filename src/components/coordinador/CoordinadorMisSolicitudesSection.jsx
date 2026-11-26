@@ -20,6 +20,7 @@ import { normalizeProyectoNombre } from '../../constants/proyectos';
 import ModalSolicitudMaterial from '../modals/ModalSolicitudMaterial';
 import ModalDetalleActivo from '../modals/ModalDetalleActivo';
 import ModalQR from '../modals/ModalQR';
+import TablePagination from '../common/TablePagination';
 
 const normalizeText = (val) =>
   String(val || '')
@@ -43,6 +44,13 @@ export default function CoordinadorMisSolicitudesSection({
   const [loadingSolicitudes, setLoadingSolicitudes] = useState(false);
   const [solicitudesPage, setSolicitudesPage] = useState(1);
   const [solicitudesPerPage, setSolicitudesPerPage] = useState(5);
+  const [activosPage, setActivosPage] = useState(1);
+  const [activosPerPage, setActivosPerPage] = useState(5);
+
+  useEffect(() => {
+    setSolicitudesPage(1);
+    setActivosPage(1);
+  }, [activeTab]);
   const [modalMotivoRechazo, setModalMotivoRechazo] = useState(null);
 
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
@@ -757,7 +765,12 @@ export default function CoordinadorMisSolicitudesSection({
                 </tr>
               </thead>
               <tbody>
-                {misActivosAsignados.map((eq, idx) => (
+                {misActivosAsignados
+                  .slice(
+                    (Math.min(activosPage, Math.max(1, Math.ceil(misActivosAsignados.length / activosPerPage))) - 1) * activosPerPage,
+                    Math.min(activosPage, Math.max(1, Math.ceil(misActivosAsignados.length / activosPerPage))) * activosPerPage
+                  )
+                  .map((eq, idx) => (
                   <tr key={eq.placa || idx}>
                     <td>
                       <button
@@ -811,6 +824,16 @@ export default function CoordinadorMisSolicitudesSection({
                 ))}
               </tbody>
             </table>
+          )}
+          {misActivosAsignados.length > 0 && (
+            <TablePagination
+              totalItems={misActivosAsignados.length}
+              currentPage={Math.min(activosPage, Math.max(1, Math.ceil(misActivosAsignados.length / activosPerPage)))}
+              perPage={activosPerPage}
+              onPageChange={setActivosPage}
+              onPerPageChange={setActivosPerPage}
+              itemLabel="activos"
+            />
           )}
         </div>
       )}

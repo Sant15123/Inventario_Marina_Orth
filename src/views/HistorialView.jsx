@@ -185,7 +185,7 @@ export default function HistorialView({
   const [currentPage, setCurrentPage] = useState(1);
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const [exportandoExcel, setExportandoExcel] = useState(false);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const ITEMS_PER_PAGE = itemsPerPage;
 
   // Si el usuario es Coordinador, inicializar exclusivamente con movimientos propios para evitar destello global
