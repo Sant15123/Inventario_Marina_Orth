@@ -183,7 +183,7 @@ export default function MiPanelUsuarioView({
   const [highlightedSolIds, setHighlightedSolIds] = useState(() => new Set());
 
   const prevEstadosRef = useRef(new Map());
-  const hasInitializedSolicitudesRef = useRef(false);
+  const hasLoadedSolicitudesRef = useRef(false);
   const highlightTimersRef = useRef(new Map());
   const onRefreshRef = useRef(onRefresh);
   onRefreshRef.current = onRefresh;
