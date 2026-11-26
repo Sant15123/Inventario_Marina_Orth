@@ -3,7 +3,7 @@ import UserAvatar from '../common/UserAvatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { User, ChevronDown, LogOut, KeyRound, ChevronRight, Phone } from 'lucide-react';
+import { User, ChevronDown, LogOut, KeyRound, ChevronRight, Phone, Sun, Moon } from 'lucide-react';
 import ModalCambiarPassword from '../modals/ModalCambiarPassword';
 import ActualizarTelefonoModal from '../modals/ActualizarTelefonoModal';
 import NotificationBell from './NotificationBell';
@@ -370,30 +370,31 @@ export default function Header({
           <button
             type="button"
             onClick={onToggleTheme}
-            className="theme-toggle-btn"
+            className="theme-toggle-btn min-w-[132px] justify-center transition-all duration-300 active:!scale-95 hover:!border-[#ABD037] hover:shadow-[0_0_12px_rgba(171,208,55,0.22)] group motion-reduce:transition-none motion-reduce:active:!scale-100"
             title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
             aria-label={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
           >
-            <span className="theme-toggle-icon" aria-hidden="true">
-              {isDark ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#abd037" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="5"></circle>
-                  <line x1="12" y1="1" x2="12" y2="3"></line>
-                  <line x1="12" y1="21" x2="12" y2="23"></line>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                  <line x1="1" y1="12" x2="3" y2="12"></line>
-                  <line x1="21" y1="12" x2="23" y2="12"></line>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#013a52" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg>
-              )}
+            <span className="relative w-4 h-4 flex items-center justify-center shrink-0" aria-hidden="true">
+              <Moon
+                size={16}
+                strokeWidth={2.2}
+                className={`absolute inset-0 w-4 h-4 text-[#013a52] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                  isDark
+                    ? '-rotate-90 scale-0 opacity-0 motion-reduce:rotate-0'
+                    : 'rotate-0 scale-100 opacity-100 group-hover:-rotate-12 motion-reduce:group-hover:rotate-0'
+                }`}
+              />
+              <Sun
+                size={16}
+                strokeWidth={2.2}
+                className={`absolute inset-0 w-4 h-4 text-[#ABD037] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                  isDark
+                    ? 'rotate-0 scale-100 opacity-100 group-hover:rotate-45 motion-reduce:group-hover:rotate-0'
+                    : 'rotate-90 scale-0 opacity-0 motion-reduce:rotate-0'
+                }`}
+              />
             </span>
-            <span>{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
+            <span className="whitespace-nowrap">{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
           </button>
         )}
 
