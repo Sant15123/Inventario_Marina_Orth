@@ -7,21 +7,35 @@ import { supabase } from '../../services/supabase';
 import UserAvatar from '../common/UserAvatar';
 
 export default function ActualizarTelefonoModal({ isOpen, onClose }) {
-  const { currentUser, actualizarTelefono } = useAuth();
+  const { currentUser, usuarios, actualizarTelefono } = useAuth();
   const { addToast } = useToast();
 
   const [telefono, setTelefono] = useState('');
   const [errorValidacion, setErrorValidacion] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Inicializar con el teléfono actual del usuario al abrir
+  // Inicializar con el teléfono actual del usuario al abrir (con respaldo del catálogo)
   useEffect(() => {
     if (isOpen) {
-      setTelefono(currentUser?.telefono || '');
+      const matched = (usuarios || []).find(
+        (u) =>
+          (currentUser?.id && String(u.id) === String(currentUser.id)) ||
+          (currentUser?.documento && String(u.documento) === String(currentUser.documento)) ||
+          (currentUser?.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
+      );
+      const telActual =
+        currentUser?.telefono ||
+        currentUser?.celular ||
+        currentUser?.phone ||
+        matched?.telefono ||
+        matched?.celular ||
+        matched?.phone ||
+        '';
+      setTelefono(telActual);
       setErrorValidacion('');
       setSubmitting(false);
     }
-  }, [isOpen, currentUser?.telefono]);
+  }, [isOpen, currentUser, usuarios]);
 
   // Cerrar con tecla Escape
   useEffect(() => {

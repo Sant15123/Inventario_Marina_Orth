@@ -32,24 +32,32 @@ export default function Header({
   const [modalTelefonoAbierto, setModalTelefonoAbierto] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Resolver foto de perfil activa considerando tanto currentUser como el catálogo reactivo de usuarios
+  // Resolver usuario coincidente en catálogo reactivo para foto de perfil y teléfono reales
+  const matchedUsuario = usuarios?.find(
+    (u) =>
+      (currentUser?.id && String(u.id) === String(currentUser.id)) ||
+      (currentUser?.documento && String(u.documento) === String(currentUser.documento)) ||
+      (currentUser?.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
+  );
+
   const userAvatarUrl =
     currentUser?.avatar_url ||
     currentUser?.avatarUrl ||
     currentUser?.foto_perfil ||
-    usuarios?.find(
-      (u) =>
-        (currentUser?.id && String(u.id) === String(currentUser.id)) ||
-        (currentUser?.documento && String(u.documento) === String(currentUser.documento)) ||
-        (currentUser?.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
-    )?.avatar_url ||
-    usuarios?.find(
-      (u) =>
-        (currentUser?.id && String(u.id) === String(currentUser.id)) ||
-        (currentUser?.documento && String(u.documento) === String(currentUser.documento)) ||
-        (currentUser?.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
-    )?.avatarUrl ||
+    matchedUsuario?.avatar_url ||
+    matchedUsuario?.avatarUrl ||
+    matchedUsuario?.foto_perfil ||
     null;
+
+  const userPhone = String(
+    currentUser?.telefono ||
+      currentUser?.celular ||
+      currentUser?.phone ||
+      matchedUsuario?.telefono ||
+      matchedUsuario?.celular ||
+      matchedUsuario?.phone ||
+      ''
+  ).trim();
 
   const handleLogout = () => {
     setUserDropdownOpen(false);
@@ -181,7 +189,7 @@ export default function Header({
                         textOverflow: 'ellipsis',
                         overflow: 'hidden',
                       }}
-                      title={currentUser?.telefono || 'Sin teléfono registrado'}
+                      title={userPhone || 'Sin teléfono registrado'}
                     >
                       <span
                         style={{
@@ -191,8 +199,8 @@ export default function Header({
                           width: '18px',
                           height: '18px',
                           borderRadius: '5px',
-                          backgroundColor: currentUser?.telefono ? 'rgba(171, 208, 55, 0.22)' : 'rgba(1, 58, 82, 0.08)',
-                          color: currentUser?.telefono ? '#4d7c0f' : '#6d6e71',
+                          backgroundColor: userPhone ? 'rgba(171, 208, 55, 0.22)' : 'rgba(1, 58, 82, 0.08)',
+                          color: userPhone ? '#4d7c0f' : '#6d6e71',
                           flexShrink: 0,
                         }}
                       >
@@ -202,11 +210,11 @@ export default function Header({
                         className="truncate"
                         style={{
                           fontSize: '11px',
-                          fontWeight: currentUser?.telefono ? 600 : 400,
-                          color: currentUser?.telefono ? 'var(--text-h, #013a52)' : 'var(--text-dim, #6d6e71)',
+                          fontWeight: userPhone ? 600 : 400,
+                          color: userPhone ? 'var(--text-h, #013a52)' : 'var(--text-dim, #6d6e71)',
                         }}
                       >
-                        {currentUser?.telefono || 'Sin teléfono registrado'}
+                        {userPhone || 'Sin teléfono registrado'}
                       </span>
                     </div>
                   </div>

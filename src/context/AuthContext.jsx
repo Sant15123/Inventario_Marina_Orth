@@ -11,6 +11,8 @@ import {
 
 const AuthContext = createContext(null);
 
+const extractUserPhone = (u) => String(u?.telefono || u?.celular || u?.phone || '').trim();
+
 // Catálogo de Cuentas Demo Oficiales (Fundación Marina Orth - SIGA)
 export const DEMO_ACCOUNTS = [
   {
@@ -461,7 +463,15 @@ export function AuthProvider({ children }) {
         if (sessionCheck.isValid) {
           const decoded = verifyAndDecodeToken(savedToken);
           if (decoded) {
-            return decoded;
+            let savedUser = null;
+            try {
+              const rawSaved = localStorage.getItem('siga_current_user') || localStorage.getItem('siga_user');
+              if (rawSaved) savedUser = JSON.parse(rawSaved);
+            } catch (_) {}
+            return {
+              ...decoded,
+              telefono: extractUserPhone(decoded) || extractUserPhone(savedUser) || '',
+            };
           }
         }
       }
@@ -547,7 +557,7 @@ export function AuthProvider({ children }) {
           nombre: u.nombre_completo || u.nombre,
           nombre_completo: u.nombre_completo || u.nombre,
           email: u.email,
-          telefono: u.telefono || '',
+          telefono: extractUserPhone(u),
           rol: String(u.rol || 'usuario').toLowerCase().trim(),
           cargo: u.cargo || 'Funcionario FMO',
           sede: u.sede || 'Medellín',
@@ -567,34 +577,40 @@ export function AuthProvider({ children }) {
             map.set(key, { ...existing, ...usr });
           });
 
-          // Sincronizar reactivamente el avatar_url y proyectos_asignados del usuario en sesión activa
-          setCurrentUser((curr) => {
-            if (!curr) return curr;
-            const match = apiUsers.find((u) => 
-              (curr.id && String(u.id) === String(curr.id)) ||
-              (curr.documento && String(u.documento) === String(curr.documento)) ||
-              (curr.email && String(u.email).toLowerCase() === String(curr.email).toLowerCase())
-            );
-            if (match) {
-              const avatarChanged = match.avatar_url !== curr.avatar_url;
-              const proyCurr = JSON.stringify(curr.proyectos_asignados || []);
-              const proyMatch = JSON.stringify(match.proyectos_asignados || []);
-              const proyChanged = proyCurr !== proyMatch;
-
-              if (avatarChanged || proyChanged) {
-                const updated = {
-                  ...curr,
-                  avatar_url: match.avatar_url !== undefined ? match.avatar_url : curr.avatar_url,
-                  proyectos_asignados: match.proyectos_asignados || [],
-                };
-                localStorage.setItem('siga_current_user', JSON.stringify(updated));
-                return updated;
-              }
-            }
-            return curr;
-          });
-
           return Array.from(map.values());
+        });
+
+        // Sincronizar reactivamente telefono, avatar_url y proyectos_asignados del usuario en sesión activa
+        setCurrentUser((curr) => {
+          if (!curr) return curr;
+          const match = apiUsers.find((u) =>
+            (curr.id && String(u.id) === String(curr.id)) ||
+            (curr.documento && String(u.documento) === String(curr.documento)) ||
+            (curr.email && String(u.email).toLowerCase() === String(curr.email).toLowerCase())
+          );
+          if (match) {
+            const avatarChanged = match.avatar_url !== curr.avatar_url;
+            const proyCurr = JSON.stringify(curr.proyectos_asignados || []);
+            const proyMatch = JSON.stringify(match.proyectos_asignados || []);
+            const proyChanged = proyCurr !== proyMatch;
+            const telMatch = extractUserPhone(match);
+            const telChanged = telMatch !== extractUserPhone(curr);
+
+            if (avatarChanged || proyChanged || telChanged) {
+              const updated = {
+                ...curr,
+                telefono: telMatch !== '' ? telMatch : extractUserPhone(curr),
+                avatar_url: match.avatar_url !== undefined ? match.avatar_url : curr.avatar_url,
+                proyectos_asignados: match.proyectos_asignados || [],
+              };
+              try {
+                localStorage.setItem('siga_current_user', JSON.stringify(updated));
+                localStorage.setItem('siga_user', JSON.stringify(updated));
+              } catch (_) {}
+              return updated;
+            }
+          }
+          return curr;
         });
         return apiUsers;
       }
@@ -609,7 +625,7 @@ export function AuthProvider({ children }) {
     refetchUsuarios();
   }, [refetchUsuarios]);
 
-  // Sincronizar reactivamente el avatar_url del usuario en sesión activa con el catálogo de usuarios
+  // Sincronizar reactivamente avatar_url y telefono del usuario en sesión activa con el catálogo de usuarios
   useEffect(() => {
     if (!currentUser || !Array.isArray(usuarios) || usuarios.length === 0) return;
     const match = usuarios.find((u) =>
@@ -617,18 +633,91 @@ export function AuthProvider({ children }) {
       (currentUser.documento && String(u.documento) === String(currentUser.documento)) ||
       (currentUser.email && String(u.email).toLowerCase() === String(currentUser.email).toLowerCase())
     );
+    if (!match) return;
     const matchAvatar = match?.avatar_url || match?.avatarUrl || match?.foto_perfil;
-    if (matchAvatar && matchAvatar !== currentUser.avatar_url) {
+    const matchPhone = extractUserPhone(match);
+    const avatarChanged = Boolean(matchAvatar && matchAvatar !== currentUser.avatar_url);
+    const phoneChanged = Boolean(matchPhone && matchPhone !== extractUserPhone(currentUser));
+
+    if (avatarChanged || phoneChanged) {
       setCurrentUser((curr) => {
         if (!curr) return curr;
-        const updated = { ...curr, avatar_url: matchAvatar };
+        const updated = {
+          ...curr,
+          ...(avatarChanged ? { avatar_url: matchAvatar } : {}),
+          ...(phoneChanged ? { telefono: matchPhone } : {}),
+        };
         try {
           localStorage.setItem('siga_current_user', JSON.stringify(updated));
+          localStorage.setItem('siga_user', JSON.stringify(updated));
         } catch (_) {}
         return updated;
       });
     }
-  }, [usuarios, currentUser?.email, currentUser?.documento, currentUser?.id]);
+  }, [usuarios, currentUser?.email, currentUser?.documento, currentUser?.id, currentUser?.avatar_url, currentUser?.telefono]);
+
+  // Suscripción Realtime a cambios del perfil del usuario actual en Supabase (ej. teléfono editado por un admin)
+  useEffect(() => {
+    if (!currentUser?.id && !currentUser?.email) return;
+    let canal = null;
+    let isMounted = true;
+
+    import('../services/supabase')
+      .then(({ supabase }) => {
+        if (!isMounted || !supabase) return;
+        const filter = currentUser?.id ? `id=eq.${currentUser.id}` : undefined;
+        canal = supabase
+          .channel(`perfil-usuario-${currentUser.id || 'email'}`)
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'perfiles', ...(filter ? { filter } : {}) },
+            (payload) => {
+              const row = payload?.new;
+              if (!row) return;
+              const matchesUser =
+                (currentUser?.id && String(row.id) === String(currentUser.id)) ||
+                (currentUser?.email && String(row.email || '').toLowerCase() === String(currentUser.email).toLowerCase());
+              if (!matchesUser) return;
+
+              const telRow = extractUserPhone(row);
+              setCurrentUser((curr) => {
+                if (!curr) return curr;
+                const updated = {
+                  ...curr,
+                  telefono: telRow,
+                  nombre: row.nombre_completo || row.nombre || curr.nombre,
+                  cargo: row.cargo || curr.cargo,
+                  sede: row.sede || curr.sede,
+                  avatar_url: row.avatar_url || curr.avatar_url,
+                };
+                try {
+                  localStorage.setItem('siga_current_user', JSON.stringify(updated));
+                  localStorage.setItem('siga_user', JSON.stringify(updated));
+                } catch (_) {}
+                return updated;
+              });
+              setUsuarios((prev) =>
+                (prev || []).map((u) =>
+                  String(u.id) === String(row.id) ? { ...u, telefono: telRow } : u
+                )
+              );
+            }
+          )
+          .subscribe();
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+      if (canal) {
+        import('../services/supabase')
+          .then(({ supabase }) => {
+            if (supabase) supabase.removeChannel(canal);
+          })
+          .catch(() => {});
+      }
+    };
+  }, [currentUser?.id, currentUser?.email]);
 
   // Verificar validez del token en cambios y caducidad al montar / cambiar
   useEffect(() => {
@@ -658,6 +747,7 @@ export function AuthProvider({ children }) {
       documento: String(usr.documento || '').trim(),
       nombre: usr.nombre || usr.nombre_completo || 'Usuario SIGA',
       email: usr.email || 'demo@fmo.org',
+      telefono: extractUserPhone(usr),
       rol: usr.rol || 'administrador',
       sede: usr.sede || 'Oficina Medellín',
       cargo: usr.cargo || 'Funcionario FMO',
@@ -720,6 +810,7 @@ export function AuthProvider({ children }) {
               nombre: rawUser.nombre || rawUser.nombre_completo || 'Usuario SIGA',
               nombre_completo: rawUser.nombre_completo || rawUser.nombre || 'Usuario SIGA',
               email: rawUser.email,
+              telefono: extractUserPhone(rawUser),
               rol: rawUser.rol || 'usuario',
               sede: rawUser.sede || 'Medellín',
               cargo: rawUser.cargo || 'Funcionario FMO',
@@ -851,6 +942,7 @@ export function AuthProvider({ children }) {
           documento: user.documento,
           nombre: user.nombre || user.nombre_completo,
           email: user.email,
+          telefono: extractUserPhone(user),
           rol: user.rol,
           sede: user.sede,
           cargo: user.cargo || 'Funcionario FMO',
@@ -1136,6 +1228,7 @@ export function AuthProvider({ children }) {
           documento: docFinal || currentUser.documento,
           nombre: nombreFinal || currentUser.nombre,
           email: emailFinal || currentUser.email,
+          telefono: telefonoFinal !== undefined ? telefonoFinal : extractUserPhone(currentUser),
           rol: rolFinal || currentUser.rol,
           cargo: cargoFinal || currentUser.cargo,
           sede: sedeFinal || currentUser.sede,
@@ -1147,6 +1240,7 @@ export function AuthProvider({ children }) {
         const newToken = generateToken(updatedUser);
         localStorage.setItem('siga_token', newToken);
         localStorage.setItem('siga_current_user', JSON.stringify(updatedUser));
+        localStorage.setItem('siga_user', JSON.stringify(updatedUser));
         setToken(newToken);
         setCurrentUser(updatedUser);
       }
@@ -1206,6 +1300,7 @@ export function AuthProvider({ children }) {
       const newToken = generateToken(updatedUser);
       localStorage.setItem('siga_token', newToken);
       localStorage.setItem('siga_current_user', JSON.stringify(updatedUser));
+      localStorage.setItem('siga_user', JSON.stringify(updatedUser));
       setToken(newToken);
       setCurrentUser(updatedUser);
 
