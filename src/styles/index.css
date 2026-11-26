@@ -6253,3 +6253,13 @@ html.dark .connection-retry-btn:hover {
     animation: none !important;
   }
 }
+
+/* Destello sutil para filas actualizadas en tiempo real (Mis Solicitudes) */
+.solicitud-row-highlight {
+  background-color: rgba(171, 208, 55, 0.16) !important;
+  transition: background-color 1s ease;
+}
+[data-theme="dark"] .solicitud-row-highlight,
+html.dark .solicitud-row-highlight {
+  background-color: rgba(171, 208, 55, 0.15) !important;
+}

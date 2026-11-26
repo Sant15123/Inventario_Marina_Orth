@@ -1,6 +1,6 @@
 import ProgramBadgeIcon from '../components/common/ProgramBadgeIcon';
 import FmoStarIcon from '../components/common/FmoStarIcon';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   ShoppingCart,
   Laptop,
@@ -150,9 +150,10 @@ export default function MiPanelUsuarioView({
   movements = [],
   sedes: propSedes,
   proyectos: propProyectos,
+  onRefresh,
 }) {
   const { currentUser } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showInfo } = useToast();
   const [activeTab, setActiveTab] = useState('equipos'); // 'equipos' | 'consumibles' | 'solicitudes'
 
   // Modal para ver detalle completo de activo (solo lectura)
@@ -179,16 +180,56 @@ export default function MiPanelUsuarioView({
   const [solicitudes, setSolicitudes] = useState([]);
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
   const [modalMotivoRechazo, setModalMotivoRechazo] = useState(null);
+  const [highlightedSolIds, setHighlightedSolIds] = useState(() => new Set());
+
+  const prevEstadosRef = useRef(new Map());
+  const hasInitializedSolicitudesRef = useRef(false);
+  const highlightTimersRef = useRef(new Map());
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
+
+  const formatEstadoLabel = useCallback((estado) => {
+    const est = String(estado || 'PENDIENTE').toUpperCase().trim();
+    if (est === 'DEVUELTA' || est === 'DEVUELTO') return 'Devuelta';
+    if (est === 'COMPRADA' || est === 'COMPRADO') return 'Comprada';
+    if (est === 'APROBADA' || est === 'APROBADO' || est === 'DESPACHADA' || est === 'ENTREGADA') return 'Aprobada';
+    if (est === 'EN EVALUACION' || est === 'EN EVALUACIÓN' || est === 'EN_EVALUACION') return 'En Evaluación';
+    if (est === 'RECHAZADA' || est === 'RECHAZADO') return 'Rechazada';
+    return 'Solicitada / Pendiente';
+  }, []);
+
+  const marcarFilaResaltada = useCallback((solId) => {
+    if (!solId) return;
+    setHighlightedSolIds((prev) => {
+      const next = new Set(prev);
+      next.add(solId);
+      return next;
+    });
+    const existingTimer = highlightTimersRef.current.get(solId);
+    if (existingTimer) clearTimeout(existingTimer);
+    const timer = setTimeout(() => {
+      setHighlightedSolIds((prev) => {
+        if (!prev.has(solId)) return prev;
+        const next = new Set(prev);
+        next.delete(solId);
+        return next;
+      });
+      highlightTimersRef.current.delete(solId);
+    }, 1500);
+    highlightTimersRef.current.set(solId, timer);
+  }, []);
 
   // Paginación para la pestaña "Mis Solicitudes"
   const [solicitudesPage, setSolicitudesPage] = useState(1);
   const [solicitudesPerPage, setSolicitudesPerPage] = useState(5);
   const SOLICITUDES_PER_PAGE = solicitudesPerPage;
 
-  // Cargar solicitudes del usuario
-  const fetchSolicitudes = async () => {
+  // Cargar solicitudes del usuario (con soporte de recarga silenciosa en tiempo real)
+  const fetchSolicitudes = useCallback(async ({ silent = false } = {}) => {
     try {
-      setSolicitudesLoading(true);
+      if (!silent) {
+        setSolicitudesLoading(true);
+      }
       let dataFinal = [];
 
       try {
@@ -328,80 +369,115 @@ export default function MiPanelUsuarioView({
           const sNombre = (s.usuario_nombre || '').toLowerCase().trim();
           return sNombre && nombreNorm && (sNombre.includes(nombreNorm) || nombreNorm.includes(sNombre));
         });
+
+        // Detectar cambios de estado respecto al snapshot previo para feedback visual y toast discreto
+        const nextEstados = new Map();
+        const cambiosDetectados = [];
+        misSols.forEach((sol) => {
+          const estUpper = String(sol.estado || 'PENDIENTE').toUpperCase().trim();
+          nextEstados.set(sol.id, estUpper);
+          if (hasLoadedSolicitudesRef.current) {
+            const prevEst = prevEstadosRef.current.get(sol.id);
+            if (prevEst && prevEst !== estUpper) {
+              cambiosDetectados.push({ id: sol.id, estado: sol.estado });
+            }
+          }
+        });
+        prevEstadosRef.current = nextEstados;
+        hasLoadedSolicitudesRef.current = true;
+
         setSolicitudes(misSols);
-      } else {
+
+        if (cambiosDetectados.length > 0) {
+          cambiosDetectados.forEach((c) => marcarFilaResaltada(c.id));
+          const ultimo = cambiosDetectados[0];
+          const label = formatEstadoLabel(ultimo.estado);
+          if (typeof showInfo === 'function') {
+            showInfo('Estado actualizado', `Tu solicitud cambió a: ${label}`);
+          } else if (typeof showSuccess === 'function') {
+            showSuccess('Estado actualizado', `Tu solicitud cambió a: ${label}`);
+          }
+        }
+      } else if (!silent) {
         setSolicitudes([]);
       }
     } catch (err) {
       console.warn('Aviso: no se pudieron cargar solicitudes desde API:', err.message);
-      setSolicitudes([]);
+      if (!silent) {
+        setSolicitudes([]);
+      }
     } finally {
-      setSolicitudesLoading(false);
+      if (!silent) {
+        setSolicitudesLoading(false);
+      }
     }
-  };
+  }, [currentUser, formatEstadoLabel, marcarFilaResaltada, showInfo, showSuccess]);
 
   useEffect(() => {
-    fetchSolicitudes();
+    hasLoadedSolicitudesRef.current = false;
+    prevEstadosRef.current = new Map();
+    fetchSolicitudes({ silent: false });
 
-    // Suscripción Realtime a cambios en solicitudes para el solicitante
+    // Suscripción Realtime a cambios en solicitudes y asignaciones del usuario autenticado
     let canal = null;
     const userId = currentUser?.id || currentUser?.documento;
-    const nombreNorm = (currentUser?.nombre || '').toLowerCase().trim();
+    const filterByUser = currentUser?.id ? `usuario_id=eq.${currentUser.id}` : undefined;
 
-    const matchesUser = (record) => {
-      if (!record) return false;
-      if (userId && (record.usuario_id === userId || String(record.usuario_id) === String(userId))) return true;
-      const sNombre = (record.usuario_nombre || '').toLowerCase().trim();
-      return Boolean(sNombre && nombreNorm && (sNombre.includes(nombreNorm) || nombreNorm.includes(sNombre)));
+    const handleSolicitudRealtime = (payload) => {
+      if (payload.eventType === 'UPDATE' && payload.new) {
+        const nuevoEstadoUpper = String(payload.new.estado || 'PENDIENTE').toUpperCase().trim();
+        const prevEst = prevEstadosRef.current.get(payload.new.id);
+        if (prevEst && prevEst !== nuevoEstadoUpper) {
+          prevEstadosRef.current.set(payload.new.id, nuevoEstadoUpper);
+          marcarFilaResaltada(payload.new.id);
+          const label = formatEstadoLabel(payload.new.estado);
+          if (typeof showInfo === 'function') {
+            showInfo('Estado actualizado', `Tu solicitud cambió a: ${label}`);
+          } else if (typeof showSuccess === 'function') {
+            showSuccess('Estado actualizado', `Tu solicitud cambió a: ${label}`);
+          }
+        }
+        setSolicitudes((prev) =>
+          prev.map((s) => (s.id === payload.new.id ? { ...s, ...payload.new } : s))
+        );
+      } else if (payload.eventType === 'DELETE' && payload.old) {
+        setSolicitudes((prev) => prev.filter((s) => s.id !== payload.old.id));
+      }
+
+      // Recargar silenciosamente para mantener ítems y contadores sincronizados sin mostrar loader
+      fetchSolicitudes({ silent: true });
+      if (typeof onRefreshRef.current === 'function') {
+        onRefreshRef.current({ silent: true });
+      }
     };
 
     try {
       if (supabase) {
+        const invConfig = {
+          event: '*',
+          schema: 'public',
+          table: 'solicitudes_inventario',
+          ...(filterByUser ? { filter: filterByUser } : {}),
+        };
+        const compConfig = {
+          event: '*',
+          schema: 'public',
+          table: 'solicitudes_compra',
+          ...(filterByUser ? { filter: filterByUser } : {}),
+        };
+
         canal = supabase
           .channel(`cambios-solicitudes-usr-${userId || 'anon'}`)
+          .on('postgres_changes', invConfig, handleSolicitudRealtime)
+          .on('postgres_changes', compConfig, handleSolicitudRealtime)
           .on(
             'postgres_changes',
-            { event: '*', schema: 'public', table: 'solicitudes' },
-            (payload) => {
-              if (payload.eventType === 'INSERT' && payload.new) {
-                if (matchesUser(payload.new)) {
-                  setSolicitudes((prev) => [payload.new, ...prev.filter((s) => s.id !== payload.new.id)]);
-                }
-              } else if (payload.eventType === 'UPDATE' && payload.new) {
-                if (matchesUser(payload.new)) {
-                  setSolicitudes((prev) =>
-                    prev.map((s) => (s.id === payload.new.id ? { ...s, ...payload.new } : s))
-                  );
-                }
-              } else if (payload.eventType === 'DELETE' && payload.old) {
-                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.old.id));
+            { event: '*', schema: 'public', table: 'prestamos' },
+            () => {
+              fetchSolicitudes({ silent: true });
+              if (typeof onRefreshRef.current === 'function') {
+                onRefreshRef.current({ silent: true });
               }
-            }
-          )
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'solicitudes_inventario' },
-            (payload) => {
-              if (payload.eventType === 'INSERT' && payload.new) {
-                if (matchesUser(payload.new)) {
-                  setSolicitudes((prev) => [payload.new, ...prev.filter((s) => s.id !== payload.new.id)]);
-                }
-              } else if (payload.eventType === 'UPDATE' && payload.new) {
-                if (matchesUser(payload.new)) {
-                  setSolicitudes((prev) =>
-                    prev.map((s) => (s.id === payload.new.id ? { ...s, ...payload.new } : s))
-                  );
-                }
-              } else if (payload.eventType === 'DELETE' && payload.old) {
-                setSolicitudes((prev) => prev.filter((s) => s.id !== payload.old.id));
-              }
-            }
-          )
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'solicitudes_compra' },
-            (payload) => {
-              fetchSolicitudes();
             }
           )
           .subscribe();
@@ -410,16 +486,47 @@ export default function MiPanelUsuarioView({
       console.warn('Realtime solicitudes usuario aviso:', e);
     }
 
-    const handleLocalSol = () => fetchSolicitudes();
+    // Respaldo de sincronización: visibilitychange, focus y polling silencioso cada 18s (solo pestaña activa)
+    const syncSilent = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      fetchSolicitudes({ silent: true });
+      if (typeof onRefreshRef.current === 'function') {
+        onRefreshRef.current({ silent: true });
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncSilent();
+      }
+    };
+
+    const pollInterval = setInterval(syncSilent, 18000);
+    window.addEventListener('focus', syncSilent);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const handleLocalSol = () => {
+      fetchSolicitudes({ silent: true });
+      if (typeof onRefreshRef.current === 'function') {
+        onRefreshRef.current({ silent: true });
+      }
+    };
     window.addEventListener('siga:solicitud_creada', handleLocalSol);
     window.addEventListener('siga:solicitud_resuelta', handleLocalSol);
 
     return () => {
-      if (canal && supabase) supabase.removeChannel(canal);
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', syncSilent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('siga:solicitud_creada', handleLocalSol);
       window.removeEventListener('siga:solicitud_resuelta', handleLocalSol);
+      highlightTimersRef.current.forEach((t) => clearTimeout(t));
+      highlightTimersRef.current.clear();
+      if (canal && supabase) {
+        supabase.removeChannel(canal);
+      }
     };
-  }, [currentUser]);
+  }, [currentUser, fetchSolicitudes, formatEstadoLabel, marcarFilaResaltada, showInfo, showSuccess]);
 
   // Normalizar nombre del usuario activo para match flexible
   const currentUserNameNorm = useMemo(() => {
@@ -1211,7 +1318,11 @@ export default function MiPanelUsuarioView({
                       const fechaRad = sol.creado_en || sol.fecha_radicado || sol.created_at || '';
 
                       return (
-                        <tr key={sol.id} style={{ height: '52px' }}>
+                        <tr
+                          key={sol.id}
+                          className={highlightedSolIds.has(sol.id) ? 'solicitud-row-highlight bg-[#ABD037]/15 transition-colors duration-1000' : 'transition-colors duration-1000'}
+                          style={{ height: '52px' }}
+                        >
                           <td className="mono-num" style={{ whiteSpace: 'nowrap', padding: '10px 12px' }}>
                             {fmtDate(fechaRad)}
                           </td>

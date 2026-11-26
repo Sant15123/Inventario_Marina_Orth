@@ -157,7 +157,7 @@ function App() {
   const [sedesList, setSedesList] = useState([]);
 
   // Cargar datos reales desde Supabase / PostgreSQL con hasta 3 reintentos automáticos y AbortController
-  const refreshFromApi = useCallback(async () => {
+  const refreshFromApi = useCallback(async ({ silent = false } = {}) => {
     if (fetchAbortRef.current) {
       fetchAbortRef.current.abort();
     }
@@ -203,17 +203,21 @@ function App() {
         signal.addEventListener('abort', onAbort, { once: true });
       });
 
-    setLoading(true);
-    setApiError(null);
-    setIsRetryingOrSlow(false);
+    if (!silent) {
+      setLoading(true);
+      setApiError(null);
+      setIsRetryingOrSlow(false);
+    }
 
-    const slowTimer = setTimeout(() => {
-      if (fetchAbortRef.current === controller && !signal.aborted) {
-        setIsRetryingOrSlow(true);
-      }
-    }, 3000);
+    const slowTimer = !silent
+      ? setTimeout(() => {
+          if (fetchAbortRef.current === controller && !signal.aborted) {
+            setIsRetryingOrSlow(true);
+          }
+        }, 3000)
+      : null;
 
-    const MAX_ATTEMPTS = 3;
+    const MAX_ATTEMPTS = silent ? 1 : 3;
 
     try {
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -669,20 +673,24 @@ function App() {
             continue;
           }
 
-          console.error('Error al consultar datos del servidor tras reintentos:', err);
-          setApiError(err.message || 'No se pudo completar la conexión con el servidor');
-          setItems([]);
-          setMovements([]);
+          if (!silent) {
+            console.error('Error al consultar datos del servidor tras reintentos:', err);
+            setApiError(err.message || 'No se pudo completar la conexión con el servidor');
+            setItems([]);
+            setMovements([]);
+          }
           return;
         }
       }
     } catch (outerErr) {
       if (signal.aborted || outerErr?.name === 'AbortError') return;
-      console.error('Error al consultar datos del servidor:', outerErr);
-      setApiError(outerErr.message || 'No se pudo completar la conexión con el servidor');
+      if (!silent) {
+        console.error('Error al consultar datos del servidor:', outerErr);
+        setApiError(outerErr.message || 'No se pudo completar la conexión con el servidor');
+      }
     } finally {
-      clearTimeout(slowTimer);
-      if (fetchAbortRef.current === controller && !signal.aborted) {
+      if (slowTimer) clearTimeout(slowTimer);
+      if (!silent && fetchAbortRef.current === controller && !signal.aborted) {
         setLoading(false);
         setIsRetryingOrSlow(false);
       }
@@ -1326,6 +1334,7 @@ function App() {
                       items={items}
                       movements={movements}
                       sedes={sedesList}
+                      onRefresh={refreshFromApi}
                     />
                   )}
 
