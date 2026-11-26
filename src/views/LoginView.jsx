@@ -77,7 +77,7 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
       sessionStorage.removeItem('siga_session_expired_reason');
       sessionStorage.removeItem('siga_session_expired');
       if (setSessionExpiredMessage) setSessionExpiredMessage('');
-    } catch (_) {}
+    } catch (_) { }
   };
 
   // El tema se rige directamente por la propiedad activa
@@ -147,7 +147,7 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
       if (!prefersReduced) {
         sessionStorage.setItem('siga_welcome_transition', '1');
       }
-    } catch (_) {}
+    } catch (_) { }
 
     try {
       const result = await login({
@@ -163,18 +163,18 @@ export default function LoginView({ theme = 'light', onToggleTheme }) {
           sessionStorage.removeItem('siga_session_expired_reason');
           sessionStorage.removeItem('siga_session_expired');
           if (setSessionExpiredMessage) setSessionExpiredMessage('');
-        } catch (_) {}
+        } catch (_) { }
         const from = location.state?.from?.pathname || (result.user?.rol === 'usuario' ? '/mi-panel' : '/');
         navigate(from, { replace: true });
       } else {
         try {
           sessionStorage.removeItem('siga_welcome_transition');
-        } catch (_) {}
+        } catch (_) { }
       }
     } catch (err) {
       try {
         sessionStorage.removeItem('siga_welcome_transition');
-      } catch (_) {}
+      } catch (_) { }
       console.error('Error al iniciar sesión:', err);
       setErrorMsg(
         err.response?.data?.message ||

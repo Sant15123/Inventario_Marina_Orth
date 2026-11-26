@@ -432,199 +432,199 @@ export default function ResumenView({
           </>
         ) : (
           <>
-        {/* KPI 1: Materiales y Equipos (Tarjeta Destacada de Impacto FMO) */}
-        <div
-          className="stat fmo-impact-featured cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl relative overflow-hidden"
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            if (onNavigate) {
-              onNavigate('inventario', { tab: 'equipos', stockFilter: 'todos' });
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              if (onNavigate) onNavigate('inventario', { tab: 'equipos', stockFilter: 'todos' });
-            }
-          }}
-          title={
-            totalEquiposCount > 0 || totalConsumiblesCount > 0
-              ? `${totalEquiposCount} equipos · ${totalConsumiblesCount} consumibles — Ver todos los materiales y equipos en Inventario`
-              : 'Ver todos los materiales y equipos en Inventario'
-          }
-        >
-          {/* Recurso Gráfico Oficial FMO - Trazo Manuscrito Orth (Pág. 22) */}
-          <FmoSignatureMotif
-            color="#abd037"
-            opacity={0.18}
-            className="absolute -right-6 -bottom-6 pointer-events-none"
-            width={180}
-            height={110}
-            variant="ribbon"
-          />
-          <div className="stat-header relative z-10">
-            <span className="stat-icon" aria-hidden="true" style={{ background: 'rgba(171, 208, 55, 0.2)', color: '#abd037', borderRadius: '10px', padding: '4px 6px' }}>📦</span>
-            <span className="pill default" style={{ backgroundColor: '#abd037', color: '#013a52', fontWeight: 800 }}>Total FMO</span>
-          </div>
-          <div className="num mono-num relative z-10" style={{ color: '#abd037', fontWeight: 900, fontFamily: "'Poppins', sans-serif", fontSize: '32px' }}>
-            {showKpiSkeleton ? (
-              <span className="kpi-skeleton-box animate-pulse" style={{ width: '48px', height: '32px' }} />
-            ) : (
-              totalItemsCount
-            )}
-          </div>
-          <div className="lbl relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 600 }}>Materiales y Equipos registrados</div>
-          {!showKpiSkeleton && (totalEquiposCount > 0 || totalConsumiblesCount > 0) && (
+            {/* KPI 1: Materiales y Equipos (Tarjeta Destacada de Impacto FMO) */}
             <div
-              className="relative z-10"
-              style={{
-                fontSize: '11px',
-                fontWeight: 500,
-                color: 'rgba(255, 255, 255, 0.72)',
-                marginTop: '3px',
-                fontFamily: "'Poppins', sans-serif",
+              className="stat fmo-impact-featured cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl relative overflow-hidden"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate('inventario', { tab: 'equipos', stockFilter: 'todos' });
+                }
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (onNavigate) onNavigate('inventario', { tab: 'equipos', stockFilter: 'todos' });
+                }
+              }}
+              title={
+                totalEquiposCount > 0 || totalConsumiblesCount > 0
+                  ? `${totalEquiposCount} equipos · ${totalConsumiblesCount} consumibles — Ver todos los materiales y equipos en Inventario`
+                  : 'Ver todos los materiales y equipos en Inventario'
+              }
             >
-              {totalEquiposCount} equipos · {totalConsumiblesCount} consumibles
+              {/* Recurso Gráfico Oficial FMO - Trazo Manuscrito Orth (Pág. 22) */}
+              <FmoSignatureMotif
+                color="#abd037"
+                opacity={0.18}
+                className="absolute -right-6 -bottom-6 pointer-events-none"
+                width={180}
+                height={110}
+                variant="ribbon"
+              />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true" style={{ background: 'rgba(171, 208, 55, 0.2)', color: '#abd037', borderRadius: '10px', padding: '4px 6px' }}>📦</span>
+                <span className="pill default" style={{ backgroundColor: '#abd037', color: '#013a52', fontWeight: 800 }}>Total FMO</span>
+              </div>
+              <div className="num mono-num relative z-10" style={{ color: '#abd037', fontWeight: 900, fontFamily: "'Poppins', sans-serif", fontSize: '32px' }}>
+                {showKpiSkeleton ? (
+                  <span className="kpi-skeleton-box animate-pulse" style={{ width: '48px', height: '32px' }} />
+                ) : (
+                  totalItemsCount
+                )}
+              </div>
+              <div className="lbl relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 600 }}>Materiales y Equipos registrados</div>
+              {!showKpiSkeleton && (totalEquiposCount > 0 || totalConsumiblesCount > 0) && (
+                <div
+                  className="relative z-10"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: 'rgba(255, 255, 255, 0.72)',
+                    marginTop: '3px',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  {totalEquiposCount} equipos · {totalConsumiblesCount} consumibles
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* KPI 2: En stock mínimo (Robótica & Consumibles Críticos) */}
-        <div
-          className={`stat fmo-card-robotica ${stockCriticoCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden`}
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            if (onNavigate) {
-              onNavigate('inventario', { tab: 'consumibles', stockFilter: 'minimo' });
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              if (onNavigate) onNavigate('inventario', { tab: 'consumibles', stockFilter: 'minimo' });
-            }
-          }}
-          title="Ver consumibles en stock mínimo en Inventario"
-        >
-          {/* Recurso Gráfico Oficial FMO */}
-          <FmoSignatureMotif
-            color="#6d6e71"
-            opacity={0.08}
-            className="absolute -right-6 -bottom-6 pointer-events-none"
-            width={160}
-            height={100}
-            variant="flourish"
-          />
-          <div className="stat-header relative z-10">
-            <span className="stat-icon" aria-hidden="true">⚠️</span>
-            {showKpiSkeleton ? (
-              <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
-            ) : stockCriticoCount > 0 ? (
-              <span className="pill low">{stockCriticoCount} crítico{stockCriticoCount !== 1 ? 's' : ''}</span>
-            ) : (
-              <span className="pill ok">Óptimo</span>
-            )}
-          </div>
-          <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
-            {showKpiSkeleton ? (
-              <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
-            ) : (
-              stockCriticoCount
-            )}
-          </div>
-          <div className="lbl relative z-10">En stock mínimo o por debajo</div>
-        </div>
+            {/* KPI 2: En stock mínimo (Robótica & Consumibles Críticos) */}
+            <div
+              className={`stat fmo-card-robotica ${stockCriticoCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden`}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate('inventario', { tab: 'consumibles', stockFilter: 'minimo' });
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (onNavigate) onNavigate('inventario', { tab: 'consumibles', stockFilter: 'minimo' });
+                }
+              }}
+              title="Ver consumibles en stock mínimo en Inventario"
+            >
+              {/* Recurso Gráfico Oficial FMO */}
+              <FmoSignatureMotif
+                color="#6d6e71"
+                opacity={0.08}
+                className="absolute -right-6 -bottom-6 pointer-events-none"
+                width={160}
+                height={100}
+                variant="flourish"
+              />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true">⚠️</span>
+                {showKpiSkeleton ? (
+                  <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
+                ) : stockCriticoCount > 0 ? (
+                  <span className="pill low">{stockCriticoCount} crítico{stockCriticoCount !== 1 ? 's' : ''}</span>
+                ) : (
+                  <span className="pill ok">Óptimo</span>
+                )}
+              </div>
+              <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
+                {showKpiSkeleton ? (
+                  <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
+                ) : (
+                  stockCriticoCount
+                )}
+              </div>
+              <div className="lbl relative z-10">En stock mínimo o por debajo</div>
+            </div>
 
-        {/* KPI 3: Préstamos activos (Cómputo & Nuevas Tecnologías) */}
-        <div
-          className="stat fmo-card-computo cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden"
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            if (onNavigate) {
-              onNavigate('prestamos', { section: 'prestamos', estado: 'Activo' });
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              if (onNavigate) onNavigate('prestamos', { section: 'prestamos', estado: 'Activo' });
-            }
-          }}
-          title="Ver préstamos activos en Préstamos y entregas"
-        >
-          {/* Recurso Gráfico Oficial FMO */}
-          <FmoSignatureMotif
-            color="#013a52"
-            opacity={0.08}
-            className="absolute -right-6 -bottom-6 pointer-events-none"
-            width={160}
-            height={100}
-            variant="curve"
-          />
-          <div className="stat-header relative z-10">
-            <span className="stat-icon" aria-hidden="true">🔄</span>
-            {showKpiSkeleton ? (
-              <span className="kpi-skeleton-box animate-pulse" style={{ width: '60px', height: '18px', borderRadius: '999px' }} />
-            ) : (
-              <span className="pill prestado" style={{ backgroundColor: 'rgba(44, 172, 208, 0.15)', color: '#013a52', borderColor: 'rgba(44, 172, 208, 0.35)', fontWeight: 700 }}>En campo</span>
-            )}
-          </div>
-          <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
-            {showKpiSkeleton ? (
-              <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
-            ) : (
-              prestamosActivosCount
-            )}
-          </div>
-          <div className="lbl relative z-10">Préstamos activos</div>
-        </div>
+            {/* KPI 3: Préstamos activos (Cómputo & Nuevas Tecnologías) */}
+            <div
+              className="stat fmo-card-computo cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate('prestamos', { section: 'prestamos', estado: 'Activo' });
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (onNavigate) onNavigate('prestamos', { section: 'prestamos', estado: 'Activo' });
+                }
+              }}
+              title="Ver préstamos activos en Préstamos y entregas"
+            >
+              {/* Recurso Gráfico Oficial FMO */}
+              <FmoSignatureMotif
+                color="#013a52"
+                opacity={0.08}
+                className="absolute -right-6 -bottom-6 pointer-events-none"
+                width={160}
+                height={100}
+                variant="curve"
+              />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true">🔄</span>
+                {showKpiSkeleton ? (
+                  <span className="kpi-skeleton-box animate-pulse" style={{ width: '60px', height: '18px', borderRadius: '999px' }} />
+                ) : (
+                  <span className="pill prestado" style={{ backgroundColor: 'rgba(44, 172, 208, 0.15)', color: '#013a52', borderColor: 'rgba(44, 172, 208, 0.35)', fontWeight: 700 }}>En campo</span>
+                )}
+              </div>
+              <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
+                {showKpiSkeleton ? (
+                  <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
+                ) : (
+                  prestamosActivosCount
+                )}
+              </div>
+              <div className="lbl relative z-10">Préstamos activos</div>
+            </div>
 
-        {/* KPI 4: Préstamos vencidos (TeachLabs / Seguimiento) */}
-        <div
-          className={`stat fmo-card-teachlabs ${prestamosVencidosCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden`}
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            if (onNavigate) {
-              onNavigate('prestamos', { section: 'prestamos', estado: 'Vencido' });
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              if (onNavigate) onNavigate('prestamos', { section: 'prestamos', estado: 'Vencido' });
-            }
-          }}
-          title="Ver préstamos vencidos en Préstamos y entregas"
-        >
-          {/* Recurso Gráfico Oficial FMO */}
-          <FmoSignatureMotif
-            color="#7b2cbf"
-            opacity={0.10}
-            className="absolute -right-6 -bottom-6 pointer-events-none"
-            width={160}
-            height={100}
-            variant="flourish"
-          />
-          <div className="stat-header relative z-10">
-            <span className="stat-icon" aria-hidden="true">⏰</span>
-            {showKpiSkeleton ? (
-              <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
-            ) : prestamosVencidosCount > 0 ? (
-              <span className="pill vencido">Acción requerida</span>
-            ) : (
-              <span className="pill ok">Al día</span>
-            )}
-          </div>
-          <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
-            {showKpiSkeleton ? (
-              <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
-            ) : (
-              prestamosVencidosCount
-            )}
-          </div>
-          <div className="lbl relative z-10">Préstamos vencidos</div>
-        </div>
+            {/* KPI 4: Préstamos vencidos (TeachLabs / Seguimiento) */}
+            <div
+              className={`stat fmo-card-teachlabs ${prestamosVencidosCount > 0 ? 'alert' : ''} cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden`}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (onNavigate) {
+                  onNavigate('prestamos', { section: 'prestamos', estado: 'Vencido' });
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  if (onNavigate) onNavigate('prestamos', { section: 'prestamos', estado: 'Vencido' });
+                }
+              }}
+              title="Ver préstamos vencidos en Préstamos y entregas"
+            >
+              {/* Recurso Gráfico Oficial FMO */}
+              <FmoSignatureMotif
+                color="#7b2cbf"
+                opacity={0.10}
+                className="absolute -right-6 -bottom-6 pointer-events-none"
+                width={160}
+                height={100}
+                variant="flourish"
+              />
+              <div className="stat-header relative z-10">
+                <span className="stat-icon" aria-hidden="true">⏰</span>
+                {showKpiSkeleton ? (
+                  <span className="kpi-skeleton-box animate-pulse" style={{ width: '56px', height: '18px', borderRadius: '999px' }} />
+                ) : prestamosVencidosCount > 0 ? (
+                  <span className="pill vencido">Acción requerida</span>
+                ) : (
+                  <span className="pill ok">Al día</span>
+                )}
+              </div>
+              <div className="num mono-num relative z-10" style={{ fontWeight: 900, fontFamily: "'Poppins', sans-serif" }}>
+                {showKpiSkeleton ? (
+                  <span className="kpi-skeleton-box animate-pulse" style={{ width: '38px', height: '32px' }} />
+                ) : (
+                  prestamosVencidosCount
+                )}
+              </div>
+              <div className="lbl relative z-10">Préstamos vencidos</div>
+            </div>
           </>
         )}
       </div>
@@ -700,9 +700,8 @@ export default function ResumenView({
                   return (
                     <tr
                       key={it.id}
-                      className={`transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-800/50 ${
-                        isCritical ? 'alerta-row-critical bg-[#FEF2F2]/60 dark:bg-[#450A0A]/20' : ''
-                      }`}
+                      className={`transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-800/50 ${isCritical ? 'alerta-row-critical bg-[#FEF2F2]/60 dark:bg-[#450A0A]/20' : ''
+                        }`}
                     >
                       <td className="py-3.5 px-4 align-middle">
                         <div className="flex flex-col gap-0.5">
@@ -724,11 +723,10 @@ export default function ResumenView({
                       </td>
                       <td className="py-3.5 px-4 align-middle">
                         <span
-                          className={`inline-flex justify-center min-w-[64px] px-2.5 py-1 rounded-lg text-xs tabular-nums ${
-                            isCritical
-                              ? 'alerta-qty-zero bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] dark:bg-[#7F1D1D]/70 dark:text-[#FECACA] dark:border-[#EF4444] font-bold'
-                              : 'alerta-qty-low bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5] dark:bg-[#450A0A]/60 dark:text-[#FCA5A5] dark:border-[#B91C1C] font-semibold'
-                          }`}
+                          className={`inline-flex justify-center min-w-[64px] px-2.5 py-1 rounded-lg text-xs tabular-nums ${isCritical
+                            ? 'alerta-qty-zero bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] dark:bg-[#7F1D1D]/70 dark:text-[#FECACA] dark:border-[#EF4444] font-bold'
+                            : 'alerta-qty-low bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5] dark:bg-[#450A0A]/60 dark:text-[#FCA5A5] dark:border-[#B91C1C] font-semibold'
+                            }`}
                         >
                           {disp} {it.unit || 'und'}
                         </span>
