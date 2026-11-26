@@ -370,31 +370,35 @@ export default function Header({
           <button
             type="button"
             onClick={onToggleTheme}
-            className="theme-toggle-btn min-w-[132px] justify-center transition-all duration-300 active:!scale-95 hover:!border-[#ABD037] hover:shadow-[0_0_12px_rgba(171,208,55,0.22)] group motion-reduce:transition-none motion-reduce:active:!scale-100"
+            className="theme-toggle-btn inline-flex items-center justify-center gap-2 min-w-[132px] transition-all duration-300 active:scale-95 hover:border-[#ABD037] group"
             title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
             aria-label={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
           >
-            <span className="relative w-4 h-4 flex items-center justify-center shrink-0" aria-hidden="true">
+            <span
+              className="theme-toggle-icon relative inline-flex items-center justify-center w-4 h-4 shrink-0"
+              style={{ position: 'relative', width: '16px', height: '16px' }}
+              aria-hidden="true"
+            >
               <Moon
                 size={16}
                 strokeWidth={2.2}
-                className={`absolute inset-0 w-4 h-4 text-[#013a52] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                className={`theme-toggle-svg theme-toggle-moon absolute inset-0 w-4 h-4 transition-all duration-300 ${
                   isDark
-                    ? '-rotate-90 scale-0 opacity-0 motion-reduce:rotate-0'
-                    : 'rotate-0 scale-100 opacity-100 group-hover:-rotate-12 motion-reduce:group-hover:rotate-0'
+                    ? 'is-hidden opacity-0 scale-0 -rotate-90'
+                    : 'opacity-100 scale-100 rotate-0 group-hover:-rotate-12'
                 }`}
               />
               <Sun
                 size={16}
                 strokeWidth={2.2}
-                className={`absolute inset-0 w-4 h-4 text-[#ABD037] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                className={`theme-toggle-svg theme-toggle-sun absolute inset-0 w-4 h-4 transition-all duration-300 ${
                   isDark
-                    ? 'rotate-0 scale-100 opacity-100 group-hover:rotate-45 motion-reduce:group-hover:rotate-0'
-                    : 'rotate-90 scale-0 opacity-0 motion-reduce:rotate-0'
+                    ? 'opacity-100 scale-100 rotate-0 text-[#ABD037] group-hover:rotate-45'
+                    : 'is-hidden opacity-0 scale-0 rotate-90'
                 }`}
               />
             </span>
-            <span className="whitespace-nowrap">{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
+            <span style={{ whiteSpace: 'nowrap' }}>{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
           </button>
         )}
 
