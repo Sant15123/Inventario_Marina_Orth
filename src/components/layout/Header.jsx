@@ -3,7 +3,7 @@ import UserAvatar from '../common/UserAvatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { User, ChevronDown, LogOut, KeyRound, ChevronRight, Phone, Sun, Moon } from 'lucide-react';
+import { User, ChevronDown, LogOut, KeyRound, ChevronRight, Phone, Sun, Moon, Download, Check } from 'lucide-react';
 import ModalCambiarPassword from '../modals/ModalCambiarPassword';
 import ActualizarTelefonoModal from '../modals/ActualizarTelefonoModal';
 import NotificationBell from './NotificationBell';
@@ -25,12 +25,50 @@ export default function Header({
 }) {
   const isDark = theme === 'dark';
   const navigate = useNavigate();
-  const { showInfo } = useToast();
+  const { showInfo, showError } = useToast();
   const { currentUser, usuarios, logout, isUsuario, isSupervisor, isCoordinador } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
   const [modalTelefonoAbierto, setModalTelefonoAbierto] = useState(false);
+  const [exportState, setExportState] = useState('idle'); // 'idle' | 'exporting' | 'success'
   const dropdownRef = useRef(null);
+  const exportResetTimerRef = useRef(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (exportResetTimerRef.current) {
+        clearTimeout(exportResetTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleExcelClick = async () => {
+    if (exportState !== 'idle' || typeof onExportExcel !== 'function') return;
+    setExportState('exporting');
+    const startedAt = Date.now();
+    try {
+      await onExportExcel();
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 400) {
+        await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
+      }
+      if (!isMountedRef.current) return;
+      setExportState('success');
+      if (exportResetTimerRef.current) clearTimeout(exportResetTimerRef.current);
+      exportResetTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) setExportState('idle');
+      }, 2000);
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setExportState('idle');
+      if (typeof showError === 'function') {
+        showError('Error al exportar Excel', err?.message || 'No se pudo generar el reporte Excel.');
+      }
+    }
+  };
 
   // Resolver usuario coincidente en catálogo reactivo para foto de perfil y teléfono reales
   const matchedUsuario = usuarios?.find(
@@ -414,16 +452,53 @@ export default function Header({
         {!isUsuario && (
           <button
             type="button"
-            onClick={onExportExcel}
-            className="btn-excel-header flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#abd037] bg-[#abd037]/15 hover:bg-[#abd037] text-[#013a52] font-bold transition-all text-xs shadow-sm cursor-pointer group"
-            title="Descargar reporte consolidado en formato Excel"
+            onClick={handleExcelClick}
+            disabled={exportState === 'exporting'}
+            className={`btn-excel-header group inline-flex items-center justify-center gap-1.5 min-w-[96px] transition-all duration-300 ${
+              exportState === 'exporting'
+                ? 'is-exporting'
+                : exportState === 'success'
+                  ? 'is-success bg-[#ABD037] text-[#013A52] border-[#ABD037] font-semibold'
+                  : 'is-idle active:scale-95'
+            }`}
+            title={
+              exportState === 'exporting'
+                ? 'Generando reporte consolidado Excel...'
+                : exportState === 'success'
+                  ? '¡Archivo Excel generado!'
+                  : 'Descargar reporte consolidado en formato Excel'
+            }
+            aria-busy={exportState === 'exporting'}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[#013a52] group-hover:scale-105 transition-transform">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Excel</span>
+            {exportState === 'exporting' ? (
+              <>
+                <span
+                  className="siga-spinner btn-excel-spinner w-3.5 h-3.5 rounded-full border-2 border-[#ABD037]/30 border-t-[#013A52] dark:border-t-[#ABD037]"
+                  aria-hidden="true"
+                />
+                <span>Generando...</span>
+              </>
+            ) : exportState === 'success' ? (
+              <>
+                <Check
+                  size={15}
+                  strokeWidth={2.5}
+                  className="btn-excel-check-icon"
+                  aria-hidden="true"
+                />
+                <span>¡Listo!</span>
+              </>
+            ) : (
+              <>
+                <Download
+                  size={15}
+                  strokeWidth={2.2}
+                  className="btn-excel-download-icon group-hover:translate-y-0.5 transition-transform duration-200"
+                  aria-hidden="true"
+                />
+                <span>Excel</span>
+              </>
+            )}
           </button>
         )}
       </div>

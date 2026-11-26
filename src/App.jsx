@@ -1347,7 +1347,7 @@ function App() {
       await exportarLibroMaestroExcelFMO();
     } catch (err) {
       console.error('Error al exportar reporte Excel:', err);
-      alert(`No se pudo generar el reporte Excel: ${err.message || 'Error inesperado'}`);
+      throw err;
     }
   };
 
