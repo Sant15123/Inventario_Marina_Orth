@@ -655,18 +655,27 @@ export const inventoryApi = {
   },
 
   createPrestamo: async (data) => {
+    const fechaNormalizada =
+      data.fecha_devolucion_esperada && String(data.fecha_devolucion_esperada).trim() !== ''
+        ? String(data.fecha_devolucion_esperada).trim()
+        : null;
+    const payload = {
+      ...data,
+      fecha_devolucion_esperada: fechaNormalizada,
+    };
+
     let res = null;
     try {
       const json = await request('/prestamos', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       res = json?.data !== undefined ? json.data : json;
     } catch (e) {
       console.warn('Endpoint /prestamos advertencia:', e?.message);
     }
 
-    const placaRef = String(data.placa_activo || data.item_id || '').trim();
+    const placaRef = String(payload.placa_activo || payload.item_id || '').trim();
     const esElectronica = placaRef.toUpperCase().startsWith('ELE-');
 
     try {
@@ -676,7 +685,7 @@ export const inventoryApi = {
           .from('equipos_electronica')
           .update({
             estado: 'En Préstamo',
-            area_asignada: data.sede || 'Medellín',
+            area_asignada: payload.sede || 'Medellín',
           })
           .eq('placa', placaRef);
       }
@@ -688,28 +697,38 @@ export const inventoryApi = {
       try {
         await registrarAuditoria({
           tipo: 'Préstamo',
-          elemento: data.elemento || data.material_nombre || `Equipo de Electrónica (${placaRef})`,
+          elemento: payload.elemento || payload.material_nombre || `Equipo de Electrónica (${placaRef})`,
           id_referencia: placaRef,
-          cantidad: Number(data.cantidad) || 1,
-          responsable: data.solicitante || data.responsable || 'Custodio FMO',
-          sede: data.sede || 'Medellín',
-          motivo: `Préstamo institucional de equipo de electrónica. Destino/Área: ${data.sede || 'Medellín'}. Motivo: ${data.motivo || 'Formación pedagógica STEAM'}. Devolución esperada: ${data.fecha_devolucion_esperada || 'Por definir'}`,
+          cantidad: Number(payload.cantidad) || 1,
+          responsable: payload.solicitante || payload.responsable || 'Custodio FMO',
+          sede: payload.sede || 'Medellín',
+          motivo: `Préstamo institucional de equipo de electrónica. Destino/Área: ${payload.sede || 'Medellín'}. Motivo: ${payload.motivo || 'Formación pedagógica STEAM'}. Devolución esperada: ${fechaNormalizada || 'Sin fecha pactada'}`,
         });
       } catch (audErr) {
         console.warn('Aviso auditoria prestamo electronica:', audErr?.message);
       }
     }
 
-    return res || data;
+    return res || payload;
   },
 
   updatePrestamo: async (id, data) => {
+    const hasFecha = data.fecha_devolucion_esperada !== undefined;
+    const fechaNormalizada =
+      data.fecha_devolucion_esperada && String(data.fecha_devolucion_esperada).trim() !== ''
+        ? String(data.fecha_devolucion_esperada).trim()
+        : null;
+    const payload = {
+      ...data,
+      ...(hasFecha ? { fecha_devolucion_esperada: fechaNormalizada } : {}),
+    };
+
     // 1. Intentar actualización directa en Supabase
     try {
       const { supabase } = await import('./supabase');
       if (supabase && id) {
         const patch = {};
-        if (data.fecha_devolucion_esperada) patch.fecha_devolucion_esperada = data.fecha_devolucion_esperada;
+        if (hasFecha) patch.fecha_devolucion_esperada = fechaNormalizada;
         if (data.observaciones !== undefined) patch.motivo = data.observaciones;
         if (data.motivo !== undefined) patch.motivo = data.motivo;
 
@@ -727,7 +746,7 @@ export const inventoryApi = {
     // 2. Fallback a endpoint REST
     const json = await request(`/prestamos/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     return json?.data !== undefined ? json.data : json;
   },

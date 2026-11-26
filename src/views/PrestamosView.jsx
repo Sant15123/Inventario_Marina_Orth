@@ -571,12 +571,13 @@ export default function PrestamosView({
       showError('Validación', 'Debes especificar el responsable o formador custodio.');
       return;
     }
-    if (!loanExpectedDate) {
-      showError('Validación', 'Indica la fecha de devolución pactada.');
-      return;
-    }
-    // Validación de fecha no pasada
-    if (loanExpectedDate < today()) {
+    const fechaEsperadaNormalizada =
+      loanExpectedDate && String(loanExpectedDate).trim() !== ''
+        ? String(loanExpectedDate).trim()
+        : null;
+
+    // Validación de fecha no pasada (solo si se ingresó fecha)
+    if (fechaEsperadaNormalizada && fechaEsperadaNormalizada < today()) {
       showError('Fecha Inválida', 'La fecha de devolución no puede ser anterior a la fecha de hoy.');
       return;
     }
@@ -592,7 +593,7 @@ export default function PrestamosView({
           email: loanPersonEmail,
           sede: loanSede,
           proyecto: loanProyecto,
-          expectedReturn: loanExpectedDate,
+          expectedReturn: fechaEsperadaNormalizada,
           motive: loanMotive || 'Préstamo para formación y actividades de sede',
           unitCodes: selectedUnits,
         });
@@ -963,13 +964,18 @@ export default function PrestamosView({
 
     const targetDbId = rawDbId || prestamoId;
 
+    const fechaNormalizada =
+      data.fecha_devolucion_esperada && String(data.fecha_devolucion_esperada).trim() !== ''
+        ? String(data.fecha_devolucion_esperada).trim()
+        : null;
+
     // 1. Intentar actualizar directamente en Supabase si está disponible
     // Se envía ÚNICAMENTE las columnas existentes en la tabla 'prestamos' (fecha_devolucion_esperada, motivo, sede)
     // NO se envía 'proyecto' ni 'proyecto_steam' para evitar el error PGRST204
     try {
       if (supabase && targetDbId && !isNaN(Number(targetDbId)) && Number(targetDbId) < 500000) {
         const updateFields = {
-          fecha_devolucion_esperada: data.fecha_devolucion_esperada,
+          fecha_devolucion_esperada: fechaNormalizada,
         };
         // En la base de datos la columna es 'motivo'
         if (data.observaciones !== undefined) {
@@ -1000,7 +1006,7 @@ export default function PrestamosView({
     try {
       if (inventoryApi.updatePrestamo && targetDbId && Number(targetDbId) < 500000) {
         await inventoryApi.updatePrestamo(targetDbId, {
-          fecha_devolucion_esperada: data.fecha_devolucion_esperada,
+          fecha_devolucion_esperada: fechaNormalizada,
           observaciones: data.observaciones,
           motivo: data.motivo || data.observaciones,
           sede: data.sede,
@@ -1015,7 +1021,7 @@ export default function PrestamosView({
       const placa = loanObj?.unitCodes?.[0] || loanObj?.itemId || loanObj?.placa;
       if (placa && inventoryApi.updateActivo) {
         await inventoryApi.updateActivo(placa, {
-          fecha_devolucion: data.fecha_devolucion_esperada,
+          fecha_devolucion: fechaNormalizada,
           ...(data.sede ? { sede: data.sede } : {}),
         });
       }
@@ -1023,10 +1029,10 @@ export default function PrestamosView({
 
     // 4. Actualizar el objeto reactivo en memoria
     if (loanObj) {
-      loanObj.expectedReturn = data.fecha_devolucion_esperada;
-      loanObj.fecha_devolucion_esperada = data.fecha_devolucion_esperada;
-      loanObj.fecha_entrega = data.fecha_devolucion_esperada;
-      loanObj.fecha_limite = data.fecha_devolucion_esperada;
+      loanObj.expectedReturn = fechaNormalizada;
+      loanObj.fecha_devolucion_esperada = fechaNormalizada;
+      loanObj.fecha_entrega = fechaNormalizada;
+      loanObj.fecha_limite = fechaNormalizada;
       if (data.observaciones !== undefined) {
         loanObj.motive = data.observaciones;
         loanObj.motivo = data.observaciones;
@@ -1472,20 +1478,30 @@ export default function PrestamosView({
                           </span>
                         </td>
 
-                        {/* 6. DEVOLUCIÓN PACTADA (DD/MM/YYYY CENTRADO) */}
+                        {/* 6. DEVOLUCIÓN PACTADA (DD/MM/YYYY CENTRADO O SIN FECHA PACTADA) */}
                         <td className="px-2 py-2.5 text-center whitespace-nowrap text-xs font-medium text-slate-700 dark:text-slate-200 min-w-[100px]" style={{ textAlign: 'center', paddingLeft: '6px', paddingRight: '6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span
-                            className="mono-num text-xs font-medium"
-                            title={overdue ? 'Préstamo vencido' : 'En plazo'}
-                            style={{
-                              fontFamily: "'Poppins', sans-serif",
-                              fontSize: '12px',
-                              color: overdue ? 'var(--red, #ef4444)' : undefined,
-                              fontWeight: overdue ? 800 : 500,
-                            }}
-                          >
-                            {overdue ? '⚠️ ' : ''}{formatFecha(fechaDevolucion)}
-                          </span>
+                          {fechaDevolucion ? (
+                            <span
+                              className="mono-num text-xs font-medium"
+                              title={overdue ? 'Préstamo vencido' : 'En plazo'}
+                              style={{
+                                fontFamily: "'Poppins', sans-serif",
+                                fontSize: '12px',
+                                color: overdue ? 'var(--red, #ef4444)' : undefined,
+                                fontWeight: overdue ? 800 : 500,
+                              }}
+                            >
+                              {overdue ? '⚠️ ' : ''}{formatFecha(fechaDevolucion)}
+                            </span>
+                          ) : (
+                            <span
+                              className="text-xs italic text-slate-400 dark:text-slate-500"
+                              title="Préstamo sin fecha de devolución pactada"
+                              style={{ fontFamily: "'Poppins', sans-serif", fontSize: '11.5px', color: 'var(--text-muted, #94a3b8)' }}
+                            >
+                              Sin fecha pactada
+                            </span>
+                          )}
                         </td>
 
                         {/* 7. ACCIONES: 📷 QR, 👁️ Ver, ✏️ Editar, ✅ Devolución */}
@@ -2444,15 +2460,14 @@ export default function PrestamosView({
                 </div>
 
                 <div className="form-group">
-                  <label>Fecha de Devolución Pactada *</label>
+                  <label>Fecha Devolución Pactada (Opcional)</label>
                   <input
-                    required
                     type="date"
                     min={today()}
                     value={loanExpectedDate}
                     onChange={(e) => setLoanExpectedDate(e.target.value)}
                   />
-                  <small className="help-text">No se permiten fechas anteriores a hoy.</small>
+                  <small className="help-text">Opcional. No se permiten fechas anteriores a hoy.</small>
                 </div>
 
                 <div className="form-group">
@@ -2938,8 +2953,10 @@ export default function PrestamosView({
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Devolución Esperada</label>
-                  <p style={{ margin: '2px 0 0', fontWeight: 700, color: isOverdue(detailLoan) ? 'var(--red)' : 'var(--green, #84CC16)' }}>
-                    {isOverdue(detailLoan) ? '⚠️ ' : ''}{fmtDate(detailLoan.expectedReturn)}
+                  <p style={{ margin: '2px 0 0', fontWeight: 700, color: !detailLoan.expectedReturn ? 'var(--text-dim)' : isOverdue(detailLoan) ? 'var(--red)' : 'var(--green, #84CC16)' }}>
+                    {!detailLoan.expectedReturn
+                      ? 'Sin fecha pactada'
+                      : `${isOverdue(detailLoan) ? '⚠️ ' : ''}${fmtDate(detailLoan.expectedReturn)}`}
                   </p>
                 </div>
               </div>

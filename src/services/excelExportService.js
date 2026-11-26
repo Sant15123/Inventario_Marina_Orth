@@ -1245,7 +1245,7 @@ export async function exportarLibroMaestroExcelFMO(options = {}) {
     const nomActivo = sanitizarCelda(p.nombre_activo || p.itemName, '');
     const activoFull = nomActivo ? `[${placa}] ${nomActivo}` : placa;
     const fSalida = p.fecha_salida ? String(p.fecha_salida).split('T')[0] : sanitizarCelda(p.date, '—');
-    const fDevolucion = p.fecha_devolucion_esperada ? String(p.fecha_devolucion_esperada).split('T')[0] : sanitizarCelda(p.expectedReturn, '—');
+    const fDevolucion = p.fecha_devolucion_esperada ? String(p.fecha_devolucion_esperada).split('T')[0] : sanitizarCelda(p.expectedReturn, 'Sin fecha pactada');
     const estado = sanitizarCelda(p.estado || (p.status === 'devuelto' ? 'Devuelto' : 'En campo'), 'En campo');
 
     const row = wsPrestamos.addRow([

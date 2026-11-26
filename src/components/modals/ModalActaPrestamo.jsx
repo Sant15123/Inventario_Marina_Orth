@@ -222,9 +222,8 @@ export default function ModalActaPrestamo({
   };
 
   const fechaExpedicion = formatFecha(loanData.date || loanData.fecha_salida || new Date().toISOString());
-  const fechaEstimadaDevolucion = formatFecha(
-    loanData.expectedReturn || loanData.fecha_devolucion_esperada || 'No estipulada'
-  );
+  const rawFechaDev = loanData.expectedReturn || loanData.fecha_devolucion_esperada;
+  const fechaEstimadaDevolucion = rawFechaDev ? formatFecha(rawFechaDev) : 'Sin fecha pactada';
 
   const handlePrint = () => {
     window.print();

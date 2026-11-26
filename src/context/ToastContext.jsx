@@ -184,7 +184,7 @@ export function ToastProvider({ children }) {
         iconType: 'laptop',
         badge: codigo,
         title: 'Préstamo Registrado',
-        message: `El equipo ${codigo || 'tecnológico'} fue asignado en custodia a ${custodio || 'responsable'} hasta el ${fechaDevolucion || 'plazo pactado'}.`,
+        message: `El equipo ${codigo || 'tecnológico'} fue asignado en custodia a ${custodio || 'responsable'} ${fechaDevolucion ? `hasta el ${fechaDevolucion}` : 'sin fecha de devolución pactada'}.`,
       });
     },
     [addToast]

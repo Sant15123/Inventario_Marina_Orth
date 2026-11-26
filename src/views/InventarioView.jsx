@@ -6174,11 +6174,11 @@ export default function InventarioView({
                   showError('Validación', 'Debes indicar el Solicitante / Formador custodio.');
                   return;
                 }
-                if (!loanExpectedDate) {
-                  showError('Validación', 'Debes seleccionar la fecha de devolución.');
-                  return;
-                }
-                if (loanExpectedDate < today()) {
+                const fechaEsperadaNormalizada =
+                  loanExpectedDate && String(loanExpectedDate).trim() !== ''
+                    ? String(loanExpectedDate).trim()
+                    : null;
+                if (fechaEsperadaNormalizada && fechaEsperadaNormalizada < today()) {
                   showError('Fecha Inválida', 'La fecha de devolución no puede ser anterior a la fecha de hoy.');
                   return;
                 }
@@ -6188,7 +6188,7 @@ export default function InventarioView({
                     itemId: quickLoanUnit.parentItemId,
                     person: loanPerson,
                     sede: loanSede,
-                    expectedReturn: loanExpectedDate,
+                    expectedReturn: fechaEsperadaNormalizada,
                     motive: loanMotive || 'Préstamo asignado desde vista de inventario',
                     unitCodes: [quickLoanUnit.code || quickLoanUnit.placa],
                   });
@@ -6253,9 +6253,8 @@ export default function InventarioView({
                 </div>
 
                 <div className="form-group">
-                  <label>Fecha de Devolución Pactada *</label>
+                  <label>Fecha Devolución Pactada (Opcional)</label>
                   <input
-                    required
                     type="date"
                     min={today()}
                     value={loanExpectedDate}

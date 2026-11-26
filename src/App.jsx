@@ -1124,6 +1124,11 @@ function App() {
       data.tipo_item === 'consumible' ||
       (data.itemId && (data.itemId.toUpperCase().startsWith('ROB') || data.itemId.toUpperCase().startsWith('MAT')));
 
+    const fechaDevolucionFinal =
+      data.expectedReturn && String(data.expectedReturn).trim() !== ''
+        ? String(data.expectedReturn).trim()
+        : null;
+
     if (isConsumible) {
       // 1. Préstamo de consumible con cantidad
       const finalCantidad = Math.max(1, parseInt(data.cantidad, 10) || 1);
@@ -1138,7 +1143,7 @@ function App() {
           sede: data.sede || 'Medellín',
           motivo: data.motive || 'Préstamo de insumos para actividades formativas',
           fecha_salida: today(),
-          fecha_devolucion_esperada: data.expectedReturn || today(),
+          fecha_devolucion_esperada: fechaDevolucionFinal,
         });
       } catch (err) {
         console.error('Error al registrar préstamo de consumible:', err);
@@ -1159,7 +1164,7 @@ function App() {
             sede: data.sede || 'Medellín',
             motivo: data.motive || 'Préstamo para formación',
             fecha_salida: today(),
-            fecha_devolucion_esperada: data.expectedReturn || today(),
+            fecha_devolucion_esperada: fechaDevolucionFinal,
           });
         } catch (e) {
           console.error(`Error de persistencia para placa ${placa}:`, e.message);

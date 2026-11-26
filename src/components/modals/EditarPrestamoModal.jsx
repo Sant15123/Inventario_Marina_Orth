@@ -64,7 +64,12 @@ export const EditarPrestamoModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (fechaDevolucion && fechaDevolucion < hoyStr) {
+    const fechaNormalizada =
+      fechaDevolucion && String(fechaDevolucion).trim() !== ''
+        ? String(fechaDevolucion).trim()
+        : null;
+
+    if (fechaNormalizada && fechaNormalizada < hoyStr) {
       alert('La fecha de devolución no puede ser anterior a la fecha de hoy.');
       return;
     }
@@ -72,7 +77,7 @@ export const EditarPrestamoModal = ({
     try {
       setCargando(true);
       const payload = {
-        fecha_devolucion_esperada: fechaDevolucion,
+        fecha_devolucion_esperada: fechaNormalizada,
         sede,
         proyecto_steam: proyectoSteam,
         observaciones,
@@ -338,22 +343,21 @@ export const EditarPrestamoModal = ({
               </div>
             </div>
 
-            {/* Campo: Fecha Devolución Pactada */}
+            {/* Campo: Fecha Devolución Pactada (Opcional) */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
                 <Calendar size={14} style={{ color: '#6d6e71' }} />
-                Fecha Devolución Pactada *
+                Fecha Devolución Pactada (Opcional)
               </label>
               <input
                 type="date"
                 min={hoyStr}
                 value={fechaDevolucion}
                 onChange={(e) => setFechaDevolucion(e.target.value)}
-                required
                 className="w-full bg-slate-50 dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-lime-400/40 focus:border-lime-400 transition-colors"
               />
               <p className="text-[11px] text-slate-400 mt-1.5">
-                No es posible seleccionar fechas anteriores al día de hoy.
+                Opcional. Si seleccionas una fecha, no puede ser anterior al día de hoy.
               </p>
             </div>
 

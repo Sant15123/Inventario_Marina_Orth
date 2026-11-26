@@ -40,8 +40,8 @@ app.get('/api/dashboard/kpis', async (req, res) => {
       pool.query('SELECT COUNT(*) FROM consumibles WHERE disponible <= COALESCE(minimo, 5)'),
       // Préstamos activos (estado = 'Activo' o 'activo')
       pool.query("SELECT COUNT(*) FROM prestamos WHERE LOWER(estado) = 'activo'"),
-      // Préstamos vencidos (estado activo y fecha_devolucion_esperada < hoy)
-      pool.query("SELECT COUNT(*) FROM prestamos WHERE LOWER(estado) = 'activo' AND fecha_devolucion_esperada < CURRENT_DATE")
+      // Préstamos vencidos (solo préstamos activos con fecha pactada definida y < hoy)
+      pool.query("SELECT COUNT(*) FROM prestamos WHERE LOWER(estado) = 'activo' AND fecha_devolucion_esperada IS NOT NULL AND fecha_devolucion_esperada < CURRENT_DATE")
     ]);
 
     const totalConsumibles = parseInt(totalMaterialesRes.rows[0]?.count || '0', 10);
@@ -336,12 +336,17 @@ app.post('/api/prestamos', async (req, res) => {
       fecha_devolucion_esperada
     } = req.body;
 
-    if (!placa_activo || !solicitante || !fecha_devolucion_esperada) {
+    if (!placa_activo || !solicitante) {
       return res.status(400).json({
         success: false,
-        message: 'placa_activo, solicitante y fecha_devolucion_esperada son requeridos.'
+        message: 'placa_activo y solicitante son requeridos.'
       });
     }
+
+    const fechaEsperadaNormalizada =
+      fecha_devolucion_esperada && String(fecha_devolucion_esperada).trim() !== ''
+        ? String(fecha_devolucion_esperada).trim()
+        : null;
 
     await client.query('BEGIN');
 
@@ -369,18 +374,18 @@ app.post('/api/prestamos', async (req, res) => {
         sede,
         motivo,
         fecha_salida || null,
-        fecha_devolucion_esperada
+        fechaEsperadaNormalizada
       ]
     );
 
-    // Actualizar activo: estado = 'En campo', custodio = solicitante, fecha_devolucion = fecha_esperada
+    // Actualizar activo: estado = 'En campo', custodio = solicitante, fecha_devolucion = fecha_esperada (o NULL)
     await client.query(
       `UPDATE activos
        SET estado = 'En campo',
            custodio = $1,
            fecha_devolucion = $2
        WHERE placa = $3`,
-      [solicitante.trim(), fecha_devolucion_esperada, activoActual.placa]
+      [solicitante.trim(), fechaEsperadaNormalizada, activoActual.placa]
     );
 
     await client.query('COMMIT');
@@ -472,7 +477,10 @@ app.put('/api/prestamos/:id', async (req, res) => {
     }
 
     const nuevoMotivo = observaciones !== undefined ? observaciones : (motivo !== undefined ? motivo : prestamoRes.rows[0].motivo);
-    const nuevaFecha = fecha_devolucion_esperada || prestamoRes.rows[0].fecha_devolucion_esperada;
+    const nuevaFecha =
+      fecha_devolucion_esperada !== undefined
+        ? (fecha_devolucion_esperada && String(fecha_devolucion_esperada).trim() !== '' ? String(fecha_devolucion_esperada).trim() : null)
+        : prestamoRes.rows[0].fecha_devolucion_esperada;
 
     const updatedRes = await client.query(
       `UPDATE prestamos
@@ -483,8 +491,8 @@ app.put('/api/prestamos/:id', async (req, res) => {
       [nuevaFecha, nuevoMotivo, id]
     );
 
-    // Actualizar fecha_devolucion en activos si aplica
-    if (prestamoRes.rows[0].placa_activo && nuevaFecha) {
+    // Actualizar fecha_devolucion en activos (incluyendo NULL si se limpia la fecha pactada)
+    if (prestamoRes.rows[0].placa_activo && fecha_devolucion_esperada !== undefined) {
       await client.query(
         `UPDATE activos
          SET fecha_devolucion = $1

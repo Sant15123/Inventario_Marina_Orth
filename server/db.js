@@ -92,10 +92,16 @@ export const initDb = async () => {
         sede VARCHAR(100) NOT NULL,
         motivo VARCHAR(255),
         fecha_salida DATE DEFAULT CURRENT_DATE,
-        fecha_devolucion_esperada DATE NOT NULL,
+        fecha_devolucion_esperada DATE,
         fecha_devolucion_real DATE,
         estado VARCHAR(50) DEFAULT 'Activo'
       );
+    `);
+
+    // Asegurar que fecha_devolucion_esperada permita valores NULL en tablas existentes
+    await client.query(`
+      ALTER TABLE prestamos
+      ALTER COLUMN fecha_devolucion_esperada DROP NOT NULL;
     `);
 
     // 4. Tabla remisiones / entregas agrupadas

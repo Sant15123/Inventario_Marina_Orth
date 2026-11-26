@@ -873,16 +873,24 @@ export default function ResumenView({
                       <td className="mono-num">{fmtDate(m.date)}</td>
                       <td>
                         <div className="date-cell">
-                          <span className="mono-num">{fmtDate(m.expectedReturn)}</span>
-                          {overdue ? (
-                            <span className="delay-text delay-overdue">
-                              Retraso de {Math.abs(daysDiff)} día{Math.abs(daysDiff) !== 1 ? 's' : ''}
+                          {m.expectedReturn ? (
+                            <>
+                              <span className="mono-num">{fmtDate(m.expectedReturn)}</span>
+                              {overdue ? (
+                                <span className="delay-text delay-overdue">
+                                  Retraso de {Math.abs(daysDiff || 0)} día{Math.abs(daysDiff || 0) !== 1 ? 's' : ''}
+                                </span>
+                              ) : daysDiff !== null && daysDiff >= 0 ? (
+                                <span className="delay-text delay-ok">
+                                  {daysDiff === 0 ? 'Vence hoy' : `Faltan ${daysDiff} días`}
+                                </span>
+                              ) : null}
+                            </>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic' }}>
+                              Sin fecha pactada
                             </span>
-                          ) : daysDiff >= 0 ? (
-                            <span className="delay-text delay-ok">
-                              {daysDiff === 0 ? 'Vence hoy' : `Faltan ${daysDiff} días`}
-                            </span>
-                          ) : null}
+                          )}
                         </div>
                       </td>
                       <td>

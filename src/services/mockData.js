@@ -804,13 +804,17 @@ export const esPrestamoVencido = (prestamo) => {
     prestamo.fecha_limite;
   if (!fechaLimiteStr) return false;
 
+  const cleanStr = String(fechaLimiteStr).split('T')[0].trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) return false;
+
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
   // Evitar problemas de desfase UTC extrayendo partes YYYY-MM-DD
-  const [year, month, day] = String(fechaLimiteStr).split('T')[0].split('-').map(Number);
+  const [year, month, day] = cleanStr.split('-').map(Number);
   if (!year || !month || !day) return false;
   const fechaLimite = new Date(year, month - 1, day);
+  if (isNaN(fechaLimite.getTime())) return false;
 
   return fechaLimite < hoy;
 };
@@ -821,9 +825,12 @@ export const isOverdue = esPrestamoVencido;
  * Calcula días de diferencia para saber retraso o tiempo restante
  */
 export function getDaysDiff(targetDate) {
-  if (!targetDate) return 0;
-  const t = new Date(targetDate + 'T00:00:00').getTime();
+  if (!targetDate) return null;
+  const cleanStr = String(targetDate).split('T')[0].trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) return null;
+  const t = new Date(cleanStr + 'T00:00:00').getTime();
   const n = new Date(today() + 'T00:00:00').getTime();
+  if (isNaN(t) || isNaN(n)) return null;
   const diffTime = t - n;
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
