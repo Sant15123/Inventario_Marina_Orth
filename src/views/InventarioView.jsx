@@ -3159,11 +3159,11 @@ export default function InventarioView({
           }}
         >
           {[
-            { id: 'equipos', label: 'Equipos Tecnológicos', icon: Laptop, count: equipos.length },
+            { id: 'equipos', label: 'Equipos Tecnológicos', icon: Laptop, count: totalEquiposRegistrados },
             { id: 'electronica', label: 'Equipos de Electrónica', icon: Cpu, count: rawElectronica.length },
-            { id: 'consumibles', label: 'Consumibles de Robótica', icon: Plug, count: consumibles.length },
+            { id: 'consumibles', label: 'Consumibles de Robótica', icon: Plug, count: rawConsumibles.length },
             { id: 'papeleria', label: 'Papelería', icon: FileText, count: rawPapeleria.length },
-            { id: 'mobiliario', label: 'Mobiliario', icon: Armchair, count: mobiliarioFiltrado.length },
+            { id: 'mobiliario', label: 'Mobiliario', icon: Armchair, count: rawMobiliario.length },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;

@@ -1328,6 +1328,7 @@ function App() {
                   {!isUsuario && currentView === 'resumen' && (
                     <ResumenView
                       items={filteredItems}
+                      allItems={items}
                       movements={filteredMovements}
                       sedes={sedesList}
                       loading={loading}

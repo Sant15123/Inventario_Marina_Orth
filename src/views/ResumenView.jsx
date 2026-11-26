@@ -11,6 +11,7 @@ import ModuleConnectionState from '../components/common/ModuleConnectionState';
 
 export default function ResumenView({
   items = [],
+  allItems = [],
   movements = [],
   sedes = [],
   loading = false,
@@ -22,6 +23,7 @@ export default function ResumenView({
   // Estado para KPIs rápidos desde /api/dashboard/kpis o cálculo paralelo
   const [kpisData, setKpisData] = useState(null);
   const [kpisLoading, setKpisLoading] = useState(true);
+  const [catalogCounts, setCatalogCounts] = useState(null);
 
   // Hook de autenticación para rol Coordinador
   const { isCoordinador } = useAuth();
@@ -60,21 +62,43 @@ export default function ResumenView({
   const [localLoading, setLocalLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
-  // 1. Carga inmediata y no bloqueante de KPIs en paralelo (< 2 segundos)
+  // 1. Carga inmediata y no bloqueante de KPIs y conteos reales de catálogo en paralelo
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
     const fetchKPIs = async () => {
       try {
         setKpisLoading(true);
-        // Intentar consultar el endpoint ligero de KPIs
-        const kpis = await inventoryApi.getDashboardKPIs();
-        if (isMounted && kpis && typeof kpis === 'object') {
+        const [kpis, activosRes, consumiblesRes] = await Promise.all([
+          inventoryApi.getDashboardKPIs().catch(() => null),
+          inventoryApi.getActivos({ signal: controller.signal }).catch(() => null),
+          inventoryApi.getConsumibles({ signal: controller.signal }).catch(() => null),
+        ]);
+        if (!isMounted || controller.signal.aborted) return;
+
+        if (kpis && typeof kpis === 'object') {
           setKpisData(kpis);
         }
+        if (Array.isArray(activosRes) && Array.isArray(consumiblesRes)) {
+          const equiposTotal = activosRes.length;
+          const consumiblesTotal = consumiblesRes.filter((c) => {
+            if (!c) return false;
+            const cat = String(c.categoria || c.category || '').trim();
+            const sub = String(c.subtipo || '').toLowerCase();
+            const idStr = String(c.id || '').toLowerCase();
+            return cat !== 'Papelería' && cat !== 'Mobiliario' && sub !== 'papeleria' && !idStr.startsWith('pape');
+          }).length;
+          setCatalogCounts({
+            equipos: equiposTotal,
+            consumibles: consumiblesTotal,
+          });
+        }
       } catch (err) {
-        console.warn('No se pudo cargar KPIs ligeros de inmediato:', err.message);
+        if (!controller.signal.aborted) {
+          console.warn('No se pudo cargar KPIs ligeros de inmediato:', err.message);
+        }
       } finally {
-        if (isMounted) {
+        if (isMounted && !controller.signal.aborted) {
           setKpisLoading(false);
         }
       }
@@ -83,6 +107,7 @@ export default function ResumenView({
     fetchKPIs();
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, []);
 
@@ -251,12 +276,51 @@ export default function ResumenView({
     })
     .slice(0, 5);
 
-  // Valores finales de métricas calculados con fallback inteligente
-  const totalItemsCount = kpisData?.totalItems !== undefined ? kpisData.totalItems : effectiveItems.length;
+  // Conteo real sin filtrar ni paginar: Equipos Tecnológicos (unidades) + Consumibles de Robótica
+  const unfilteredCatalog = Array.isArray(allItems) && allItems.length > 0
+    ? allItems
+    : (localItems !== null ? localItems : effectiveItems);
+
+  const computedCatalogCounts = (() => {
+    if (!Array.isArray(unfilteredCatalog) || unfilteredCatalog.length === 0) return null;
+    let equiposCount = 0;
+    let consumiblesCount = 0;
+    unfilteredCatalog.forEach((it) => {
+      if (!it) return;
+      const cat = String(it.categoria || it.category || '').trim();
+      const sub = String(it.subtipo || '').toLowerCase();
+      const idStr = String(it.id || '').toLowerCase();
+      if (it.itemType === 'equipo' && cat !== 'Mobiliario') {
+        equiposCount += Array.isArray(it.units) && it.units.length > 0 ? it.units.length : 1;
+      } else if (
+        it.itemType === 'consumible' &&
+        cat !== 'Papelería' &&
+        cat !== 'Mobiliario' &&
+        sub !== 'papeleria' &&
+        !idStr.startsWith('pape')
+      ) {
+        consumiblesCount += 1;
+      }
+    });
+    return { equipos: equiposCount, consumibles: consumiblesCount };
+  })();
+
+  const totalEquiposCount = computedCatalogCounts
+    ? computedCatalogCounts.equipos
+    : (catalogCounts ? catalogCounts.equipos : 0);
+  const totalConsumiblesCount = computedCatalogCounts
+    ? computedCatalogCounts.consumibles
+    : (catalogCounts ? catalogCounts.consumibles : 0);
+
+  // Valores finales de métricas calculados con suma real (Equipos Tecnológicos + Consumibles de Robótica)
+  const totalItemsCount =
+    (catalogCounts || computedCatalogCounts)
+      ? totalEquiposCount + totalConsumiblesCount
+      : (kpisData?.totalItems !== undefined ? kpisData.totalItems : 0);
   const stockCriticoCount = kpisData?.stockCritico !== undefined ? kpisData.stockCritico : lowStockItems.length;
   const prestamosActivosCount = kpisData?.prestamosActivos !== undefined ? kpisData.prestamosActivos : activeLoans.length;
   const prestamosVencidosCount = kpisData?.prestamosVencidos !== undefined ? kpisData.prestamosVencidos : overdueLoans.length;
-  const showKpiSkeleton = kpisLoading && kpisData === null && effectiveItems.length === 0;
+  const showKpiSkeleton = kpisLoading && !catalogCounts && !computedCatalogCounts && kpisData === null && effectiveItems.length === 0;
 
   if (effectiveError && !kpisData && effectiveItems.length === 0) {
     return (
@@ -383,7 +447,11 @@ export default function ResumenView({
               if (onNavigate) onNavigate('inventario', { tab: 'equipos', stockFilter: 'todos' });
             }
           }}
-          title="Ver todos los materiales y equipos en Inventario"
+          title={
+            totalEquiposCount > 0 || totalConsumiblesCount > 0
+              ? `${totalEquiposCount} equipos · ${totalConsumiblesCount} consumibles — Ver todos los materiales y equipos en Inventario`
+              : 'Ver todos los materiales y equipos en Inventario'
+          }
         >
           {/* Recurso Gráfico Oficial FMO - Trazo Manuscrito Orth (Pág. 22) */}
           <FmoSignatureMotif
@@ -406,6 +474,20 @@ export default function ResumenView({
             )}
           </div>
           <div className="lbl relative z-10" style={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 600 }}>Materiales y Equipos registrados</div>
+          {!showKpiSkeleton && (totalEquiposCount > 0 || totalConsumiblesCount > 0) && (
+            <div
+              className="relative z-10"
+              style={{
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'rgba(255, 255, 255, 0.72)',
+                marginTop: '3px',
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              {totalEquiposCount} equipos · {totalConsumiblesCount} consumibles
+            </div>
+          )}
         </div>
 
         {/* KPI 2: En stock mínimo (Robótica & Consumibles Críticos) */}
