@@ -16,6 +16,7 @@ import GestionComprasView from './views/GestionComprasView';
 import LoginView from './views/LoginView';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginWelcomeOverlay from './components/auth/LoginWelcomeOverlay';
+import DarkModeExperimentalToast from './components/common/DarkModeExperimentalToast';
 
 import { useAuth } from './context/AuthContext';
 import { useSessionGuard } from './hooks/useSessionGuard';
@@ -49,8 +50,16 @@ function App() {
     localStorage.setItem('marina_orth_theme', theme);
   }, [theme]);
 
+  const [showDarkModeToast, setShowDarkModeToast] = useState(false);
+
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    if (theme === 'light') {
+      setTheme('dark');
+      setShowDarkModeToast(true);
+    } else {
+      setTheme('light');
+      setShowDarkModeToast(false);
+    }
   };
 
   const { currentUser, isAdmin, isSupervisor, isOperador, isUsuario, isCoordinador } = useAuth();
@@ -1247,7 +1256,8 @@ function App() {
   };
 
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* RUTA DE INICIO DE SESION INSTITUCIONAL */}
       <Route
         path="/login"
@@ -1448,6 +1458,15 @@ function App() {
         }
       />
     </Routes>
+      <DarkModeExperimentalToast
+        open={showDarkModeToast}
+        onClose={() => setShowDarkModeToast(false)}
+        onRevertToLight={() => {
+          setTheme('light');
+          setShowDarkModeToast(false);
+        }}
+      />
+    </>
   );
 }
 
