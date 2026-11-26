@@ -82,8 +82,8 @@ const mapConsumibleItem = (c) => {
 // Mapeador consistente para equipos tecnológicos con soporte a todos los 21 campos
 const mapEquipoItem = (a) => {
   const placa = a.placa || a.id || '';
-  const modelo = a.modelo || a.model || 'Estándar';
-  const serial = a.serial || '—';
+  const modelo = a.modelo || a.model || '';
+  const serial = a.serial || '';
   const estado = a.estado || 'Disponible';
   const status = estado === 'En campo' ? 'prestado' : estado.toLowerCase();
   const sede = a.sede || 'Medellín';
@@ -101,9 +101,9 @@ const mapEquipoItem = (a) => {
     name: a.nombre,
     nombre: a.nombre,
     equipo: a.nombre,
-    category: a.categoria || a.marca || 'Portátiles',
-    categoria: a.categoria || a.marca || 'Portátiles',
-    condicion: a.condicion || estado || 'Nuevo',
+    category: a.categoria || '',
+    categoria: a.categoria || '',
+    condicion: a.condicion || a.estado_fisico || '',
     estado: estado,
     area: areaAsignada,
     area_asignada: areaAsignada,
@@ -119,7 +119,7 @@ const mapEquipoItem = (a) => {
     isEquipo: true,
     en_contabilidad: Boolean(a.en_contabilidad),
     // Ficha técnica
-    marca: a.marca || 'Estándar',
+    marca: a.marca || '',
     modelo: modelo,
     model: modelo,
     serial: serial,
@@ -1267,6 +1267,8 @@ export default function InventarioView({
 
   // Modal de detalle sólo lectura para CRUD (estados solicitados)
   const [modalDetalleOpen, setModalDetalleOpen] = useState(false);
+  const [detalleFetchPlaca, setDetalleFetchPlaca] = useState(null);
+  const [detalleHeaderPreview, setDetalleHeaderPreview] = useState(null);
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
   const [itemParaEditar, setItemParaEditar] = useState(null);
@@ -2515,65 +2517,19 @@ export default function InventarioView({
     }
   };
 
-  // Función reutilizable para abrir el modal de consulta / detalle con datos locales o de backend
-  const abrirModalDetalle = async (placaOCodigo, fallbackData = null) => {
-    if (!placaOCodigo && !fallbackData) return;
-    const searchCode = String(placaOCodigo || '').replace(/^eq-/, '').trim();
+  // Función reutilizable para abrir el modal de consulta / detalle consultando siempre el backend sin fallbacks engañosos
+  const abrirModalDetalle = (placaOCodigo, fallbackData = null) => {
+    const searchCode = String(placaOCodigo || fallbackData?.placa || fallbackData?.id || '').replace(/^eq-/, '').trim();
+    if (!searchCode) return;
 
-    // Buscar en el estado local de equipos
-    const parent = equipos.find(e => {
-      const p = String(e.placa || (e.units && e.units[0]?.placa) || e.code || e.id || '').replace(/^eq-/, '').trim();
-      return p === searchCode;
-    });
-
-    const baseDetalle = {
-      ...(parent || fallbackData || {}),
-      id: searchCode || fallbackData?.id || fallbackData?.placa,
-      placa: searchCode || fallbackData?.placa || fallbackData?.id,
-      equipo: fallbackData?.parentName || fallbackData?.itemName || parent?.name || searchCode,
-      nombre: fallbackData?.parentName || fallbackData?.itemName || parent?.name || searchCode,
-      name: fallbackData?.parentName || fallbackData?.itemName || parent?.name || searchCode,
-      categoria: parent?.categoria || fallbackData?.parentCategory || 'Portátiles',
-      category: parent?.category || fallbackData?.parentCategory || 'Portátiles',
-      condicion: parent?.condicion || fallbackData?.status || 'Bueno',
-      area: parent?.area || 'Tecnología',
-      ubicacion: parent?.ubicacion || `${fallbackData?.sede || 'Medellín'} - ${fallbackData?.baseLocation || 'Bodega'}`,
-      ubicacion_estante: parent?.ubicacion_estante || fallbackData?.ubicacion_estante || '',
-      cantidad: 1,
-      disponible: (fallbackData?.status === 'disponible' || parent?.disponible) ? 1 : 0,
-      minimo: 1,
-      marca: parent?.marca || fallbackData?.marca || 'Estándar',
-      modelo: fallbackData?.model || parent?.modelo || 'Estándar',
-      serial: fallbackData?.serial || parent?.serial || '—',
-      caracteristica_1: parent?.caracteristica_1 || '',
-      caracteristica_2: parent?.caracteristica_2 || '',
-      caracteristica_3: parent?.caracteristica_3 || '',
-      responsable: (fallbackData?.status === 'prestado' ? (fallbackData?.responsable || fallbackData?.custodio || 'Custodio') : (parent?.responsable || 'Bodega Central')),
-      proveedor: parent?.proveedor || '',
-      valor_compra: parent?.valor_compra || null,
-      valor_total: parent?.valor_total || null,
-      fecha_compra: parent?.fecha_compra || null,
-      fecha_vencimiento_garantia: parent?.fecha_vencimiento_garantia || null,
-      claves_otros: parent?.claves_otros || '',
-      observaciones: parent?.observaciones || parent?.notes || fallbackData?.motive || '',
-      descripcion: parent?.descripcion || `Equipo registrado con serial ${fallbackData?.serial || parent?.serial || '—'} y modelo ${fallbackData?.model || parent?.modelo || 'Estándar'}.`,
+    setItemSeleccionado(null);
+    setDetalleFetchPlaca(searchCode);
+    setDetalleHeaderPreview({
+      placa: searchCode,
+      nombre: fallbackData?.parentName || fallbackData?.itemName || fallbackData?.nombre || fallbackData?.name || `Equipo ${searchCode}`,
       isEquipo: true,
-    };
-
-    setItemSeleccionado(baseDetalle);
+    });
     setModalDetalleOpen(true);
-
-    // Consultar activo fresco desde backend para asegurar última versión sincronizada
-    try {
-      if (searchCode) {
-        const activoFresco = await inventoryApi.getActivoByPlaca(searchCode);
-        if (activoFresco) {
-          setItemSeleccionado(mapEquipoItem(activoFresco));
-        }
-      }
-    } catch (_) {
-      // Fallback con datos locales si falla la petición puntual
-    }
   };
 
   // Validación por paso para Modal Nuevo Consumible y Papelería
@@ -6134,10 +6090,14 @@ export default function InventarioView({
           onClose={() => {
             setQrModalItem(null);
             setItemSeleccionado(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
           }}
           onBack={() => {
             const temp = qrModalItem;
             setQrModalItem(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
             setItemSeleccionado(temp);
             setModalDetalleOpen(true);
           }}
@@ -6467,22 +6427,33 @@ export default function InventarioView({
       {/* =========================================================================
           MODAL: CONSULTAR DETALLE DEL MATERIAL / EQUIPO (SÓLO LECTURA)
           ========================================================================= */}
-      {modalDetalleOpen && itemSeleccionado && (
+      {modalDetalleOpen && (itemSeleccionado || detalleFetchPlaca) && (
         <ModalDetalleActivo
+          isOpen={modalDetalleOpen}
           item={itemSeleccionado}
+          fetchPlaca={detalleFetchPlaca}
+          headerPreview={detalleHeaderPreview}
+          mapFetchedItem={mapEquipoItem}
           onClose={() => {
             setModalDetalleOpen(false);
             setItemSeleccionado(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
           }}
           onEdit={(it) => {
             setModalDetalleOpen(false);
             setItemSeleccionado(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
             handleOpenEdit(it);
           }}
           onOpenQR={(it) => {
             // Cerrar de inmediato el modal de detalle y transferir el activo al modal de QR
             const itemActual = it || itemSeleccionado;
+            if (!itemActual) return;
             setModalDetalleOpen(false);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
             setQrModalItem({
               ...itemActual,
               code: itemActual.placa || itemActual.id,

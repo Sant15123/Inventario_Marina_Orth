@@ -253,8 +253,8 @@ export const inventoryApi = {
     return extraerArreglo(json);
   },
 
-  getActivoByPlaca: async (placa) => {
-    const json = await request(`/activos/${encodeURIComponent(placa)}`);
+  getActivoByPlaca: async (placa, options = {}) => {
+    const json = await request(`/activos/${encodeURIComponent(placa)}`, options);
     const data = json?.data !== undefined ? json.data : json;
     if (!data) {
       throw new Error(`No se encontró el activo con placa ${placa}`);

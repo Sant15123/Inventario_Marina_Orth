@@ -1,60 +1,154 @@
-import React from 'react';
-import { QrCode, Pencil, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { QrCode, Pencil, X, AlertCircle } from 'lucide-react';
 import ProgramAreaBadge from '../common/ProgramAreaBadge';
+import { inventoryApi } from '../../services/inventoryApi';
 
 /**
  * ModalDetalleActivo: Componente modal unificado para consultar la ficha técnica
  * y detalle completo de un equipo tecnológico o material consumible.
- * Soporta consulta, visualización de todos los 21 campos técnicos/financieros,
- * botón para generar/imprimir QR y botón para disparar la edición del equipo.
+ * Bloquea el renderizado de las secciones de detalle hasta recibir la respuesta real
+ * del backend cuando se consulta por placa (fetchPlaca), evitando parpadeos y fallbacks engañosos.
  */
 export default function ModalDetalleActivo({
-  item,
+  isOpen = true,
+  item = null,
+  fetchPlaca = null,
+  headerPreview = null,
+  mapFetchedItem = null,
+  loading = false,
+  readOnly = false,
   onClose,
   onEdit,
   onOpenQR,
 }) {
-  if (!item) return null;
+  const [detalle, setDetalle] = useState(() => (fetchPlaca || loading ? null : item));
+  const [loadingDetalle, setLoadingDetalle] = useState(() => Boolean(fetchPlaca || loading));
+  const [errorDetalle, setErrorDetalle] = useState(null);
+
+  const mapFetchedItemRef = useRef(mapFetchedItem);
+  mapFetchedItemRef.current = mapFetchedItem;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setDetalle(null);
+      setLoadingDetalle(false);
+      setErrorDetalle(null);
+      return;
+    }
+
+    if (!fetchPlaca) {
+      setDetalle(item || null);
+      setLoadingDetalle(Boolean(loading));
+      setErrorDetalle(null);
+      return;
+    }
+
+    let isMounted = true;
+    const controller = new AbortController();
+
+    // Limpiar estado previo y bloquear renderizado hasta obtener respuesta real
+    setDetalle(null);
+    setLoadingDetalle(true);
+    setErrorDetalle(null);
+
+    (async () => {
+      try {
+        const activoFresco = await inventoryApi.getActivoByPlaca(fetchPlaca, {
+          signal: controller.signal,
+        });
+        if (!isMounted || controller.signal.aborted) return;
+
+        if (activoFresco) {
+          const transformed = mapFetchedItemRef.current
+            ? mapFetchedItemRef.current(activoFresco)
+            : activoFresco;
+          setDetalle(transformed);
+        } else {
+          setErrorDetalle('No se encontró información registrada para este equipo.');
+        }
+      } catch (err) {
+        if (!isMounted || controller.signal.aborted || err?.name === 'AbortError') return;
+        setErrorDetalle(err?.message || 'No se pudo cargar el detalle del equipo desde el servidor.');
+      } finally {
+        if (isMounted && !controller.signal.aborted) {
+          setLoadingDetalle(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [isOpen, fetchPlaca, item, loading]);
+
+  if (!isOpen || (!fetchPlaca && !item && !loadingDetalle && !errorDetalle)) return null;
+
+  const isReady = !loadingDetalle && Boolean(detalle);
 
   const esEquipo = Boolean(
-    item.isEquipo || item.serial || item.placa || item.marca || item.area || item.itemType === 'equipo'
+    detalle
+      ? (detalle.isEquipo || detalle.serial || detalle.placa || detalle.marca || detalle.area || detalle.itemType === 'equipo')
+      : (headerPreview?.isEquipo ?? Boolean(fetchPlaca))
   );
 
   const esActivo = Boolean(
-    item.isEquipo || item.serial || item.itemType === 'equipo' || (item.placa && String(item.placa).toUpperCase().startsWith('ACT-'))
+    detalle && (detalle.isEquipo || detalle.serial || detalle.itemType === 'equipo' || (detalle.placa && String(detalle.placa).toUpperCase().startsWith('ACT-')))
   );
   const esMobiliario = Boolean(
-    item.itemType === 'mobiliario' ||
-    item.categoria === 'Mobiliario' ||
-    item.category === 'Mobiliario' ||
-    (item.placa && String(item.placa).toUpperCase().startsWith('MOB-')) ||
-    (item.codigo && String(item.codigo).toUpperCase().startsWith('MOB-')) ||
-    Boolean(item.material_fabricacion) ||
-    Boolean(item.dimensiones)
+    detalle && (
+      detalle.itemType === 'mobiliario' ||
+      detalle.categoria === 'Mobiliario' ||
+      detalle.category === 'Mobiliario' ||
+      (detalle.placa && String(detalle.placa).toUpperCase().startsWith('MOB-')) ||
+      (detalle.codigo && String(detalle.codigo).toUpperCase().startsWith('MOB-')) ||
+      Boolean(detalle.material_fabricacion) ||
+      Boolean(detalle.dimensiones)
+    )
   );
   const esElectronica = Boolean(
-    item.itemType === 'electronica' ||
-    (item.placa && String(item.placa).toUpperCase().startsWith('ELE-')) ||
-    (item.codigo && String(item.codigo).toUpperCase().startsWith('ELE-'))
+    detalle && (
+      detalle.itemType === 'electronica' ||
+      (detalle.placa && String(detalle.placa).toUpperCase().startsWith('ELE-')) ||
+      (detalle.codigo && String(detalle.codigo).toUpperCase().startsWith('ELE-'))
+    )
   );
   const esActivoOMobiliario = (esActivo || esMobiliario) && !esElectronica;
 
-  // Estado operativo inferido o explícito
-  const rawEstado = (item.estado || item.status || item.condicion || '').toLowerCase();
-  const esPrestado = rawEstado.includes('prest') || Boolean(item.custodio && item.custodio !== 'Bodega Central');
-  const estadoLabel = esPrestado
-    ? 'En Campo'
-    : esEquipo
-      ? (item.estado || 'En Bodega')
-      : (item.estado || 'Disponible');
+  // Estado operativo real (solo se calcula cuando ya cargó el detalle real)
+  const rawEstado = String(detalle?.estado || detalle?.status || '').toLowerCase();
+  const esPrestado = Boolean(detalle) && (
+    rawEstado.includes('prest') ||
+    rawEstado.includes('campo') ||
+    Boolean(detalle?.custodio && detalle.custodio !== 'Bodega Central')
+  );
+  const estadoLabel = !detalle
+    ? ''
+    : esPrestado
+      ? 'En Campo'
+      : esEquipo
+        ? (detalle.estado || 'Disponible')
+        : (detalle.estado || 'Disponible');
   const estadoIsWarning =
     esPrestado ||
     estadoLabel.toLowerCase().includes('mantenimiento') ||
     estadoLabel.toLowerCase().includes('reparaci');
 
+  const headerPlaca = detalle
+    ? (detalle.placa || detalle.codigo || detalle.id || 'S/C')
+    : (headerPreview?.placa || fetchPlaca || '...');
+  const headerNombre = detalle
+    ? (detalle.nombre || detalle.equipo || detalle.material || detalle.name || 'Sin nombre')
+    : (headerPreview?.nombre || 'Consultando equipo...');
+
   // Helper para renderizar campos tipo Key-Value (Etiqueta: Valor)
-  const renderKeyValue = (label, val, { isMono = false, isAccent = false } = {}) => {
-    const isEmpty = val === null || val === undefined || val === '' || val === '—';
+  const renderKeyValue = (label, val, { isMono = false, isAccent = false, emptyText = 'No registrado' } = {}) => {
+    const isEmpty =
+      val === null ||
+      val === undefined ||
+      String(val).trim() === '' ||
+      String(val).trim() === '—' ||
+      String(val).trim() === 'No registrado';
     return (
       <div className="flex flex-col gap-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
         <span
@@ -73,7 +167,7 @@ export default function ModalDetalleActivo({
           } ${isMono ? 'font-sans font-semibold tracking-wide' : ''}`}
           style={{ fontSize: '13.5px', lineHeight: 1.35 }}
         >
-          {isEmpty ? '—' : val}
+          {isEmpty ? emptyText : val}
         </span>
       </div>
     );
@@ -151,7 +245,7 @@ export default function ModalDetalleActivo({
                 boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
               }}
             >
-              {item.placa || item.codigo || item.id || 'S/C'}
+              {headerPlaca}
             </span>
 
             {/* Nombre del Elemento */}
@@ -159,20 +253,22 @@ export default function ModalDetalleActivo({
               className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate m-0"
               style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             >
-              {item.nombre || item.equipo || item.material || item.name}
+              {headerNombre}
             </h3>
 
-            {/* Badge de Estado Operativo */}
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
-                estadoIsWarning
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60'
-                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60'
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${estadoIsWarning ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-              {estadoLabel}
-            </span>
+            {/* Badge de Estado Operativo (solo cuando cargó el detalle real) */}
+            {isReady && (
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
+                  estadoIsWarning
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60'
+                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${estadoIsWarning ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                {estadoLabel}
+              </span>
+            )}
           </div>
 
           {/* Acciones Superiores: Código QR y Cerrar (Alineación horizontal limpia y espaciada) */}
@@ -186,10 +282,10 @@ export default function ModalDetalleActivo({
               marginLeft: 'auto',
             }}
           >
-            {onOpenQR && (
+            {onOpenQR && isReady && (
               <button
                 type="button"
-                onClick={() => onOpenQR(item)}
+                onClick={() => onOpenQR(detalle)}
                 className="px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60 flex items-center gap-1.5 transition-colors cursor-pointer text-xs font-semibold shadow-sm"
                 title="Generar e imprimir Código QR"
                 style={{
@@ -224,269 +320,364 @@ export default function ModalDetalleActivo({
           </div>
         </div>
 
-        {/* Contenido en 3 Bloques en Grid */}
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 gap-3.5 flex-1 overflow-y-auto"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '12px',
-            overflowY: 'auto',
-          }}
-        >
-          {/* BLOQUE 1: Identificación / Operativos */}
+        {/* Cuerpo del Modal: Loader limpio mientras responde la API, error o detalle real */}
+        {loadingDetalle ? (
           <div
-            className="bg-slate-50/80 dark:bg-[#131b26] p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3"
             style={{
-              backgroundColor: 'var(--surface-2, #131b26)',
-              border: '1px solid var(--line, #1e293b)',
-              padding: '14px',
-              borderRadius: '12px',
+              flex: 1,
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '16px',
+              padding: '12px 0 8px',
+              overflowY: 'auto',
             }}
           >
-            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800/60 pb-2">
-              <span className="text-sm">🏷️</span>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
-                Identificación y Clasificación
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-              {renderKeyValue('Categoría', item.categoria || item.category)}
-              {renderKeyValue('Condición', item.condicion || item.estado_fisico || 'Bueno')}
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Área / Programa FMO:
-                </span>
-                <ProgramAreaBadge
-                  area={
-                    item.area_asignada ||
-                    item.area ||
-                    (item.subtipo === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || String(item.id || '').toLowerCase().startsWith('pape')
-                      ? 'TeachLabs'
-                      : item.itemType === 'consumible' || item.subtipo === 'robotica' || String(item.id || '').toLowerCase().startsWith('rob')
-                      ? 'Robótica'
-                      : 'Nuevas Tecnologías')
-                  }
-                  defaultProgram={
-                    item.subtipo === 'papeleria' || item.categoria === 'Papelería' || item.category === 'Papelería' || String(item.id || '').toLowerCase().startsWith('pape')
-                      ? 'teachlabs'
-                      : item.itemType === 'consumible' || item.subtipo === 'robotica' || String(item.id || '').toLowerCase().startsWith('rob')
-                      ? 'robotica'
-                      : 'tecnologia'
-                  }
-                  iconSize={16}
-                />
-              </div>
-              {renderKeyValue(
-                'Stock Registrado',
-                `${item.cantidad || 1} und (${item.disponible !== undefined ? item.disponible : 1} disp.)`
-              )}
-            </div>
-
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800/60">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                Descripción General:
-              </span>
-              <p
-                className="text-xs text-slate-700 dark:text-slate-300 m-0 leading-relaxed"
-                style={{ fontSize: '13px', lineHeight: 1.45 }}
-              >
-                {item.descripcion ||
-                  item.description ||
-                  `Equipo estándar registrado bajo la placa ${item.placa || item.codigo || '—'}.`}
-              </p>
-            </div>
-          </div>
-
-          {/* BLOQUE 2: Ficha Técnica y Asignación */}
-          <div
-            className="bg-slate-50/80 dark:bg-[#131b26] p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3"
-            style={{
-              backgroundColor: 'var(--surface-2, #131b26)',
-              border: '1px solid var(--line, #1e293b)',
-              padding: '14px',
-              borderRadius: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}
-          >
-            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800/60 pb-2">
-              <span className="text-sm">⚙️</span>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
-                Ficha Técnica y Asignación
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-              {renderKeyValue('Marca / Fabricante', item.marca || (esElectronica ? '—' : 'Estándar'))}
-              {renderKeyValue('Modelo Técnico', item.modelo || item.model || (esElectronica ? '—' : 'Estándar'))}
-              {renderKeyValue('Serial de Fábrica', item.serial, { isMono: true })}
-              {renderKeyValue(
-                'Responsable / Custodio',
-                item.responsable || item.custodio || 'Bodega Central'
-              )}
-
-              {/* Sede y Estante/Caja */}
-              <div className="flex flex-col gap-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Sede / Ubicación:
-                </span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {item.sede && item.ubicacion && item.sede !== item.ubicacion
-                    ? `${item.sede} · ${item.ubicacion}`
-                    : (item.ubicacion || item.sede || 'Oficina Medellín')}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Estante / Caja / Gaveta:
-                </span>
-                {item.ubicacion_estante ? (
-                  <span
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-lime-50 text-lime-800 dark:bg-lime-950/60 dark:text-lime-300 border border-lime-200 dark:border-lime-700/60 w-fit"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      backgroundColor: 'rgba(171, 222, 22, 0.16)',
-                      border: '1px solid rgba(171, 222, 22, 0.45)',
-                      color: 'var(--green, #4d7c0f)',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <span>📦</span>
-                    <span>{item.ubicacion_estante}</span>
-                  </span>
-                ) : (
-                  <span className="text-sm text-slate-400 dark:text-slate-500 font-normal">—</span>
-                )}
-              </div>
-            </div>
-
-            {/* Especificaciones Rápidas */}
-            {esEquipo && (item.caracteristica_1 || item.caracteristica_2 || item.caracteristica_3) && (
-              <div
-                className="pt-2 border-t border-slate-200 dark:border-slate-800/60 flex flex-wrap gap-1.5"
-                style={{ paddingTop: '8px', borderTop: '1px solid var(--line, #1e293b)' }}
-              >
-                {item.caracteristica_1 && (
-                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
-                    💻 {item.caracteristica_1}
-                  </span>
-                )}
-                {item.caracteristica_2 && (
-                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
-                    ⚡ {item.caracteristica_2}
-                  </span>
-                )}
-                {item.caracteristica_3 && (
-                  <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
-                    💾 {item.caracteristica_3}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* BLOQUE 3: Adquisición, Garantía y Credenciales */}
-          <div
-            className="md:col-span-2 bg-slate-50/80 dark:bg-[#131b26] p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3"
-            style={{
-              gridColumn: '1 / -1',
-              backgroundColor: 'var(--surface-2, #131b26)',
-              border: '1px solid var(--line, #1e293b)',
-              padding: '14px',
-              borderRadius: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}
-          >
-            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800/60 pb-2">
-              <span className="text-sm">🛡️</span>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
-                Adquisición, Garantía y Credenciales
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4">
-              {renderKeyValue('Proveedor', item.proveedor)}
-              {renderKeyValue(
-                esElectronica ? 'Valor Estimado (COP)' : 'Valor Compra',
-                (item.valor_compra ?? item.valor_estimado) != null &&
-                  (item.valor_compra ?? item.valor_estimado) !== '' &&
-                  Number.isFinite(Number(item.valor_compra ?? item.valor_estimado))
-                  ? `$ ${Number(item.valor_compra ?? item.valor_estimado).toLocaleString('es-CO')}`
-                  : null
-              )}
-              {renderKeyValue(
-                esElectronica ? 'Fecha Adquisición' : 'Fecha Compra',
-                (item.fecha_compra || item.fecha_adquisicion)
-                  ? String(item.fecha_compra || item.fecha_adquisicion).split('T')[0]
-                  : '—'
-              )}
-              {renderKeyValue(
-                'Vencimiento Garantía',
-                item.fecha_vencimiento_garantia || item.garantia
-                  ? String(item.fecha_vencimiento_garantia || item.garantia).split('T')[0]
-                  : '—'
-              )}
-            </div>
-
             <div
-              className="pt-2.5 border-t border-slate-200 dark:border-slate-800/60 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs"
-              style={{ paddingTop: '10px', borderTop: '1px solid var(--line, #1e293b)' }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px 16px 12px',
+                gap: '10px',
+                textAlign: 'center',
+              }}
             >
-              {esEquipo && (
-                <div className="flex flex-col gap-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em' }}>
-                    Claves / Credenciales:
-                  </span>
-                  <span className={`font-sans font-medium text-xs ${item.claves_otros ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`} style={{ fontSize: '12.5px' }}>
-                    {item.claves_otros || '—'}
-                  </span>
+              <div
+                className="siga-spinner"
+                aria-hidden="true"
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '9999px',
+                  border: '3px solid rgba(171, 208, 55, 0.25)',
+                  borderTopColor: '#ABD037',
+                }}
+              />
+              <strong style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-h, #013A52)' }}>
+                Consultando ficha técnica del equipo...
+              </strong>
+              <span style={{ fontSize: '12px', color: 'var(--text-dim, #64748b)' }}>
+                Obteniendo datos reales y estado actualizado desde Supabase
+              </span>
+            </div>
+
+            {/* Skeleton limpio de las dos tarjetas principales */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '12px',
+              }}
+              aria-hidden="true"
+            >
+              {[0, 1].map((cardIdx) => (
+                <div
+                  key={cardIdx}
+                  style={{
+                    backgroundColor: 'var(--surface-2, #131b26)',
+                    border: '1px solid var(--line, #1e293b)',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '14px',
+                  }}
+                >
+                  <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '58%', height: '14px' }} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '80%', height: '28px' }} />
+                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '75%', height: '28px' }} />
+                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '85%', height: '28px' }} />
+                    <div className="table-loader-skeleton-cell animate-pulse" style={{ width: '70%', height: '28px' }} />
+                  </div>
                 </div>
-              )}
-              <div className={`flex flex-col gap-1 min-w-0 ${!esEquipo ? 'col-span-2' : ''}`} style={!esEquipo ? { gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '3px' } : { display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em' }}>
-                  Observaciones:
+              ))}
+            </div>
+          </div>
+        ) : errorDetalle && !detalle ? (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '36px 20px',
+              textAlign: 'center',
+              gap: '10px',
+            }}
+          >
+            <AlertCircle size={34} style={{ color: '#EF4444' }} />
+            <strong style={{ fontSize: '14.5px', color: 'var(--text-h, #013A52)' }}>
+              No se pudo cargar el detalle del equipo
+            </strong>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-dim, #64748b)', margin: 0, maxWidth: '420px' }}>
+              {errorDetalle}
+            </p>
+          </div>
+        ) : isReady ? (
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 gap-3.5 flex-1 overflow-y-auto"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '12px',
+              overflowY: 'auto',
+            }}
+          >
+            {/* BLOQUE 1: Identificación y Clasificación */}
+            <div
+              className="bg-slate-50/80 dark:bg-[#131b26] p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3"
+              style={{
+                backgroundColor: 'var(--surface-2, #131b26)',
+                border: '1px solid var(--line, #1e293b)',
+                padding: '14px',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800/60 pb-2">
+                <span className="text-sm">🏷️</span>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+                  Identificación y Clasificación
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                {renderKeyValue('Categoría', detalle.categoria || detalle.category)}
+                {renderKeyValue('Condición', detalle.condicion || detalle.estado_fisico)}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Área / Programa FMO:
+                  </span>
+                  <ProgramAreaBadge
+                    area={
+                      detalle.area_asignada ||
+                      detalle.area ||
+                      (detalle.subtipo === 'papeleria' || detalle.categoria === 'Papelería' || detalle.category === 'Papelería' || String(detalle.id || '').toLowerCase().startsWith('pape')
+                        ? 'TeachLabs'
+                        : detalle.itemType === 'consumible' || detalle.subtipo === 'robotica' || String(detalle.id || '').toLowerCase().startsWith('rob')
+                        ? 'Robótica'
+                        : 'Nuevas Tecnologías')
+                    }
+                    defaultProgram={
+                      detalle.subtipo === 'papeleria' || detalle.categoria === 'Papelería' || detalle.category === 'Papelería' || String(detalle.id || '').toLowerCase().startsWith('pape')
+                        ? 'teachlabs'
+                        : detalle.itemType === 'consumible' || detalle.subtipo === 'robotica' || String(detalle.id || '').toLowerCase().startsWith('rob')
+                        ? 'robotica'
+                        : 'tecnologia'
+                    }
+                    iconSize={16}
+                  />
+                </div>
+                {renderKeyValue(
+                  'Stock Registrado',
+                  `${detalle.cantidad ?? 1} und (${detalle.disponible !== undefined ? detalle.disponible : 1} disp.)`
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800/60">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                  Descripción General:
                 </span>
-                <p className={`text-xs ${item.observaciones || item.notas || item.notes ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500 italic'} line-clamp-2 m-0 leading-relaxed`} style={{ margin: 0, fontSize: '13px', lineHeight: 1.4 }}>
-                  {item.observaciones || item.notas || item.notes || 'Sin observaciones registradas.'}
+                <p
+                  className={`text-xs m-0 leading-relaxed ${
+                    detalle.descripcion || detalle.description
+                      ? 'text-slate-700 dark:text-slate-300'
+                      : 'text-slate-400 dark:text-slate-500 italic'
+                  }`}
+                  style={{ fontSize: '13px', lineHeight: 1.45 }}
+                >
+                  {detalle.descripcion || detalle.description || 'Sin descripción registrada.'}
                 </p>
               </div>
             </div>
 
-            {/* Estado Contable (Exclusivo Activos y Mobiliario) */}
-            {esActivoOMobiliario && (
-              <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800/60">
-                <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    Estado en Contabilidad
+            {/* BLOQUE 2: Ficha Técnica y Asignación */}
+            <div
+              className="bg-slate-50/80 dark:bg-[#131b26] p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3"
+              style={{
+                backgroundColor: 'var(--surface-2, #131b26)',
+                border: '1px solid var(--line, #1e293b)',
+                padding: '14px',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800/60 pb-2">
+                <span className="text-sm">⚙️</span>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+                  Ficha Técnica y Asignación
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                {renderKeyValue('Marca / Fabricante', detalle.marca)}
+                {renderKeyValue('Modelo Técnico', detalle.modelo || detalle.model)}
+                {renderKeyValue('Serial de Fábrica', detalle.serial, { isMono: true })}
+                {renderKeyValue(
+                  'Responsable / Custodio',
+                  detalle.responsable || detalle.custodio
+                )}
+
+                {/* Sede y Estante/Caja */}
+                {renderKeyValue(
+                  'Sede / Ubicación',
+                  detalle.sede && detalle.ubicacion && detalle.sede !== detalle.ubicacion
+                    ? `${detalle.sede} · ${detalle.ubicacion}`
+                    : (detalle.ubicacion || detalle.sede)
+                )}
+
+                <div className="flex flex-col gap-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Estante / Caja / Gaveta:
                   </span>
-                  {item.en_contabilidad ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60">
-                      ✅ En Contabilidad
+                  {detalle.ubicacion_estante ? (
+                    <span
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-lime-50 text-lime-800 dark:bg-lime-950/60 dark:text-lime-300 border border-lime-200 dark:border-lime-700/60 w-fit"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: 'rgba(171, 222, 22, 0.16)',
+                        border: '1px solid rgba(171, 222, 22, 0.45)',
+                        color: 'var(--green, #4d7c0f)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span>📦</span>
+                      <span>{detalle.ubicacion_estante}</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-700/60">
-                      ⏳ Pendiente / No registrado
-                    </span>
+                    <span className="text-sm text-slate-400 dark:text-slate-500 font-normal">No registrado</span>
                   )}
                 </div>
               </div>
-            )}
+
+              {/* Especificaciones Rápidas */}
+              {esEquipo && (detalle.caracteristica_1 || detalle.caracteristica_2 || detalle.caracteristica_3) && (
+                <div
+                  className="pt-2 border-t border-slate-200 dark:border-slate-800/60 flex flex-wrap gap-1.5"
+                  style={{ paddingTop: '8px', borderTop: '1px solid var(--line, #1e293b)' }}
+                >
+                  {detalle.caracteristica_1 && (
+                    <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                      💻 {detalle.caracteristica_1}
+                    </span>
+                  )}
+                  {detalle.caracteristica_2 && (
+                    <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                      ⚡ {detalle.caracteristica_2}
+                    </span>
+                  )}
+                  {detalle.caracteristica_3 && (
+                    <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-[11.5px] font-sans font-semibold tracking-wide text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                      💾 {detalle.caracteristica_3}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* BLOQUE 3: Adquisición, Garantía y Credenciales */}
+            <div
+              className="md:col-span-2 bg-slate-50/80 dark:bg-[#131b26] p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3"
+              style={{
+                gridColumn: '1 / -1',
+                backgroundColor: 'var(--surface-2, #131b26)',
+                border: '1px solid var(--line, #1e293b)',
+                padding: '14px',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800/60 pb-2">
+                <span className="text-sm">🛡️</span>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 m-0">
+                  Adquisición, Garantía y Credenciales
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4">
+                {renderKeyValue('Proveedor', detalle.proveedor)}
+                {renderKeyValue(
+                  esElectronica ? 'Valor Estimado (COP)' : 'Valor Compra',
+                  (detalle.valor_compra ?? detalle.valor_estimado) != null &&
+                    (detalle.valor_compra ?? detalle.valor_estimado) !== '' &&
+                    Number.isFinite(Number(detalle.valor_compra ?? detalle.valor_estimado))
+                    ? `$ ${Number(detalle.valor_compra ?? detalle.valor_estimado).toLocaleString('es-CO')}`
+                    : null
+                )}
+                {renderKeyValue(
+                  esElectronica ? 'Fecha Adquisición' : 'Fecha Compra',
+                  (detalle.fecha_compra || detalle.fecha_adquisicion)
+                    ? String(detalle.fecha_compra || detalle.fecha_adquisicion).split('T')[0]
+                    : null
+                )}
+                {renderKeyValue(
+                  'Vencimiento Garantía',
+                  detalle.fecha_vencimiento_garantia || detalle.garantia
+                    ? String(detalle.fecha_vencimiento_garantia || detalle.garantia).split('T')[0]
+                    : null
+                )}
+              </div>
+
+              <div
+                className="pt-2.5 border-t border-slate-200 dark:border-slate-800/60 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs"
+                style={{ paddingTop: '10px', borderTop: '1px solid var(--line, #1e293b)' }}
+              >
+                {esEquipo && (
+                  <div className="flex flex-col gap-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em' }}>
+                      Claves / Credenciales:
+                    </span>
+                    <span className={`font-sans font-medium text-xs ${detalle.claves_otros ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`} style={{ fontSize: '12.5px' }}>
+                      {detalle.claves_otros || '—'}
+                    </span>
+                  </div>
+                )}
+                <div className={`flex flex-col gap-1 min-w-0 ${!esEquipo ? 'col-span-2' : ''}`} style={!esEquipo ? { gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '3px' } : { display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em' }}>
+                    Observaciones:
+                  </span>
+                  <p className={`text-xs ${detalle.observaciones || detalle.notas || detalle.notes ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500 italic'} line-clamp-2 m-0 leading-relaxed`} style={{ margin: 0, fontSize: '13px', lineHeight: 1.4 }}>
+                    {detalle.observaciones || detalle.notas || detalle.notes || 'Sin observaciones registradas.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Estado Contable (Exclusivo Activos y Mobiliario) */}
+              {esActivoOMobiliario && (
+                <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800/60">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      Estado en Contabilidad
+                    </span>
+                    {detalle.en_contabilidad ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60">
+                        ✅ En Contabilidad
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-700/60">
+                        ⏳ Pendiente / No registrado
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Barra Inferior de Acciones (Footer Fijo con Jerarquía Clara) */}
         <div
@@ -496,36 +687,41 @@ export default function ModalDetalleActivo({
             paddingTop: '14px',
             borderTop: '1px solid var(--line, #1e293b)',
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: !readOnly && onEdit ? 'space-between' : 'flex-end',
             alignItems: 'center',
             flexShrink: 0,
           }}
         >
-          {/* Botón Principal (Verde Lima Corporativo) */}
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              if (onEdit) onEdit(item);
-            }}
-            className="bg-[#84CC16] hover:bg-[#65A30D] text-slate-900 font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors cursor-pointer text-xs sm:text-sm"
-            style={{
-              backgroundColor: '#84CC16',
-              color: '#0f172a',
-              fontWeight: 600,
-              padding: '8px 16px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              border: 'none',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            <span>{esEquipo ? 'Editar este equipo' : 'Editar este material'}</span>
-          </button>
+          {/* Botón Principal (Verde Lima Corporativo, deshabilitado mientras carga) */}
+          {!readOnly && onEdit && (
+            <button
+              type="button"
+              disabled={!isReady}
+              onClick={() => {
+                if (!isReady) return;
+                onClose();
+                onEdit(detalle);
+              }}
+              className="bg-[#84CC16] hover:bg-[#65A30D] text-slate-900 font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors text-xs sm:text-sm"
+              style={{
+                backgroundColor: '#84CC16',
+                color: '#0f172a',
+                fontWeight: 600,
+                padding: '8px 16px',
+                borderRadius: '8px',
+                cursor: isReady ? 'pointer' : 'not-allowed',
+                opacity: isReady ? 1 : 0.5,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: 'none',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              <span>{esEquipo ? 'Editar este equipo' : 'Editar este material'}</span>
+            </button>
+          )}
 
           {/* Botón Secundario / Neutro */}
           <button

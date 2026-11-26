@@ -810,6 +810,9 @@ export default function PrestamosView({
 
   // Estados para Modal de Detalle / Ficha Técnica (Reutilizable universal)
   const [activoDetalleSeleccionado, setActivoDetalleSeleccionado] = useState(null);
+  const [detalleFetchPlaca, setDetalleFetchPlaca] = useState(null);
+  const [detalleHeaderPreview, setDetalleHeaderPreview] = useState(null);
+  const [detalleFallbackContext, setDetalleFallbackContext] = useState(null);
   const [mostrarModalDetalle, setMostrarModalDetalle] = useState(false);
 
   // Estados para Modal de Edición de Equipo
@@ -820,82 +823,20 @@ export default function PrestamosView({
   const [formDataEditarEquipo, setFormDataEditarEquipo] = useState({});
 
   // Lógica de apertura y carga de datos completos para el modal de detalle
-  const abrirModalDetalle = async (placaIdentificador, fallbackMovimiento = null) => {
+  const abrirModalDetalle = (placaIdentificador, fallbackMovimiento = null) => {
     if (!placaIdentificador && !fallbackMovimiento) return;
-    const searchPlaca = String(placaIdentificador || '').replace(/^eq-/, '').trim();
+    const searchPlaca = String(placaIdentificador || fallbackMovimiento?.itemId || fallbackMovimiento?.placa || '').replace(/^eq-/, '').trim();
+    if (!searchPlaca) return;
 
-    // 1. Buscar en la lista global de activos / items pasada por props
-    const equipoEnItems = items.find((it) => {
-      if (it.placa && String(it.placa).trim().toLowerCase() === searchPlaca.toLowerCase()) return true;
-      if (it.id && String(it.id).replace(/^eq-/, '').trim().toLowerCase() === searchPlaca.toLowerCase()) return true;
-      if (it.units && it.units.some((u) => String(u.placa || u.code).trim().toLowerCase() === searchPlaca.toLowerCase())) return true;
-      return false;
-    });
-
-    const unitInfo = equipoEnItems?.units?.find(
-      (u) => String(u.placa || u.code).trim().toLowerCase() === searchPlaca.toLowerCase()
-    );
-
-    // 2. Construir objeto base inmediato
-    const baseEquipo = {
-      ...(equipoEnItems || {}),
-      id: searchPlaca,
+    setActivoDetalleSeleccionado(null);
+    setDetalleFetchPlaca(searchPlaca);
+    setDetalleHeaderPreview({
       placa: searchPlaca,
-      codigo: searchPlaca,
-      nombre: fallbackMovimiento?.itemName || equipoEnItems?.nombre || equipoEnItems?.name || `Equipo ${searchPlaca}`,
-      equipo: fallbackMovimiento?.itemName || equipoEnItems?.equipo || equipoEnItems?.name || `Equipo ${searchPlaca}`,
-      categoria: equipoEnItems?.categoria || equipoEnItems?.category || 'Portátiles',
-      condicion: equipoEnItems?.condicion || 'Bueno',
-      estado: 'En campo',
-      status: 'prestado',
-      area: equipoEnItems?.area || 'Tecnología',
-      sede: fallbackMovimiento?.sede || equipoEnItems?.sede || 'Medellín',
-      ubicacion: equipoEnItems?.ubicacion || fallbackMovimiento?.sede || 'Medellín',
-      ubicacion_estante: unitInfo?.ubicacion_estante || equipoEnItems?.ubicacion_estante || '',
-      responsable: fallbackMovimiento?.person || fallbackMovimiento?.responsable || equipoEnItems?.responsable || 'Custodio Temporal',
-      custodio: fallbackMovimiento?.person || fallbackMovimiento?.responsable || equipoEnItems?.custodio || 'Custodio Temporal',
-      marca: unitInfo?.marca || equipoEnItems?.marca || 'Estándar',
-      modelo: unitInfo?.model || equipoEnItems?.modelo || equipoEnItems?.model || 'Estándar',
-      serial: unitInfo?.serial || equipoEnItems?.serial || '—',
-      caracteristica_1: equipoEnItems?.caracteristica_1 || '',
-      caracteristica_2: equipoEnItems?.caracteristica_2 || '',
-      caracteristica_3: equipoEnItems?.caracteristica_3 || '',
-      proveedor: equipoEnItems?.proveedor || '',
-      valor_compra: equipoEnItems?.valor_compra || null,
-      valor_total: equipoEnItems?.valor_total || null,
-      fecha_compra: equipoEnItems?.fecha_compra || null,
-      fecha_vencimiento_garantia: equipoEnItems?.fecha_vencimiento_garantia || null,
-      claves_otros: equipoEnItems?.claves_otros || '',
-      observaciones: fallbackMovimiento?.motive || equipoEnItems?.observaciones || equipoEnItems?.notes || '',
-      descripcion: equipoEnItems?.descripcion || `Equipo actualmente prestado a ${fallbackMovimiento?.person || 'custodio'}.`,
+      nombre: fallbackMovimiento?.itemName || `Equipo ${searchPlaca}`,
       isEquipo: true,
-      itemType: 'equipo',
-    };
-
-    setActivoDetalleSeleccionado(baseEquipo);
+    });
+    setDetalleFallbackContext(fallbackMovimiento || null);
     setMostrarModalDetalle(true);
-
-    // 3. Consultar datos frescos desde backend para asegurar ficha técnica completa
-    try {
-      if (searchPlaca) {
-        const activoFresco = await inventoryApi.getActivoByPlaca(searchPlaca);
-        if (activoFresco) {
-          setActivoDetalleSeleccionado({
-            ...baseEquipo,
-            ...activoFresco,
-            placa: searchPlaca,
-            codigo: searchPlaca,
-            estado: 'En campo',
-            status: 'prestado',
-            responsable: fallbackMovimiento?.person || activoFresco.responsable || 'Custodio Temporal',
-            custodio: fallbackMovimiento?.person || activoFresco.custodio || 'Custodio Temporal',
-            isEquipo: true,
-          });
-        }
-      }
-    } catch (_) {
-      // Usar baseEquipo local si la red falla
-    }
   };
 
   // Abrir modal de edición desde el detalle o directamente
@@ -3093,10 +3034,15 @@ export default function PrestamosView({
           onClose={() => {
             setQrLoanItem(null);
             setActivoDetalleSeleccionado(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
+            setDetalleFallbackContext(null);
           }}
           onBack={() => {
             const temp = qrLoanItem;
             setQrLoanItem(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
             setActivoDetalleSeleccionado(temp);
             setMostrarModalDetalle(true);
           }}
@@ -3339,21 +3285,51 @@ export default function PrestamosView({
           onClose={() => setPrestamoParaActa(null)}
         />
       )}
-      {mostrarModalDetalle && activoDetalleSeleccionado && (
+      {mostrarModalDetalle && (activoDetalleSeleccionado || detalleFetchPlaca) && (
         <ModalDetalleActivo
+          isOpen={mostrarModalDetalle}
           item={activoDetalleSeleccionado}
+          fetchPlaca={detalleFetchPlaca}
+          headerPreview={detalleHeaderPreview}
+          mapFetchedItem={(activoFresco) => ({
+            ...activoFresco,
+            id: activoFresco.id || detalleFetchPlaca,
+            placa: activoFresco.placa || detalleFetchPlaca,
+            codigo: activoFresco.placa || detalleFetchPlaca,
+            nombre: activoFresco.nombre || detalleFallbackContext?.itemName || '',
+            equipo: activoFresco.nombre || detalleFallbackContext?.itemName || '',
+            categoria: activoFresco.categoria || '',
+            condicion: activoFresco.condicion || activoFresco.estado_fisico || '',
+            estado: activoFresco.estado || (detalleFallbackContext ? 'En campo' : 'Disponible'),
+            status: (activoFresco.estado || '').toLowerCase().includes('campo') || detalleFallbackContext ? 'prestado' : 'disponible',
+            responsable: detalleFallbackContext?.person || detalleFallbackContext?.responsable || activoFresco.responsable || activoFresco.custodio || '',
+            custodio: detalleFallbackContext?.person || detalleFallbackContext?.responsable || activoFresco.custodio || '',
+            isEquipo: true,
+            itemType: 'equipo',
+          })}
           onClose={() => {
             setMostrarModalDetalle(false);
             setActivoDetalleSeleccionado(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
+            setDetalleFallbackContext(null);
           }}
           onEdit={(it) => {
             setMostrarModalDetalle(false);
+            setActivoDetalleSeleccionado(null);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
+            setDetalleFallbackContext(null);
             handleAbrirEditarEquipo(it);
           }}
           onOpenQR={(it) => {
             // Cerrar modal de detalle y abrir QR transfiriendo el activo
             const itemActual = it || activoDetalleSeleccionado;
+            if (!itemActual) return;
             setMostrarModalDetalle(false);
+            setDetalleFetchPlaca(null);
+            setDetalleHeaderPreview(null);
+            setDetalleFallbackContext(null);
             setQrLoanItem({
               ...itemActual,
               code: itemActual.placa || itemActual.codigo || itemActual.id,
